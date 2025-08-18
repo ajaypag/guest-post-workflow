@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, FileText, DollarSign, Calendar, User } from 'lucide-react';
+import { Search, Plus, FileText, DollarSign, Clock, CheckCircle2, Activity, X } from 'lucide-react';
 import { OrdersTableMultiClient } from '@/components/OrdersTableMultiClient';
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
@@ -121,7 +121,38 @@ function OrdersPageContent() {
     }
   }, [userType, statusFilter]);
 
-  const filteredOrders = orders.filter(order => {
+  // Apply date range filter
+  const getFilteredByDate = (orders: Order[]) => {
+    if (dateRange === 'all') return orders;
+    
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    return orders.filter(order => {
+      const orderDate = new Date(order.createdAt);
+      
+      switch (dateRange) {
+        case 'today':
+          return orderDate >= today;
+        case 'week':
+          const weekAgo = new Date(today);
+          weekAgo.setDate(weekAgo.getDate() - 7);
+          return orderDate >= weekAgo;
+        case 'month':
+          const monthAgo = new Date(today);
+          monthAgo.setMonth(monthAgo.getMonth() - 1);
+          return orderDate >= monthAgo;
+        case 'quarter':
+          const quarterAgo = new Date(today);
+          quarterAgo.setMonth(quarterAgo.getMonth() - 3);
+          return orderDate >= quarterAgo;
+        default:
+          return true;
+      }
+    });
+  };
+
+  const filteredOrders = getFilteredByDate(orders).filter(order => {
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
       const accountName = order.account?.contactName || order.account?.companyName || '';
@@ -169,7 +200,14 @@ function OrdersPageContent() {
   };
 
   if (!userType) {
-    return <div>Loading...</div>;
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading orders...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -204,85 +242,147 @@ function OrdersPageContent() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
-          <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
             <div className="p-4">
               <div className="flex items-center">
-                <FileText className="h-8 w-8 text-blue-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Orders</p>
-                  <p className="text-2xl font-bold text-gray-900">{orderStats.total}</p>
+                <div className="p-2 bg-blue-50 rounded-lg">
+                  <FileText className="h-5 w-5 text-blue-600" />
+                </div>
+                <div className="ml-3">
+                  <p className="text-xs font-medium text-gray-600">Total</p>
+                  <p className="text-xl font-bold text-gray-900">{orderStats.total}</p>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
             <div className="p-4">
               <div className="flex items-center">
-                <Calendar className="h-8 w-8 text-yellow-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Draft</p>
-                  <p className="text-2xl font-bold text-gray-900">{orderStats.draft}</p>
+                <div className="p-2 bg-gray-50 rounded-lg">
+                  <FileText className="h-5 w-5 text-gray-500" />
+                </div>
+                <div className="ml-3">
+                  <p className="text-xs font-medium text-gray-600">Draft</p>
+                  <p className="text-xl font-bold text-gray-900">{orderStats.draft}</p>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
             <div className="p-4">
               <div className="flex items-center">
-                <User className="h-8 w-8 text-blue-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Pending</p>
-                  <p className="text-2xl font-bold text-gray-900">{orderStats.pending}</p>
+                <div className="p-2 bg-yellow-50 rounded-lg">
+                  <Clock className="h-5 w-5 text-yellow-600" />
+                </div>
+                <div className="ml-3">
+                  <p className="text-xs font-medium text-gray-600">Pending</p>
+                  <p className="text-xl font-bold text-gray-900">{orderStats.pending}</p>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
             <div className="p-4">
               <div className="flex items-center">
-                <Calendar className="h-8 w-8 text-orange-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Active</p>
-                  <p className="text-2xl font-bold text-gray-900">{orderStats.active}</p>
+                <div className="p-2 bg-orange-50 rounded-lg">
+                  <Activity className="h-5 w-5 text-orange-600" />
+                </div>
+                <div className="ml-3">
+                  <p className="text-xs font-medium text-gray-600">Active</p>
+                  <p className="text-xl font-bold text-gray-900">{orderStats.active}</p>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
             <div className="p-4">
               <div className="flex items-center">
-                <Calendar className="h-8 w-8 text-green-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Completed</p>
-                  <p className="text-2xl font-bold text-gray-900">{orderStats.completed}</p>
+                <div className="p-2 bg-green-50 rounded-lg">
+                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                </div>
+                <div className="ml-3">
+                  <p className="text-xs font-medium text-gray-600">Completed</p>
+                  <p className="text-xl font-bold text-gray-900">{orderStats.completed}</p>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
             <div className="p-4">
               <div className="flex items-center">
-                <DollarSign className="h-8 w-8 text-green-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Value</p>
-                  <p className="text-2xl font-bold text-gray-900">{formatCurrency(orderStats.totalValue)}</p>
+                <div className="p-2 bg-emerald-50 rounded-lg">
+                  <DollarSign className="h-5 w-5 text-emerald-600" />
+                </div>
+                <div className="ml-3">
+                  <p className="text-xs font-medium text-gray-600">Value</p>
+                  <p className="text-lg font-bold text-gray-900">{formatCurrency(orderStats.totalValue)}</p>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
+        {/* Active Filters Display */}
+        {(searchTerm || statusFilter !== 'all' || dateRange !== 'all') && (
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            <span className="text-sm text-gray-600">Active filters:</span>
+            {searchTerm && (
+              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                Search: {searchTerm}
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="ml-1.5 hover:text-blue-900"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            )}
+            {statusFilter !== 'all' && (
+              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                Status: {statusOptions.find(o => o.value === statusFilter)?.label}
+                <button
+                  onClick={() => setStatusFilter('all')}
+                  className="ml-1.5 hover:text-purple-900"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            )}
+            {dateRange !== 'all' && (
+              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                Date: {dateRangeOptions.find(o => o.value === dateRange)?.label}
+                <button
+                  onClick={() => setDateRange('all')}
+                  className="ml-1.5 hover:text-green-900"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            )}
+            <button
+              onClick={() => {
+                setSearchTerm('');
+                setStatusFilter('all');
+                setDateRange('all');
+              }}
+              className="text-xs text-gray-500 hover:text-gray-700 underline"
+            >
+              Clear all
+            </button>
+          </div>
+        )}
+
         {/* Filters */}
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm mb-6">
           <div className="p-4">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1">
+            <div className="flex flex-col lg:flex-row gap-4">
+              <div className="flex-1 lg:max-w-2xl">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <input
@@ -320,6 +420,13 @@ function OrdersPageContent() {
           </div>
         </div>
       </div>
+
+      {/* Results Count */}
+      {filteredOrders.length !== orders.length && (
+        <div className="mb-4 text-sm text-gray-600">
+          Showing {filteredOrders.length} of {orders.length} orders
+        </div>
+      )}
 
       {/* Orders Table */}
       <OrdersTableMultiClient
