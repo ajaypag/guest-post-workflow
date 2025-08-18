@@ -43,9 +43,9 @@ export async function GET(
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
     
-    // Check permissions
-    if (session.userType === 'account') {
-      if (order.accountId !== session.userId) {
+    // Check permissions - TypeScript needs explicit non-null assertion
+    if (session!.userType === 'account') {
+      if (order!.accountId !== session!.userId) {
         return NextResponse.json({ error: 'Forbidden - Account access denied' }, { status: 403 });
       }
     }
@@ -66,11 +66,11 @@ export async function GET(
     const conditions = [eq(orderSiteSubmissions.orderGroupId, params.groupId)];
     
     if (status) {
-      conditions.push(eq(orderSiteSubmissions.submissionStatus, status));
+      conditions.push(eq(orderSiteSubmissions.submissionStatus, status as string));
     }
     
     // For account users, by default don't show completed unless requested
-    if (session.userType === 'account' && !includeCompleted) {
+    if (session!.userType === 'account' && !includeCompleted) {
       conditions.push(eq(orderSiteSubmissions.submissionStatus, 'pending'));
     }
     
