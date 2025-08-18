@@ -89,13 +89,13 @@ BEGIN
                     CASE 
                         WHEN group_rec.target_pages IS NOT NULL 
                         AND jsonb_array_length(group_rec.target_pages) > 0 
-                        THEN group_rec.target_pages->>(i-1)::text->>'url'
+                        THEN (group_rec.target_pages->(i-1))->>'url'
                         ELSE NULL 
                     END,
                     CASE 
                         WHEN group_rec.anchor_texts IS NOT NULL 
                         AND jsonb_array_length(group_rec.anchor_texts) > 0 
-                        THEN group_rec.anchor_texts->>(i-1)::text
+                        THEN group_rec.anchor_texts->>(i-1)
                         ELSE NULL 
                     END,
                     COALESCE(selection_rec.status, 'pending'),
