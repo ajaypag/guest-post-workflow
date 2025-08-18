@@ -46,6 +46,7 @@ export async function POST(
         throw new Error('Order must be in pending_confirmation status to confirm');
       }
       
+      // MIGRATION: Skip orderGroups logic during lineItems migration
       // Get all order groups with their clients
       const groups = await tx
         .select({
@@ -56,9 +57,10 @@ export async function POST(
         .innerJoin(clients, eq(orderGroups.clientId, clients.id))
         .where(eq(orderGroups.orderId, orderId));
         
-      if (groups.length === 0) {
-        throw new Error('No order groups found');
-      }
+      // During migration, allow orders without groups
+      // if (groups.length === 0) {
+      //   throw new Error('No order groups found');
+      // }
       
       // Create bulk analysis projects for each group
       const projectPromises = groups.map(async ({ orderGroup, client }) => {

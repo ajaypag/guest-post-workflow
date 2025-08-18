@@ -35,6 +35,10 @@
   - Modified `/lib/config/featureFlags.ts` - Set enableLineItemsSystem=true
   - Modified `/components/orders/OrderSiteReviewTableV2.tsx` - Set useLineItems=true
   - Modified `/app/api/orders/[id]/invoice/route.ts` - Force useLineItems=true
+- [x] Fix database schema mismatch
+  - Created migration 0055_fix_order_line_items_schema.sql
+  - Added missing columns: added_by, assigned_by, service_fee, etc.
+  - Applied migration successfully
 - [ ] Test basic order flow
 
 ### Known Issues to Fix

@@ -742,8 +742,14 @@ export class OrderService {
 
   /**
    * Get order groups with client info and site selections
+   * NOTE: This is being phased out - returns empty array during migration
    */
   static async getOrderGroups(orderId: string): Promise<any[]> {
+    // During migration, return empty array to force lineItems usage
+    if (true) { // Force migration mode
+      return [];
+    }
+    
     const { orderGroups } = await import('@/lib/db/orderGroupSchema');
     const { clients } = await import('@/lib/db/schema');
     const { orderSiteSelections } = await import('@/lib/db/orderGroupSchema');
