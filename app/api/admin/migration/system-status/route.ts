@@ -146,9 +146,6 @@ async function getSystemStatistics() {
             console.log('order_line_items table exists but neither modified_at nor updated_at column exists');
             lastMigration = 'columns_missing';
           }
-        } else {
-          console.log('order_line_items table exists but modified_at column is missing - migration 0027 or 0055 may not have run');
-          lastMigration = 'migration_needed';
         }
       } else {
         console.log('order_line_items table does not exist - migration 0027 has not been run');
