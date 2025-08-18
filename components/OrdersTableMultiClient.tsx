@@ -500,7 +500,7 @@ export function OrdersTableMultiClient({
 
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <div className="flex items-center justify-end gap-2">
-                        {/* Always show View button */}
+                        {/* View button - always show first */}
                         <Link
                           href={`/orders/${order.id}`}
                           className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-gray-700 text-sm rounded-md hover:bg-gray-50"
@@ -508,6 +508,19 @@ export function OrdersTableMultiClient({
                           <Eye className="h-4 w-4 mr-1" />
                           View
                         </Link>
+                        
+                        {/* Manage button for internal users */}
+                        {isInternal && (
+                          <Link
+                            href={`/orders/${order.id}/internal`}
+                            className="inline-flex items-center px-3 py-1.5 border border-purple-600 text-purple-600 text-sm rounded-md hover:bg-purple-50"
+                          >
+                            <Activity className="h-4 w-4 mr-1" />
+                            Manage
+                          </Link>
+                        )}
+                        
+                        {/* Status-specific action buttons */}
                         {isInternal && order.status === 'pending_confirmation' && (
                           <Link
                             href={`/orders/${order.id}/internal`}
@@ -611,20 +624,6 @@ export function OrdersTableMultiClient({
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
-                        )}
-                        <Link href={`/orders/${order.id}`}>
-                          <button className="text-blue-600 hover:text-blue-900 text-sm font-medium flex items-center gap-1">
-                            <Eye className="h-4 w-4" />
-                            View
-                          </button>
-                        </Link>
-                        {isInternal && (
-                          <Link href={`/orders/${order.id}/internal`}>
-                            <button className="text-purple-600 hover:text-purple-900 text-sm font-medium flex items-center gap-1">
-                              <Activity className="h-4 w-4" />
-                              Manage
-                            </button>
-                          </Link>
                         )}
                       </div>
                     </td>
