@@ -46,12 +46,10 @@ export async function POST(
         throw new Error('Order must be in pending_confirmation status to confirm');
       }
       
-      // MIGRATION: Use lineItems instead of orderGroups for bulk analysis
-      let groups = [];
-      let lineItemsByClient: Record<string, any[]> = {};
-      
-      // Check if order has lineItems
+      // Use lineItems directly for bulk analysis
       const { orderLineItems } = await import('@/lib/db/orderLineItemSchema');
+      const { projectOrderAssociations } = await import('@/lib/db/projectOrderAssociationsSchema');
+      
       const lineItems = await tx
         .select({
           lineItem: orderLineItems,
@@ -61,56 +59,49 @@ export async function POST(
         .innerJoin(clients, eq(orderLineItems.clientId, clients.id))
         .where(eq(orderLineItems.orderId, orderId));
       
-      if (lineItems.length > 0) {
-        // Group lineItems by client for bulk analysis projects
-        lineItems.forEach(({ lineItem, client }) => {
-          if (!lineItemsByClient[client.id]) {
-            lineItemsByClient[client.id] = [];
-          }
-          lineItemsByClient[client.id].push(lineItem);
-        });
-        
-        // Create pseudo-groups from lineItems for project creation
-        groups = Object.entries(lineItemsByClient).map(([clientId, items]) => {
-          const client = lineItems.find(li => li.client.id === clientId)?.client;
-          return {
-            orderGroup: {
-              id: `lineItems-${clientId}`, // Pseudo ID
-              clientId: clientId,
-              linkCount: items.length,
-              targetPages: items.map((item: any) => ({
-                pageId: item.targetPageId,
-                url: item.targetPageUrl
-              })).filter((tp: any) => tp.pageId || tp.url),
-              bulkAnalysisProjectId: null
-            },
-            client: client
-          };
-        });
-      } else {
-        // Fallback to orderGroups if no lineItems (legacy orders)
-        groups = await tx
-          .select({
-            orderGroup: orderGroups,
-            client: clients
-          })
-          .from(orderGroups)
-          .innerJoin(clients, eq(orderGroups.clientId, clients.id))
-          .where(eq(orderGroups.orderId, orderId));
+      if (lineItems.length === 0) {
+        throw new Error('No line items found in order');
       }
       
-      // Create bulk analysis projects for each group/client
-      const projectPromises = groups.map(async ({ orderGroup, client }) => {
-        // Only create if no project exists yet
-        if (!orderGroup.bulkAnalysisProjectId && client) {
-          const projectId = uuidv4();
-          const projectName = `Order #${orderId.slice(0, 8)} - ${client.name}`;
-          const projectDescription = `Bulk analysis for ${orderGroup.linkCount} links ordered for ${client.name}`;
-          
-          // Extract target page IDs from order group
-          const targetPageIds = orderGroup.targetPages
-            ?.filter((tp: any) => tp.pageId)
-            .map((tp: any) => tp.pageId) || [];
+      // Group lineItems by client for project creation
+      const lineItemsByClient = new Map<string, typeof lineItems>();
+      lineItems.forEach(item => {
+        const clientId = item.client.id;
+        if (!lineItemsByClient.has(clientId)) {
+          lineItemsByClient.set(clientId, []);
+        }
+        lineItemsByClient.get(clientId)!.push(item);
+      });
+      
+      // Create bulk analysis projects for each client
+      const projectPromises = Array.from(lineItemsByClient.entries()).map(async ([clientId, clientItems]) => {
+        const client = clientItems[0].client;
+        const linkCount = clientItems.length;
+        
+        // Extract target page IDs from line items first
+        const targetPageIds = clientItems
+          .map(item => item.lineItem.targetPageId)
+          .filter((id): id is string => id !== null);
+        
+        // Check if project already exists for this order and client
+        // Since projectOrderAssociations requires orderGroupId, we'll check differently
+        const existingProjects = await tx
+          .select()
+          .from(bulkAnalysisProjects)
+          .where(and(
+            eq(bulkAnalysisProjects.clientId, clientId),
+            sql`tags @> ${JSON.stringify([`order:${orderId}`])}`
+          ))
+          .limit(1);
+        
+        if (existingProjects.length > 0) {
+          console.log(`Project already exists for client ${client.name}`);
+          return { project: existingProjects[0], targetPageIds };
+        }
+        
+        const projectId = uuidv4();
+        const projectName = `Order #${orderId.slice(0, 8)} - ${client.name}`;
+        const projectDescription = `Bulk analysis for ${linkCount} links ordered for ${client.name}`;
           
           // Get target page keywords for auto-apply
           let autoApplyKeywords: string[] = [];
@@ -118,7 +109,7 @@ export async function POST(
             const pages = await tx
               .select()
               .from(targetPages)
-              .where(eq(targetPages.clientId, orderGroup.clientId));
+              .where(eq(targetPages.clientId, clientId));
               
             const relevantPages = pages.filter(p => targetPageIds.includes(p.id));
             
@@ -192,14 +183,14 @@ export async function POST(
             .insert(bulkAnalysisProjects)
             .values({
               id: projectId,
-              clientId: orderGroup.clientId,
+              clientId: clientId,
               name: projectName,
               description: projectDescription,
               icon: '📊',
               color: '#3B82F6',
               status: 'active',
               autoApplyKeywords,
-              tags: ['order', `${orderGroup.linkCount} links`, `order-group:${orderGroup.id}`, ...targetPageIds.map((id: string) => `target-page:${id}`)],
+              tags: ['order', `${linkCount} links`, `order:${orderId}`, ...targetPageIds.map((id: string) => `target-page:${id}`)],
               createdBy: assignedTo || '00000000-0000-0000-0000-000000000000',
               createdAt: new Date(),
               updatedAt: new Date(),
@@ -207,35 +198,25 @@ export async function POST(
             })
             .returning();
             
-          // Update order group with project ID (if using real orderGroups)
-          if (!orderGroup.id.startsWith('lineItems-')) {
-            await tx
-              .update(orderGroups)
-              .set({ 
-                bulkAnalysisProjectId: project.id,
-                updatedAt: new Date()
-              })
-              .where(eq(orderGroups.id, orderGroup.id));
-          } else {
-            // For lineItems, store the project ID in the line items metadata
-            const clientId = orderGroup.id.replace('lineItems-', '');
-            await tx
-              .update(orderLineItems)
-              .set({
-                metadata: sql`
-                  COALESCE(metadata, '{}'::jsonb) || 
-                  jsonb_build_object('bulkAnalysisProjectId', ${project.id})
-                `,
-                modifiedAt: new Date()
-              })
-              .where(and(
-                eq(orderLineItems.orderId, orderId),
-                eq(orderLineItems.clientId, clientId)
-              ));
-          }
+          // Note: We can't use projectOrderAssociations as it requires orderGroupId
+          // The association is tracked via tags in the project and metadata in line items
+          
+          // Update line items with project ID in metadata
+          await tx
+            .update(orderLineItems)
+            .set({
+              metadata: sql`
+                COALESCE(metadata, '{}'::jsonb) || 
+                jsonb_build_object('bulkAnalysisProjectId', ${project.id})
+              `,
+              modifiedAt: new Date()
+            })
+            .where(and(
+              eq(orderLineItems.orderId, orderId),
+              eq(orderLineItems.clientId, clientId)
+            ));
             
           return { project, targetPageIds };
-        }
         
         return null;
       });
@@ -261,7 +242,7 @@ export async function POST(
         .where(eq(orders.id, orderId))
         .returning();
       
-      // Create benchmark snapshot of the confirmed order
+      // Create benchmark snapshot of the confirmed order (uses line items directly)
       let benchmark;
       try {
         benchmark = await createOrderBenchmark(orderId, session.userId, 'order_confirmed');

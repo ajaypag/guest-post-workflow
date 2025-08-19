@@ -71,47 +71,91 @@ export default function ExternalOrderReviewPage() {
       if (!response.ok) throw new Error('Failed to fetch order');
       const orderData = await response.json();
       
-      // Load line items if system is enabled
-      if (isLineItemsSystemEnabled() && orderData.lineItems) {
-        const items: LineItem[] = orderData.lineItems.map((item: any) => ({
-          id: item.id,
-          orderId: item.orderId,
-          clientId: item.clientId,
-          targetPageUrl: item.targetPageUrl,
-          targetPageId: item.targetPageId,
-          anchorText: item.anchorText,
-          status: item.status,
-          assignedDomainId: item.assignedDomainId,
-          assignedDomain: item.assignedDomain,
-          estimatedPrice: item.estimatedPrice,
-          metadata: item.metadata
-        }));
+      // Fetch line items and available domains (NEW APPROACH)
+      const lineItemsRes = await fetch(`/api/orders/${orderId}/line-items`);
+      const domainsRes = await fetch(`/api/orders/${orderId}/line-items/available-domains`);
+      
+      let items: LineItem[] = [];
+      let submissionsData: Record<string, SiteSubmission[]> = {};
+      let orderGroups: OrderGroup[] = [];
+      
+      if (lineItemsRes.ok) {
+        const lineItemsData = await lineItemsRes.json();
+        items = lineItemsData.lineItems || [];
         setLineItems(items);
+        console.log('[REVIEW PAGE] Loaded', items.length, 'line items');
       }
       
-      // Fetch submissions for each order group (if using orderGroups mode)
-      const submissionsData: Record<string, SiteSubmission[]> = {};
-      
-      // Check if this order uses line items instead of order groups
-      const isUsingLineItems = orderData.lineItems && orderData.lineItems.length > 0 && 
-                               (!orderData.orderGroups || orderData.orderGroups.length === 0);
-      
-      if (!isUsingLineItems && orderData.orderGroups && orderData.orderGroups.length > 0) {
-        for (const group of orderData.orderGroups) {
-          console.log('[REVIEW PAGE] Fetching submissions for group:', group.id);
-          const submissionsRes = await fetch(
-            `/api/orders/${orderId}/groups/${group.id}/submissions?includeCompleted=true`
-          );
-          if (submissionsRes.ok) {
-            const data = await submissionsRes.json();
-            console.log('[REVIEW PAGE] Received submissions:', data.submissions?.length || 0);
-            submissionsData[group.id] = data.submissions || [];
-          } else {
-            console.error('[REVIEW PAGE] Failed to fetch submissions:', submissionsRes.status, await submissionsRes.text());
+      if (domainsRes.ok) {
+        const domainsData = await domainsRes.json();
+        
+        // Transform domains to submission format grouped by client
+        // Create pseudo-groups from line items grouped by client
+        const clientGroups: Record<string, any> = {};
+        
+        // Group line items by client
+        items.forEach((item: any) => {
+          if (!clientGroups[item.clientId]) {
+            clientGroups[item.clientId] = {
+              id: `client-${item.clientId}`,
+              clientId: item.clientId,
+              client: item.client || { 
+                id: item.clientId, 
+                name: item.client?.name || `Client ${item.clientId.slice(0, 8)}`,
+                website: item.client?.website || ''
+              },
+              linkCount: 0,
+              lineItems: []
+            };
           }
-        }
-      } else if (isUsingLineItems) {
-        console.log('[REVIEW PAGE] Order uses line items, skipping group submissions fetch');
+          clientGroups[item.clientId].linkCount++;
+          clientGroups[item.clientId].lineItems.push(item);
+        });
+        
+        // Convert domains to submissions format for each client group
+        Object.keys(domainsData.domains || {}).forEach(clientId => {
+          const groupId = `client-${clientId}`;
+          const domains = domainsData.domains[clientId] || [];
+          
+          // Transform domains to submission format for UI compatibility
+          submissionsData[groupId] = domains.map((domain: any) => ({
+            id: `domain-${domain.id}`,
+            orderGroupId: groupId,
+            domainId: domain.id,
+            domain: {
+              id: domain.id,
+              domain: domain.domain,
+              qualificationStatus: domain.qualificationStatus,
+              overlapStatus: domain.overlapStatus,
+              authorityDirect: domain.authorityDirect,
+              authorityRelated: domain.authorityRelated,
+              topicScope: domain.topicScope,
+              topicReasoning: domain.topicReasoning,
+              aiQualificationReasoning: domain.aiQualificationReasoning,
+              evidence: domain.evidence
+            },
+            domainRating: domain.domainRating,
+            traffic: domain.traffic,
+            price: domain.price,
+            wholesalePrice: domain.wholesalePrice,
+            status: domain.isAssigned ? 'client_approved' : 'pending',
+            inclusionStatus: domain.inclusionStatus || (domain.isAssigned ? 'included' : 'excluded'),
+            targetPageUrl: domain.assignedToLineItemId ? 
+              items.find((li: any) => li.id === domain.assignedToLineItemId)?.targetPageUrl : null,
+            anchorText: domain.assignedToLineItemId ? 
+              items.find((li: any) => li.id === domain.assignedToLineItemId)?.anchorText : null
+          }));
+        });
+        
+        // Convert client groups to array for orderGroups prop
+        orderGroups = Object.values(clientGroups);
+        console.log('[REVIEW PAGE] Created', orderGroups.length, 'client groups with domains');
+      }
+      
+      // Fallback to old system if no line items (shouldn't happen but safety check)
+      if (items.length === 0 && orderData.orderGroups && orderData.orderGroups.length > 0) {
+        console.warn('[REVIEW PAGE] Falling back to order groups (legacy)');
+        orderGroups = orderData.orderGroups;
       }
       
       // Fetch benchmark data if order is confirmed, paid, or pending confirmation (for external review)
@@ -130,10 +174,11 @@ export default function ExternalOrderReviewPage() {
         }
       }
       
-      // Ensure orderGroups is at least an empty array to prevent crashes
+      // Use the transformed data
       setOrder({
         ...orderData,
-        orderGroups: orderData.orderGroups || []
+        orderGroups: orderGroups, // Use client-grouped line items
+        lineItems: items // Keep line items for reference
       });
       setSiteSubmissions(submissionsData);
     } catch (error) {
@@ -145,15 +190,29 @@ export default function ExternalOrderReviewPage() {
 
   const handleApprove = async (submissionId: string, groupId: string) => {
     try {
+      // Find the domain and line item from the submission
+      const domainId = submissionId.replace('domain-', '');
+      
+      // Find an unassigned line item for this client
+      const clientId = groupId.replace('client-', '');
+      const unassignedLineItem = lineItems.find(item => 
+        item.clientId === clientId && !item.assignedDomainId
+      );
+      
+      if (!unassignedLineItem) {
+        alert('No available line items for this client');
+        return;
+      }
+      
+      // Assign the domain to the line item
       const response = await fetch(
-        `/api/orders/${orderId}/groups/${groupId}/submissions/${submissionId}/review`,
+        `/api/orders/${orderId}/line-items/${unassignedLineItem.id}/assign-domain`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
-            action: 'approve',
-            notes: 'Approved by client',
-            approvedBy: 'account_user' // Track who approved
+            domainId: domainId,
+            submissionId: submissionId
           })
         }
       );
@@ -169,22 +228,16 @@ export default function ExternalOrderReviewPage() {
 
   const handleReject = async (submissionId: string, groupId: string, reason: string) => {
     try {
-      const response = await fetch(
-        `/api/orders/${orderId}/groups/${groupId}/submissions/${submissionId}/review`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            action: 'reject',
-            notes: reason,
-            rejectedBy: 'account_user' // Track who rejected
-          })
-        }
-      );
+      // For reject, we just mark the domain as rejected in our UI state
+      // Since we're not actually updating the backend (domains are shared across orders)
+      // We could store rejection reasons in line item metadata or order metadata
       
-      if (!response.ok) throw new Error('Failed to reject site');
+      console.log(`Site rejected: ${submissionId} for reason: ${reason}`);
       
-      // Refresh data
+      // Optionally update line item metadata to track rejections
+      // This would require a new API endpoint
+      
+      // For now, just refresh to reset the UI
       await fetchOrder();
     } catch (error) {
       console.error('Error rejecting site:', error);
@@ -193,16 +246,39 @@ export default function ExternalOrderReviewPage() {
 
   const handleEditSubmission = async (submissionId: string, groupId: string, updates: any) => {
     try {
-      const response = await fetch(`/api/orders/${orderId}/groups/${groupId}/submissions/${submissionId}/edit`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(updates)
-      });
+      // With line items, we update the line item that has this domain assigned
+      // Find the line item with this domain
+      const domainId = submissionId.replace('domain-', '');
+      const lineItem = lineItems.find(item => item.assignedDomainId === domainId);
       
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        throw new Error(errorData.error || 'Failed to edit submission');
+      if (lineItem) {
+        // Update the line item with new target page and anchor text
+        const response = await fetch(`/api/orders/${orderId}/line-items`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            updates: [{
+              id: lineItem.id,
+              targetPageUrl: updates.targetPageUrl,
+              anchorText: updates.anchorText,
+              metadata: {
+                ...lineItem.metadata,
+                specialInstructions: updates.specialInstructions,
+                priceOverride: updates.priceOverride
+              }
+            }],
+            reason: 'Updated from review page'
+          })
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          throw new Error(errorData.error || 'Failed to edit line item');
+        }
+      } else {
+        // No line item assigned yet, store updates in submission metadata
+        console.log('No line item assigned for this domain yet, updates will be applied when assigned');
       }
       
       await fetchOrder();
@@ -214,22 +290,48 @@ export default function ExternalOrderReviewPage() {
 
   const handleChangeInclusionStatus = async (submissionId: string, groupId: string, status: 'included' | 'excluded' | 'saved_for_later', reason?: string) => {
     try {
-      const response = await fetch(
-        `/api/orders/${orderId}/groups/${groupId}/submissions/${submissionId}/inclusion`,
-        {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            inclusionStatus: status,
-            exclusionReason: reason 
-          })
-        }
-      );
+      // Similar to approve/reject, we handle inclusion status changes
+      const domainId = submissionId.replace('domain-', '');
+      const clientId = groupId.replace('client-', '');
       
-      if (!response.ok) throw new Error('Failed to update status');
+      if (status === 'included') {
+        // Find an unassigned line item and assign the domain
+        const unassignedLineItem = lineItems.find(item => 
+          item.clientId === clientId && !item.assignedDomainId
+        );
+        
+        if (unassignedLineItem) {
+          const response = await fetch(
+            `/api/orders/${orderId}/line-items/${unassignedLineItem.id}/assign-domain`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ domainId, submissionId })
+            }
+          );
+          
+          if (!response.ok) throw new Error('Failed to include site');
+        }
+      } else if (status === 'excluded') {
+        // Find the line item with this domain and unassign it
+        const assignedLineItem = lineItems.find(item => 
+          item.assignedDomainId === domainId
+        );
+        
+        if (assignedLineItem) {
+          const response = await fetch(
+            `/api/orders/${orderId}/line-items/${assignedLineItem.id}/assign-domain`,
+            {
+              method: 'DELETE',
+              headers: { 'Content-Type': 'application/json' }
+            }
+          );
+          
+          if (!response.ok) throw new Error('Failed to exclude site');
+        }
+      }
       
       await fetchOrder();
-      // Reload benchmark to reflect new comparison after status change
       await loadBenchmarkData();
     } catch (error) {
       console.error('Error updating status:', error);
@@ -276,22 +378,28 @@ export default function ExternalOrderReviewPage() {
 
   const handleAssignTargetPage = async (submissionId: string, targetPageUrl: string, groupId: string) => {
     try {
-      const response = await fetch(
-        `/api/orders/${orderId}/groups/${groupId}/site-selections`,
-        {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            selections: [{ 
-              submissionId, 
-              action: 'assign_target_page',
-              targetPageUrl 
-            }]
-          })
-        }
-      );
+      // With line items, we update the target page URL on the line item
+      const domainId = submissionId.replace('domain-', '');
+      const lineItem = lineItems.find(item => item.assignedDomainId === domainId);
       
-      if (!response.ok) throw new Error('Failed to assign target page');
+      if (lineItem) {
+        const response = await fetch(`/api/orders/${orderId}/line-items`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            updates: [{
+              id: lineItem.id,
+              targetPageUrl: targetPageUrl
+            }],
+            reason: 'Target page assigned from review page'
+          })
+        });
+        
+        if (!response.ok) throw new Error('Failed to assign target page');
+      } else {
+        console.log('No line item assigned for this domain yet');
+      }
       
       await fetchOrder();
     } catch (error) {

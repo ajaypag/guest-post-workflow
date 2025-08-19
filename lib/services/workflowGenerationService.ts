@@ -23,6 +23,281 @@ export interface WorkflowGenerationOptions {
 
 export class WorkflowGenerationService {
   /**
+   * Generate workflows for line items in an order
+   */
+  static async generateWorkflowsForLineItems(
+    orderId: string,
+    userId: string,
+    options: WorkflowGenerationOptions = {}
+  ): Promise<WorkflowGenerationResult> {
+    const errors: string[] = [];
+    let workflowsCreated = 0;
+    let orderItemsCreated = 0;
+
+    try {
+      // Import line items schema
+      const { orderLineItems } = await import('@/lib/db/orderLineItemSchema');
+      
+      // Get all line items with assigned domains for this order
+      const lineItems = await db.query.orderLineItems.findMany({
+        where: and(
+          eq(orderLineItems.orderId, orderId),
+          sql`assigned_domain_id IS NOT NULL`
+        ),
+        with: {
+          client: true
+        }
+      });
+
+      if (!lineItems || lineItems.length === 0) {
+        return {
+          success: true,
+          workflowsCreated: 0,
+          orderItemsCreated: 0,
+          errors: ['No line items with assigned domains found']
+        };
+      }
+
+      // Get the order and account info
+      const order = await db.query.orders.findFirst({
+        where: eq(orders.id, orderId),
+        with: {
+          account: true
+        }
+      });
+
+      if (!order) {
+        throw new Error('Order not found');
+      }
+
+      // Generate workflows for each line item with an assigned domain
+      for (const lineItem of lineItems) {
+        try {
+          // Skip if already has a workflow
+          if (lineItem.workflowId) {
+            console.log(`Line item ${lineItem.id} already has workflow`);
+            continue;
+          }
+
+          // Get domain details from bulk analysis
+          const domain = lineItem.assignedDomainId ? 
+            await db.query.bulkAnalysisDomains.findFirst({
+              where: eq(bulkAnalysisDomains.id, lineItem.assignedDomainId)
+            }) : null;
+
+          if (!domain) {
+            errors.push(`Domain not found for line item ${lineItem.id}`);
+            continue;
+          }
+
+          // Determine assigned user
+          const assignedUserId = options.assignToUserId || 
+            (options.autoAssign ? await this.getNextAvailableUser() : userId);
+
+          // Create workflow
+          const workflow = await this.createWorkflowFromLineItem(
+            lineItem,
+            domain,
+            order,
+            assignedUserId
+          );
+
+          if (workflow) {
+            workflowsCreated++;
+
+            // Update line item with workflow reference
+            await db.update(orderLineItems)
+              .set({ 
+                workflowId: workflow.id,
+                modifiedAt: new Date()
+              })
+              .where(eq(orderLineItems.id, lineItem.id));
+
+            // Create order item for backward compatibility
+            const orderItem = await this.createOrderItemFromLineItem(
+              lineItem,
+              workflow.id,
+              domain
+            );
+
+            if (orderItem) {
+              orderItemsCreated++;
+            }
+          }
+        } catch (error) {
+          const errorMsg = `Failed to generate workflow for line item ${lineItem.id}: ${error}`;
+          console.error(errorMsg);
+          errors.push(errorMsg);
+        }
+      }
+
+      // Update order state if all workflows created successfully
+      if (errors.length === 0 && workflowsCreated > 0) {
+        await db.update(orders)
+          .set({
+            state: 'in_progress',
+            updatedAt: new Date()
+          })
+          .where(eq(orders.id, orderId));
+      }
+
+      return {
+        success: errors.length === 0,
+        workflowsCreated,
+        orderItemsCreated,
+        errors
+      };
+
+    } catch (error) {
+      console.error('Error generating workflows from line items:', error);
+      return {
+        success: false,
+        workflowsCreated,
+        orderItemsCreated,
+        errors: [`System error: ${error}`]
+      };
+    }
+  }
+
+  /**
+   * Create a workflow from a line item
+   */
+  private static async createWorkflowFromLineItem(
+    lineItem: any,
+    domain: any,
+    order: any,
+    userId: string
+  ): Promise<GuestPostWorkflow | null> {
+    try {
+      const client = lineItem.client;
+      const account = order.account;
+
+      // Build workflow metadata
+      const workflowData: GuestPostWorkflow = {
+        id: uuidv4(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        clientName: client.name,
+        clientUrl: client.website,
+        targetDomain: domain.domain,
+        currentStep: 0,
+        createdBy: account?.contactName || 'System',
+        createdByEmail: account?.email,
+        steps: this.generateWorkflowStepsForLineItem(lineItem, domain),
+        metadata: {
+          clientId: client.id,
+          orderId: order.id,
+          targetPageUrl: lineItem.targetPageUrl,
+          anchorText: lineItem.anchorText
+        }
+      };
+
+      // Create workflow using existing service
+      const createdWorkflow = await WorkflowService.createGuestPostWorkflow(
+        workflowData,
+        userId,
+        account?.contactName || 'System',
+        account?.email
+      );
+
+      return createdWorkflow;
+    } catch (error) {
+      console.error('Error creating workflow from line item:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate workflow steps for line item
+   */
+  private static generateWorkflowStepsForLineItem(lineItem: any, domain: any): any[] {
+    return WORKFLOW_STEPS.map((stepTemplate, index) => ({
+      id: `step-${index + 1}`,
+      title: stepTemplate.title,
+      description: stepTemplate.description,
+      status: 'pending',
+      inputs: this.getStepInputsForLineItem(stepTemplate.id, lineItem, domain),
+      outputs: {},
+      fields: {
+        inputs: this.getStepInputFields(stepTemplate.id),
+        outputs: this.getStepOutputFields(stepTemplate.id)
+      }
+    }));
+  }
+
+  /**
+   * Get pre-filled inputs for a workflow step from line item
+   */
+  private static getStepInputsForLineItem(stepId: string, lineItem: any, domain: any): Record<string, any> {
+    switch (stepId) {
+      case 'domain-selection':
+        return {
+          domain: domain.domain,
+          targetPageUrl: lineItem.targetPageUrl,
+          anchorText: lineItem.anchorText,
+          dr: domain.dr || 70,
+          traffic: domain.totalTraffic || 10000,
+          niche: domain.primaryNiche || 'General'
+        };
+      
+      case 'keyword-research':
+        return {
+          targetDomain: domain.domain,
+          targetPage: lineItem.targetPageUrl,
+          clientNiche: domain.clientNiche || '',
+          competitorAnalysis: ''
+        };
+      
+      default:
+        return {};
+    }
+  }
+
+  /**
+   * Create an order item from line item for backward compatibility
+   */
+  private static async createOrderItemFromLineItem(
+    lineItem: any,
+    workflowId: string,
+    domain: any
+  ): Promise<any> {
+    try {
+      const orderItemData = {
+        id: uuidv4(),
+        orderId: lineItem.orderId,
+        domainId: lineItem.assignedDomainId,
+        domain: lineItem.assignedDomain || domain.domain,
+        targetPageId: lineItem.targetPageId,
+        lineItemId: lineItem.id, // Reference back to line item
+        
+        // Domain metrics snapshot
+        domainRating: domain.dr || 70,
+        traffic: domain.totalTraffic || 10000,
+        retailPrice: lineItem.approvedPrice || lineItem.estimatedPrice || 100,
+        wholesalePrice: lineItem.wholesalePrice || Math.floor((lineItem.estimatedPrice || 100) * 0.7),
+        
+        // Workflow tracking
+        workflowId: workflowId,
+        workflowStatus: 'pending',
+        workflowCreatedAt: new Date(),
+        
+        // Status
+        status: 'pending',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      const [orderItem] = await db.insert(orderItems)
+        .values(orderItemData)
+        .returning();
+
+      return orderItem;
+    } catch (error) {
+      console.error('Error creating order item from line item:', error);
+      throw error;
+    }
+  }
+  /**
    * Generate workflows for all approved site selections in an order group
    */
   static async generateWorkflowsForOrderGroup(
