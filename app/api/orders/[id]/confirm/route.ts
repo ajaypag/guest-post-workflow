@@ -202,13 +202,23 @@ export async function POST(
           // The association is tracked via tags in the project and metadata in line items
           
           // Update line items with project ID in metadata
+          const currentMetadata = await tx
+            .select({ metadata: orderLineItems.metadata })
+            .from(orderLineItems)
+            .where(and(
+              eq(orderLineItems.orderId, orderId),
+              eq(orderLineItems.clientId, clientId)
+            ));
+          
+          const updatedMetadata = {
+            ...(currentMetadata[0]?.metadata || {}),
+            bulkAnalysisProjectId: project.id
+          };
+          
           await tx
             .update(orderLineItems)
             .set({
-              metadata: sql`
-                COALESCE(metadata, '{}'::jsonb) || 
-                jsonb_build_object('bulkAnalysisProjectId', ${project.id})
-              `,
+              metadata: updatedMetadata,
               modifiedAt: new Date()
             })
             .where(and(
