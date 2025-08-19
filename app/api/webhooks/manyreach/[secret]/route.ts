@@ -7,12 +7,13 @@ import { ShadowPublisherService } from '@/lib/services/shadowPublisherService';
 import { shadowPublisherConfig } from '@/lib/config/shadowPublisherConfig';
 import { eq } from 'drizzle-orm';
 
-// ManyReach actual webhook payload interface
+// ManyReach actual webhook payload interface - two possible formats
 interface ManyReachWebhookPayload {
-  eventId: string; // 'prospect_replied'
-  campaignid: string;
-  message: string; // The actual reply message
-  prospect: {
+  // Format 1: What we saw in local testing
+  eventId?: string; // 'prospect_replied'
+  campaignid?: string;
+  message?: string; // The actual reply message
+  prospect?: {
     email: string;
     firstname: string;
     lastname: string;
@@ -29,6 +30,13 @@ interface ManyReachWebhookPayload {
   };
   description?: string;
   sender_email?: string;
+  
+  // Format 2: What ManyReach sends in production
+  campaignId?: string;
+  campaignName?: string;
+  campaignType?: string;
+  email?: string;
+  metadata?: any;
 }
 
 // Validate webhook secret in URL
@@ -267,21 +275,49 @@ export async function POST(
       });
     }
     
-    // Validate webhook payload structure for ManyReach
-    if (!payload.prospect?.email || !payload.message) {
+    // Check which format we received and normalize it
+    let email: string;
+    let message: string | undefined;
+    let firstName: string = '';
+    let lastName: string = '';
+    let company: string = '';
+    let domain: string = '';
+    let campaignId: string = '';
+    
+    // Format 1: prospect object with message
+    if (payload.prospect?.email && payload.message) {
+      email = payload.prospect.email;
+      message = payload.message;
+      firstName = payload.prospect.firstname || '';
+      lastName = payload.prospect.lastname || '';
+      company = payload.prospect.company || '';
+      domain = payload.prospect.domain || payload.prospect.www || '';
+      campaignId = payload.campaignid || '';
+    }
+    // Format 2: direct email field (test payload)
+    else if (payload.email) {
+      email = payload.email;
+      message = payload.metadata?.message || payload.metadata?.reply || '';
+      campaignId = payload.campaignId || '';
+      
+      // For test webhooks without a message, return success
+      if (!message) {
+        console.log('📝 Test webhook validated for email:', email);
+        return NextResponse.json({
+          success: true,
+          message: 'Test webhook validated',
+          email: email,
+          timestamp: new Date().toISOString()
+        });
+      }
+    }
+    else {
       console.error('Invalid webhook payload structure:', JSON.stringify(payload, null, 2));
-      console.error('Expected format: { prospect: { email: "..." }, message: "..." }');
-      // For debugging, return what we received so we can see in ManyReach
       return NextResponse.json(
         { 
           error: 'Invalid payload structure',
-          expected: {
-            prospect: { email: 'required', firstname: 'optional', lastname: 'optional' },
-            message: 'required',
-            eventId: 'optional',
-            campaignid: 'optional'
-          },
-          received: Object.keys(payload)
+          message: 'Expected either prospect.email or email field',
+          received: payload
         },
         { status: 400 }
       );
@@ -290,15 +326,15 @@ export async function POST(
     // Create email processing log entry adapted for ManyReach
     const [logEntry] = await db.insert(emailProcessingLogs).values({
       webhookId: `manyreach-${Date.now()}`,
-      campaignId: payload.campaignid || 'unknown',
-      campaignName: 'ManyReach Campaign',
-      campaignType: 'outreach',
-      emailFrom: payload.prospect.email,
-      emailTo: payload.sender_email || 'outreach@linkio.com',
-      emailSubject: `Reply from ${payload.prospect.firstname} ${payload.prospect.lastname}`,
+      campaignId: campaignId || 'unknown',
+      campaignName: payload.campaignName || 'ManyReach Campaign',
+      campaignType: payload.campaignType || 'outreach',
+      emailFrom: email,
+      emailTo: 'outreach@linkio.com',
+      emailSubject: `Reply from ${firstName} ${lastName}`.trim() || `Reply from ${email}`,
       emailMessageId: `manyreach-${Date.now()}`,
       receivedAt: new Date(),
-      rawContent: payload.message,
+      rawContent: message || '',
       htmlContent: null,
       threadId: null,
       replyCount: 0,
@@ -306,14 +342,25 @@ export async function POST(
       processingDurationMs: null,
     }).returning();
 
-    console.log(`📧 Processing email from ${payload.prospect.email} (Log ID: ${logEntry.id})`);
+    console.log(`📧 Processing email from ${email} (Log ID: ${logEntry.id})`);
+
+    // Skip AI parsing for test webhooks
+    if (!message || message.trim() === '') {
+      console.log('⏭️ Skipping AI parsing for test webhook');
+      return NextResponse.json({
+        success: true,
+        emailLogId: logEntry.id,
+        testMode: true,
+        email: email
+      });
+    }
 
     // Parse the email content with AI
     const emailParser = new EmailParserService();
     const parsedData = await emailParser.parseEmail({
-      from: payload.prospect.email,
-      subject: `Reply from ${payload.prospect.company || payload.prospect.firstname}`,
-      content: payload.message
+      from: email,
+      subject: `Reply from ${company || firstName || email}`,
+      content: message
     });
 
     // Update log with parsing results
