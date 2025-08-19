@@ -300,7 +300,7 @@ export async function POST(
       .set({
         parsedData: parsedData as any,
         confidenceScore: parsedData.overallConfidence.toString(),
-        parsingErrors: parsedData.errors || [],
+        parsingErrors: (parsedData.errors || []) as any,
         status: parsedData.overallConfidence >= shadowPublisherConfig.confidence.autoApprove ? 'parsed' : 'needs_review',
         processedAt: new Date(),
         processingDurationMs: Date.now() - startTime,
