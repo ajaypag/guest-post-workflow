@@ -4,6 +4,7 @@ import { AuthServiceServer } from '@/lib/auth-server';
 import { publishers, publisherWebsites } from '@/lib/db/accountSchema';
 import { websites } from '@/lib/db/websiteSchema';
 import { publisherOfferings } from '@/lib/db/publisherSchemaActual';
+import { shadowPublisherWebsites } from '@/lib/db/emailProcessingSchema';
 import { eq, desc, or, and } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
@@ -33,8 +34,20 @@ export async function GET(request: NextRequest) {
     // Transform the data
     const publishersWithDetails = await Promise.all(
       shadowPublishers.map(async (item) => {
-        // Get websites for this publisher
-        const publisherWebsiteRelations = await db
+        // Get websites for this publisher - check both shadow and regular publisher websites
+        const shadowWebsiteRelations = await db
+          .select({
+            website: websites,
+            confidence: shadowPublisherWebsites.confidence,
+            source: shadowPublisherWebsites.source,
+            verified: shadowPublisherWebsites.verified,
+          })
+          .from(shadowPublisherWebsites)
+          .leftJoin(websites, eq(websites.id, shadowPublisherWebsites.websiteId))
+          .where(eq(shadowPublisherWebsites.publisherId, item.publisher.id))
+          .limit(5);
+        
+        const regularWebsiteRelations = await db
           .select({
             website: websites,
           })
@@ -43,6 +56,8 @@ export async function GET(request: NextRequest) {
           .where(eq(publisherWebsites.publisherId, item.publisher.id))
           .limit(5);
 
+        const allWebsiteRelations = [...shadowWebsiteRelations, ...regularWebsiteRelations];
+
         // Get offerings for this publisher
         const offerings = await db
           .select()
@@ -50,11 +65,33 @@ export async function GET(request: NextRequest) {
           .where(eq(publisherOfferings.publisherId, item.publisher.id))
           .limit(5);
 
+        // Process shadow websites with confidence/source data
+        const shadowWebsites = shadowWebsiteRelations
+          .filter(r => r.website)
+          .map(r => ({
+            ...r.website!,
+            confidence: r.confidence,
+            source: r.source,
+            verified: r.verified,
+          }));
+        
+        // Process regular websites (no confidence/source data)
+        const regularWebsites = regularWebsiteRelations
+          .filter(r => r.website)
+          .map(r => ({
+            ...r.website!,
+            confidence: null,
+            source: 'regular',
+            verified: true,
+          }));
+
+        const allWebsites = [...shadowWebsites, ...regularWebsites];
+
         return {
           ...item.publisher,
-          websites: publisherWebsiteRelations.map(r => r.website).filter(Boolean),
+          websites: allWebsites,
           offerings: offerings,
-          websiteCount: item.websiteCount,
+          websiteCount: allWebsites.length,
           offeringCount: item.offeringCount,
         };
       })
