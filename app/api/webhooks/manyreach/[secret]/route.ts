@@ -294,18 +294,35 @@ export async function POST(
       domain = payload.prospect.domain || payload.prospect.www || '';
       campaignId = payload.campaignid || '';
     }
-    // Format 2: direct email field (test payload)
+    // Format 2: direct email field (production payload)
     else if (payload.email) {
       email = payload.email;
-      message = payload.metadata?.message || payload.metadata?.reply || '';
+      // Check multiple possible locations for the message content
+      message = payload.metadata?.content || 
+                payload.metadata?.message || 
+                payload.metadata?.reply || 
+                payload.metadata?.body ||
+                '';
+      
       campaignId = payload.campaignId || '';
+      
+      // Extract other fields from metadata if available
+      if (payload.metadata) {
+        firstName = payload.metadata.firstName || payload.metadata.from?.split('@')[0] || '';
+        lastName = payload.metadata.lastName || '';
+        company = payload.metadata.company || payload.metadata.from?.split('@')[1] || '';
+        domain = payload.metadata.domain || payload.metadata.website || '';
+      }
+      
+      // Log what we found in metadata for debugging
+      console.log('📦 ManyReach metadata structure:', JSON.stringify(payload.metadata, null, 2));
       
       // For test webhooks without a message, return success
       if (!message) {
-        console.log('📝 Test webhook validated for email:', email);
+        console.log('📝 Test webhook - no message content found');
         return NextResponse.json({
           success: true,
-          message: 'Test webhook validated',
+          message: 'Test webhook validated - no message content',
           email: email,
           timestamp: new Date().toISOString()
         });
