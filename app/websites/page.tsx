@@ -40,6 +40,7 @@ interface Website {
   websiteType: string[]; // SaaS, Blog, News, eCommerce, etc.
   niche: string[]; // Multiple niches
   status: string;
+  source?: string; // manyreach, airtable, manual, etc.
   hasGuestPost: boolean;
   hasLinkInsert: boolean;
   publishedOpportunities: number;
@@ -78,6 +79,7 @@ interface Filters {
   hasGuestPost?: boolean;
   hasLinkInsert?: boolean;
   status?: string;
+  source?: string; // manyreach, airtable, manual, etc.
   qualificationStatus?: 'all' | 'qualified' | 'unqualified';
   clientId?: string;
   // Airtable metadata filters
@@ -136,6 +138,7 @@ function WebsitesPageContent() {
             hasGuestPost: filters.hasGuestPost,
             hasLinkInsert: filters.hasLinkInsert,
             status: filters.status,
+            source: filters.source,
             airtableUpdatedAfter: filters.airtableUpdatedAfter,
             airtableUpdatedBefore: filters.airtableUpdatedBefore,
             lastSyncedAfter: filters.lastSyncedAfter,
@@ -522,6 +525,47 @@ function WebsitesPageContent() {
                 </select>
               </div>
 
+              {/* Website Status */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Website Status
+                </label>
+                <select
+                  className="w-full px-3 py-1.5 border rounded text-sm"
+                  value={filters.status || ''}
+                  onChange={(e) => setFilters(prev => ({ 
+                    ...prev, 
+                    status: e.target.value || undefined 
+                  }))}
+                >
+                  <option value="">All Status</option>
+                  <option value="active">Active</option>
+                  <option value="pending">Pending</option>
+                  <option value="verified">Verified</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+
+              {/* Data Source */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Data Source
+                </label>
+                <select
+                  className="w-full px-3 py-1.5 border rounded text-sm"
+                  value={filters.source || ''}
+                  onChange={(e) => setFilters(prev => ({ 
+                    ...prev, 
+                    source: e.target.value || undefined 
+                  }))}
+                >
+                  <option value="">All Sources</option>
+                  <option value="manyreach">ManyReach (Email)</option>
+                  <option value="airtable">Airtable</option>
+                  <option value="manual">Manual</option>
+                </select>
+              </div>
+
               {/* Client Filter */}
               {filters.qualificationStatus === 'qualified' && (
                 <div>
@@ -766,6 +810,9 @@ function WebsitesPageContent() {
                     Domain
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Source
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                     DR
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
@@ -834,6 +881,22 @@ function WebsitesPageContent() {
                           </div>
                         )}
                       </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex items-center text-xs px-2 py-1 rounded ${
+                        website.source === 'manyreach' ? 'bg-blue-100 text-blue-700' :
+                        website.source === 'airtable' ? 'bg-green-100 text-green-700' :
+                        website.source === 'manual' ? 'bg-purple-100 text-purple-700' :
+                        'bg-gray-100 text-gray-600'
+                      }`}>
+                        {website.source === 'manyreach' ? '📧 Email' :
+                         website.source === 'airtable' ? '📊 Airtable' :
+                         website.source === 'manual' ? '✏️ Manual' :
+                         website.source || 'Unknown'}
+                      </span>
+                      {website.status === 'pending' && website.source === 'manyreach' && (
+                        <span className="ml-1 text-xs text-orange-600">⏳</span>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">

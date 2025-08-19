@@ -252,6 +252,11 @@ export class AirtableSyncService {
       params.push(filters.status);
     }
     
+    if (filters.source) {
+      conditions.push(`w.source = $${paramIndex++}`);
+      params.push(filters.source);
+    }
+    
     if (filters.hasGuestPost === true) {
       conditions.push(`w.has_guest_post = true`);
     }

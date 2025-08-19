@@ -84,7 +84,8 @@ export interface WebsiteFilters {
   maxTraffic?: number;
   minCost?: number;
   maxCost?: number;
-  status?: 'All' | 'Active' | 'Inactive';
+  status?: 'All' | 'Active' | 'Inactive' | string;
+  source?: string; // manyreach, airtable, manual, etc.
   hasGuestPost?: boolean;
   hasLinkInsert?: boolean;
   categories?: string[];

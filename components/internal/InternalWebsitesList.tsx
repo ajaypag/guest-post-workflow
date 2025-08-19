@@ -30,6 +30,8 @@ interface Website {
   guestPostCost: string | null; // Note: DECIMAL field comes as string
   internalQualityScore: number | null;
   internalNotes: string | null;
+  status?: string;
+  source?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -68,6 +70,8 @@ export default function InternalWebsitesList({
   const [hasPublisher, setHasPublisher] = useState(searchParams.hasPublisher || '');
   const [verified, setVerified] = useState(searchParams.verified || '');
   const [sort, setSort] = useState(searchParams.sort || 'created_desc');
+  const [status, setStatus] = useState(searchParams.status || '');
+  const [source, setSource] = useState(searchParams.source || '');
 
   const totalPages = Math.ceil(totalCount / itemsPerPage);
 
@@ -80,6 +84,8 @@ export default function InternalWebsitesList({
     if (hasPublisher) params.set('hasPublisher', hasPublisher);
     if (verified) params.set('verified', verified);
     if (sort) params.set('sort', sort);
+    if (status) params.set('status', status);
+    if (source) params.set('source', source);
     params.set('page', '1'); // Reset to first page
     
     router.push(`/internal/websites?${params.toString()}`);
@@ -93,6 +99,8 @@ export default function InternalWebsitesList({
     setHasPublisher('');
     setVerified('');
     setSort('created_desc');
+    setStatus('');
+    setSource('');
     router.push('/internal/websites');
   };
 
@@ -285,6 +293,35 @@ export default function InternalWebsitesList({
                 <option value="false">Not Verified</option>
               </select>
             </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              >
+                <option value="">All Status</option>
+                <option value="active">Active</option>
+                <option value="pending">Pending</option>
+                <option value="verified">Verified</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Source</label>
+              <select
+                value={source}
+                onChange={(e) => setSource(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              >
+                <option value="">All Sources</option>
+                <option value="manyreach">ManyReach (Email)</option>
+                <option value="airtable">Airtable</option>
+                <option value="manual">Manual</option>
+              </select>
+            </div>
           </div>
         )}
       </div>
@@ -332,6 +369,9 @@ export default function InternalWebsitesList({
                   Website
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Source
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Metrics
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -373,6 +413,22 @@ export default function InternalWebsitesList({
                         </p>
                       )}
                     </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={`inline-flex items-center text-xs px-2 py-1 rounded font-medium ${
+                      website.source === 'manyreach' ? 'bg-blue-100 text-blue-700' :
+                      website.source === 'airtable' ? 'bg-green-100 text-green-700' :
+                      website.source === 'manual' ? 'bg-purple-100 text-purple-700' :
+                      'bg-gray-100 text-gray-600'
+                    }`}>
+                      {website.source === 'manyreach' ? '📧 Email' :
+                       website.source === 'airtable' ? '📊 Airtable' :
+                       website.source === 'manual' ? '✏️ Manual' :
+                       website.source || 'Unknown'}
+                    </span>
+                    {website.status === 'pending' && website.source === 'manyreach' && (
+                      <span className="ml-1 text-xs text-orange-600" title="Pending verification">⏳</span>
+                    )}
                   </td>
                   <td className="px-6 py-4">
                     <div className="text-sm">

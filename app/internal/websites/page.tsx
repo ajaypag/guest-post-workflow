@@ -12,6 +12,8 @@ interface SearchParams {
   maxDR?: string;
   hasPublisher?: string;
   verified?: string;
+  status?: string;
+  source?: string;
   page?: string;
 }
 
@@ -36,6 +38,8 @@ export default async function InternalWebsitesPage({
   const maxDR = params.maxDR ? parseInt(params.maxDR) : undefined;
   const hasPublisher = params.hasPublisher;
   const verified = params.verified;
+  const status = params.status;
+  const source = params.source;
   const page = parseInt(params.page || '1');
   const limit = 50;
   const offset = (page - 1) * limit;
@@ -61,6 +65,14 @@ export default async function InternalWebsitesPage({
     conditions.push(sql`${websites.internalQualityScore} IS NOT NULL`);
   } else if (verified === 'false') {
     conditions.push(sql`${websites.internalQualityScore} IS NULL`);
+  }
+  
+  if (status) {
+    conditions.push(eq(websites.status, status));
+  }
+  
+  if (source) {
+    conditions.push(eq(websites.source, source));
   }
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
