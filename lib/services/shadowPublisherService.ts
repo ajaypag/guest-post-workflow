@@ -33,9 +33,11 @@ export class ShadowPublisherService {
       
       if (isExisting) {
         // Handle existing publisher - update their data, don't create shadow entities
+        console.log('🔄 Updating existing publisher:', publisher.email);
         await this.handleExistingPublisherUpdate(publisher, parsedData, emailLogId, campaignType);
       } else {
         // Handle new shadow publisher - full processing pipeline
+        console.log('🆕 Processing new shadow publisher:', publisher.email, 'with', parsedData.websites.length, 'websites');
         await this.handleNewShadowPublisher(publisher, parsedData, emailLogId);
       }
       
@@ -68,14 +70,16 @@ export class ShadowPublisherService {
   }
   
   private async findExistingPublisher(email: string, parsedData: ParsedEmailData) {
-    // 1. Exact email match (for active accounts only)
+    // Only match exact email for confirmed active accounts
+    // This prevents false matches and ensures shadow publishers are created properly
     const exactMatch = await db
       .select()
       .from(publishers)
       .where(
         and(
           eq(publishers.email, email),
-          sql`${publishers.accountStatus} NOT IN ('unclaimed', 'shadow')`
+          eq(publishers.accountStatus, 'active'),
+          eq(publishers.emailVerified, true)
         )
       )
       .limit(1);
@@ -84,60 +88,7 @@ export class ShadowPublisherService {
       return exactMatch[0];
     }
     
-    // 2. Domain match - email domain matches website domain
-    if (parsedData.websites.length > 0) {
-      const emailDomain = email.split('@')[1];
-      for (const website of parsedData.websites) {
-        if (website.domain.includes(emailDomain) || emailDomain.includes(website.domain)) {
-          // Find publisher associated with this website
-          const websiteRecord = await db
-            .select({ id: websites.id, domain: websites.domain })
-            .from(websites)
-            .where(eq(websites.domain, website.domain))
-            .limit(1);
-          
-          if (websiteRecord.length > 0) {
-            const publisherWebsite = await db
-              .select()
-              .from(publisherWebsites)
-              .where(eq(publisherWebsites.websiteId, websiteRecord[0].id))
-              .limit(1);
-            
-            if (publisherWebsite.length > 0) {
-              const publisher = await db
-                .select()
-                .from(publishers)
-                .where(eq(publishers.id, publisherWebsite[0].publisherId))
-                .limit(1);
-              
-              if (publisher.length > 0) {
-                return publisher[0];
-              }
-            }
-          }
-        }
-      }
-    }
-    
-    // 3. Fuzzy name match - similar company/contact names
-    if (parsedData.sender.company) {
-      const fuzzyMatch = await db
-        .select()
-        .from(publishers)
-        .where(
-          or(
-            ilike(publishers.companyName, `%${parsedData.sender.company}%`),
-            ilike(publishers.contactName, `%${parsedData.sender.name || ''}%`)
-          )
-        )
-        .limit(1);
-      
-      if (fuzzyMatch.length > 0) {
-        return fuzzyMatch[0];
-      }
-    }
-    
-    return null;
+    return null; // Don't match on domain or fuzzy logic to prevent false positives
   }
   
   private async createShadowPublisher(
@@ -265,6 +216,7 @@ export class ShadowPublisherService {
     emailLogId: string
   ) {
     try {
+      console.log('🌐 Processing website:', websiteData.domain, 'for publisher:', publisherId);
       // Check if website exists
       let [website] = await db
         .select({ id: websites.id, domain: websites.domain })
@@ -433,6 +385,7 @@ export class ShadowPublisherService {
     autoApprove: boolean = false
   ) {
     try {
+      console.log('📝 Adding to review queue:', emailLogId, 'reason:', reason);
       // Calculate priority using configuration
       const priority = calculateReviewPriority(
         parsedData.overallConfidence,
@@ -443,7 +396,7 @@ export class ShadowPublisherService {
         ? new Date(Date.now() + shadowPublisherConfig.review.autoApprovalDelayHours * 60 * 60 * 1000)
         : null;
       
-      await db.insert(emailReviewQueue).values({
+      const queueResult = await db.insert(emailReviewQueue).values({
         id: crypto.randomUUID(),
         logId: emailLogId,
         priority,
@@ -459,6 +412,8 @@ export class ShadowPublisherService {
         createdAt: new Date(),
         updatedAt: new Date(),
       });
+      
+      console.log('✅ Successfully added to review queue:', queueResult);
       
     } catch (error) {
       console.error('Failed to add to review queue:', error);
