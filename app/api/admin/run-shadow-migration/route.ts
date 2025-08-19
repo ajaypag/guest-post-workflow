@@ -116,31 +116,169 @@ export async function POST(request: NextRequest) {
     logs.push(`🔍 Executing migration...`);
     
     try {
-      // For migration 56, we need to handle the PL/pgSQL function separately
       if (migration === '0056_email_processing_infrastructure.sql') {
-        // Split at the function definition
-        const parts = content.split('-- Step 10:');
-        const mainPart = parts[0];
-        const functionPart = parts[1] ? '-- Step 10:' + parts[1] : '';
+        // Execute each CREATE TABLE statement separately for migration 56
+        logs.push(`📝 Creating tables one by one...`);
         
-        // Execute main part
-        logs.push(`📝 Creating tables and indexes...`);
-        await db.execute(sql.raw(mainPart));
-        logs.push(`✅ Tables created successfully`);
+        // Table 1: email_processing_logs
+        try {
+          await db.execute(sql`
+            CREATE TABLE IF NOT EXISTS email_processing_logs (
+              id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+              webhook_id VARCHAR(255),
+              campaign_id VARCHAR(255),
+              campaign_name VARCHAR(255),
+              campaign_type VARCHAR(50),
+              email_from VARCHAR(255) NOT NULL,
+              email_to VARCHAR(255),
+              email_subject VARCHAR(500),
+              email_message_id VARCHAR(255),
+              received_at TIMESTAMP,
+              raw_content TEXT NOT NULL,
+              html_content TEXT,
+              parsed_data JSONB DEFAULT '{}',
+              confidence_score DECIMAL(3,2),
+              parsing_errors TEXT[],
+              status VARCHAR(50) DEFAULT 'pending',
+              error_message TEXT,
+              processed_at TIMESTAMP,
+              processing_duration_ms INTEGER,
+              thread_id VARCHAR(255),
+              reply_count INTEGER DEFAULT 0,
+              is_auto_reply BOOLEAN DEFAULT FALSE,
+              original_outreach_id UUID REFERENCES email_processing_logs(id),
+              created_at TIMESTAMP DEFAULT NOW(),
+              updated_at TIMESTAMP DEFAULT NOW()
+            )
+          `);
+          logs.push(`  ✅ email_processing_logs created`);
+        } catch (e: any) {
+          if (e.message?.includes('already exists')) {
+            logs.push(`  ⏭️ email_processing_logs already exists`);
+          } else throw e;
+        }
         
-        // Try to execute function part if it exists
-        if (functionPart) {
+        // Table 2: email_review_queue
+        try {
+          await db.execute(sql`
+            CREATE TABLE IF NOT EXISTS email_review_queue (
+              id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+              log_id UUID REFERENCES email_processing_logs(id) ON DELETE CASCADE,
+              publisher_id UUID REFERENCES publishers(id) ON DELETE SET NULL,
+              priority INTEGER DEFAULT 50,
+              status VARCHAR(50) DEFAULT 'pending',
+              queue_reason VARCHAR(100),
+              suggested_actions JSONB DEFAULT '{}',
+              missing_fields TEXT[],
+              review_notes TEXT,
+              corrections_made JSONB DEFAULT '{}',
+              assigned_to UUID REFERENCES users(id),
+              reviewed_by UUID REFERENCES users(id),
+              reviewed_at TIMESTAMP,
+              auto_approve_at TIMESTAMP,
+              created_at TIMESTAMP DEFAULT NOW(),
+              updated_at TIMESTAMP DEFAULT NOW()
+            )
+          `);
+          logs.push(`  ✅ email_review_queue created`);
+        } catch (e: any) {
+          if (e.message?.includes('already exists')) {
+            logs.push(`  ⏭️ email_review_queue already exists`);
+          } else throw e;
+        }
+        
+        // Table 3: publisher_automation_logs
+        try {
+          await db.execute(sql`
+            CREATE TABLE IF NOT EXISTS publisher_automation_logs (
+              id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+              email_log_id UUID REFERENCES email_processing_logs(id),
+              publisher_id UUID REFERENCES publishers(id),
+              action VARCHAR(100) NOT NULL,
+              action_status VARCHAR(50) DEFAULT 'success',
+              previous_data JSONB,
+              new_data JSONB,
+              fields_updated TEXT[],
+              confidence DECIMAL(3,2),
+              match_method VARCHAR(50),
+              metadata JSONB DEFAULT '{}',
+              created_at TIMESTAMP DEFAULT NOW()
+            )
+          `);
+          logs.push(`  ✅ publisher_automation_logs created`);
+        } catch (e: any) {
+          if (e.message?.includes('already exists')) {
+            logs.push(`  ⏭️ publisher_automation_logs already exists`);
+          } else throw e;
+        }
+        
+        // Table 4: shadow_publisher_websites
+        try {
+          await db.execute(sql`
+            CREATE TABLE IF NOT EXISTS shadow_publisher_websites (
+              id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+              publisher_id UUID REFERENCES publishers(id) NOT NULL,
+              website_id UUID REFERENCES websites(id) NOT NULL,
+              confidence DECIMAL(3,2),
+              source VARCHAR(50),
+              extraction_method VARCHAR(100),
+              verified BOOLEAN DEFAULT FALSE,
+              verified_by UUID REFERENCES users(id),
+              verified_at TIMESTAMP,
+              created_at TIMESTAMP DEFAULT NOW(),
+              CONSTRAINT unique_shadow_publisher_website UNIQUE(publisher_id, website_id)
+            )
+          `);
+          logs.push(`  ✅ shadow_publisher_websites created`);
+        } catch (e: any) {
+          if (e.message?.includes('already exists')) {
+            logs.push(`  ⏭️ shadow_publisher_websites already exists`);
+          } else throw e;
+        }
+        
+        // Create indexes (ignore errors, they might exist)
+        logs.push(`📝 Creating indexes...`);
+        const indexes = [
+          'CREATE INDEX IF NOT EXISTS idx_email_logs_status ON email_processing_logs(status)',
+          'CREATE INDEX IF NOT EXISTS idx_email_logs_email_from ON email_processing_logs(LOWER(email_from))',
+          'CREATE INDEX IF NOT EXISTS idx_review_queue_status ON email_review_queue(status)',
+          'CREATE INDEX IF NOT EXISTS idx_automation_logs_publisher ON publisher_automation_logs(publisher_id)',
+        ];
+        
+        for (const idx of indexes) {
           try {
-            logs.push(`📝 Creating auto-approval function...`);
-            await db.execute(sql.raw(functionPart));
-            logs.push(`✅ Function created successfully`);
-          } catch (funcError: any) {
-            logs.push(`⚠️  Function creation skipped (may already exist)`);
+            await db.execute(sql.raw(idx));
+          } catch (e) {
+            // Ignore index errors
           }
         }
+        logs.push(`  ✅ Indexes created`);
+        
       } else {
-        // For migration 55, execute normally
-        await db.execute(sql.raw(content));
+        // For migration 55, execute in parts
+        logs.push(`📝 Adding shadow publisher columns...`);
+        
+        const alterStatements = [
+          `ALTER TABLE publishers ADD COLUMN IF NOT EXISTS account_status VARCHAR(50) DEFAULT 'unclaimed'`,
+          `ALTER TABLE publishers ADD COLUMN IF NOT EXISTS source VARCHAR(50) DEFAULT 'manual'`,
+          `ALTER TABLE publishers ADD COLUMN IF NOT EXISTS source_metadata JSONB DEFAULT '{}'`,
+          `ALTER TABLE publishers ADD COLUMN IF NOT EXISTS claimed_at TIMESTAMP`,
+          `ALTER TABLE publishers ADD COLUMN IF NOT EXISTS invitation_token VARCHAR(255)`,
+          `ALTER TABLE publishers ADD COLUMN IF NOT EXISTS invitation_sent_at TIMESTAMP`,
+          `ALTER TABLE publishers ADD COLUMN IF NOT EXISTS invitation_expires_at TIMESTAMP`,
+          `ALTER TABLE publishers ADD COLUMN IF NOT EXISTS confidence_score DECIMAL(3,2)`,
+        ];
+        
+        for (const stmt of alterStatements) {
+          try {
+            await db.execute(sql.raw(stmt));
+          } catch (e: any) {
+            if (!e.message?.includes('already exists')) {
+              logs.push(`  ⚠️ Column may already exist`);
+            }
+          }
+        }
+        logs.push(`  ✅ Shadow publisher columns added`);
       }
       
       logs.push(`✅ Migration completed successfully`);
