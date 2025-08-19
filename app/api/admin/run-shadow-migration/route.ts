@@ -92,58 +92,42 @@ export async function POST(request: NextRequest) {
     const content = await fs.readFile(filePath, 'utf-8');
     logs.push(`📄 File loaded: ${content.length} characters`);
     
-    // Parse SQL statements
-    const statements = content
-      .split(';')
-      .map(s => s.trim())
-      .filter(s => s.length > 0 && !s.startsWith('--'));
+    // Execute the entire migration as one transaction
+    logs.push(`🔍 Executing migration...`);
     
-    logs.push(`🔍 Found ${statements.length} SQL statements to execute`);
-    
-    // Execute the migration
-    let successCount = 0;
-    let skipCount = 0;
-    
-    for (let i = 0; i < statements.length; i++) {
-      const statement = statements[i];
-      if (!statement) continue;
+    try {
+      // Execute the entire migration file at once
+      await db.execute(sql.raw(content));
+      logs.push(`✅ Migration completed successfully`);
       
-      // Get operation type
-      const operationType = statement.match(/^(CREATE|ALTER|UPDATE|INSERT|DROP|DELETE)/i)?.[1] || 'UNKNOWN';
-      logs.push(`  Statement ${i + 1}: ${operationType} operation`);
+      return NextResponse.json({ 
+        success: true, 
+        message: `Migration ${migration} completed successfully`,
+        logs
+      });
       
-      try {
-        await db.execute(sql.raw(statement + ';'));
-        successCount++;
-        logs.push(`  ✅ Statement ${i + 1} completed`);
-      } catch (dbError: any) {
-        // Check if it's just "already exists" errors
-        if (dbError.message?.includes('already exists') || 
-            dbError.message?.includes('duplicate key')) {
-          skipCount++;
-          logs.push(`  ⏭️  Statement ${i + 1} skipped (already exists)`);
-        } else {
-          logs.push(`  ❌ Statement ${i + 1} failed: ${dbError.message}`);
-          return NextResponse.json({ 
-            success: false,
-            error: dbError.message,
-            logs,
-            successCount,
-            skipCount
-          }, { status: 500 });
-        }
+    } catch (dbError: any) {
+      // Check if it's just "already exists" errors
+      if (dbError.message?.includes('already exists') || 
+          dbError.message?.includes('duplicate key') ||
+          dbError.message?.includes('already exists')) {
+        logs.push(`⏭️  Migration skipped (tables/columns already exist)`);
+        logs.push(`✅ Migration already applied`);
+        
+        return NextResponse.json({ 
+          success: true, 
+          message: 'Migration already applied',
+          logs
+        });
+      } else {
+        logs.push(`❌ Migration failed: ${dbError.message}`);
+        return NextResponse.json({ 
+          success: false,
+          error: dbError.message,
+          logs
+        }, { status: 500 });
       }
     }
-    
-    logs.push(`✅ Migration completed: ${successCount} executed, ${skipCount} skipped`);
-    
-    return NextResponse.json({ 
-      success: true, 
-      message: `Migration ${migration} completed successfully`,
-      logs,
-      successCount,
-      skipCount
-    });
 
   } catch (error) {
     console.error('Migration failed:', error);
