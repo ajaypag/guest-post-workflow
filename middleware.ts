@@ -20,7 +20,8 @@ export async function middleware(request: NextRequest) {
   }
   
   // 2. Public claim endpoints for share links
-  if (path.startsWith('/api/orders/claim/')) {
+  if (path.startsWith('/api/orders/claim/') ||
+      path.startsWith('/api/publisher/claim')) {
     return NextResponse.next();
   }
   
@@ -146,6 +147,7 @@ export async function middleware(request: NextRequest) {
       !path.startsWith('/publisher/login') && 
       !path.startsWith('/publisher/signup') &&
       !path.startsWith('/publisher/verify') &&
+      !path.startsWith('/publisher/claim') &&
       !path.startsWith('/publisher/forgot-password') &&
       !path.startsWith('/publisher/reset-password')) {
     try {

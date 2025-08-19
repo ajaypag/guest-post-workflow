@@ -14,6 +14,7 @@ export default {
     './lib/db/orderBenchmarkSchema.ts',
     './lib/db/projectOrderAssociationsSchema.ts',
     './lib/db/dataForSeoLogsSchema.ts',
+    './lib/db/emailProcessingSchema.ts',
   ],
   out: './lib/db/migrations',
   dialect: 'postgresql',

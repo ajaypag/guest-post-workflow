@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, timestamp, boolean, text, index, uniqueIndex, bigint, integer } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, timestamp, boolean, text, index, uniqueIndex, bigint, integer, decimal } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { clients } from './schema';
 import { orders } from './orderSchema';
@@ -91,10 +91,10 @@ export const publishers = pgTable('publishers', {
   
   // Authentication fields
   email: varchar('email', { length: 255 }).notNull().unique(),
-  password: varchar('password', { length: 255 }).notNull(),
+  password: varchar('password', { length: 255 }), // Nullable for shadow publishers
   
   // Profile information
-  contactName: varchar('contact_name', { length: 255 }).notNull(),
+  contactName: varchar('contact_name', { length: 255 }).notNull().default('Unknown'),
   companyName: varchar('company_name', { length: 255 }),
   phone: varchar('phone', { length: 50 }),
   
@@ -114,8 +114,25 @@ export const publishers = pgTable('publishers', {
   
   // Account status
   status: varchar('status', { length: 20 }).notNull().default('pending'), // pending, active, suspended, blocked
+  accountStatus: varchar('account_status', { length: 50 }).default('unclaimed'), // unclaimed, shadow, active, system, suspended, blocked
   emailVerified: boolean('email_verified').default(false),
   emailVerificationToken: varchar('email_verification_token', { length: 255 }),
+  
+  // Shadow publisher fields
+  source: varchar('source', { length: 50 }).default('manual'), // manual, manyreach, import, api
+  sourceMetadata: text('source_metadata').default('{}'), // JSON metadata
+  claimedAt: timestamp('claimed_at'),
+  confidenceScore: decimal('confidence_score', { precision: 3, scale: 2 }), // DECIMAL(3,2) for 0.00 to 1.00
+  
+  // Invitation fields
+  invitationToken: varchar('invitation_token', { length: 255 }),
+  invitationSentAt: timestamp('invitation_sent_at'),
+  invitationExpiresAt: timestamp('invitation_expires_at'),
+  
+  // Claim verification
+  claimVerificationCode: varchar('claim_verification_code', { length: 6 }),
+  claimAttempts: integer('claim_attempts').default(0),
+  lastClaimAttempt: timestamp('last_claim_attempt'),
   
   // Password reset
   resetToken: varchar('reset_token', { length: 255 }),
@@ -136,6 +153,9 @@ export const publishers = pgTable('publishers', {
 }, (table) => ({
   emailIdx: uniqueIndex('idx_publishers_email').on(table.email),
   statusIdx: index('idx_publishers_status').on(table.status),
+  accountStatusIdx: index('idx_publishers_account_status').on(table.accountStatus),
+  sourceIdx: index('idx_publishers_source').on(table.source),
+  invitationTokenIdx: index('idx_publishers_invitation_token').on(table.invitationToken),
 }));
 
 // Link table for publishers to manage multiple websites
