@@ -56,8 +56,15 @@ export async function GET(request: NextRequest) {
       appliedMigrations = { rows: [] };
     }
 
-    const appliedMap = new Map(
-      appliedMigrations.rows.map(row => [
+    type AppliedMigration = {
+      appliedAt: string;
+      hash: string;
+      status: string;
+      error: string | null;
+    };
+    
+    const appliedMap = new Map<string, AppliedMigration>(
+      appliedMigrations.rows.map((row: any) => [
         row.filename as string, 
         {
           appliedAt: row.applied_at as string,
@@ -89,7 +96,7 @@ export async function GET(request: NextRequest) {
           applied: !!applied,
           appliedAt: applied?.appliedAt || null,
           hash,
-          hashMatch: !applied || applied.hash === hash,
+          hashMatch: !applied || applied?.hash === hash,
           status: applied?.status || 'pending',
           error: applied?.error || null
         };

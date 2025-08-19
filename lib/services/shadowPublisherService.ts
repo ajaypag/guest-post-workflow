@@ -1,7 +1,7 @@
 import { db } from '@/lib/db/connection';
 import { publishers, publisherWebsites } from '@/lib/db/accountSchema';
 import { websites } from '@/lib/db/websiteSchema';
-import { publisherOfferings, publisherOfferingRelationships } from '@/lib/db/publisherSchemaActual';
+import { publisherOfferings, publisherOfferingRelationships, publisherPricingRules } from '@/lib/db/publisherSchemaActual';
 import { 
   emailReviewQueue, 
   publisherAutomationLogs,
@@ -344,6 +344,14 @@ export class ShadowPublisherService {
         .limit(1);
       
       if (existing.length === 0) {
+        // Prepare attributes with restricted niches
+        const attributes: any = {};
+        if (offering.requirements?.prohibitedTopics && offering.requirements.prohibitedTopics.length > 0) {
+          attributes.restrictions = {
+            niches: offering.requirements.prohibitedTopics
+          };
+        }
+        
         // Create new offering
         const [newOffering] = await db.insert(publisherOfferings).values({
           publisherId,
@@ -353,6 +361,7 @@ export class ShadowPublisherService {
           turnaroundDays: offering.turnaroundDays || 7,
           currentAvailability: 'pending_verification',
           isActive: false,
+          attributes: Object.keys(attributes).length > 0 ? attributes : {},
           createdAt: new Date(),
           updatedAt: new Date(),
         }).returning();
@@ -367,6 +376,34 @@ export class ShadowPublisherService {
           createdAt: new Date(),
           updatedAt: new Date(),
         });
+        
+        // Create niche pricing rules if available
+        if (offering.nichePricing && offering.nichePricing.length > 0) {
+          for (const nichePriceRule of offering.nichePricing) {
+            await db.insert(publisherPricingRules).values({
+              id: crypto.randomUUID(),
+              publisherOfferingId: newOffering.id,
+              ruleType: 'niche',
+              ruleName: `${nichePriceRule.niche} Pricing`,
+              description: nichePriceRule.notes || `Special pricing for ${nichePriceRule.niche} content`,
+              conditions: {
+                type: 'niche_match',
+                niches: [nichePriceRule.niche]
+              },
+              actions: {
+                adjustmentType: nichePriceRule.adjustmentType,
+                adjustmentValue: nichePriceRule.adjustmentValue
+              },
+              priority: 10,
+              isCumulative: false,
+              autoApply: true,
+              requiresApproval: false,
+              isActive: true,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            });
+          }
+        }
       } else {
         // Update existing offering if confidence is high
         if (offering.confidence > 0.8) {
@@ -622,6 +659,14 @@ export class ShadowPublisherService {
             .where(eq(publisherOfferings.id, existing[0].id));
         }
       } else {
+        // Prepare attributes with restricted niches for existing publisher
+        const attributes: any = {};
+        if (offering.requirements?.prohibitedTopics && offering.requirements.prohibitedTopics.length > 0) {
+          attributes.restrictions = {
+            niches: offering.requirements.prohibitedTopics
+          };
+        }
+        
         // Create new offering for existing publisher
         const [newOffering] = await db.insert(publisherOfferings).values({
           publisherId,
@@ -631,6 +676,7 @@ export class ShadowPublisherService {
           turnaroundDays: offering.turnaroundDays || 7,
           currentAvailability: 'available', // For existing publishers, mark as available
           isActive: true, // For existing publishers, activate immediately
+          attributes: Object.keys(attributes).length > 0 ? attributes : {},
           createdAt: new Date(),
           updatedAt: new Date(),
         }).returning();
@@ -645,6 +691,34 @@ export class ShadowPublisherService {
           createdAt: new Date(),
           updatedAt: new Date(),
         });
+        
+        // Create niche pricing rules for existing publishers
+        if (offering.nichePricing && offering.nichePricing.length > 0) {
+          for (const nichePriceRule of offering.nichePricing) {
+            await db.insert(publisherPricingRules).values({
+              id: crypto.randomUUID(),
+              publisherOfferingId: newOffering.id,
+              ruleType: 'niche',
+              ruleName: `${nichePriceRule.niche} Pricing`,
+              description: nichePriceRule.notes || `Special pricing for ${nichePriceRule.niche} content`,
+              conditions: {
+                type: 'niche_match',
+                niches: [nichePriceRule.niche]
+              },
+              actions: {
+                adjustmentType: nichePriceRule.adjustmentType,
+                adjustmentValue: nichePriceRule.adjustmentValue
+              },
+              priority: 10,
+              isCumulative: false,
+              autoApply: true,
+              requiresApproval: false,
+              isActive: true,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            });
+          }
+        }
       }
       
     } catch (error) {

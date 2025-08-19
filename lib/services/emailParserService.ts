@@ -29,6 +29,13 @@ export interface ParsedEmailData {
       minWordCount?: number;
       maxWordCount?: number;
     };
+    nichePricing?: Array<{
+      niche: string;
+      price?: number;
+      adjustmentType: 'percentage' | 'fixed' | 'multiplier';
+      adjustmentValue: number;
+      notes?: string;
+    }>;
     confidence: number;
   }>;
   overallConfidence: number;
@@ -142,12 +149,14 @@ Return as JSON with this structure:
 Content: ${content}
 
 Look for:
-1. Guest post pricing
+1. Guest post pricing (base/standard price)
 2. Link insertion pricing
 3. Currency (USD, EUR, GBP, etc.)
 4. Bulk discounts
 5. Package deals
 6. Turnaround time
+7. IMPORTANT: Niche-specific pricing (e.g., higher prices for casino, crypto, CBD, finance, health, adult content)
+8. Category surcharges or special pricing for specific topics
 
 Return as JSON:
 {
@@ -156,6 +165,15 @@ Return as JSON:
   "currency": "USD",
   "bulk_discounts": [{"quantity": 5, "discount": 10}],
   "turnaround_days": number or null,
+  "niche_pricing": [
+    {
+      "niche": "casino_gambling",
+      "price": 550,
+      "adjustment_type": "fixed",
+      "adjustment_value": 100,
+      "notes": "Casino/Gambling posts $550"
+    }
+  ],
   "notes": "any special pricing notes"
 }`;
 
@@ -176,7 +194,18 @@ Content: ${content}
 Look for:
 1. DoFollow/NoFollow link policy
 2. Maximum links per post
-3. Prohibited topics or niches
+3. IMPORTANT: Prohibited/restricted topics or niches (things they DON'T accept)
+   Common restricted niches include:
+   - Adult/porn/sex/dating content
+   - Essay writing/academic papers
+   - Gambling/casino/betting (sometimes)
+   - CBD/cannabis/marijuana
+   - Pharmaceuticals/health supplements
+   - Crypto/forex/binary options
+   - Illegal content/weapons
+   - Payday loans/debt
+   - Weight loss/diet pills
+   - Vaping/e-cigarettes
 4. Word count requirements
 5. Content quality requirements
 6. Any special guidelines
@@ -185,7 +214,8 @@ Return as JSON:
 {
   "accepts_dofollow": true/false/null,
   "max_links": number or null,
-  "prohibited_topics": ["topic1", "topic2"],
+  "prohibited_topics": ["adult_dating", "essay_writing", "weapons", etc.],
+  "restricted_niches_notes": "exact text about what they don't accept",
   "min_word_count": number or null,
   "max_word_count": number or null,
   "guidelines": "any special requirements"
@@ -296,7 +326,7 @@ Return as JSON:
     
     // Guest post offering
     if (pricingInfo.guest_post_price !== null && pricingInfo.guest_post_price !== undefined) {
-      offerings.push({
+      const guestPostOffering: any = {
         type: 'guest_post',
         basePrice: Number(pricingInfo.guest_post_price),
         currency: pricingInfo.currency || 'USD',
@@ -309,7 +339,34 @@ Return as JSON:
           maxWordCount: requirements.max_word_count,
         },
         confidence: 0.8,
-      });
+      };
+      
+      // Add niche pricing if available
+      if (pricingInfo.niche_pricing && Array.isArray(pricingInfo.niche_pricing)) {
+        guestPostOffering.nichePricing = pricingInfo.niche_pricing.map((np: any) => {
+          // Calculate adjustment if not provided
+          let adjustmentType = np.adjustment_type || 'fixed';
+          let adjustmentValue = np.adjustment_value;
+          
+          if (!adjustmentValue && np.price && pricingInfo.guest_post_price) {
+            const diff = np.price - pricingInfo.guest_post_price;
+            if (diff !== 0) {
+              adjustmentType = 'fixed';
+              adjustmentValue = diff;
+            }
+          }
+          
+          return {
+            niche: np.niche,
+            price: np.price,
+            adjustmentType,
+            adjustmentValue,
+            notes: np.notes
+          };
+        });
+      }
+      
+      offerings.push(guestPostOffering);
     }
     
     // Link insertion offering
