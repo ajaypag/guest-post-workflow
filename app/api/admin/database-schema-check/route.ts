@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
           ) as exists;
         `);
         
-        const exists = result.rows[0]?.exists || false;
+        const exists = Boolean(result.rows[0]?.exists) || false;
         tableChecks.push({
           ...requiredTable,
           exists
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
           ) as exists;
         `);
         
-        const exists = result.rows[0]?.exists || false;
+        const exists = Boolean(result.rows[0]?.exists) || false;
         columnChecks.push({
           ...requiredColumn,
           exists
