@@ -7,6 +7,13 @@ export default function TestShadowPublisherPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [selectedTest, setSelectedTest] = useState('jameelah');
+  const [customEmail, setCustomEmail] = useState({
+    name: '',
+    from: '',
+    company: '',
+    website: '',
+    content: ''
+  });
 
   const testEmails = {
     jameelah: {
@@ -79,6 +86,13 @@ Turnaround: 3-5 business days
 Regards,
 Sarah
 Editor-in-Chief`
+    },
+    custom: {
+      name: customEmail.name || 'Custom Publisher',
+      from: customEmail.from || 'test@example.com',
+      company: customEmail.company || 'Custom Company',
+      website: customEmail.website || 'example.com',
+      content: customEmail.content || 'No content provided'
     }
   };
 
@@ -146,7 +160,7 @@ Editor-in-Chief`
         <h2 className="text-lg font-semibold mb-4">Select Test Email</h2>
         
         <div className="space-y-3 mb-6">
-          {Object.entries(testEmails).map(([key, email]) => (
+          {Object.entries(testEmails).filter(([key]) => key !== 'custom').map(([key, email]) => (
             <label key={key} className="flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
               <input
                 type="radio"
@@ -163,12 +177,98 @@ Editor-in-Chief`
               </div>
             </label>
           ))}
+          
+          {/* Custom Email Option */}
+          <label className="flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer hover:bg-blue-50 border-blue-500">
+            <input
+              type="radio"
+              name="test"
+              value="custom"
+              checked={selectedTest === 'custom'}
+              onChange={(e) => setSelectedTest(e.target.value)}
+              className="mt-1"
+            />
+            <div className="flex-1">
+              <div className="font-semibold text-blue-600">✏️ Custom Email</div>
+              <div className="text-sm text-gray-600">Write your own test email</div>
+            </div>
+          </label>
         </div>
 
-        <div className="bg-gray-50 rounded-lg p-4 mb-6">
-          <h3 className="font-semibold mb-2">Email Preview:</h3>
-          <pre className="text-xs whitespace-pre-wrap">{testEmails[selectedTest as keyof typeof testEmails].content}</pre>
-        </div>
+        {/* Custom Email Form */}
+        {selectedTest === 'custom' && (
+          <div className="bg-blue-50 rounded-lg p-4 mb-6 space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium mb-1">Contact Name</label>
+                <input
+                  type="text"
+                  value={customEmail.name}
+                  onChange={(e) => setCustomEmail({...customEmail, name: e.target.value})}
+                  placeholder="John from Example Blog"
+                  className="w-full px-3 py-2 border rounded-lg"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">From Email</label>
+                <input
+                  type="email"
+                  value={customEmail.from}
+                  onChange={(e) => setCustomEmail({...customEmail, from: e.target.value})}
+                  placeholder="john@example.com"
+                  className="w-full px-3 py-2 border rounded-lg"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Company</label>
+                <input
+                  type="text"
+                  value={customEmail.company}
+                  onChange={(e) => setCustomEmail({...customEmail, company: e.target.value})}
+                  placeholder="Example Blog"
+                  className="w-full px-3 py-2 border rounded-lg"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Website</label>
+                <input
+                  type="text"
+                  value={customEmail.website}
+                  onChange={(e) => setCustomEmail({...customEmail, website: e.target.value})}
+                  placeholder="example.com"
+                  className="w-full px-3 py-2 border rounded-lg"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Email Content</label>
+              <textarea
+                value={customEmail.content}
+                onChange={(e) => setCustomEmail({...customEmail, content: e.target.value})}
+                placeholder="Hi there,
+
+Yes, we accept guest posts. Our rate is $400 per post.
+
+Casino/gambling content is $600.
+
+We don't accept adult or dating content.
+
+Turnaround is 48 hours.
+
+Best,
+John"
+                className="w-full px-3 py-2 border rounded-lg h-32 font-mono text-sm"
+              />
+            </div>
+          </div>
+        )}
+
+        {selectedTest !== 'custom' && (
+          <div className="bg-gray-50 rounded-lg p-4 mb-6">
+            <h3 className="font-semibold mb-2">Email Preview:</h3>
+            <pre className="text-xs whitespace-pre-wrap">{testEmails[selectedTest as keyof typeof testEmails].content}</pre>
+          </div>
+        )}
 
         <button
           onClick={sendTest}
