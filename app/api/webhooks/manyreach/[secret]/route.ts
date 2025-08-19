@@ -242,13 +242,47 @@ export async function POST(
   console.log('✅ Webhook security validation passed');
   
   try {
+    // Check if this is an empty test request
+    if (!rawBody || rawBody.trim() === '' || rawBody === '{}') {
+      console.log('📝 Empty test webhook received from ManyReach');
+      return NextResponse.json({
+        success: true,
+        message: 'Test webhook received successfully',
+        timestamp: new Date().toISOString()
+      });
+    }
+    
     const payload: ManyReachWebhookPayload = JSON.parse(rawBody);
+    
+    // Log the actual payload for debugging
+    console.log('📦 Received ManyReach payload:', JSON.stringify(payload, null, 2));
+    
+    // Check if this is a test payload without actual email data
+    if (Object.keys(payload).length === 0) {
+      console.log('📝 Test webhook with empty payload received');
+      return NextResponse.json({
+        success: true,
+        message: 'Test webhook validated',
+        timestamp: new Date().toISOString()
+      });
+    }
     
     // Validate webhook payload structure for ManyReach
     if (!payload.prospect?.email || !payload.message) {
-      console.error('Invalid webhook payload structure:', payload);
+      console.error('Invalid webhook payload structure:', JSON.stringify(payload, null, 2));
+      console.error('Expected format: { prospect: { email: "..." }, message: "..." }');
+      // For debugging, return what we received so we can see in ManyReach
       return NextResponse.json(
-        { error: 'Invalid payload structure' },
+        { 
+          error: 'Invalid payload structure',
+          expected: {
+            prospect: { email: 'required', firstname: 'optional', lastname: 'optional' },
+            message: 'required',
+            eventId: 'optional',
+            campaignid: 'optional'
+          },
+          received: Object.keys(payload)
+        },
         { status: 400 }
       );
     }
