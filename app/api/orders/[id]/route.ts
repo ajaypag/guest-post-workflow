@@ -3,7 +3,7 @@ import { AuthServiceServer } from '@/lib/auth-server';
 import { db } from '@/lib/db/connection';
 import { orders, orderItems } from '@/lib/db/orderSchema';
 import { orderGroups, orderSiteSelections } from '@/lib/db/orderGroupSchema';
-import { orderLineItems } from '@/lib/db/orderLineItemSchema';
+import { orderLineItems, lineItemChanges } from '@/lib/db/orderLineItemSchema';
 import { clients, users, publishers } from '@/lib/db/schema';
 import { eq, inArray, desc } from 'drizzle-orm';
 import { orderSiteSubmissions, projectOrderAssociations } from '@/lib/db/projectOrderAssociationsSchema';
@@ -296,6 +296,63 @@ export async function PUT(
             createdAt: new Date(),
             updatedAt: new Date()
           });
+        }
+        
+        // Also create line items from order groups if line items system is enabled
+        if (isLineItemsSystemEnabled()) {
+          // Delete existing line items for this order first
+          await tx.delete(orderLineItems).where(eq(orderLineItems.orderId, id));
+          
+          let displayOrder = 0;
+          
+          // Create line items from order groups data
+          for (const group of newOrderGroups) {
+            const targetPages = group.targetPages || [];
+            const anchorTexts = group.anchorTexts || [];
+            const linkCount = group.linkCount || 1;
+            
+            // Create one line item per target page/link
+            for (let i = 0; i < linkCount; i++) {
+              const targetPage = targetPages[i];
+              const anchorText = anchorTexts[i];
+              
+              // Calculate estimated price (use packagePrice if available, otherwise default)
+              const estimatedPrice = group.packagePrice || 29900; // Default $299
+              
+              // Create line item using same pattern as orders/route.ts
+              const lineItemId = crypto.randomUUID();
+              const lineItemData = {
+                orderId: id,
+                clientId: group.clientId,
+                addedBy: session.userId,
+                status: 'draft' as const,
+                estimatedPrice: estimatedPrice,
+                displayOrder: displayOrder,
+                ...(targetPage?.url ? { targetPageUrl: targetPage.url } : {}),
+                ...(targetPage?.pageId ? { targetPageId: targetPage.pageId } : {}),
+                ...(anchorText ? { anchorText: anchorText } : {})
+              };
+              
+              await tx.insert(orderLineItems).values(lineItemData);
+              
+              // Create change log entry
+              await tx.insert(lineItemChanges).values({
+                lineItemId: lineItemId,
+                orderId: id,
+                changeType: 'created',
+                newValue: {
+                  targetPageUrl: targetPage?.url,
+                  anchorText: anchorText,
+                  estimatedPrice: estimatedPrice,
+                  source: 'order_edit_page'
+                },
+                changedBy: session.userId,
+                changeReason: 'Line item created from order groups during order edit'
+              });
+              
+              displayOrder++;
+            }
+          }
         }
       }
     });
