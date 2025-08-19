@@ -273,87 +273,64 @@ export async function PUT(
         })
         .where(eq(orders.id, id));
       
-      // If orderGroups are provided, update them
-      if (newOrderGroups && Array.isArray(newOrderGroups)) {
-        // Delete existing order groups
-        await tx.delete(orderGroups).where(eq(orderGroups.orderId, id));
+      // If orderGroups are provided, convert them to line items (phasing out order groups)
+      if (newOrderGroups && Array.isArray(newOrderGroups) && isLineItemsSystemEnabled()) {
+        // Delete existing line items for this order first
+        await tx.delete(orderLineItems).where(eq(orderLineItems.orderId, id));
         
-        // Insert new order groups
+        let displayOrder = 0;
+        
+        // Create line items from order groups data (no longer creating order groups)
         for (const group of newOrderGroups) {
-          await tx.insert(orderGroups).values({
-            id: crypto.randomUUID(),
-            orderId: id,
-            clientId: group.clientId,
-            linkCount: group.linkCount || 1,
-            targetPages: group.targetPages || [],
-            anchorTexts: group.anchorTexts || [],
-            requirementOverrides: {
-              ...(group.requirementOverrides || {}),
-              packageType: group.packageType,
-              packagePrice: group.packagePrice
-            },
-            groupStatus: group.groupStatus || 'pending',
-            createdAt: new Date(),
-            updatedAt: new Date()
-          });
-        }
-        
-        // Also create line items from order groups if line items system is enabled
-        if (isLineItemsSystemEnabled()) {
-          // Delete existing line items for this order first
-          await tx.delete(orderLineItems).where(eq(orderLineItems.orderId, id));
+          const targetPages = group.targetPages || [];
+          const anchorTexts = group.anchorTexts || [];
+          const linkCount = group.linkCount || 1;
           
-          let displayOrder = 0;
-          
-          // Create line items from order groups data
-          for (const group of newOrderGroups) {
-            const targetPages = group.targetPages || [];
-            const anchorTexts = group.anchorTexts || [];
-            const linkCount = group.linkCount || 1;
+          // Create one line item per target page/link
+          for (let i = 0; i < linkCount; i++) {
+            const targetPage = targetPages[i];
+            const anchorText = anchorTexts[i];
             
-            // Create one line item per target page/link
-            for (let i = 0; i < linkCount; i++) {
-              const targetPage = targetPages[i];
-              const anchorText = anchorTexts[i];
-              
-              // Calculate estimated price (use packagePrice if available, otherwise default)
-              const estimatedPrice = group.packagePrice || 29900; // Default $299
-              
-              // Create line item using same pattern as orders/route.ts
-              const lineItemId = crypto.randomUUID();
-              const lineItemData = {
-                orderId: id,
-                clientId: group.clientId,
-                addedBy: session.userId,
-                status: 'draft' as const,
+            // Calculate estimated price (use packagePrice if available, otherwise default)
+            const estimatedPrice = group.packagePrice || 29900; // Default $299
+            
+            // Create line item using same pattern as orders/route.ts
+            const lineItemId = crypto.randomUUID();
+            const lineItemData = {
+              orderId: id,
+              clientId: group.clientId,
+              addedBy: session.userId,
+              status: 'draft' as const,
+              estimatedPrice: estimatedPrice,
+              displayOrder: displayOrder,
+              ...(targetPage?.url ? { targetPageUrl: targetPage.url } : {}),
+              ...(targetPage?.pageId ? { targetPageId: targetPage.pageId } : {}),
+              ...(anchorText ? { anchorText: anchorText } : {})
+            };
+            
+            await tx.insert(orderLineItems).values(lineItemData);
+            
+            // Create change log entry
+            await tx.insert(lineItemChanges).values({
+              lineItemId: lineItemId,
+              orderId: id,
+              changeType: 'created',
+              newValue: {
+                targetPageUrl: targetPage?.url,
+                anchorText: anchorText,
                 estimatedPrice: estimatedPrice,
-                displayOrder: displayOrder,
-                ...(targetPage?.url ? { targetPageUrl: targetPage.url } : {}),
-                ...(targetPage?.pageId ? { targetPageId: targetPage.pageId } : {}),
-                ...(anchorText ? { anchorText: anchorText } : {})
-              };
-              
-              await tx.insert(orderLineItems).values(lineItemData);
-              
-              // Create change log entry
-              await tx.insert(lineItemChanges).values({
-                lineItemId: lineItemId,
-                orderId: id,
-                changeType: 'created',
-                newValue: {
-                  targetPageUrl: targetPage?.url,
-                  anchorText: anchorText,
-                  estimatedPrice: estimatedPrice,
-                  source: 'order_edit_page'
-                },
-                changedBy: session.userId,
-                changeReason: 'Line item created from order groups during order edit'
-              });
-              
-              displayOrder++;
-            }
+                source: 'order_edit_page_migration'
+              },
+              changedBy: session.userId,
+              changeReason: 'Line item created during order groups to line items migration'
+            });
+            
+            displayOrder++;
           }
         }
+        
+        // Clean up any existing order groups since we're migrating away from them
+        await tx.delete(orderGroups).where(eq(orderGroups.orderId, id));
       }
     });
 
