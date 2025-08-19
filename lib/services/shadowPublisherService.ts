@@ -18,7 +18,7 @@ export class ShadowPublisherService {
     emailLogId: string,
     parsedData: ParsedEmailData,
     campaignType: 'outreach' | 'follow_up' | 'bulk'
-  ) {
+  ): Promise<string | null> {
     try {
       // Find or create publisher
       const result = await this.findOrCreatePublisher(parsedData, emailLogId);
@@ -26,7 +26,7 @@ export class ShadowPublisherService {
       if (!result) {
         // Add to review queue if we couldn't create publisher
         await this.addToReviewQueue(emailLogId, parsedData, 'validation_error');
-        return;
+        return null;
       }
       
       const { publisher, isExisting } = result;
@@ -39,9 +39,12 @@ export class ShadowPublisherService {
         await this.handleNewShadowPublisher(publisher, parsedData, emailLogId);
       }
       
+      return publisher.id;
+      
     } catch (error) {
       console.error('Failed to process publisher from email:', error);
       await this.logAutomationError(emailLogId, error);
+      return null;
     }
   }
   
