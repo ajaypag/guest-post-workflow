@@ -27,39 +27,34 @@ export async function GET(request: NextRequest) {
       console.warn('Migrations directory not found or empty');
     }
 
-    // Check if migrations table exists
-    const tableExists = await db.execute(sql`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_schema = 'public' 
-        AND table_name = 'migration_history'
+    // Ensure migrations table exists first
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS migration_history (
+        id SERIAL PRIMARY KEY,
+        filename VARCHAR(255) NOT NULL UNIQUE,
+        name VARCHAR(255),
+        hash VARCHAR(64),
+        applied_at TIMESTAMP DEFAULT NOW(),
+        executed_by VARCHAR(255),
+        execution_time_ms INTEGER,
+        status VARCHAR(50) DEFAULT 'success',
+        error_message TEXT,
+        rollback_sql TEXT
       )
     `);
 
-    // If table doesn't exist, create it
-    if (!tableExists.rows[0]?.exists) {
-      await db.execute(sql`
-        CREATE TABLE IF NOT EXISTS migration_history (
-          id SERIAL PRIMARY KEY,
-          filename VARCHAR(255) NOT NULL UNIQUE,
-          name VARCHAR(255),
-          hash VARCHAR(64),
-          applied_at TIMESTAMP DEFAULT NOW(),
-          executed_by VARCHAR(255),
-          execution_time_ms INTEGER,
-          status VARCHAR(50) DEFAULT 'success',
-          error_message TEXT,
-          rollback_sql TEXT
-        )
-      `);
-    }
-
     // Get applied migrations from database
-    const appliedMigrations = await db.execute(sql`
-      SELECT filename, name, hash, applied_at, status, error_message
-      FROM migration_history
-      ORDER BY applied_at DESC
-    `);
+    let appliedMigrations: any;
+    try {
+      appliedMigrations = await db.execute(sql`
+        SELECT filename, name, hash, applied_at, status, error_message
+        FROM migration_history
+        ORDER BY applied_at DESC
+      `);
+    } catch (error) {
+      console.log('Migration history table might be empty or have issues, continuing...');
+      appliedMigrations = { rows: [] };
+    }
 
     const appliedMap = new Map(
       appliedMigrations.rows.map(row => [

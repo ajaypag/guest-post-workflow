@@ -134,7 +134,22 @@ export async function GET(request: NextRequest) {
       size: row.size
     }));
     
-    // Migration status
+    // Migration status - first ensure table exists
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS migration_history (
+        id SERIAL PRIMARY KEY,
+        filename VARCHAR(255) NOT NULL UNIQUE,
+        name VARCHAR(255),
+        hash VARCHAR(64),
+        applied_at TIMESTAMP DEFAULT NOW(),
+        executed_by VARCHAR(255),
+        execution_time_ms INTEGER,
+        status VARCHAR(50) DEFAULT 'success',
+        error_message TEXT,
+        rollback_sql TEXT
+      )
+    `).catch(() => {});
+    
     const migrationResult = await db.execute(sql`
       SELECT 
         COUNT(*) as total,
