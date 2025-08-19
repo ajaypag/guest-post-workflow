@@ -30,8 +30,8 @@ interface Website {
   guestPostCost: string | null; // Note: DECIMAL field comes as string
   internalQualityScore: number | null;
   internalNotes: string | null;
-  status?: string;
-  source?: string;
+  status?: string | null;
+  source?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
