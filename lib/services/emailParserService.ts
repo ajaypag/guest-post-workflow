@@ -37,6 +37,8 @@ export interface ParsedEmailData {
       notes?: string;
     }>;
     confidence: number;
+    websiteSpecific?: string;
+    notes?: string;
   }>;
   overallConfidence: number;
   missingFields: string[];
@@ -158,15 +160,17 @@ Return as JSON with this structure:
     
 Content: ${content}
 
-Look for:
-1. Guest post pricing (base/standard price)
+CRITICAL: Look for multiple pricing scenarios:
+1. Guest post pricing (base/standard price) - IMPORTANT: Check if different websites have different prices
 2. Link insertion pricing
-3. Currency (USD, EUR, GBP, etc.)
+3. Currency (USD, EUR, GBP, etc.) - ensure you capture the correct currency symbol
 4. Bulk discounts
 5. Package deals
 6. Turnaround time
 7. IMPORTANT: Niche-specific pricing (e.g., higher prices for casino, crypto, CBD, finance, health, adult content)
 8. Category surcharges or special pricing for specific topics
+9. MULTIPLE WEBSITES: If email mentions multiple websites/domains, check if each has different pricing
+10. PRICING FORMAT: Pay attention to whether prices are $450, $4.50, 450, etc. - preserve the actual amount
 
 Return as JSON:
 {
@@ -182,6 +186,14 @@ Return as JSON:
       "adjustment_type": "fixed",
       "adjustment_value": 100,
       "notes": "Casino/Gambling posts $550"
+    }
+  ],
+  "per_website_pricing": [
+    {
+      "website": "example1.com",
+      "guest_post_price": 450,
+      "link_insertion_price": 200,
+      "notes": "specific pricing for this website"
     }
   ],
   "notes": "any special pricing notes"
@@ -413,6 +425,50 @@ Return as JSON:
         },
         confidence: 0.8,
       });
+    }
+    
+    // Handle per-website pricing (creates additional offerings with website-specific pricing)
+    if (pricingInfo.per_website_pricing && Array.isArray(pricingInfo.per_website_pricing)) {
+      for (const websitePricing of pricingInfo.per_website_pricing) {
+        // Guest post offering for specific website
+        if (websitePricing.guest_post_price !== null && websitePricing.guest_post_price !== undefined) {
+          const websiteGuestPostOffering: any = {
+            type: 'guest_post',
+            basePrice: Number(websitePricing.guest_post_price),
+            currency: pricingInfo.currency || 'USD',
+            turnaroundDays: pricingInfo.turnaround_days || undefined,
+            requirements: {
+              acceptsDoFollow: requirements.accepts_dofollow,
+              maxLinks: requirements.max_links,
+              prohibitedTopics: requirements.prohibited_topics || [],
+              minWordCount: requirements.min_word_count,
+              maxWordCount: requirements.max_word_count,
+            },
+            confidence: 0.9, // Higher confidence for website-specific pricing
+            websiteSpecific: websitePricing.website,
+            notes: websitePricing.notes,
+          };
+          
+          offerings.push(websiteGuestPostOffering);
+        }
+        
+        // Link insertion offering for specific website
+        if (websitePricing.link_insertion_price !== null && websitePricing.link_insertion_price !== undefined) {
+          offerings.push({
+            type: 'link_insertion',
+            basePrice: Number(websitePricing.link_insertion_price),
+            currency: pricingInfo.currency || 'USD',
+            turnaroundDays: pricingInfo.turnaround_days || undefined,
+            requirements: {
+              acceptsDoFollow: requirements.accepts_dofollow,
+              maxLinks: requirements.max_links,
+            },
+            confidence: 0.9, // Higher confidence for website-specific pricing
+            websiteSpecific: websitePricing.website,
+            notes: websitePricing.notes,
+          });
+        }
+      }
     }
     
     result.offerings = offerings;

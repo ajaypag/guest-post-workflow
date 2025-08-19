@@ -172,14 +172,16 @@ export class ShadowPublisherService {
         await this.processExistingPublisherWebsite(publisher.id, websiteData, emailLogId);
       }
       
-      // Update existing offerings with new pricing/details
+      // Update existing offerings with new pricing/details - for ALL websites
       for (const offering of parsedData.offerings) {
-        await this.updateExistingPublisherOffering(
-          publisher.id, 
-          offering, 
-          parsedData.websites[0]?.domain, 
-          emailLogId
-        );
+        for (const websiteData of parsedData.websites) {
+          await this.updateExistingPublisherOffering(
+            publisher.id, 
+            offering, 
+            websiteData.domain, 
+            emailLogId
+          );
+        }
       }
       
       // Log automation action
@@ -480,9 +482,11 @@ export class ShadowPublisherService {
         await this.processWebsite(publisher.id, websiteData, emailLogId);
       }
       
-      // Process offerings for shadow publisher
+      // Process offerings for shadow publisher - create offerings for ALL websites
       for (const offering of parsedData.offerings) {
-        await this.processOffering(publisher.id, offering, parsedData.websites[0]?.domain, emailLogId);
+        for (const websiteData of parsedData.websites) {
+          await this.processOffering(publisher.id, offering, websiteData.domain, emailLogId);
+        }
       }
       
       // Determine if auto-approval is appropriate using config

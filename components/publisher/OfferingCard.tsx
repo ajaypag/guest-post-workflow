@@ -25,13 +25,13 @@ interface OfferingCardProps {
 export default function OfferingCard({ offering, website, relationship }: OfferingCardProps) {
   const [showActions, setShowActions] = useState(false);
 
-  // Format currency
-  const formatCurrency = (cents: number) => {
+  // Format currency - data is already in dollars, not cents
+  const formatCurrency = (dollars: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: offering.currency || 'USD',
       minimumFractionDigits: 0,
-    }).format(cents / 100);
+    }).format(dollars);
   };
 
   // Get offering type icon
