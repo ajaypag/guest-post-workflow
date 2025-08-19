@@ -35,8 +35,21 @@ interface ManyReachWebhookPayload {
   campaignId?: string;
   campaignName?: string;
   campaignType?: string;
-  email?: string;
-  metadata?: any;
+  email?: string | {
+    from?: string;
+    to?: string;
+    subject?: string;
+    messageId?: string;
+    receivedAt?: string;
+    content?: string;
+  };
+  metadata?: {
+    prospectName?: string;
+    prospectCompany?: string;
+    originalWebsite?: string;
+    threadId?: string;
+    [key: string]: any;
+  };
 }
 
 // Validate webhook secret in URL
@@ -309,19 +322,33 @@ export async function POST(
     }
     // Format 2: direct email field (production payload)
     else if (payload.email) {
-      email = payload.email;
-      // Check multiple possible locations for the message content
-      message = payload.message || // Check direct message field first
-                payload.metadata?.content || 
-                payload.metadata?.message || 
-                payload.metadata?.reply || 
-                payload.metadata?.body ||
-                '';
+      // Handle nested email object structure
+      if (typeof payload.email === 'object' && payload.email !== null) {
+        email = payload.email.from || '';
+        // Extract message content from email.content field
+        message = payload.email.content || payload.message || '';
+        
+        // Extract metadata from nested structure
+        firstName = payload.metadata?.prospectName?.split(' ')[0] || '';
+        lastName = payload.metadata?.prospectName?.split(' ').slice(1).join(' ') || '';
+        company = payload.metadata?.prospectCompany || '';
+        domain = payload.metadata?.originalWebsite || '';
+      } else {
+        // Handle simple string email field
+        email = payload.email;
+        // Check multiple possible locations for the message content
+        message = payload.message || // Check direct message field first
+                  payload.metadata?.content || 
+                  payload.metadata?.message || 
+                  payload.metadata?.reply || 
+                  payload.metadata?.body ||
+                  '';
+      }
       
       campaignId = payload.campaignId || '';
       
-      // Extract other fields from metadata if available
-      if (payload.metadata) {
+      // Extract other fields from metadata if available (fallback)
+      if (payload.metadata && !firstName && !lastName && !company && !domain) {
         firstName = payload.metadata.firstName || payload.metadata.from?.split('@')[0] || '';
         lastName = payload.metadata.lastName || '';
         company = payload.metadata.company || payload.metadata.from?.split('@')[1] || '';
