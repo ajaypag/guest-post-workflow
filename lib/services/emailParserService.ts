@@ -114,6 +114,9 @@ export class EmailParserService {
   }
   
   private async extractBasicInfo(content: string, request: EmailParseRequest): Promise<any> {
+    // Extract domain from email address as a fallback
+    const emailDomain = request.from.split('@')[1] || '';
+    
     const prompt = `Extract the following information from this email response:
     
 Email from: ${request.from}
@@ -123,7 +126,12 @@ Content: ${content}
 Extract:
 1. Sender's name (if mentioned)
 2. Company/website name
-3. Website URL(s) they manage
+3. Website URL(s) they manage - CRITICAL: 
+   - Look carefully for ANY domain mentioned in the email content
+   - Check for domains in phrases like "on [domain.com]", "for [domain.com]", "[domain.com] rates"  
+   - Look in email signatures for website URLs
+   - If the email is about guest posting services, the domain they're offering services for is their website
+   - As last resort, if no domain found in content, use the email domain "${emailDomain}" (but avoid generic email providers)
 4. Contact email (if different from sender)
 
 Return as JSON with this structure:
@@ -136,7 +144,9 @@ Return as JSON with this structure:
 
     try {
       const response = await this.callOpenAI(prompt);
-      return JSON.parse(response);
+      // Clean response - remove markdown code blocks if present
+      const cleanResponse = response.replace(/^```json\s*/, '').replace(/\s*```$/, '').trim();
+      return JSON.parse(cleanResponse);
     } catch (error) {
       console.error('Failed to extract basic info:', error);
       return {};
@@ -179,7 +189,9 @@ Return as JSON:
 
     try {
       const response = await this.callOpenAI(prompt);
-      return JSON.parse(response);
+      // Clean response - remove markdown code blocks if present
+      const cleanResponse = response.replace(/^```json\s*/, '').replace(/\s*```$/, '').trim();
+      return JSON.parse(cleanResponse);
     } catch (error) {
       console.error('Failed to extract pricing info:', error);
       return {};
@@ -223,7 +235,9 @@ Return as JSON:
 
     try {
       const response = await this.callOpenAI(prompt);
-      return JSON.parse(response);
+      // Clean response - remove markdown code blocks if present
+      const cleanResponse = response.replace(/^```json\s*/, '').replace(/\s*```$/, '').trim();
+      return JSON.parse(cleanResponse);
     } catch (error) {
       console.error('Failed to extract requirements:', error);
       return {};
@@ -318,6 +332,23 @@ Return as JSON:
         }
       } catch (error) {
         console.error(`Failed to normalize original website: ${request.originalWebsite}`, error);
+      }
+    }
+    
+    // Final fallback: If no websites found, try to extract from email domain
+    if (result.websites.length === 0) {
+      const emailDomain = request.from.split('@')[1];
+      if (emailDomain && !emailDomain.includes('gmail.com') && !emailDomain.includes('yahoo.com') && !emailDomain.includes('outlook.com') && !emailDomain.includes('hotmail.com')) {
+        try {
+          const normalized = normalizeDomain(emailDomain);
+          result.websites.push({
+            domain: normalized.domain,
+            confidence: 0.6, // Lower confidence for email domain fallback
+          });
+          console.log(`Using email domain as fallback website: ${normalized.domain}`);
+        } catch (error) {
+          console.error(`Failed to use email domain as website: ${emailDomain}`, error);
+        }
       }
     }
     
