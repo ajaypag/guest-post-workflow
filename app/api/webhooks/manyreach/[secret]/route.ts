@@ -177,12 +177,15 @@ function isTimestampValid(timestamp: string): boolean {
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { secret: string } }
+  { params }: { params: Promise<{ secret: string }> }
 ) {
   const startTime = Date.now();
   
+  // Await params in Next.js 15
+  const { secret } = await params;
+  
   // Validate URL secret first (most important security check)
-  const secretValid = validateWebhookSecret(params.secret);
+  const secretValid = validateWebhookSecret(secret);
   
   // Get request details for security logging
   const ipAddress = request.headers.get('x-forwarded-for') || 
@@ -286,25 +289,19 @@ export async function POST(
 
     // Parse the email content with AI
     const emailParser = new EmailParserService();
-    const parsedData = await emailParser.parseEmailContent({
+    const parsedData = await emailParser.parseEmail({
       from: payload.email.from.email,
       subject: payload.email.subject,
-      content: payload.email.content.text,
-      metadata: {
-        prospectName: payload.metadata?.prospect_name,
-        prospectCompany: payload.metadata?.prospect_company,
-        originalWebsite: payload.metadata?.prospect_website,
-        threadId: payload.metadata?.thread_id,
-      }
+      content: payload.email.content.text
     });
 
     // Update log with parsing results
     await db.update(emailProcessingLogs)
       .set({
-        parsedData: parsedData,
-        confidenceScore: parsedData.overallConfidence,
+        parsedData: parsedData as any,
+        confidenceScore: parsedData.overallConfidence.toString(),
         parsingErrors: parsedData.errors || [],
-        status: parsedData.overallConfidence >= shadowPublisherConfig.confidenceThreshold ? 'parsed' : 'needs_review',
+        status: parsedData.overallConfidence >= shadowPublisherConfig.confidence.autoApprove ? 'parsed' : 'needs_review',
         processedAt: new Date(),
         processingDurationMs: Date.now() - startTime,
       })
@@ -314,10 +311,10 @@ export async function POST(
 
     // If confidence is high enough, create shadow publisher
     let publisherId = null;
-    if (parsedData.overallConfidence >= shadowPublisherConfig.confidenceThreshold) {
+    if (parsedData.overallConfidence >= shadowPublisherConfig.confidence.autoApprove) {
       try {
         const shadowPublisherService = new ShadowPublisherService();
-        publisherId = await shadowPublisherService.processEmailResponse(logEntry.id, parsedData);
+        publisherId = await shadowPublisherService.processPublisherFromEmail(parsedData, payload.email.from.email, logEntry.id);
         
         console.log(`✅ Shadow publisher created with ID: ${publisherId}`);
       } catch (publisherError) {
@@ -341,7 +338,7 @@ export async function POST(
       parsedData: {
         confidence: parsedData.overallConfidence,
         offerings: parsedData.offerings?.length || 0,
-        websiteDetected: parsedData.websiteInfo?.domain || null,
+        websiteDetected: parsedData.website || null,
       }
     });
 
@@ -361,10 +358,13 @@ export async function POST(
 // Health check endpoint (no secret required)
 export async function GET(
   request: NextRequest,
-  { params }: { params: { secret: string } }
+  { params }: { params: Promise<{ secret: string }> }
 ) {
+  // Await params in Next.js 15
+  const { secret } = await params;
+  
   // For GET requests, just validate the secret and return status
-  const secretValid = validateWebhookSecret(params.secret);
+  const secretValid = validateWebhookSecret(secret);
   
   if (!secretValid) {
     return NextResponse.json(
