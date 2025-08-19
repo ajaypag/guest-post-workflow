@@ -43,16 +43,60 @@ export async function POST(request: NextRequest) {
     const hash = crypto.createHash('sha256').update(content).digest('hex');
     executionLog.push(`File hash: ${hash.substring(0, 8)}...`);
 
-    // Check if already applied
-    const existing = await db.execute(sql`
-      SELECT * FROM migration_history WHERE filename = ${filename}
-    `);
+    // Special handling for the migration_history creation migration
+    if (filename === '0000_create_migration_history.sql') {
+      executionLog.push('Bootstrap migration detected - creating migration_history table');
+      
+      // Check if table exists first
+      const tableExists = await db.execute(sql`
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_schema = 'public' 
+          AND table_name = 'migration_history'
+        ) as exists
+      `);
+      
+      if (tableExists.rows[0]?.exists) {
+        executionLog.push('Migration history table already exists');
+        return NextResponse.json({
+          success: true,
+          message: 'Migration history table already exists',
+          alreadyApplied: true,
+          executionLog
+        });
+      }
+    } else {
+      // For all other migrations, ensure migration_history table exists first
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS migration_history (
+          id SERIAL PRIMARY KEY,
+          filename VARCHAR(255) NOT NULL UNIQUE,
+          name VARCHAR(255),
+          hash VARCHAR(64),
+          applied_at TIMESTAMP DEFAULT NOW(),
+          executed_by VARCHAR(255),
+          execution_time_ms INTEGER,
+          status VARCHAR(50) DEFAULT 'success',
+          error_message TEXT,
+          rollback_sql TEXT
+        )
+      `).catch(() => {
+        // Table might already exist, that's fine
+      });
+    }
 
-    if (existing.rows.length > 0) {
-      return NextResponse.json(
-        { error: `Migration already applied: ${filename}` },
-        { status: 400 }
-      );
+    // Check if already applied (skip for bootstrap migration)
+    if (filename !== '0000_create_migration_history.sql') {
+      const existing = await db.execute(sql`
+        SELECT * FROM migration_history WHERE filename = ${filename}
+      `);
+
+      if (existing.rows.length > 0) {
+        return NextResponse.json(
+          { error: `Migration already applied: ${filename}` },
+          { status: 400 }
+        );
+      }
     }
 
     // Parse migration for individual statements
