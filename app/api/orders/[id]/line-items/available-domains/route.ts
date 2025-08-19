@@ -3,7 +3,6 @@ import { db } from '@/lib/db/connection';
 import { orders } from '@/lib/db/orderSchema';
 import { orderLineItems } from '@/lib/db/orderLineItemSchema';
 import { bulkAnalysisDomains, bulkAnalysisProjects } from '@/lib/db/bulkAnalysisSchema';
-import { projectOrderAssociations } from '@/lib/db/projectOrderAssociationsSchema';
 import { eq, and, inArray, isNull, or } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
 
@@ -63,19 +62,22 @@ export async function GET(
     const clientIds = [...new Set(lineItems.map(item => item.clientId))];
 
     // Find bulk analysis projects associated with this order
-    const projectAssociations = await db.query.projectOrderAssociations.findMany({
-      where: eq(projectOrderAssociations.orderId, orderId),
-      with: {
-        project: true
-      }
+    // In the new line items system, projects are associated via tags: `order:${orderId}`
+    const { sql } = await import('drizzle-orm');
+    
+    const projectsForOrder = await db.query.bulkAnalysisProjects.findMany({
+      where: and(
+        inArray(bulkAnalysisProjects.clientId, clientIds),
+        sql`tags @> ${JSON.stringify([`order:${orderId}`])}`
+      )
     });
 
-    let projectIds: string[] = [];
+    let projectIds: string[] = projectsForOrder.map(p => p.id);
 
-    if (projectAssociations.length > 0) {
-      // Use directly associated projects
-      projectIds = projectAssociations.map(pa => pa.projectId);
-    } else {
+    // If no projects found with order tag, try fallback approach
+    if (projectIds.length === 0) {
+      console.log(`[AVAILABLE-DOMAINS] No projects found with order:${orderId} tag, trying fallback`);
+      
       // Fallback: Find projects for these clients created around order time
       const orderDate = new Date(order.createdAt);
       const dayBefore = new Date(orderDate.getTime() - 24 * 60 * 60 * 1000);
@@ -92,6 +94,10 @@ export async function GET(
           return projectDate >= dayBefore && projectDate <= weekAfter;
         })
         .map(p => p.id);
+        
+      console.log(`[AVAILABLE-DOMAINS] Fallback found ${projectIds.length} projects for clients`);
+    } else {
+      console.log(`[AVAILABLE-DOMAINS] Found ${projectIds.length} projects with order tag`);
     }
 
     if (projectIds.length === 0) {
