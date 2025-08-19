@@ -88,7 +88,7 @@ export class ShadowPublisherService {
         if (website.domain.includes(emailDomain) || emailDomain.includes(website.domain)) {
           // Find publisher associated with this website
           const websiteRecord = await db
-            .select()
+            .select({ id: websites.id, domain: websites.domain })
             .from(websites)
             .where(eq(websites.domain, website.domain))
             .limit(1);
@@ -264,13 +264,13 @@ export class ShadowPublisherService {
     try {
       // Check if website exists
       let [website] = await db
-        .select()
+        .select({ id: websites.id, domain: websites.domain })
         .from(websites)
         .where(eq(websites.domain, websiteData.domain))
         .limit(1);
       
       if (!website) {
-        // Create new website
+        // Create new website (only use columns that exist in our simple table)
         [website] = await db.insert(websites).values({
           id: crypto.randomUUID(),
           domain: websiteData.domain,
@@ -280,7 +280,7 @@ export class ShadowPublisherService {
           airtableUpdatedAt: new Date(),
           createdAt: new Date(),
           updatedAt: new Date(),
-        }).returning();
+        }).returning({ id: websites.id, domain: websites.domain });
       }
       
       // Create shadow publisher website relationship
@@ -324,7 +324,7 @@ export class ShadowPublisherService {
     try {
       // Get website
       const [website] = await db
-        .select()
+        .select({ id: websites.id, domain: websites.domain })
         .from(websites)
         .where(eq(websites.domain, websiteDomain))
         .limit(1);
@@ -558,23 +558,27 @@ export class ShadowPublisherService {
     try {
       // Check if website exists
       let [website] = await db
-        .select()
+        .select({ id: websites.id, domain: websites.domain })
         .from(websites)
         .where(eq(websites.domain, websiteData.domain))
         .limit(1);
       
       if (!website) {
-        // Create new website
-        [website] = await db.insert(websites).values({
-          id: crypto.randomUUID(),
-          domain: websiteData.domain,
-          source: 'manyreach',
-          status: 'active', // For existing publishers, mark as active
-          airtableCreatedAt: new Date(),
-          airtableUpdatedAt: new Date(),
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        }).returning();
+        // Create new website with minimal required fields only
+        const websiteId = crypto.randomUUID();
+        const now = new Date();
+        
+        const insertResult = await db.execute(sql`
+          INSERT INTO websites (id, domain, status, airtable_created_at, airtable_updated_at, created_at, updated_at)
+          VALUES (${websiteId}, ${websiteData.domain}, 'active', ${now}, ${now}, ${now}, ${now})
+          RETURNING id, domain
+        `);
+        
+        if (insertResult.rows && insertResult.rows.length > 0) {
+          website = insertResult.rows[0] as { id: string; domain: string };
+        } else {
+          throw new Error('Failed to create website');
+        }
       }
       
       // Check if publisher already has this website associated
@@ -615,7 +619,7 @@ export class ShadowPublisherService {
     try {
       // Get website
       const [website] = await db
-        .select()
+        .select({ id: websites.id, domain: websites.domain })
         .from(websites)
         .where(eq(websites.domain, websiteDomain))
         .limit(1);

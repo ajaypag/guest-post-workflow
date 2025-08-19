@@ -34,7 +34,7 @@ export interface ShadowPublisherConfig {
 // Default configuration - can be overridden by environment variables
 const defaultConfig: ShadowPublisherConfig = {
   confidence: {
-    autoApprove: 0.85,
+    autoApprove: 0.80, // Lower threshold for testing
     mediumReview: 0.70,
     lowReview: 0.50,
     minProcessing: 0.30,

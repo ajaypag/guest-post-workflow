@@ -5,7 +5,7 @@ import { emailProcessingLogs, webhookSecurityLogs } from '@/lib/db/emailProcessi
 import { EmailParserService } from '@/lib/services/emailParserService';
 import { ShadowPublisherService } from '@/lib/services/shadowPublisherService';
 import { shadowPublisherConfig } from '@/lib/config/shadowPublisherConfig';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 
 // ManyReach actual webhook payload interface - two possible formats
 interface ManyReachWebhookPayload {
@@ -250,6 +250,19 @@ export async function POST(
   console.log('✅ Webhook security validation passed');
   
   try {
+    // Test database connection first
+    console.log('🔍 Testing database connection...');
+    try {
+      const testResult = await db.execute(sql`SELECT NOW() as current_time`);
+      console.log('✅ Database connection working, current time:', testResult);
+    } catch (dbError) {
+      console.error('❌ Database connection failed:', dbError);
+      return NextResponse.json(
+        { error: 'Database connection failed' },
+        { status: 500 }
+      );
+    }
+    
     // Check if this is an empty test request
     if (!rawBody || rawBody.trim() === '' || rawBody === '{}') {
       console.log('📝 Empty test webhook received from ManyReach');
@@ -298,7 +311,8 @@ export async function POST(
     else if (payload.email) {
       email = payload.email;
       // Check multiple possible locations for the message content
-      message = payload.metadata?.content || 
+      message = payload.message || // Check direct message field first
+                payload.metadata?.content || 
                 payload.metadata?.message || 
                 payload.metadata?.reply || 
                 payload.metadata?.body ||
@@ -314,8 +328,8 @@ export async function POST(
         domain = payload.metadata.domain || payload.metadata.website || '';
       }
       
-      // Log what we found in metadata for debugging
-      console.log('📦 ManyReach metadata structure:', JSON.stringify(payload.metadata, null, 2));
+      // Log what we found in payload for debugging
+      console.log('📦 ManyReach payload structure:', JSON.stringify(payload, null, 2));
       
       // For test webhooks without a message, return success
       if (!message) {
