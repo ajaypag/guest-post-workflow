@@ -314,7 +314,7 @@ export async function POST(
     if (parsedData.overallConfidence >= shadowPublisherConfig.confidence.autoApprove) {
       try {
         const shadowPublisherService = new ShadowPublisherService();
-        publisherId = await shadowPublisherService.processPublisherFromEmail(parsedData, payload.email.from.email, logEntry.id);
+        publisherId = await shadowPublisherService.processPublisherFromEmail(logEntry.id, parsedData, payload.campaign.type);
         
         console.log(`✅ Shadow publisher created with ID: ${publisherId}`);
       } catch (publisherError) {
@@ -338,7 +338,7 @@ export async function POST(
       parsedData: {
         confidence: parsedData.overallConfidence,
         offerings: parsedData.offerings?.length || 0,
-        websiteDetected: parsedData.website || null,
+        websiteDetected: parsedData.websites?.[0] || null,
       }
     });
 
