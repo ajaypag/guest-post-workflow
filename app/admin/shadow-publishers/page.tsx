@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import AdminHeader from '@/components/AdminHeader';
 
 interface EmailLog {
   id: string;
@@ -190,11 +191,13 @@ export default function ShadowPublishersPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Shadow Publisher Management</h1>
-        <Button onClick={fetchData}>Refresh</Button>
-      </div>
+    <>
+      <AdminHeader />
+      <div className="p-6 space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold">Shadow Publisher Management</h1>
+          <Button onClick={fetchData}>Refresh</Button>
+        </div>
 
       {error && (
         <Alert variant="destructive">
@@ -486,5 +489,6 @@ export default function ShadowPublishersPage() {
         </Card>
       )}
     </div>
+    </>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { CheckCircle, XCircle, Loader2, AlertCircle } from 'lucide-react';
+import AdminHeader from '@/components/AdminHeader';
 
 export default function MigrationShadowPage() {
   const [logs55, setLogs55] = useState<string[]>([]);
@@ -92,8 +93,10 @@ export default function MigrationShadowPage() {
   };
 
   return (
-    <div className="container mx-auto p-8 max-w-4xl">
-      <h1 className="text-2xl font-bold mb-8">Shadow Publisher Migrations</h1>
+    <>
+      <AdminHeader />
+      <div className="container mx-auto p-8 max-w-4xl">
+        <h1 className="text-2xl font-bold mb-8">Shadow Publisher Migrations</h1>
       
       {/* System Status */}
       <div className="bg-gray-50 rounded-lg p-4 mb-6">
@@ -196,5 +199,6 @@ export default function MigrationShadowPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

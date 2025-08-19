@@ -439,8 +439,9 @@ export async function POST(request: NextRequest) {
       'user-agent': 'ManyReach-Webhook/1.0',
     };
     
-    // Send webhook to our endpoint
-    const webhookUrl = new URL('/api/webhooks/manyreach', request.url);
+    // Send webhook to our secret endpoint
+    const webhookSecret = process.env.MANYREACH_WEBHOOK_URL_SECRET || 'test-secret-please-change';
+    const webhookUrl = new URL(`/api/webhooks/manyreach/${webhookSecret}`, request.url);
     const webhookResponse = await fetch(webhookUrl.toString(), {
       method: 'POST',
       headers: headers,

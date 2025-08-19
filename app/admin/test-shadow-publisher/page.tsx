@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Loader2, Send, CheckCircle, AlertCircle } from 'lucide-react';
+import AdminHeader from '@/components/AdminHeader';
 
 export default function TestShadowPublisherPage() {
   const [loading, setLoading] = useState(false);
@@ -125,7 +126,7 @@ Editor-in-Chief`
         }
       };
 
-      // Send to the test endpoint
+      // Send to the test endpoint (which will forward to the secret webhook)
       const response = await fetch('/api/webhooks/manyreach/test', {
         method: 'POST',
         headers: {
@@ -153,8 +154,10 @@ Editor-in-Chief`
   };
 
   return (
-    <div className="container mx-auto p-8 max-w-4xl">
-      <h1 className="text-2xl font-bold mb-8">Test Shadow Publisher System</h1>
+    <>
+      <AdminHeader />
+      <div className="container mx-auto p-8 max-w-4xl">
+        <h1 className="text-2xl font-bold mb-8">Test Shadow Publisher System</h1>
 
       <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
         <h2 className="text-lg font-semibold mb-4">Select Test Email</h2>
@@ -387,5 +390,6 @@ John"
         </ol>
       </div>
     </div>
+    </>
   );
 }
