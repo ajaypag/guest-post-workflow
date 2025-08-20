@@ -18,17 +18,20 @@ export interface ParsedEmailData {
     confidence: number;
   }>;
   offerings: Array<{
-    type: 'guest_post' | 'link_insertion';
+    type: 'guest_post' | 'link_insertion' | 'listicle_placement';
     basePrice?: number;
     currency?: string;
     turnaroundDays?: number;
+    position?: number; // For listicle placements
     requirements?: {
       acceptsDoFollow?: boolean;
       maxLinks?: number;
+      additionalLinkCost?: number;
       prohibitedTopics?: string[];
       minWordCount?: number;
       maxWordCount?: number;
     };
+    transactionalPricing?: any; // For transactional pricing variations
     nichePricing?: Array<{
       niche: string;
       price?: number;
@@ -36,6 +39,8 @@ export interface ParsedEmailData {
       adjustmentValue: number;
       notes?: string;
     }>;
+    rawPricingText?: string; // Raw pricing text from email
+    rawRequirementsText?: string; // Raw requirements text from email
     confidence: number;
     websiteSpecific?: string;
     notes?: string;
@@ -119,22 +124,34 @@ export class EmailParserService {
     // Extract domain from email address as a fallback
     const emailDomain = request.from.split('@')[1] || '';
     
-    const prompt = `Extract the following information from this email response:
-    
-Email from: ${request.from}
+    const prompt = `You are analyzing an email conversation thread about guest posting/link building services.
+
+The person replying is: ${request.from}
 Subject: ${request.subject}
-Content: ${content}
+
+Full email thread:
+${content}
+
+Context: This is an outreach conversation. We reached out to ${request.from} asking about guest posting on THEIR website. They are replying with pricing/terms.
+
+Task: Extract information about ${request.from} and their website(s).
+
+CRITICAL UNDERSTANDING:
+- In our initial outreach, we likely mentioned THEIR website (e.g., "Hi, I'd like a guest post on yoursite.com")
+- When ${request.from} replies with pricing, they're talking about THAT website we mentioned
+- They might not repeat their website in the reply since we already mentioned it
+- Look for contextual clues like "our rates are..." or "we charge..." - they're talking about the site we inquired about
 
 Extract:
-1. Sender's name (if mentioned)
-2. Company/website name
-3. Website URL(s) they manage - CRITICAL: 
-   - Look carefully for ANY domain mentioned in the email content
-   - Check for domains in phrases like "on [domain.com]", "for [domain.com]", "[domain.com] rates"  
-   - Look in email signatures for website URLs
-   - If the email is about guest posting services, the domain they're offering services for is their website
-   - As last resort, if no domain found in content, use the email domain "${emailDomain}" (but avoid generic email providers)
-4. Contact email (if different from sender)
+1. Their name (from signature or email content)
+2. Their company/business name
+3. Their website(s) - CRITICAL LOGIC:
+   - If our outreach says "I want to post on [domain.com]" and they reply with pricing, then [domain.com] IS their website
+   - Check their email signature for website URLs
+   - The domain ${emailDomain} is likely theirs (unless gmail.com, outlook.com, etc.)
+   - If they list multiple sites with different prices, those are ALL their websites
+   - DO NOT include random third-party sites mentioned in passing
+4. Their preferred contact email
 
 Return as JSON with this structure:
 {
@@ -156,47 +173,73 @@ Return as JSON with this structure:
   }
   
   private async extractPricingInfo(content: string, request: EmailParseRequest): Promise<any> {
-    const prompt = `Extract pricing information from this publisher's email:
-    
-Content: ${content}
+    const prompt = `You are an expert at extracting pricing information from publisher emails. Extract ALL pricing details from this email.
 
-CRITICAL: Look for multiple pricing scenarios:
-1. Guest post pricing (base/standard price) - IMPORTANT: Check if different websites have different prices
-2. Link insertion pricing
-3. Currency (USD, EUR, GBP, etc.) - ensure you capture the correct currency symbol
-4. Bulk discounts
-5. Package deals
-6. Turnaround time
-7. IMPORTANT: Niche-specific pricing (e.g., higher prices for casino, crypto, CBD, finance, health, adult content)
-8. Category surcharges or special pricing for specific topics
-9. MULTIPLE WEBSITES: If email mentions multiple websites/domains, check if each has different pricing
-10. PRICING FORMAT: Pay attention to whether prices are $450, $4.50, 450, etc. - preserve the actual amount
+Email content:
+${content}
 
-Return as JSON:
+===EXTRACTION INSTRUCTIONS===
+
+1. PRICES: Extract EVERY price mentioned. Common patterns:
+   - "Guest posts are $250" → guest_post_price: 250
+   - "$200 (includes 2 do-follow links)" → guest_post_price: 200, max_links_included: 2
+   - "Additional links: $30 each" → additional_link_price: 30
+   - "Link insertion: $80" → link_insertion_price: 80
+   - Look for ALL variations: guest post, sponsored post, article placement, link insertion, niche edits
+
+2. COMPLEX PRICING STRUCTURES:
+   - Listicle positions (1st: $999, 2nd: $899, etc.) → Store in listicle_pricing array
+   - Transactional vs non-transactional pricing → Store both with clear labels
+   - Editorial vs existing content pricing → Store separately
+   - SAAS/niche-specific pricing → Store in niche_pricing with adjustment
+
+3. TURNAROUND TIME: Look for ANY mention of time:
+   - "delivered in 7 days", "48 hours", "1 week turnaround", "within 5 business days"
+   - If NOT mentioned, return null (DO NOT make up values)
+
+4. INCLUDED FEATURES: Parse what's included:
+   - "includes 2 do-follow links" → extract max_links_included: 2
+   - "500-1000 words" → min_words: 500, max_words: 1000
+   - "do-follow" or "dofollow" → dofollow_included: true
+
+5. BULK/PACKAGE DEALS:
+   - "10% off for 5+ posts" → bulk_discounts
+   - "Package of 3 for $500" → package_deals
+
+6. RAW PRICING TEXT: ALWAYS include the exact pricing text from the email in raw_pricing_text field
+
+Return as JSON (be thorough - extract EVERYTHING):
 {
   "guest_post_price": number or null,
   "link_insertion_price": number or null,
+  "additional_link_price": number or null,
   "currency": "USD",
-  "bulk_discounts": [{"quantity": 5, "discount": 10}],
-  "turnaround_days": number or null,
+  "turnaround_days": number or null (DO NOT default to 7),
+  "max_links_included": number or null,
+  "min_words": number or null,
+  "max_words": number or null,
+  "dofollow_included": true/false/null,
+  "listicle_pricing": [
+    {"position": 1, "price": 999},
+    {"position": 2, "price": 899}
+  ],
   "niche_pricing": [
     {
-      "niche": "casino_gambling",
-      "price": 550,
+      "niche": "saas",
+      "price": 250,
       "adjustment_type": "fixed",
-      "adjustment_value": 100,
-      "notes": "Casino/Gambling posts $550"
+      "adjustment_value": 50,
+      "notes": "SAAS posts are $250 vs standard $200"
     }
   ],
-  "per_website_pricing": [
-    {
-      "website": "example1.com",
-      "guest_post_price": 450,
-      "link_insertion_price": 200,
-      "notes": "specific pricing for this website"
-    }
-  ],
-  "notes": "any special pricing notes"
+  "transactional_pricing": {
+    "guest_post": {"transactional": 250, "non_transactional": 200},
+    "link_insertion": {"transactional": 100, "non_transactional": 80}
+  },
+  "bulk_discounts": [{"quantity": 5, "discount": 10}],
+  "package_deals": [{"quantity": 3, "total_price": 500, "per_unit": 167}],
+  "raw_pricing_text": "COPY THE EXACT PRICING SECTION FROM THE EMAIL HERE",
+  "notes": "any special pricing notes or conditions"
 }`;
 
     try {
@@ -211,38 +254,60 @@ Return as JSON:
   }
   
   private async extractRequirements(content: string, request: EmailParseRequest): Promise<any> {
-    const prompt = `Extract content requirements from this publisher's email:
-    
-Content: ${content}
+    const prompt = `You are an expert at extracting content requirements and restrictions. Extract ALL requirements and restrictions from this publisher email.
 
-Look for:
-1. DoFollow/NoFollow link policy
-2. Maximum links per post
-3. IMPORTANT: Prohibited/restricted topics or niches (things they DON'T accept)
-   Common restricted niches include:
-   - Adult/porn/sex/dating content
-   - Essay writing/academic papers
-   - Gambling/casino/betting (sometimes)
-   - CBD/cannabis/marijuana
-   - Pharmaceuticals/health supplements
-   - Crypto/forex/binary options
-   - Illegal content/weapons
-   - Payday loans/debt
-   - Weight loss/diet pills
-   - Vaping/e-cigarettes
-4. Word count requirements
-5. Content quality requirements
-6. Any special guidelines
+Email content:
+${content}
 
-Return as JSON:
+===EXTRACTION INSTRUCTIONS===
+
+1. LINK POLICIES - Look for ANY mention of:
+   - "do-follow", "dofollow", "DF" → accepts_dofollow: true
+   - "no-follow", "nofollow", "NF" → accepts_dofollow: false
+   - "includes 2 do-follow links" → max_links: 2, accepts_dofollow: true
+   - "Additional links: $30 each" → implies there's a base number of links included
+
+2. PROHIBITED/RESTRICTED CONTENT - Look for:
+   - "We do not accept...", "No content about...", "Prohibited topics include..."
+   - "Not allowed:", "Restricted:", "We don't do..."
+   - Common restrictions: CBD, casino, gambling, adult, porn, dating, essay writing, crypto, weapons, payday loans
+   - IMPORTANT: Copy the EXACT text about restrictions to restricted_niches_notes
+
+3. WORD COUNT - Extract from patterns like:
+   - "500-1000 words", "minimum 500 words", "at least 800 words", "max 1500 words"
+   - "articles should be...", "content length...", "word count..."
+
+4. CONTENT REQUIREMENTS:
+   - Author bio requirements
+   - Image requirements
+   - Content quality standards
+   - Specific formatting needs
+   - Review/approval process
+
+5. WHAT THEY DON'T DO - Important negatives:
+   - "We do not barter" → no_barter: true
+   - "We don't do link exchanges" → no_link_exchanges: true
+   - "No free posts" → no_free_posts: true
+
+Return as JSON (extract EVERYTHING mentioned):
 {
   "accepts_dofollow": true/false/null,
   "max_links": number or null,
-  "prohibited_topics": ["adult_dating", "essay_writing", "weapons", etc.],
-  "restricted_niches_notes": "exact text about what they don't accept",
+  "additional_links_allowed": true/false/null,
+  "additional_link_cost": number or null,
+  "prohibited_topics": ["cbd", "casino", "gambling", "adult", etc.],
+  "restricted_niches_notes": "EXACT text from email about what they don't accept",
   "min_word_count": number or null,
   "max_word_count": number or null,
-  "guidelines": "any special requirements"
+  "requires_author_bio": true/false/null,
+  "requires_images": true/false/null,
+  "min_images": number or null,
+  "no_barter": true/false/null,
+  "no_link_exchanges": true/false/null,
+  "no_free_posts": true/false/null,
+  "content_approval_required": true/false/null,
+  "guidelines": "any other special requirements or guidelines mentioned",
+  "raw_requirements_text": "COPY any requirements section verbatim from the email"
 }`;
 
     try {
@@ -262,20 +327,15 @@ Return as JSON:
     for (let attempt = 0; attempt < this.maxRetries; attempt++) {
       try {
         const response = await openai.chat.completions.create({
-          model: 'gpt-4-turbo-preview',
+          model: 'o3-mini', // Using o3-mini for advanced reasoning
           messages: [
             {
-              role: 'system',
-              content: 'You are an expert at extracting structured data from publisher emails. Always return valid JSON.',
-            },
-            {
               role: 'user',
-              content: prompt,
+              content: prompt + '\n\nIMPORTANT: Return ONLY valid JSON, no markdown formatting or explanations.',
             },
           ],
-          temperature: 0.1,
-          max_tokens: 1000,
-          response_format: { type: 'json_object' },
+          max_completion_tokens: 5000,
+          reasoning_effort: 'medium' as any // o3-mini specific parameter
         });
         
         return response.choices[0]?.message?.content || '{}';
@@ -373,14 +433,21 @@ Return as JSON:
         type: 'guest_post',
         basePrice: Number(pricingInfo.guest_post_price),
         currency: pricingInfo.currency || 'USD',
-        turnaroundDays: pricingInfo.turnaround_days || undefined,
+        turnaroundDays: pricingInfo.turnaround_days || undefined, // Don't default - let AI be explicit
         requirements: {
           acceptsDoFollow: requirements.accepts_dofollow,
-          maxLinks: requirements.max_links,
+          maxLinks: requirements.max_links || pricingInfo.max_links_included, // Check both places
           prohibitedTopics: requirements.prohibited_topics || [],
-          minWordCount: requirements.min_word_count,
-          maxWordCount: requirements.max_word_count,
+          minWordCount: requirements.min_word_count || pricingInfo.min_words,
+          maxWordCount: requirements.max_word_count || pricingInfo.max_words,
+          additionalLinkCost: requirements.additional_link_cost || pricingInfo.additional_link_price,
+          requiresAuthorBio: requirements.requires_author_bio,
+          requiresImages: requirements.requires_images,
+          noBarter: requirements.no_barter,
+          noLinkExchanges: requirements.no_link_exchanges,
         },
+        rawPricingText: pricingInfo.raw_pricing_text, // Store raw text for reference
+        rawRequirementsText: requirements.raw_requirements_text,
         confidence: 0.8,
       };
       
@@ -421,9 +488,39 @@ Return as JSON:
         turnaroundDays: pricingInfo.turnaround_days || undefined,
         requirements: {
           acceptsDoFollow: requirements.accepts_dofollow,
-          maxLinks: requirements.max_links,
+          maxLinks: requirements.max_links || pricingInfo.max_links_included,
+          additionalLinkCost: requirements.additional_link_cost || pricingInfo.additional_link_price,
         },
+        rawPricingText: pricingInfo.raw_pricing_text,
         confidence: 0.8,
+      });
+    }
+    
+    // Handle listicle pricing as separate offerings
+    if (pricingInfo.listicle_pricing && Array.isArray(pricingInfo.listicle_pricing)) {
+      for (const listicle of pricingInfo.listicle_pricing) {
+        offerings.push({
+          type: 'listicle_placement',
+          basePrice: Number(listicle.price),
+          currency: pricingInfo.currency || 'USD',
+          turnaroundDays: pricingInfo.turnaround_days || undefined,
+          position: listicle.position,
+          requirements: {
+            acceptsDoFollow: requirements.accepts_dofollow,
+            prohibitedTopics: requirements.prohibited_topics || [],
+          },
+          confidence: 0.7,
+        } as any);
+      }
+    }
+    
+    // Handle transactional pricing variations
+    if (pricingInfo.transactional_pricing) {
+      // Store as metadata in the offerings
+      offerings.forEach(offer => {
+        if (pricingInfo.transactional_pricing[offer.type]) {
+          offer.transactionalPricing = pricingInfo.transactional_pricing[offer.type];
+        }
       });
     }
     

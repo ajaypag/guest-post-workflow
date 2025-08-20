@@ -6,8 +6,8 @@ Add these to your production environment (Coolify/deployment platform):
 
 ```env
 # ManyReach Integration (REQUIRED)
-MANYREACH_WEBHOOK_URL_SECRET=3887a69b42ecb8761207150640db1b96d61edd6832bca7ae27f57725c2e84668
-MANYREACH_API_KEY=768383ea-2747-44a7-8190-a8ab3db7b61c
+MANYREACH_WEBHOOK_URL_SECRET=your-webhook-secret-here
+MANYREACH_API_KEY=your-manyreach-api-key-here
 MANYREACH_BYPASS_IP_CHECK=true  # Set to false in production after configuring IP allowlist
 
 # OpenAI for email parsing (REQUIRED)
@@ -18,7 +18,7 @@ OPENAI_API_KEY=your-production-openai-api-key
 
 Configure this URL in ManyReach:
 ```
-https://your-production-domain.com/api/webhooks/manyreach/3887a69b42ecb8761207150640db1b96d61edd6832bca7ae27f57725c2e84668
+https://your-production-domain.com/api/webhooks/manyreach/YOUR_WEBHOOK_SECRET_HERE
 ```
 
 ## Database Requirements
@@ -32,12 +32,12 @@ The following tables must exist (created automatically via migrations):
 
 1. **Health Check:**
 ```bash
-curl https://your-domain.com/api/webhooks/manyreach/3887a69b42ecb8761207150640db1b96d61edd6832bca7ae27f57725c2e84668
+curl https://your-domain.com/api/webhooks/manyreach/YOUR_WEBHOOK_SECRET_HERE
 ```
 
 2. **Test Payload:**
 ```bash
-curl -X POST https://your-domain.com/api/webhooks/manyreach/3887a69b42ecb8761207150640db1b96d61edd6832bca7ae27f57725c2e84668 \
+curl -X POST https://your-domain.com/api/webhooks/manyreach/YOUR_WEBHOOK_SECRET_HERE \
   -H "Content-Type: application/json" \
   -d '{
     "eventId": "prospect_replied",
