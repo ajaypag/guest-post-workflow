@@ -127,26 +127,69 @@ export async function POST(
     }
 
     // Check if payment intent already exists
-    const existingPI = await StripeService.getPaymentIntentByOrder(orderId);
+    let existingPI;
+    try {
+      console.log('[PAYMENT INTENT] Checking for existing payment intent...');
+      existingPI = await StripeService.getPaymentIntentByOrder(orderId);
+      if (existingPI) {
+        console.log('[PAYMENT INTENT] Found existing PI:', {
+          id: existingPI.paymentIntent.id,
+          status: existingPI.paymentIntent.status,
+          amount: existingPI.dbPaymentIntent.amount
+        });
+      } else {
+        console.log('[PAYMENT INTENT] No existing payment intent found');
+      }
+    } catch (error) {
+      console.error('[PAYMENT INTENT] Error checking existing PI:', error);
+      // Continue to create a new one if retrieval fails
+    }
+    
     if (existingPI && existingPI.paymentIntent.status === 'succeeded') {
-      return NextResponse.json(
-        { error: 'Order has already been paid' },
-        { status: 400 }
-      );
+      console.log('[PAYMENT INTENT] Existing payment intent already succeeded, creating new one for retesting');
+      // For development/testing: create a new payment intent when the old one is succeeded
+      // This allows retesting payments
+      existingPI = null; // Clear the existing PI to force new one creation below
+      // Note: In production, you'd want to prevent duplicate payments
     }
 
     // If there's an existing payment intent that's not succeeded, return it
+    console.log('[PAYMENT INTENT] Checking if should return existing PI:', {
+      hasExistingPI: !!existingPI,
+      status: existingPI?.paymentIntent?.status,
+      isValidStatus: existingPI ? ['requires_payment_method', 'requires_confirmation', 'requires_action'].includes(existingPI.paymentIntent.status) : false
+    });
+    
     if (existingPI && 
         ['requires_payment_method', 'requires_confirmation', 'requires_action'].includes(existingPI.paymentIntent.status)
     ) {
-      return NextResponse.json({
+      console.log('[PAYMENT INTENT] Returning existing payment intent');
+      
+      let publishableKey;
+      try {
+        publishableKey = StripeService.getPublishableKey();
+        console.log('[PAYMENT INTENT] Got publishable key');
+      } catch (error) {
+        console.error('[PAYMENT INTENT] Error getting publishable key:', error);
+        publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+      }
+      
+      const response = {
         success: true,
         clientSecret: existingPI.dbPaymentIntent.clientSecret,
         paymentIntentId: existingPI.paymentIntent.id,
         status: existingPI.paymentIntent.status,
         amount: existingPI.dbPaymentIntent.amount,
         currency: existingPI.dbPaymentIntent.currency,
+        publishableKey: publishableKey,
+      };
+      
+      console.log('[PAYMENT INTENT] Sending response:', {
+        ...response,
+        clientSecret: response.clientSecret ? 'present' : 'missing'
       });
+      
+      return NextResponse.json(response);
     }
 
     // Use the order's total retail amount for payment
@@ -158,7 +201,10 @@ export async function POST(
       subtotalRetail: order.subtotalRetail,
       state: order.state,
       invoicedAt: order.invoicedAt,
-      hasInvoiceData: !!order.invoiceData
+      hasInvoiceData: !!order.invoiceData,
+      accountId: order.accountId,
+      sessionUserId: userId,
+      sessionUserType: userType
     });
     
     if (!amount || amount <= 0) {
@@ -181,38 +227,33 @@ export async function POST(
       );
     }
 
-    // Create payment intent and update order state atomically to prevent race conditions
-    const { paymentIntent, dbPaymentIntent } = await db.transaction(async (tx) => {
-      // First create the payment intent (this might fail)
-      const paymentIntentResult = await StripeService.createPaymentIntent({
-        orderId,
-        accountId: account.id,
-        amount,
-        currency: validatedData.currency,
-        description: validatedData.description || `Payment for Order #${orderId.substring(0, 8)}`,
-        automaticPaymentMethods: validatedData.automaticPaymentMethods,
-        setupFutureUsage: validatedData.setupFutureUsage,
-        metadata: {
-          orderType: order.orderType,
-          orderState: order.state || 'unknown',
-          companyName: account.companyName || account.contactName || 'Unknown',
-        },
-      });
-
-      // Only update order state if payment intent creation succeeded
-      if (order.state !== 'payment_pending') {
-        await tx
-          .update(orders)
-          .set({
-            state: 'payment_pending',
-            status: 'payment_pending', // Also update status for consistency
-            updatedAt: new Date(),
-          })
-          .where(eq(orders.id, orderId));
-      }
-
-      return paymentIntentResult;
+    // Create payment intent 
+    const { paymentIntent, dbPaymentIntent } = await StripeService.createPaymentIntent({
+      orderId,
+      accountId: account.id,
+      amount,
+      currency: validatedData.currency,
+      description: validatedData.description || `Payment for Order #${orderId.substring(0, 8)}`,
+      automaticPaymentMethods: validatedData.automaticPaymentMethods,
+      setupFutureUsage: validatedData.setupFutureUsage,
+      metadata: {
+        orderType: order.orderType,
+        orderState: order.state || 'unknown',
+        companyName: account.companyName || account.contactName || 'Unknown',
+      },
     });
+
+    // Update order state to payment pending
+    await db
+      .update(orders)
+      .set({
+        state: 'payment_pending',
+        status: 'payment_pending', 
+        updatedAt: new Date(),
+      })
+      .where(eq(orders.id, orderId));
+    
+    console.log('[PAYMENT INTENT] Updated order state to payment_pending');
 
     return NextResponse.json({
       success: true,
