@@ -9,7 +9,7 @@ import {
 } from '@/lib/db/emailProcessingSchema';
 import { ParsedEmailData } from './emailParserService';
 import { shadowPublisherConfig, calculateReviewPriority } from '@/lib/config/shadowPublisherConfig';
-import { eq, and, or, ilike, sql } from 'drizzle-orm';
+import { eq, and, or, ilike, sql, desc } from 'drizzle-orm';
 import crypto from 'crypto';
 
 export class ShadowPublisherService {
@@ -70,25 +70,33 @@ export class ShadowPublisherService {
   }
   
   private async findExistingPublisher(email: string, parsedData: ParsedEmailData) {
-    // Only match exact email for confirmed active accounts
-    // This prevents false matches and ensures shadow publishers are created properly
+    // Match any existing publisher with the same email to prevent duplicates
+    // Check for exact email match first, regardless of status
     const exactMatch = await db
       .select()
       .from(publishers)
-      .where(
-        and(
-          eq(publishers.email, email),
-          eq(publishers.accountStatus, 'active'),
-          eq(publishers.emailVerified, true)
-        )
+      .where(eq(publishers.email, email))
+      .orderBy(
+        // Prefer active accounts over shadow accounts
+        sql`CASE 
+          WHEN account_status = 'active' THEN 1 
+          WHEN account_status = 'shadow' THEN 2 
+          ELSE 3 
+        END`,
+        // Then prefer verified over unverified
+        sql`CASE 
+          WHEN email_verified = true THEN 1 
+          ELSE 2 
+        END`
       )
       .limit(1);
     
     if (exactMatch.length > 0) {
+      console.log(`Found existing publisher for ${email}: ${exactMatch[0].id} (status: ${exactMatch[0].accountStatus})`);
       return exactMatch[0];
     }
     
-    return null; // Don't match on domain or fuzzy logic to prevent false positives
+    return null; // No existing publisher found
   }
   
   private async createShadowPublisher(
@@ -301,7 +309,7 @@ export class ShadowPublisherService {
         .limit(1);
       
       if (existing.length === 0) {
-        // Prepare attributes with restricted niches
+        // Prepare attributes with all extracted data
         const attributes: any = {};
         if (offering.requirements?.prohibitedTopics && offering.requirements.prohibitedTopics.length > 0) {
           attributes.restrictions = {
@@ -309,13 +317,30 @@ export class ShadowPublisherService {
           };
         }
         
+        // Store additional metadata
+        if (offering.rawPricingText) {
+          attributes.rawPricingText = offering.rawPricingText;
+        }
+        if (offering.rawRequirementsText) {
+          attributes.rawRequirementsText = offering.rawRequirementsText;
+        }
+        if (offering.transactionalPricing) {
+          attributes.transactionalPricing = offering.transactionalPricing;
+        }
+        if (offering.position) {
+          attributes.listiclePosition = offering.position;
+        }
+        if (offering.requirements?.additionalLinkCost) {
+          attributes.additionalLinkCost = offering.requirements.additionalLinkCost;
+        }
+        
         // Create new offering
         const [newOffering] = await db.insert(publisherOfferings).values({
           publisherId,
           offeringType: offering.type,
-          basePrice: offering.basePrice ? Math.round(offering.basePrice) : 0,
+          basePrice: offering.basePrice ? Math.round(offering.basePrice * 100) : 0, // Convert dollars to cents
           currency: offering.currency || 'USD',
-          turnaroundDays: offering.turnaroundDays || 7,
+          turnaroundDays: offering.turnaroundDays || null, // Don't default - use null if not specified
           currentAvailability: 'pending_verification',
           isActive: false,
           attributes: Object.keys(attributes).length > 0 ? attributes : {},
@@ -366,7 +391,7 @@ export class ShadowPublisherService {
         if (offering.confidence > 0.8) {
           await db.update(publisherOfferings)
             .set({
-              basePrice: offering.basePrice ? Math.round(offering.basePrice) : existing[0].basePrice,
+              basePrice: offering.basePrice ? Math.round(offering.basePrice * 100) : existing[0].basePrice, // Convert dollars to cents
               currency: offering.currency || existing[0].currency,
               turnaroundDays: offering.turnaroundDays || existing[0].turnaroundDays,
               updatedAt: new Date(),

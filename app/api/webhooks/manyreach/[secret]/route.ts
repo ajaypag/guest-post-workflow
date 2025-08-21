@@ -4,6 +4,7 @@ import { db } from '@/lib/db/connection';
 import { emailProcessingLogs, webhookSecurityLogs } from '@/lib/db/emailProcessingSchema';
 import { EmailParserService } from '@/lib/services/emailParserService';
 import { ShadowPublisherService } from '@/lib/services/shadowPublisherService';
+import { shadowPublisherServiceV2 } from '@/lib/services/shadowPublisherServiceV2';
 import { shadowPublisherConfig } from '@/lib/config/shadowPublisherConfig';
 import { eq, sql } from 'drizzle-orm';
 
@@ -413,58 +414,124 @@ export async function POST(
       });
     }
 
-    // Parse the email content with AI
-    const emailParser = new EmailParserService();
-    const parsedData = await emailParser.parseEmail({
-      from: email,
-      subject: `Reply from ${company || firstName || email}`,
-      content: message
-    });
-
-    // Update log with parsing results
-    await db.update(emailProcessingLogs)
-      .set({
-        parsedData: parsedData as any,
-        confidenceScore: parsedData.overallConfidence.toString(),
-        parsingErrors: (parsedData.errors || []) as any,
-        status: parsedData.overallConfidence >= shadowPublisherConfig.confidence.autoApprove ? 'parsed' : 'needs_review',
-        processedAt: new Date(),
-        processingDurationMs: Date.now() - startTime,
-      })
-      .where(eq(emailProcessingLogs.id, logEntry.id));
-
-    console.log(`🤖 AI parsing completed with confidence: ${(parsedData.overallConfidence * 100).toFixed(1)}%`);
-
-    // If confidence is high enough, create shadow publisher
+    // Check if V2 parser is enabled (feature flag)
+    const useV2Parser = process.env.USE_EMAIL_PARSER_V2 === 'true' || false;
+    
     let publisherId = null;
-    if (parsedData.overallConfidence >= shadowPublisherConfig.confidence.autoApprove) {
+    let parsedData: any;
+    let confidence: number;
+    let offeringsCount: number;
+    let websiteDetected: string | null;
+    
+    if (useV2Parser) {
+      console.log('🚀 Using V2 parser (schema-based, single prompt)');
+      
       try {
-        const shadowPublisherService = new ShadowPublisherService();
-        publisherId = await shadowPublisherService.processPublisherFromEmail(logEntry.id, parsedData, 'outreach');
+        // Use V2 service which includes parsing
+        publisherId = await shadowPublisherServiceV2.processPublisherFromEmail(
+          logEntry.id,
+          message,
+          email,
+          `Reply from ${company || firstName || email}`,
+          'outreach'
+        );
         
-        console.log(`✅ Shadow publisher created with ID: ${publisherId}`);
-      } catch (publisherError) {
-        console.error('Failed to create shadow publisher:', publisherError);
+        // Get parsed data from log for response
+        const [updatedLog] = await db
+          .select()
+          .from(emailProcessingLogs)
+          .where(eq(emailProcessingLogs.id, logEntry.id))
+          .limit(1);
+        
+        if (updatedLog?.parsedData) {
+          const v2Data = updatedLog.parsedData as any;
+          confidence = v2Data.confidence || 0.5;
+          offeringsCount = v2Data.offerings?.length || 0;
+          websiteDetected = v2Data.publisher?.websites?.[0] || null;
+          console.log(`✅ V2 processing complete - Publisher ID: ${publisherId}, Confidence: ${(confidence * 100).toFixed(1)}%`);
+        } else {
+          confidence = 0.5;
+          offeringsCount = 0;
+          websiteDetected = null;
+        }
+        
+      } catch (v2Error) {
+        console.error('❌ V2 parser failed:', v2Error);
         // Update log with error but don't fail the webhook
         await db.update(emailProcessingLogs)
           .set({
             status: 'failed',
-            errorMessage: `Publisher creation failed: ${publisherError instanceof Error ? publisherError.message : 'Unknown error'}`
+            errorMessage: `V2 parser failed: ${v2Error instanceof Error ? v2Error.message : 'Unknown error'}`,
+            processedAt: new Date(),
+            processingDurationMs: Date.now() - startTime,
           })
           .where(eq(emailProcessingLogs.id, logEntry.id));
+          
+        confidence = 0;
+        offeringsCount = 0;
+        websiteDetected = null;
       }
+      
     } else {
-      console.log(`⏸️ Confidence too low (${(parsedData.overallConfidence * 100).toFixed(1)}%) - queued for review`);
+      // Use original V1 parser
+      console.log('📧 Using V1 parser (3-stage processing)');
+      
+      const emailParser = new EmailParserService();
+      parsedData = await emailParser.parseEmail({
+        from: email,
+        subject: `Reply from ${company || firstName || email}`,
+        content: message
+      });
+
+      // Update log with parsing results
+      await db.update(emailProcessingLogs)
+        .set({
+          parsedData: parsedData as any,
+          confidenceScore: parsedData.overallConfidence.toString(),
+          parsingErrors: (parsedData.errors || []) as any,
+          status: parsedData.overallConfidence >= shadowPublisherConfig.confidence.autoApprove ? 'parsed' : 'needs_review',
+          processedAt: new Date(),
+          processingDurationMs: Date.now() - startTime,
+        })
+        .where(eq(emailProcessingLogs.id, logEntry.id));
+
+      console.log(`🤖 AI parsing completed with confidence: ${(parsedData.overallConfidence * 100).toFixed(1)}%`);
+
+      confidence = parsedData.overallConfidence;
+      offeringsCount = parsedData.offerings?.length || 0;
+      websiteDetected = parsedData.websites?.[0] || null;
+
+      // If confidence is high enough, create shadow publisher
+      if (parsedData.overallConfidence >= shadowPublisherConfig.confidence.autoApprove) {
+        try {
+          const shadowPublisherService = new ShadowPublisherService();
+          publisherId = await shadowPublisherService.processPublisherFromEmail(logEntry.id, parsedData, 'outreach');
+          
+          console.log(`✅ Shadow publisher created with ID: ${publisherId}`);
+        } catch (publisherError) {
+          console.error('Failed to create shadow publisher:', publisherError);
+          // Update log with error but don't fail the webhook
+          await db.update(emailProcessingLogs)
+            .set({
+              status: 'failed',
+              errorMessage: `Publisher creation failed: ${publisherError instanceof Error ? publisherError.message : 'Unknown error'}`
+            })
+            .where(eq(emailProcessingLogs.id, logEntry.id));
+        }
+      } else {
+        console.log(`⏸️ Confidence too low (${(parsedData.overallConfidence * 100).toFixed(1)}%) - queued for review`);
+      }
     }
 
     return NextResponse.json({
       success: true,
       emailLogId: logEntry.id,
       publisherId,
+      parserVersion: useV2Parser ? 'v2' : 'v1',
       parsedData: {
-        confidence: parsedData.overallConfidence,
-        offerings: parsedData.offerings?.length || 0,
-        websiteDetected: parsedData.websites?.[0] || null,
+        confidence: confidence,
+        offerings: offeringsCount,
+        websiteDetected: websiteDetected,
       }
     });
 

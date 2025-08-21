@@ -39,6 +39,10 @@ export const emailProcessingLogs = pgTable('email_processing_logs', {
   processedAt: timestamp('processed_at'),
   processingDurationMs: integer('processing_duration_ms'),
   
+  // Qualification tracking (added by migration 0058)
+  qualificationStatus: varchar('qualification_status', { length: 50 }).default('pending'), // pending, qualified, disqualified, legacy_processed
+  disqualificationReason: varchar('disqualification_reason', { length: 100 }),
+  
   // Thread tracking
   threadId: varchar('thread_id', { length: 255 }),
   replyCount: integer('reply_count').default(0),

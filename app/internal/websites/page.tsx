@@ -2,6 +2,7 @@ import { AuthServiceServer } from '@/lib/auth-server';
 import { redirect } from 'next/navigation';
 import { db } from '@/lib/db/connection';
 import { websites, publisherOfferingRelationships, publishers } from '@/lib/db/schema';
+import { shadowPublisherWebsites } from '@/lib/db/emailProcessingSchema';
 import { sql, desc, asc, ilike, and, gte, lte, eq } from 'drizzle-orm';
 import InternalWebsitesList from '@/components/internal/InternalWebsitesList';
 
@@ -102,14 +103,21 @@ export default async function InternalWebsitesPage({
       orderBy = desc(websites.createdAt);
   }
 
-  // Get websites with publisher count
+  // Get websites with publisher count from BOTH offering relationships AND shadow publishers
   const websitesQuery = db
     .select({
       website: websites,
       publisherCount: sql<number>`(
-        SELECT COUNT(DISTINCT por.publisher_id)
-        FROM ${publisherOfferingRelationships} por
-        WHERE por.website_id = websites.id
+        SELECT COUNT(DISTINCT publisher_id)
+        FROM (
+          SELECT publisher_id
+          FROM ${publisherOfferingRelationships}
+          WHERE website_id = websites.id
+          UNION
+          SELECT publisher_id
+          FROM ${shadowPublisherWebsites}
+          WHERE website_id = websites.id
+        ) combined
       )`,
       offeringCount: sql<number>`(
         SELECT COUNT(*)

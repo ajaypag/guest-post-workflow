@@ -17,7 +17,9 @@ Production-ready workflow system with PostgreSQL, multi-user auth, and AI agent 
 ### 🚨 PENDING MIGRATIONS (Run These First!)
 1. **Publisher System**: `migrations/0035_publisher_offerings_system_fixed.sql`
 2. **Domain Normalization**: `migrations/0037_normalize_existing_domains.sql`
-3. **Use Admin Panel**: `/admin/domain-migration` for safe migration
+3. **🆕 Email Qualification Tracking**: `migrations/0058_email_qualification_tracking.sql` - **CRITICAL before V2 parser updates**
+4. **Use Admin Panel**: `/admin/domain-migration` for safe migration
+5. **Use Admin Panel**: `/admin/email-qualification-migration` for email qualification migration
 
 ### Recent Changes (Keep in Mind)
 - ✅ TypeScript Compilation Fixed (2025-02-14) - ALL ERRORS RESOLVED
