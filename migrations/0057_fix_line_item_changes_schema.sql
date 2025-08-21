@@ -1,13 +1,12 @@
 -- Migration 0057: Fix line_item_changes table schema
 -- Convert from old schema (field_name, old_value) to new schema (change_type, previous_value, etc.)
 
--- Add missing columns
-ALTER TABLE line_item_changes 
-ADD COLUMN IF NOT EXISTS order_id UUID,
-ADD COLUMN IF NOT EXISTS change_type VARCHAR(50),
-ADD COLUMN IF NOT EXISTS previous_value JSONB,
-ADD COLUMN IF NOT EXISTS batch_id UUID,
-ADD COLUMN IF NOT EXISTS metadata JSONB;
+-- Add missing columns (separate statements for API compatibility)
+ALTER TABLE line_item_changes ADD COLUMN IF NOT EXISTS order_id UUID;
+ALTER TABLE line_item_changes ADD COLUMN IF NOT EXISTS change_type VARCHAR(50);
+ALTER TABLE line_item_changes ADD COLUMN IF NOT EXISTS previous_value JSONB;
+ALTER TABLE line_item_changes ADD COLUMN IF NOT EXISTS batch_id UUID;
+ALTER TABLE line_item_changes ADD COLUMN IF NOT EXISTS metadata JSONB;
 
 -- Convert field_name to change_type (only if field_name exists and has data)
 UPDATE line_item_changes 
@@ -51,9 +50,8 @@ ALTER TABLE line_item_changes
 ALTER COLUMN change_type SET NOT NULL;
 
 -- Drop old columns
-ALTER TABLE line_item_changes 
-DROP COLUMN IF EXISTS field_name,
-DROP COLUMN IF EXISTS old_value;
+ALTER TABLE line_item_changes DROP COLUMN IF EXISTS field_name;
+ALTER TABLE line_item_changes DROP COLUMN IF EXISTS old_value;
 
 -- Add foreign key constraint (will skip if already exists due to constraint on name)
 ALTER TABLE line_item_changes 
