@@ -395,8 +395,20 @@ export default function LineItemsReviewTable({
     }
   };
 
+  // Sort line items to maintain consistent order
+  const sortedLineItems = [...lineItems].sort((a, b) => {
+    // First sort by client name for grouping
+    const clientNameA = a.client?.name || 'Unknown';
+    const clientNameB = b.client?.name || 'Unknown';
+    const clientCompare = clientNameA.localeCompare(clientNameB);
+    if (clientCompare !== 0) return clientCompare;
+    
+    // Then sort by ID within each client group for stability
+    return a.id.localeCompare(b.id);
+  });
+
   // Group line items by client
-  const groupedByClient = lineItems.reduce((acc, item) => {
+  const groupedByClient = sortedLineItems.reduce((acc, item) => {
     const clientId = item.clientId;
     if (!acc[clientId]) {
       acc[clientId] = {
@@ -546,6 +558,11 @@ export default function LineItemsReviewTable({
       setTimeout(() => setSuccessMessage(null), 3000);
       
       setSelectedItems(new Set());
+      
+      // Trigger a single refresh after all updates are complete
+      if (onRefresh) {
+        await onRefresh();
+      }
     } catch (error) {
       console.error('Bulk action failed:', error);
       setSuccessMessage('Some items failed to update. Please try again.');

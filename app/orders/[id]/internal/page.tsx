@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import AuthWrapper from '@/components/AuthWrapper';
@@ -1138,6 +1138,9 @@ export default function InternalOrderManagementPage() {
     }
   };
 
+  // Batch tracking for bulk operations
+  const isBulkOperationRef = useRef(false);
+  
   const handleChangeLineItemStatus = async (itemId: string, newStatus: string, reason?: string) => {
     try {
       const response = await fetch(`/api/orders/${orderId}/line-items/${itemId}`, {
@@ -1157,18 +1160,25 @@ export default function InternalOrderManagementPage() {
         throw new Error(data.error || 'Failed to update status');
       }
 
-      setMessage({
-        type: 'success',
-        text: `Item ${newStatus === 'excluded' ? 'excluded' : newStatus === 'saved_for_later' ? 'saved for later' : 'included'}`
-      });
+      // Only show individual success messages if not part of bulk operation
+      // The LineItemsReviewTable component will handle bulk messages and refreshing
+      if (!isBulkOperationRef.current) {
+        setMessage({
+          type: 'success',
+          text: `Item ${newStatus === 'excluded' ? 'excluded' : newStatus === 'saved_for_later' ? 'saved for later' : 'included'}`
+        });
+      }
       
-      await loadOrder();
+      return { success: true };
     } catch (error) {
       console.error('Error updating line item status:', error);
-      setMessage({
-        type: 'error',
-        text: error instanceof Error ? error.message : 'Failed to update status'
-      });
+      if (!isBulkOperationRef.current) {
+        setMessage({
+          type: 'error',
+          text: error instanceof Error ? error.message : 'Failed to update status'
+        });
+      }
+      throw error;
     }
   };
 
