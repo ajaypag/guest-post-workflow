@@ -30,6 +30,7 @@ export interface LineItem {
   estimatedPrice?: number;
   wholesalePrice?: number;
   metadata?: any;
+  modifiedAt?: string | Date; // For tracking when line item was last modified for invoice regeneration
 }
 
 interface TablePermissions {
@@ -899,7 +900,7 @@ export default function LineItemsReviewTable({
                                 }
                                 
                                 // Default: show placeholder if no price info
-                                return <span className="text-gray-400">~{formatCurrency(27900)}</span>; // Default $279
+                                return <span className="text-gray-400">Price TBD</span>;
                               })()}
                             </td>
                           )}

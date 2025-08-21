@@ -98,9 +98,8 @@ export async function POST(
       if (!domain || !lineItem) continue;
 
       // Get website pricing and metrics information
-      // Initialize with defaults if line item doesn't have pricing yet
-      let wholesalePrice = lineItem.wholesalePrice || 20000; // Default $200
-      let estimatedPrice = lineItem.estimatedPrice || 27900; // Default $279
+      let wholesalePrice = lineItem.wholesalePrice;
+      let estimatedPrice = lineItem.estimatedPrice;
       let domainRating: number | null = null;
       let traffic: number | null = null;
 

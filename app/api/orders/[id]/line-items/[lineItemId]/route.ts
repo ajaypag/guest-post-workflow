@@ -55,7 +55,8 @@ export async function PATCH(
     
     // Prepare update data
     const updateData: any = {
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      modifiedAt: new Date() // Track when line item was last modified for invoice regeneration
     };
     
     if (status !== undefined) {

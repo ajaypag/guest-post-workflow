@@ -227,19 +227,13 @@ export async function DELETE(
       return NextResponse.json({ error: 'Line item not found' }, { status: 404 });
     }
 
-    // Remove domain assignment and reset to default pricing
-    const defaultEstimatedPrice = 27900; // $279 default
-    const defaultWholesalePrice = 20000; // $200 default
-    
+    // Remove domain assignment
     await db
       .update(orderLineItems)
       .set({
         assignedDomainId: null,
         assignedDomain: null,
         status: 'pending',
-        // Reset pricing to defaults when domain is removed
-        estimatedPrice: defaultEstimatedPrice,
-        wholesalePrice: defaultWholesalePrice,
         modifiedAt: new Date(),
         modifiedBy: session.userId
       })

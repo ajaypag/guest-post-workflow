@@ -152,9 +152,25 @@ export default function ExternalOrderReviewPage() {
   };
 
 
+  // Check if invoice needs regeneration
+  const needsInvoiceRegeneration = () => {
+    if (!order?.invoicedAt) return false;
+    
+    // Check if any line item was modified after invoice generation
+    const invoiceTime = new Date(order.invoicedAt).getTime();
+    const hasModificationsAfterInvoice = lineItems.some(item => {
+      if (!item.modifiedAt) return false;
+      return new Date(item.modifiedAt).getTime() > invoiceTime;
+    });
+    
+    return hasModificationsAfterInvoice;
+  };
+
   const handleProceed = async () => {
-    // If invoice already exists, just navigate to it
-    if (order?.invoicedAt) {
+    const needsRegeneration = needsInvoiceRegeneration();
+    
+    // If invoice exists and doesn't need regeneration, just navigate to it
+    if (order?.invoicedAt && !needsRegeneration) {
       router.push(`/orders/${orderId}/invoice`);
       return;
     }
@@ -168,37 +184,38 @@ export default function ExternalOrderReviewPage() {
     if (order && includedItems.length > 0) {
       try {
         setGeneratingInvoice(true);
-        console.log(`[INVOICE] Generating invoice for order ${orderId} with ${includedItems.length} included sites`);
+        const action = needsRegeneration ? 'regenerate_invoice' : 'generate_invoice';
+        console.log(`[INVOICE] ${needsRegeneration ? 'Regenerating' : 'Generating'} invoice for order ${orderId} with ${includedItems.length} included sites`);
         
-        // Trigger invoice generation for included sites
+        // Trigger invoice generation or regeneration for included sites
         const response = await fetch(`/api/orders/${orderId}/invoice`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'generate_invoice' })
+          body: JSON.stringify({ action })
         });
         
         if (response.ok) {
           const result = await response.json();
-          console.log('[INVOICE] Generated successfully:', result);
+          console.log(`[INVOICE] ${needsRegeneration ? 'Regenerated' : 'Generated'} successfully:`, result);
           // Invoice generated successfully, redirect to invoice page
           router.push(`/orders/${orderId}/invoice`);
         } else {
           // Log the error details for debugging
           const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-          console.error('[INVOICE] Failed to generate invoice:', {
+          console.error(`[INVOICE] Failed to ${needsRegeneration ? 'regenerate' : 'generate'} invoice:`, {
             status: response.status,
             statusText: response.statusText,
             error: errorData
           });
           
           // Show error message to user
-          alert(`Failed to generate invoice: ${errorData.error || 'Unknown error'}. Please try again or contact support.`);
+          alert(`Failed to ${needsRegeneration ? 'regenerate' : 'generate'} invoice: ${errorData.error || 'Unknown error'}. Please try again or contact support.`);
           
           // Don't redirect automatically - let user decide next step
         }
       } catch (error) {
-        console.error('[INVOICE] Error generating invoice:', error);
-        alert('Failed to generate invoice due to network error. Please try again.');
+        console.error(`[INVOICE] Error ${needsRegeneration ? 'regenerating' : 'generating'} invoice:`, error);
+        alert(`Failed to ${needsRegeneration ? 'regenerate' : 'generate'} invoice due to network error. Please try again.`);
       } finally {
         setGeneratingInvoice(false);
       }
@@ -474,10 +491,17 @@ export default function ExternalOrderReviewPage() {
                       Generating Invoice...
                     </>
                   ) : order?.invoicedAt ? (
-                    <>
-                      View Invoice
-                      <ArrowRight className="w-5 h-5 ml-2" />
-                    </>
+                    needsInvoiceRegeneration() ? (
+                      <>
+                        Regenerate Invoice (Changes Made)
+                        <ArrowRight className="w-5 h-5 ml-2" />
+                      </>
+                    ) : (
+                      <>
+                        View Invoice
+                        <ArrowRight className="w-5 h-5 ml-2" />
+                      </>
+                    )
                   ) : (
                     <>
                       Generate Invoice for {includedCount} Site{includedCount !== 1 ? 's' : ''}
@@ -487,7 +511,9 @@ export default function ExternalOrderReviewPage() {
                 </button>
                 <p className="text-sm text-gray-600 mt-2">
                   {order?.invoicedAt 
-                    ? "Invoice already generated. Click to view or make changes to regenerate."
+                    ? (needsInvoiceRegeneration() 
+                        ? "Changes detected since invoice was generated. Click to regenerate with current selection."
+                        : "Invoice ready. Click to view, or make changes to regenerate.")
                     : "You can adjust your selection using the status dropdowns above"}
                 </p>
               </>

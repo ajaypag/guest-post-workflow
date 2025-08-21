@@ -16,3 +16,6 @@
  ⚠ See instructions if you need to configure Turbopack:
   https://nextjs.org/docs/app/api-reference/next-config-js/turbo
 
+   Reload env: .env.local
+ ✓ Compiled middleware in 26ms
+[?25h
