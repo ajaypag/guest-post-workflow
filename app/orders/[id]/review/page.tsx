@@ -74,11 +74,23 @@ export default function ExternalOrderReviewPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update status');
+        let errorMessage = 'Failed to update status';
+        try {
+          const data = await response.json();
+          errorMessage = data.error || errorMessage;
+        } catch (parseError) {
+          // If response is not JSON, try to get text
+          try {
+            errorMessage = await response.text();
+          } catch {
+            // Use default error message
+          }
+        }
+        throw new Error(errorMessage);
       }
 
-      // Refresh the order data
-      await fetchOrder();
+      // Parse the successful response
+      await response.json();
     } catch (error) {
       console.error('Error updating status:', error);
       alert('Failed to update status. Please try again.');

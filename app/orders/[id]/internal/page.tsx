@@ -1156,10 +1156,24 @@ export default function InternalOrderManagementPage() {
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to update status');
+        let errorMessage = 'Failed to update status';
+        try {
+          const data = await response.json();
+          errorMessage = data.error || errorMessage;
+        } catch (parseError) {
+          // If response is not JSON, try to get text
+          try {
+            errorMessage = await response.text();
+          } catch {
+            // Use default error message
+          }
+        }
+        throw new Error(errorMessage);
       }
 
+      // Parse the successful response
+      const result = await response.json();
+      
       // Only show individual success messages if not part of bulk operation
       // The LineItemsReviewTable component will handle bulk messages and refreshing
       if (!isBulkOperationRef.current) {
@@ -1169,7 +1183,7 @@ export default function InternalOrderManagementPage() {
         });
       }
       
-      return { success: true };
+      return result;
     } catch (error) {
       console.error('Error updating line item status:', error);
       if (!isBulkOperationRef.current) {
