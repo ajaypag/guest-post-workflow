@@ -1,0 +1,109 @@
+import { NextResponse } from 'next/server';
+import { AuthServiceServer } from '@/lib/services/authServiceServer';
+import { EmailParserServiceV2 } from '@/lib/services/emailParserServiceV2';
+import { emailQualificationService } from '@/lib/services/emailQualificationService';
+
+export async function POST(request: Request) {
+  try {
+    // Check auth
+    const authService = new AuthServiceServer();
+    const session = await authService.getSession();
+    
+    if (!session || session.userType !== 'internal') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { 
+      emailId,
+      emailContent, 
+      emailFrom, 
+      emailSubject,
+      testType 
+    } = await request.json();
+
+    if (!emailContent || !emailFrom) {
+      return NextResponse.json(
+        { error: 'Email content and from address required' },
+        { status: 400 }
+      );
+    }
+
+    const results: any = {};
+
+    // Run Parser V2 Test
+    if (testType === 'parser' || testType === 'both') {
+      const startTime = Date.now();
+      try {
+        const parserService = new EmailParserServiceV2();
+        const parserResult = await parserService.parseEmail(
+          emailContent, 
+          emailFrom, 
+          emailSubject
+        );
+        
+        results.parserV2 = {
+          publisher: parserResult.publisher,
+          offerings: parserResult.offerings,
+          pricingRules: parserResult.pricingRules,
+          confidence: parserResult.confidence,
+          extractionNotes: parserResult.extractionNotes,
+          duration: Date.now() - startTime
+        };
+      } catch (error) {
+        results.parserV2 = {
+          error: error instanceof Error ? error.message : 'Parser failed',
+          duration: Date.now() - startTime
+        };
+      }
+    }
+
+    // Run Qualification Test
+    if (testType === 'qualification' || testType === 'both') {
+      const startTime = Date.now();
+      try {
+        // First parse the email if we haven't already
+        let parsedData = results.parserV2;
+        if (!parsedData || parsedData.error) {
+          const parserService = new EmailParserServiceV2();
+          parsedData = await parserService.parseEmail(
+            emailContent, 
+            emailFrom, 
+            emailSubject
+          );
+        }
+
+        const qualificationResult = await emailQualificationService.qualifyEmail(
+          emailContent,
+          parsedData,
+          emailFrom
+        );
+        
+        results.qualification = {
+          isQualified: qualificationResult.isQualified,
+          status: qualificationResult.status,
+          reason: qualificationResult.reason,
+          notes: qualificationResult.notes,
+          duration: Date.now() - startTime
+        };
+      } catch (error) {
+        results.qualification = {
+          error: error instanceof Error ? error.message : 'Qualification failed',
+          duration: Date.now() - startTime
+        };
+      }
+    }
+
+    return NextResponse.json({ 
+      success: true,
+      emailId,
+      results 
+    });
+    
+  } catch (error) {
+    console.error('Test execution failed:', error);
+    return NextResponse.json(
+      { error: 'Test execution failed' },
+      { status: 500 }
+    );
+  }
+}
