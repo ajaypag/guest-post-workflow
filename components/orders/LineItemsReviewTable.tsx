@@ -438,10 +438,15 @@ export default function LineItemsReviewTable({
         return domainA.localeCompare(domainB);
       
       case 'status':
-        // Sort by inclusion status
+        // Sort by inclusion status with logical order: included -> saved_for_later -> excluded
+        const statusOrder: Record<string, number> = {
+          'included': 1,
+          'saved_for_later': 2,
+          'excluded': 3
+        };
         const statusA = a.metadata?.inclusionStatus || 'included';
         const statusB = b.metadata?.inclusionStatus || 'included';
-        return statusA.localeCompare(statusB);
+        return (statusOrder[statusA] || 999) - (statusOrder[statusB] || 999);
       
       default:
         // Default to client sorting
