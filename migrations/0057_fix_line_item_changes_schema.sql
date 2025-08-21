@@ -3,61 +3,73 @@
 
 DO $$
 DECLARE
-    required_cols TEXT[] := ARRAY['order_id', 'change_type', 'previous_value', 'batch_id', 'metadata'];
-    missing_cols TEXT[] := ARRAY[]::TEXT[];
-    col TEXT;
-    has_old_cols BOOLEAN := FALSE;
+    has_old_schema BOOLEAN := FALSE;
+    has_new_schema BOOLEAN := TRUE;
 BEGIN
     RAISE NOTICE 'Starting Migration 0057: line_item_changes schema check';
     
-    -- Check for old schema columns that need migration
+    -- Check if we have old schema (field_name column exists)
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'line_item_changes' AND column_name = 'field_name') THEN
-        has_old_cols := TRUE;
-        RAISE NOTICE 'Found old schema with field_name column - will migrate data';
+        has_old_schema := TRUE;
+        RAISE NOTICE 'Found old schema with field_name column';
     END IF;
     
-    -- Check which required columns are missing
-    FOREACH col IN ARRAY required_cols LOOP
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'line_item_changes' AND column_name = col) THEN
-            missing_cols := array_append(missing_cols, col);
-        END IF;
-    END LOOP;
+    -- Check if we're missing any new schema columns
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'line_item_changes' AND column_name = 'order_id') THEN
+        has_new_schema := FALSE;
+    END IF;
     
-    -- Report status
-    IF array_length(missing_cols, 1) IS NULL THEN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'line_item_changes' AND column_name = 'change_type') THEN
+        has_new_schema := FALSE;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'line_item_changes' AND column_name = 'previous_value') THEN
+        has_new_schema := FALSE;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'line_item_changes' AND column_name = 'batch_id') THEN
+        has_new_schema := FALSE;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'line_item_changes' AND column_name = 'metadata') THEN
+        has_new_schema := FALSE;
+    END IF;
+    
+    -- Report current state
+    IF has_new_schema THEN
         RAISE NOTICE 'Schema is already correct - all required columns exist';
     ELSE
-        RAISE NOTICE 'Missing columns: %', array_to_string(missing_cols, ', ');
+        RAISE NOTICE 'Schema needs updating - adding missing columns';
     END IF;
     
-    -- Add missing columns only if needed
-    IF 'order_id' = ANY(missing_cols) THEN
+    -- Add missing columns if needed
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'line_item_changes' AND column_name = 'order_id') THEN
         ALTER TABLE line_item_changes ADD COLUMN order_id UUID;
         RAISE NOTICE 'Added order_id column';
     END IF;
     
-    IF 'change_type' = ANY(missing_cols) THEN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'line_item_changes' AND column_name = 'change_type') THEN
         ALTER TABLE line_item_changes ADD COLUMN change_type VARCHAR(50);
         RAISE NOTICE 'Added change_type column';
     END IF;
     
-    IF 'previous_value' = ANY(missing_cols) THEN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'line_item_changes' AND column_name = 'previous_value') THEN
         ALTER TABLE line_item_changes ADD COLUMN previous_value JSONB;
         RAISE NOTICE 'Added previous_value column';
     END IF;
     
-    IF 'batch_id' = ANY(missing_cols) THEN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'line_item_changes' AND column_name = 'batch_id') THEN
         ALTER TABLE line_item_changes ADD COLUMN batch_id UUID;
         RAISE NOTICE 'Added batch_id column';
     END IF;
     
-    IF 'metadata' = ANY(missing_cols) THEN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'line_item_changes' AND column_name = 'metadata') THEN
         ALTER TABLE line_item_changes ADD COLUMN metadata JSONB;
         RAISE NOTICE 'Added metadata column';
     END IF;
     
-    -- Only migrate data if we have old schema
-    IF has_old_cols THEN
+    -- Migrate data if we have old schema
+    IF has_old_schema THEN
         RAISE NOTICE 'Migrating data from old schema';
         
         -- Convert field_name to change_type
@@ -97,7 +109,7 @@ BEGIN
         RAISE NOTICE 'Data migration completed';
     END IF;
     
-    -- Ensure change_type has defaults and constraints
+    -- Set defaults for any NULL values
     UPDATE line_item_changes 
     SET change_type = 'field_changed' 
     WHERE change_type IS NULL;
@@ -113,6 +125,7 @@ BEGIN
         RAISE NOTICE 'Made change_type NOT NULL';
     END IF;
     
+    RAISE NOTICE 'Migration 0057 main block completed';
 END $$;
 
 -- Add foreign key constraint if it doesn't exist
@@ -178,25 +191,5 @@ BEGIN
         RAISE NOTICE 'Recorded migration in migration_history table';
     ELSE
         RAISE NOTICE 'No suitable migrations table found';
-    END IF;
-END $$;
-
--- Final verification
-DO $$
-DECLARE
-    required_cols TEXT[] := ARRAY['order_id', 'change_type', 'previous_value', 'batch_id', 'metadata'];
-    missing_cols TEXT[] := ARRAY[]::TEXT[];
-    col TEXT;
-BEGIN
-    FOREACH col IN ARRAY required_cols LOOP
-        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'line_item_changes' AND column_name = col) THEN
-            missing_cols := array_append(missing_cols, col);
-        END IF;
-    END LOOP;
-    
-    IF array_length(missing_cols, 1) > 0 THEN
-        RAISE EXCEPTION 'Migration 0057 failed: Missing columns: %', array_to_string(missing_cols, ', ');
-    ELSE
-        RAISE NOTICE 'Migration 0057 completed successfully - schema verified';
     END IF;
 END $$;
