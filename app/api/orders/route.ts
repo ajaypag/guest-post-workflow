@@ -205,10 +205,11 @@ export async function POST(request: NextRequest) {
         wholesalePrice = Math.floor(priceInfo.wholesalePrice * 100); // Convert to cents
         retailPrice = Math.floor(priceInfo.retailPrice * 100); // Convert to cents
       } else {
-        // Fallback for domains not in website table (keep existing logic temporarily)
+        // Fallback for domains not in website table
         const dr = 50;
-        retailPrice = dr >= 70 ? 59900 : dr >= 50 ? 49900 : dr >= 30 ? 39900 : 29900;
-        wholesalePrice = Math.floor(retailPrice * 0.6);
+        // Set wholesale based on DR tier
+        wholesalePrice = dr >= 70 ? 52000 : dr >= 50 ? 42000 : dr >= 30 ? 32000 : 22000;
+        retailPrice = wholesalePrice + 7900; // Add $79 service fee
       }
       
       subtotalRetail += retailPrice;
@@ -281,8 +282,9 @@ export async function POST(request: NextRequest) {
         } else {
           // Fallback for domains not in website table
           const dr = 50;
-          retailPrice = dr >= 70 ? 59900 : dr >= 50 ? 49900 : dr >= 30 ? 39900 : 29900;
-          wholesalePrice = Math.floor(retailPrice * 0.6);
+          // Set wholesale based on DR tier
+          wholesalePrice = dr >= 70 ? 52000 : dr >= 50 ? 42000 : dr >= 30 ? 32000 : 22000;
+          retailPrice = wholesalePrice + 7900; // Add $79 service fee
         }
         
         const targetPageId = domainTargetPageMap.get(domain.id) || null;
@@ -327,8 +329,9 @@ export async function POST(request: NextRequest) {
       for (const domain of selectedDomains) {
       // For now, use a default DR of 50 since bulk analysis domains don't have DR
       const dr = 50;
-      const retailPrice = dr >= 70 ? 59900 : dr >= 50 ? 49900 : dr >= 30 ? 39900 : 29900;
-      const wholesalePrice = Math.floor(retailPrice * 0.6);
+      // Set wholesale based on DR tier
+      const wholesalePrice = dr >= 70 ? 52000 : dr >= 50 ? 42000 : dr >= 30 ? 32000 : 22000;
+      const retailPrice = wholesalePrice + 7900; // Add $79 service fee
 
       // Get the target page ID for this domain
       const targetPageId = domainTargetPageMap.get(domain.id) || null;

@@ -273,8 +273,8 @@ export class WorkflowGenerationService {
         // Domain metrics snapshot
         domainRating: domain.dr || 70,
         traffic: domain.totalTraffic || 10000,
-        retailPrice: lineItem.approvedPrice || lineItem.estimatedPrice || 100,
-        wholesalePrice: lineItem.wholesalePrice || Math.floor((lineItem.estimatedPrice || 100) * 0.7),
+        retailPrice: lineItem.approvedPrice || lineItem.estimatedPrice || 17900, // Default $179 if no price
+        wholesalePrice: lineItem.wholesalePrice || ((lineItem.estimatedPrice || 17900) - 7900), // Retail minus $79 service fee
         
         // Workflow tracking
         workflowId: workflowId,
@@ -584,9 +584,9 @@ export class WorkflowGenerationService {
     orderGroupId: string
   ): Promise<any> {
     try {
-      // Calculate prices (these would come from real pricing logic)
-      const retailPrice = siteSelection.domain?.price || 100;
-      const wholesalePrice = Math.floor(retailPrice * 0.7); // 30% margin
+      // Calculate prices - wholesale from domain, retail adds $79 service fee
+      const wholesalePrice = siteSelection.domain?.price || 10000; // Default $100 wholesale
+      const retailPrice = wholesalePrice + 7900; // Add $79 service fee
 
       const orderItemData = {
         id: uuidv4(),
