@@ -55,19 +55,10 @@ ALTER TABLE line_item_changes
 DROP COLUMN IF EXISTS field_name,
 DROP COLUMN IF EXISTS old_value;
 
--- Add foreign key constraint if it doesn't exist
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.table_constraints 
-        WHERE constraint_name = 'fk_line_item_changes_order_id' 
-        AND table_name = 'line_item_changes'
-    ) THEN
-        ALTER TABLE line_item_changes 
-        ADD CONSTRAINT fk_line_item_changes_order_id 
-        FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE;
-    END IF;
-END $$;
+-- Add foreign key constraint (will skip if already exists due to constraint on name)
+ALTER TABLE line_item_changes 
+ADD CONSTRAINT IF NOT EXISTS fk_line_item_changes_order_id 
+FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE;
 
 -- Create indexes
 CREATE INDEX IF NOT EXISTS idx_line_item_changes_order_id ON line_item_changes(order_id);
