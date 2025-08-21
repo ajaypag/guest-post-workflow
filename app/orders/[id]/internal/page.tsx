@@ -1126,6 +1126,36 @@ export default function InternalOrderManagementPage() {
     }
   };
 
+  const handleRefreshMetadata = async () => {
+    setActionLoading(prev => ({ ...prev, refresh_metadata: true }));
+    try {
+      const response = await fetch(`/api/orders/${orderId}/refresh-metadata`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to refresh metadata');
+      }
+      
+      const data = await response.json();
+      setMessage({
+        type: 'success',
+        text: `Updated ${data.updated} line items with latest website data (DR, traffic, and pricing)`
+      });
+      await loadOrder();
+    } catch (err) {
+      console.error('Error refreshing metadata:', err);
+      setMessage({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'Failed to refresh metadata'
+      });
+    } finally {
+      setActionLoading(prev => ({ ...prev, refresh_metadata: false }));
+    }
+  };
+
   // DEPRECATED: Rebalance pools removed in favor of status-based system
   // const handleRebalancePools = async () => { ... };
 
@@ -1999,6 +2029,27 @@ export default function InternalOrderManagementPage() {
                           </p>
                         )}
                       </div>
+                    )}
+                    
+                    {/* Refresh Metadata - Update DR, traffic, and pricing from websites table */}
+                    {(order.status !== 'paid' && order.status !== 'completed') && (
+                      <button
+                        onClick={handleRefreshMetadata}
+                        disabled={actionLoading.refresh_metadata}
+                        className="w-full px-3 py-2 bg-cyan-600 text-white text-sm rounded-md hover:bg-cyan-700 disabled:opacity-50"
+                      >
+                        {actionLoading.refresh_metadata ? (
+                          <span className="flex items-center justify-center gap-2">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Refreshing...
+                          </span>
+                        ) : (
+                          <span className="flex items-center justify-center gap-2">
+                            <RefreshCw className="h-4 w-4" />
+                            Refresh DR/Traffic/Pricing
+                          </span>
+                        )}
+                      </button>
                     )}
                     
                     {/* Pool rebalancing removed - using status-based system now */}
