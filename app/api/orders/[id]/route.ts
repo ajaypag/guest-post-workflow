@@ -154,11 +154,19 @@ export async function GET(
       }
     }
     
+    // Check if workflows have been generated for this order
+    let hasWorkflows = false;
+    if (lineItems.length > 0) {
+      // Check if any line items have associated workflows
+      hasWorkflows = lineItems.some(item => item.workflowId !== null);
+    }
+    
     // Transform the data
     const orderWithGroups = {
       ...order,
       orderGroups: groupsWithSelections,
-      lineItems: lineItems
+      lineItems: lineItems,
+      hasWorkflows: hasWorkflows
     };
 
     // Check permissions

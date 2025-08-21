@@ -154,6 +154,7 @@ interface OrderDetail {
   createdAt: string;
   updatedAt: string;
   approvedAt?: string;
+  hasWorkflows?: boolean;
   invoicedAt?: string;
   paidAt?: string;
   completedAt?: string;
@@ -1961,22 +1962,43 @@ export default function InternalOrderManagementPage() {
                       </button>
                     )}
 
-                    {/* Workflow Generation */}
+                    {/* Workflow Generation - Prominent for paid orders */}
                     {order.status === 'paid' && (
-                      <button
-                        onClick={handleGenerateWorkflows}
-                        disabled={actionLoading.generate_workflows}
-                        className="w-full px-3 py-2 bg-purple-600 text-white text-sm rounded-md hover:bg-purple-700 disabled:opacity-50"
-                      >
-                        {actionLoading.generate_workflows ? (
-                          <span className="flex items-center justify-center gap-2">
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            Generating...
-                          </span>
-                        ) : (
-                          'Generate Workflows'
+                      <div className="relative">
+                        {/* Alert indicator if no workflows exist */}
+                        {!order.hasWorkflows && (
+                          <div className="absolute -top-2 -right-2 flex h-3 w-3">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                          </div>
                         )}
-                      </button>
+                        <button
+                          onClick={handleGenerateWorkflows}
+                          disabled={actionLoading.generate_workflows}
+                          className={`w-full px-3 py-3 text-white text-sm font-semibold rounded-md transition-all ${
+                            !order.hasWorkflows 
+                              ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg animate-pulse' 
+                              : 'bg-purple-600 hover:bg-purple-700'
+                          } disabled:opacity-50`}
+                        >
+                          {actionLoading.generate_workflows ? (
+                            <span className="flex items-center justify-center gap-2">
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Generating...
+                            </span>
+                          ) : (
+                            <span className="flex items-center justify-center gap-2">
+                              <Sparkles className="h-4 w-4" />
+                              {order.hasWorkflows ? 'Regenerate Workflows' : 'Generate Workflows (Required)'}
+                            </span>
+                          )}
+                        </button>
+                        {!order.hasWorkflows && (
+                          <p className="text-xs text-red-600 mt-1 text-center font-medium">
+                            ⚠️ Workflows must be generated for content creation
+                          </p>
+                        )}
+                      </div>
                     )}
                     
                     {/* Pool rebalancing removed - using status-based system now */}
