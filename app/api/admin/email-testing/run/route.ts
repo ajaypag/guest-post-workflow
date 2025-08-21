@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { AuthServiceServer } from '@/lib/auth-server';
+import { EmailParserService } from '@/lib/services/emailParserService';
 import { EmailParserServiceV2 } from '@/lib/services/emailParserServiceV2';
 import { emailQualificationService } from '@/lib/services/emailQualificationService';
 
@@ -29,8 +30,35 @@ export async function POST(request: Request) {
 
     const results: any = {};
 
-    // Run Parser V2 Test
-    if (testType === 'parser' || testType === 'both') {
+    // Run Parser V1 Test (Original)
+    if (testType === 'parserV1' || testType === 'both-parsers' || testType === 'all') {
+      const startTime = Date.now();
+      try {
+        const parserService = new EmailParserService();
+        const parserResult = await parserService.parseEmail({
+          subject: emailSubject || '',
+          body: emailContent,
+          from: emailFrom
+        });
+        
+        results.parserV1 = {
+          sender: parserResult.sender,
+          websites: parserResult.websites,
+          offerings: parserResult.offerings,
+          overallConfidence: parserResult.overallConfidence,
+          missingFields: parserResult.missingFields,
+          duration: Date.now() - startTime
+        };
+      } catch (error) {
+        results.parserV1 = {
+          error: error instanceof Error ? error.message : 'Parser V1 failed',
+          duration: Date.now() - startTime
+        };
+      }
+    }
+
+    // Run Parser V2 Test (New)
+    if (testType === 'parserV2' || testType === 'both-parsers' || testType === 'all') {
       const startTime = Date.now();
       try {
         const parserService = new EmailParserServiceV2();
@@ -57,7 +85,7 @@ export async function POST(request: Request) {
     }
 
     // Run Qualification Test
-    if (testType === 'qualification' || testType === 'both') {
+    if (testType === 'qualification' || testType === 'all') {
       const startTime = Date.now();
       try {
         // First parse the email if we haven't already

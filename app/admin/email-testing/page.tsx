@@ -13,6 +13,15 @@ interface EmailSample {
 }
 
 interface TestResults {
+  parserV1?: {
+    sender: any;
+    websites: any[];
+    offerings: any[];
+    overallConfidence: number;
+    missingFields: string[];
+    duration: number;
+    error?: string;
+  };
   parserV2?: {
     publisher: any;
     offerings: any[];
@@ -38,8 +47,9 @@ export default function EmailTestingPage() {
   const [selectedEmail, setSelectedEmail] = useState<EmailSample | null>(null);
   const [testResults, setTestResults] = useState<TestResults | null>(null);
   const [loading, setLoading] = useState(false);
-  const [testType, setTestType] = useState<'parser' | 'qualification' | 'both'>('both');
-  const [showParserPrompt, setShowParserPrompt] = useState(false);
+  const [testType, setTestType] = useState<'parserV1' | 'parserV2' | 'both-parsers' | 'qualification' | 'all'>('all');
+  const [showParserV1Prompt, setShowParserV1Prompt] = useState(false);
+  const [showParserV2Prompt, setShowParserV2Prompt] = useState(false);
   const [showQualificationLogic, setShowQualificationLogic] = useState(false);
 
   useEffect(() => {
@@ -137,8 +147,10 @@ export default function EmailTestingPage() {
                 value={testType}
                 onChange={(e) => setTestType(e.target.value as any)}
               >
-                <option value="both">Both Services</option>
-                <option value="parser">Parser V2 Only</option>
+                <option value="all">All Tests (V1 + V2 + Qualification)</option>
+                <option value="both-parsers">Both Parsers (V1 + V2)</option>
+                <option value="parserV1">Parser V1 Only (Original)</option>
+                <option value="parserV2">Parser V2 Only (New)</option>
                 <option value="qualification">Qualification Only</option>
               </select>
             </div>
@@ -157,22 +169,66 @@ export default function EmailTestingPage() {
 
           {/* Test Type Details */}
           <div className="mt-6 space-y-4">
-            {(testType === 'parser' || testType === 'both') && (
-              <div className="border rounded-lg p-4 bg-blue-50">
+            {(testType === 'parserV1' || testType === 'both-parsers' || testType === 'all') && (
+              <div className="border rounded-lg p-4 bg-purple-50">
                 <button
-                  onClick={() => setShowParserPrompt(!showParserPrompt)}
+                  onClick={() => setShowParserV1Prompt(!showParserV1Prompt)}
                   className="flex items-center justify-between w-full text-left"
                 >
                   <div>
-                    <h3 className="font-semibold text-blue-900">Parser V2 Details</h3>
+                    <h3 className="font-semibold text-purple-900">Parser V1 Details (Original)</h3>
+                    <p className="text-sm text-purple-700 mt-1">
+                      Original parser - uses GPT-4o with 3 separate extraction calls
+                    </p>
+                  </div>
+                  <span className="text-purple-600">{showParserV1Prompt ? '▼' : '▶'}</span>
+                </button>
+                
+                {showParserV1Prompt && (
+                  <div className="mt-4 space-y-3">
+                    <div className="bg-white rounded p-3">
+                      <h4 className="font-semibold text-sm mb-2">Model Configuration:</h4>
+                      <pre className="text-xs bg-gray-100 p-2 rounded overflow-x-auto">
+{`model: 'gpt-4o'
+3 separate API calls:
+1. Extract sender info
+2. Extract offerings
+3. Extract websites`}
+                      </pre>
+                    </div>
+                    
+                    <div className="bg-white rounded p-3">
+                      <h4 className="font-semibold text-sm mb-2">Original Extraction Approach:</h4>
+                      <ul className="text-xs space-y-1 list-disc list-inside">
+                        <li>Makes 3 separate OpenAI calls for different data types</li>
+                        <li>Returns confidence scores for each field</li>
+                        <li>Identifies missing fields explicitly</li>
+                        <li>Supports transactional and niche-specific pricing</li>
+                        <li>Extracts raw pricing and requirements text</li>
+                        <li>More verbose but potentially less accurate</li>
+                      </ul>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {(testType === 'parserV2' || testType === 'both-parsers' || testType === 'all') && (
+              <div className="border rounded-lg p-4 bg-blue-50">
+                <button
+                  onClick={() => setShowParserV2Prompt(!showParserV2Prompt)}
+                  className="flex items-center justify-between w-full text-left"
+                >
+                  <div>
+                    <h3 className="font-semibold text-blue-900">Parser V2 Details (New)</h3>
                     <p className="text-sm text-blue-700 mt-1">
                       Uses OpenAI o3-mini to extract publisher info, offerings, and pricing from emails
                     </p>
                   </div>
-                  <span className="text-blue-600">{showParserPrompt ? '▼' : '▶'}</span>
+                  <span className="text-blue-600">{showParserV2Prompt ? '▼' : '▶'}</span>
                 </button>
                 
-                {showParserPrompt && (
+                {showParserV2Prompt && (
                   <div className="mt-4 space-y-3">
                     <div className="bg-white rounded p-3">
                       <h4 className="font-semibold text-sm mb-2">Model Configuration:</h4>
@@ -225,7 +281,7 @@ EXTRACTION EXAMPLES:
               </div>
             )}
 
-            {(testType === 'qualification' || testType === 'both') && (
+            {(testType === 'qualification' || testType === 'all') && (
               <div className="border rounded-lg p-4 bg-green-50">
                 <button
                   onClick={() => setShowQualificationLogic(!showQualificationLogic)}
@@ -326,6 +382,91 @@ if (checkForLinkSwap(email)) {
         {/* Test Results */}
         {testResults && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Parser V1 Results (Original) */}
+            {testResults.parserV1 && (
+              <div className="bg-white rounded-lg shadow p-6">
+                <h2 className="text-xl font-semibold mb-4 text-purple-600">
+                  Parser V1 Results (Original)
+                  <span className="text-sm font-normal ml-2 text-gray-500">
+                    ({testResults.parserV1.duration}ms)
+                  </span>
+                </h2>
+                
+                {testResults.parserV1.error ? (
+                  <div className="text-red-600 p-3 bg-red-50 rounded">
+                    Error: {testResults.parserV1.error}
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* Sender Info */}
+                    <div>
+                      <h3 className="font-semibold mb-2">Sender Info</h3>
+                      <div className="bg-gray-50 p-3 rounded text-sm">
+                        <div><strong>Email:</strong> {testResults.parserV1.sender?.email}</div>
+                        <div><strong>Name:</strong> {testResults.parserV1.sender?.name || 'N/A'}</div>
+                        <div><strong>Company:</strong> {testResults.parserV1.sender?.company || 'N/A'}</div>
+                        <div><strong>Confidence:</strong> {(testResults.parserV1.sender?.confidence * 100).toFixed(0)}%</div>
+                      </div>
+                    </div>
+
+                    {/* Websites */}
+                    <div>
+                      <h3 className="font-semibold mb-2">
+                        Websites ({testResults.parserV1.websites?.length || 0})
+                      </h3>
+                      {testResults.parserV1.websites?.map((site, idx) => (
+                        <div key={idx} className="bg-gray-50 p-2 rounded text-sm mb-1">
+                          <span className="font-medium">{site.domain}</span>
+                          <span className="ml-2 text-gray-500">({(site.confidence * 100).toFixed(0)}% conf)</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Offerings */}
+                    <div>
+                      <h3 className="font-semibold mb-2">
+                        Offerings ({testResults.parserV1.offerings?.length || 0})
+                      </h3>
+                      {testResults.parserV1.offerings?.map((offer, idx) => (
+                        <div key={idx} className="bg-gray-50 p-3 rounded text-sm mb-2">
+                          <div className="grid grid-cols-2 gap-2">
+                            <div><strong>Type:</strong> {offer.type}</div>
+                            <div><strong>Price:</strong> ${offer.basePrice} {offer.currency}</div>
+                            <div><strong>Confidence:</strong> {(offer.confidence * 100).toFixed(0)}%</div>
+                            <div><strong>Turnaround:</strong> {offer.turnaroundDays || 'N/A'} days</div>
+                          </div>
+                          {offer.rawPricingText && (
+                            <div className="mt-2 text-xs text-gray-600">
+                              <strong>Raw text:</strong> "{offer.rawPricingText}"
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Overall Stats */}
+                    <div className="border-t pt-3">
+                      <div className="flex justify-between items-center">
+                        <span className="font-semibold">Overall Confidence:</span>
+                        <span className={`px-2 py-1 rounded text-sm ${
+                          testResults.parserV1.overallConfidence > 0.8 ? 'bg-green-100 text-green-800' :
+                          testResults.parserV1.overallConfidence > 0.5 ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {(testResults.parserV1.overallConfidence * 100).toFixed(0)}%
+                        </span>
+                      </div>
+                      {testResults.parserV1.missingFields && testResults.parserV1.missingFields.length > 0 && (
+                        <div className="mt-2 text-sm text-orange-600">
+                          <strong>Missing:</strong> {testResults.parserV1.missingFields.join(', ')}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            
             {/* Parser V2 Results */}
             {testResults.parserV2 && (
               <div className="bg-white rounded-lg shadow p-6">
