@@ -407,8 +407,9 @@ export default function LineItemsReviewTable({
     // Then apply secondary sorting within each client group
     switch (sortBy) {
       case 'none':
-        // No additional sorting, just use ID for stability
-        return a.id.localeCompare(b.id);
+        // Preserve the original order from database (displayOrder, then addedAt)
+        // Since items come pre-sorted from the API, just maintain stable order
+        return 0;
       
       case 'price_asc':
         // Sort by price ascending
@@ -681,7 +682,7 @@ export default function LineItemsReviewTable({
               onChange={(e) => setSortBy(e.target.value)}
               className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="none">Default Order</option>
+              <option value="none">Order Added</option>
               <option value="domain">Sort by Domain</option>
               <option value="target_page">Sort by Target Page</option>
               <option value="dr_desc">Sort by DR (High to Low)</option>
