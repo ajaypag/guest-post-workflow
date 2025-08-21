@@ -1262,6 +1262,53 @@ export default function InternalOrderManagementPage() {
     }
   };
 
+  const handleStateRollback = async (targetState: string) => {
+    const stateLabels: Record<string, string> = {
+      'configuring': 'Configuring',
+      'analyzing': 'Finding Sites',
+      'sites_ready': 'Sites Ready',
+      'client_reviewing': 'Client Reviewing',
+      'payment_pending': 'Payment Pending'
+    };
+
+    const label = stateLabels[targetState] || targetState;
+    
+    if (!confirm(`Are you sure you want to change the order state to "${label}"? This will affect the order workflow.`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/orders/${orderId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ newState: targetState })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setMessage({
+          type: 'success',
+          text: data.message || `Order state changed to ${label}`
+        });
+        // Refresh order data
+        await loadOrder();
+      } else {
+        setMessage({
+          type: 'error',
+          text: data.error || 'Failed to change state'
+        });
+      }
+    } catch (error) {
+      console.error('Error changing state:', error);
+      setMessage({
+        type: 'error',
+        text: 'Failed to change order state'
+      });
+    }
+  };
+
   const handleRefreshMetadata = async () => {
     setActionLoading(prev => ({ ...prev, refresh_metadata: true }));
     try {
@@ -1891,6 +1938,83 @@ export default function InternalOrderManagementPage() {
                         )}
                       </div>
                     </div>
+                    
+                    {/* State Management - For orders in 'confirmed' status */}
+                    {order.status === 'confirmed' && order.state && (
+                      <div className="p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-medium text-gray-700">Order State Transitions</span>
+                          <span className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded">
+                            Current: {(() => {
+                              const stateLabels: Record<string, string> = {
+                                'configuring': 'Configuring',
+                                'analyzing': 'Finding Sites',
+                                'sites_ready': 'Sites Ready',
+                                'client_reviewing': 'Client Reviewing',
+                                'payment_pending': 'Payment Pending'
+                              };
+                              return stateLabels[order.state] || order.state;
+                            })()}
+                          </span>
+                        </div>
+                        <div className="flex gap-2 flex-wrap">
+                          {/* State-specific transitions */}
+                          {order.state === 'sites_ready' && (
+                            <>
+                              <button
+                                onClick={() => handleStateRollback('analyzing')}
+                                className="px-2 py-1 bg-orange-600 text-white text-xs rounded hover:bg-orange-700"
+                                title="Go back to finding sites if the current selection isn't satisfactory"
+                              >
+                                ← Back to Finding Sites
+                              </button>
+                              <button
+                                onClick={() => handleStateRollback('client_reviewing')}
+                                className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
+                              >
+                                → Move to Client Review
+                              </button>
+                            </>
+                          )}
+                          
+                          {order.state === 'client_reviewing' && (
+                            <>
+                              <button
+                                onClick={() => handleStateRollback('sites_ready')}
+                                className="px-2 py-1 bg-orange-600 text-white text-xs rounded hover:bg-orange-700"
+                              >
+                                ← Back to Sites Ready
+                              </button>
+                              <button
+                                onClick={() => handleStateRollback('payment_pending')}
+                                className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
+                              >
+                                → Move to Payment Pending
+                              </button>
+                            </>
+                          )}
+                          
+                          {order.state === 'analyzing' && (
+                            <button
+                              onClick={() => handleStateRollback('sites_ready')}
+                              className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
+                            >
+                              → Mark Sites Ready
+                            </button>
+                          )}
+                          
+                          {order.state === 'payment_pending' && !order.paidAt && (
+                            <button
+                              onClick={() => handleStateRollback('sites_ready')}
+                              className="px-2 py-1 bg-orange-600 text-white text-xs rounded hover:bg-orange-700"
+                              title="Go back if invoice needs adjustment or sites need review"
+                            >
+                              ← Back to Sites Ready
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
                     
                     {/* Order Confirmation with Target Page Status */}
                     {order.status === 'pending_confirmation' ? (

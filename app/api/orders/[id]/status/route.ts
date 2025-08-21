@@ -28,6 +28,42 @@ const STATUS_TRANSITIONS: Record<string, { forward: string[], backward: string[]
   }
 };
 
+// Define valid state transitions within confirmed status
+const STATE_TRANSITIONS: Record<string, { forward: string[], backward: string[] }> = {
+  'configuring': {
+    forward: ['analyzing'],
+    backward: []
+  },
+  'analyzing': {
+    forward: ['sites_ready'],
+    backward: ['configuring']
+  },
+  'sites_ready': {
+    forward: ['client_reviewing', 'payment_pending'],
+    backward: ['analyzing'] // Go back to finding sites
+  },
+  'client_reviewing': {
+    forward: ['payment_pending'],
+    backward: ['sites_ready']
+  },
+  'payment_pending': {
+    forward: ['payment_received'],
+    backward: ['sites_ready', 'client_reviewing'] // Back to review if invoice issues
+  },
+  'payment_received': {
+    forward: ['workflows_generated'],
+    backward: [] // Can't go back after payment
+  },
+  'workflows_generated': {
+    forward: ['in_progress'],
+    backward: []
+  },
+  'in_progress': {
+    forward: [],
+    backward: []
+  }
+};
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -39,7 +75,7 @@ export async function PATCH(
     }
 
     const { id: orderId } = await params;
-    const { newStatus, force = false } = await request.json();
+    const { newStatus, newState, force = false } = await request.json();
 
     // Get current order
     const order = await db.query.orders.findFirst({
@@ -51,23 +87,66 @@ export async function PATCH(
     }
 
     const currentStatus = order.status;
+    const currentState = order.state;
 
-    // Check if transition is valid
-    const validTransitions = STATUS_TRANSITIONS[currentStatus];
-    if (!validTransitions) {
-      return NextResponse.json({ 
-        error: 'Unknown current status' 
-      }, { status: 400 });
+    // Handle state change if provided (within same status)
+    if (newState && !newStatus) {
+      if (!currentState) {
+        return NextResponse.json({ 
+          error: 'Order has no current state' 
+        }, { status: 400 });
+      }
+      
+      const validStateTransitions = STATE_TRANSITIONS[currentState];
+      if (!validStateTransitions) {
+        return NextResponse.json({ 
+          error: `Unknown current state: ${currentState}` 
+        }, { status: 400 });
+      }
+
+      const isStateForward = validStateTransitions.forward.includes(newState);
+      const isStateBackward = validStateTransitions.backward.includes(newState);
+
+      if (!isStateForward && !isStateBackward) {
+        return NextResponse.json({ 
+          error: `Cannot transition state from ${currentState} to ${newState}` 
+        }, { status: 400 });
+      }
+
+      // Update just the state
+      const [updatedOrder] = await db
+        .update(orders)
+        .set({
+          state: newState,
+          updatedAt: new Date()
+        })
+        .where(eq(orders.id, orderId))
+        .returning();
+
+      return NextResponse.json({
+        success: true,
+        order: updatedOrder,
+        message: `Order state ${isStateBackward ? 'rolled back' : 'updated'} from ${currentState} to ${newState}`
+      });
     }
 
-    const isForward = validTransitions.forward.includes(newStatus);
-    const isBackward = validTransitions.backward.includes(newStatus);
+    // Handle status change
+    if (newStatus) {
+      const validTransitions = STATUS_TRANSITIONS[currentStatus];
+      if (!validTransitions) {
+        return NextResponse.json({ 
+          error: 'Unknown current status' 
+        }, { status: 400 });
+      }
 
-    if (!isForward && !isBackward) {
-      return NextResponse.json({ 
-        error: `Cannot transition from ${currentStatus} to ${newStatus}` 
-      }, { status: 400 });
-    }
+      const isForward = validTransitions.forward.includes(newStatus);
+      const isBackward = validTransitions.backward.includes(newStatus);
+
+      if (!isForward && !isBackward) {
+        return NextResponse.json({ 
+          error: `Cannot transition from ${currentStatus} to ${newStatus}` 
+        }, { status: 400 });
+      }
 
     // Check for dangerous rollbacks
     const warnings: string[] = [];
@@ -129,6 +208,7 @@ export async function PATCH(
       message: `Order status ${isBackward ? 'rolled back' : 'updated'} from ${currentStatus} to ${newStatus}`,
       warnings: warnings.length > 0 ? warnings : undefined
     });
+    }
 
   } catch (error) {
     console.error('Error updating order status:', error);
@@ -162,13 +242,25 @@ export async function GET(
     }
 
     const currentStatus = order.status;
-    const transitions = STATUS_TRANSITIONS[currentStatus] || { forward: [], backward: [] };
+    const currentState = order.state;
+    const statusTransitions = STATUS_TRANSITIONS[currentStatus] || { forward: [], backward: [] };
+    const stateTransitions = currentState ? STATE_TRANSITIONS[currentState] : null;
 
     return NextResponse.json({
       currentStatus,
+      currentState,
       availableTransitions: {
-        forward: transitions.forward,
-        backward: transitions.backward
+        status: {
+          forward: statusTransitions.forward,
+          backward: statusTransitions.backward
+        },
+        state: stateTransitions ? {
+          forward: stateTransitions.forward,
+          backward: stateTransitions.backward
+        } : {
+          forward: [],
+          backward: []
+        }
       },
       orderState: {
         hasInvoice: !!order.invoicedAt,
