@@ -174,11 +174,13 @@ interface OrderDetail {
 }
 
 // Helper functions for dual-mode support (orderGroups vs lineItems)
+// IMPORTANT: Only count line items with assigned domains for accurate financial metrics
 const getTotalLinkCount = (order: OrderDetail): number => {
   if (order.lineItems && order.lineItems.length > 0) {
-    // Count only active line items (exclude cancelled and refunded)
+    // Count only active line items WITH assigned domains
     return order.lineItems.filter(item => 
-      !['cancelled', 'refunded'].includes(item.status)
+      !['cancelled', 'refunded'].includes(item.status) && 
+      item.assignedDomainId // Only count if domain is assigned
     ).length;
   }
   // Fallback to orderGroups
@@ -192,9 +194,12 @@ const getTotalServiceFees = (order: OrderDetail): number => {
 
 const getTotalRevenue = (order: OrderDetail): number => {
   if (order.lineItems && order.lineItems.length > 0) {
-    // Calculate from line items (use approved price if available, otherwise estimated)
+    // Calculate from line items WITH assigned domains only
     return order.lineItems
-      .filter(item => !['cancelled', 'refunded'].includes(item.status))
+      .filter(item => 
+        !['cancelled', 'refunded'].includes(item.status) && 
+        item.assignedDomainId // Only count if domain is assigned
+      )
       .reduce((sum, item) => sum + (item.approvedPrice || item.estimatedPrice || 0), 0);
   }
   // Fallback to order total
@@ -203,9 +208,12 @@ const getTotalRevenue = (order: OrderDetail): number => {
 
 const getWholesaleTotal = (order: OrderDetail): number => {
   if (order.lineItems && order.lineItems.length > 0) {
-    // Calculate from line items
+    // Calculate from line items WITH assigned domains only
     return order.lineItems
-      .filter(item => !['cancelled', 'refunded'].includes(item.status))
+      .filter(item => 
+        !['cancelled', 'refunded'].includes(item.status) && 
+        item.assignedDomainId // Only count if domain is assigned
+      )
       .reduce((sum, item) => sum + (item.wholesalePrice || 0), 0);
   }
   // Fallback to order total calculation
@@ -230,9 +238,13 @@ const getAverageWholesalePerLink = (order: OrderDetail): number => {
 
 const getCurrentAveragePricePerLink = (order: OrderDetail): number => {
   if (order.lineItems && order.lineItems.length > 0) {
-    const activeItems = order.lineItems.filter(item => !['cancelled', 'refunded'].includes(item.status));
-    const totalRevenue = activeItems.reduce((sum, item) => sum + (item.approvedPrice || item.estimatedPrice || 0), 0);
-    return activeItems.length > 0 ? totalRevenue / activeItems.length : 0;
+    // Only calculate average for items with assigned domains
+    const activeItemsWithDomains = order.lineItems.filter(item => 
+      !['cancelled', 'refunded'].includes(item.status) && 
+      item.assignedDomainId
+    );
+    const totalRevenue = activeItemsWithDomains.reduce((sum, item) => sum + (item.approvedPrice || item.estimatedPrice || 0), 0);
+    return activeItemsWithDomains.length > 0 ? totalRevenue / activeItemsWithDomains.length : 0;
   }
   return getAveragePricePerLink(order);
 };
