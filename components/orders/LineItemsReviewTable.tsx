@@ -337,7 +337,7 @@ export default function LineItemsReviewTable({
   // State
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<string>('client'); // New sort state
+  const [sortBy, setSortBy] = useState<string>('none'); // Default to no sorting
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [showFilters, setShowFilters] = useState(false);
@@ -398,13 +398,16 @@ export default function LineItemsReviewTable({
 
   // Sort line items based on selected sort option
   const sortedLineItems = [...lineItems].sort((a, b) => {
+    // First always sort by client name to maintain grouping
+    const clientNameA = a.client?.name || 'Unknown';
+    const clientNameB = b.client?.name || 'Unknown';
+    const clientCompare = clientNameA.localeCompare(clientNameB);
+    if (clientCompare !== 0) return clientCompare;
+    
+    // Then apply secondary sorting within each client group
     switch (sortBy) {
-      case 'client':
-        // Sort by client name, then by ID for stability
-        const clientNameA = a.client?.name || 'Unknown';
-        const clientNameB = b.client?.name || 'Unknown';
-        const clientCompare = clientNameA.localeCompare(clientNameB);
-        if (clientCompare !== 0) return clientCompare;
+      case 'none':
+        // No additional sorting, just use ID for stability
         return a.id.localeCompare(b.id);
       
       case 'price_asc':
@@ -672,7 +675,7 @@ export default function LineItemsReviewTable({
               onChange={(e) => setSortBy(e.target.value)}
               className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="client">Sort by Client</option>
+              <option value="none">Default Order</option>
               <option value="domain">Sort by Domain</option>
               <option value="dr_desc">Sort by DR (High to Low)</option>
               <option value="dr_asc">Sort by DR (Low to High)</option>
