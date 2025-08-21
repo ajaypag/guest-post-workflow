@@ -90,6 +90,8 @@ export async function GET(
     let lineItems: any[] = [];
     if (isLineItemsSystemEnabled()) {
       try {
+        console.log('[DEBUG] Loading line items for order:', id);
+        console.log('[DEBUG] Line items system enabled:', isLineItemsSystemEnabled());
         lineItems = await db.query.orderLineItems.findMany({
           where: eq(orderLineItems.orderId, id),
           with: {
@@ -115,6 +117,7 @@ export async function GET(
             orderLineItems.addedAt
           ]
         });
+        console.log('[DEBUG] Found line items:', lineItems.length);
 
         // Fetch publisher data separately and merge it
         const lineItemsWithPublishers = await Promise.all(

@@ -6,9 +6,18 @@ import { Share2, Copy, CheckCircle, Loader2, X, AlertCircle, Video, Plus } from 
 interface ShareOrderButtonProps {
   orderId: string;
   currentShareToken?: string | null;
+  className?: string;
+  iconOnly?: boolean;
+  label?: string;
 }
 
-export default function ShareOrderButton({ orderId, currentShareToken }: ShareOrderButtonProps) {
+export default function ShareOrderButton({ 
+  orderId, 
+  currentShareToken, 
+  className,
+  iconOnly = false,
+  label = "Share for Transfer"
+}: ShareOrderButtonProps) {
   const [showModal, setShowModal] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
   const [shareToken, setShareToken] = useState('');
@@ -119,11 +128,10 @@ export default function ShareOrderButton({ orderId, currentShareToken }: ShareOr
     <>
       <button
         onClick={() => setShowModal(true)}
-        className="inline-flex items-center px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 text-gray-700 text-xs sm:text-sm rounded-md hover:bg-gray-50 min-h-[44px]"
+        className={className || "inline-flex items-center px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 text-gray-700 text-xs sm:text-sm rounded-md hover:bg-gray-50 min-h-[44px]"}
       >
-        <Share2 className="h-3 sm:h-4 w-3 sm:w-4 mr-1 sm:mr-2" />
-        <span className="hidden sm:inline">Share for Transfer</span>
-        <span className="sm:hidden">Share</span>
+        <Share2 className={iconOnly ? "h-3.5 w-3.5" : "h-3.5 w-3.5 mr-2 text-gray-400"} />
+        {!iconOnly && <span>{label}</span>}
       </button>
 
       {showModal && (

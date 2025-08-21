@@ -20,7 +20,7 @@ import {
   ArrowLeft, Loader2, CheckCircle, Clock, Search, Users, FileText, 
   RefreshCw, ExternalLink, Globe, LinkIcon, Eye, Edit, Package,
   Target, ChevronRight, AlertCircle, Activity, Building, User, DollarSign,
-  Download, Share2, XCircle, CreditCard, Trash2, ArrowRightLeft
+  Download, Share2, XCircle, CreditCard, Trash2, ArrowRightLeft, MoreVertical
 } from 'lucide-react';
 
 // Service fee constant - $79 per link for SEO content package
@@ -595,24 +595,24 @@ export default function OrderDetailPage() {
                   </Link>
                 ) : isOrderEditable ? (
                   <>
-                    {/* Show warning if order has progressed beyond draft */}
+                    {/* Show warning if order has progressed beyond draft - more subtle */}
                     {order.status !== 'draft' && (
                       <button
                         onClick={() => setShowEditWarning(true)}
-                        className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700 text-xs sm:text-sm min-h-[44px]"
+                        className="inline-flex items-center px-2.5 sm:px-3 py-1.5 border border-amber-200 text-amber-700 rounded-md hover:bg-amber-50 hover:border-amber-300 text-xs sm:text-sm min-h-[36px] transition-colors"
                       >
-                        <RefreshCw className="h-3 sm:h-4 w-3 sm:w-4 mr-1 sm:mr-2" />
+                        <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
                         <span className="hidden sm:inline">Revise Order</span>
                         <span className="sm:hidden">Revise</span>
                       </button>
                     )}
-                    {/* Normal edit button for draft orders */}
+                    {/* Normal edit button for draft orders - more subtle */}
                     {order.status === 'draft' && (
                       <Link
                         href={`/orders/${order.id}/edit`}
-                        className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-xs sm:text-sm min-h-[44px]"
+                        className="inline-flex items-center px-2.5 sm:px-3 py-1.5 border border-blue-200 text-blue-700 rounded-md hover:bg-blue-50 hover:border-blue-300 text-xs sm:text-sm min-h-[36px] transition-colors"
                       >
-                        <Edit className="h-3 sm:h-4 w-3 sm:w-4 mr-1 sm:mr-2" />
+                        <Edit className="h-3.5 w-3.5 mr-1.5" />
                         <span className="hidden sm:inline">Edit Order</span>
                         <span className="sm:hidden">Edit</span>
                       </Link>
@@ -621,70 +621,84 @@ export default function OrderDetailPage() {
                 ) : null}
                 {user?.userType === 'internal' && (
                   <>
-                    <ShareOrderButton 
-                      orderId={order.id}
-                      currentShareToken={order.shareToken}
-                    />
-                    <button
-                      onClick={() => setShowTransferModal(true)}
-                      className="inline-flex items-center px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 text-xs sm:text-sm min-h-[44px]"
-                    >
-                      <ArrowRightLeft className="h-3 sm:h-4 w-3 sm:w-4 mr-1 sm:mr-2" />
-                      <span className="hidden sm:inline">Transfer</span>
-                      <span className="sm:hidden">Transfer</span>
-                    </button>
+                    {/* Manage Order - keep outside */}
                     <Link
                       href={`/orders/${order.id}/internal`}
-                      className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 text-xs sm:text-sm min-h-[44px]"
+                      className="inline-flex items-center px-2.5 sm:px-3 py-1.5 border border-purple-200 text-purple-700 rounded-md hover:bg-purple-50 hover:border-purple-300 text-xs sm:text-sm min-h-[36px] transition-colors"
                     >
-                      <Activity className="h-3 sm:h-4 w-3 sm:w-4 mr-1 sm:mr-2" />
+                      <Activity className="h-3.5 w-3.5 mr-1.5" />
                       <span className="hidden sm:inline">Manage Order</span>
                       <span className="sm:hidden">Manage</span>
                     </Link>
-                  </>
-                )}
-                {/* Admin delete button */}
-                {(order.status === 'draft' || (user?.userType === 'internal' && user?.role === 'admin')) && (
-                  <button
-                    onClick={async () => {
-                      const isAdmin = user?.userType === 'internal' && user?.role === 'admin';
-                      const confirmMessage = isAdmin && order.status !== 'draft'
-                        ? `⚠️ ADMIN ACTION: Are you sure you want to delete this ${order.status} order?\n\nOrder ID: ${order.id}\nAccount: ${order.account?.email || 'Unknown'}\nValue: ${formatCurrency((order as any).totalRetail || 0)}\n\nThis will permanently delete the order and all related data. This action cannot be undone.`
-                        : 'Are you sure you want to delete this draft order? This action cannot be undone.';
-                      
-                      if (confirm(confirmMessage)) {
-                        try {
-                          const response = await fetch(`/api/orders/${order.id}`, {
-                            method: 'DELETE',
-                            headers: { 'Content-Type': 'application/json' }
-                          });
+                    
+                    {/* Admin Actions Dropdown */}
+                    <div className="relative group">
+                      <button
+                        className="inline-flex items-center px-2 py-1.5 border border-gray-200 text-gray-500 rounded-md hover:border-gray-300 hover:text-gray-700 text-xs font-medium transition-all duration-150 min-h-[36px]"
+                        title="More Actions"
+                      >
+                        <MoreVertical className="h-3.5 w-3.5" />
+                      </button>
+                      <div className="absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                        <div className="py-1">
+                          <ShareOrderButton 
+                            orderId={order.id}
+                            currentShareToken={order.shareToken}
+                            className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+                          />
+                          <button
+                            onClick={() => setShowTransferModal(true)}
+                            className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+                          >
+                            <ArrowRightLeft className="h-3.5 w-3.5 mr-2 text-gray-400" />
+                            Transfer Order
+                          </button>
                           
-                          if (response.ok) {
-                            const data = await response.json();
-                            if (isAdmin && order.status !== 'draft') {
-                              console.log('Admin deleted order:', data.deletedOrder);
-                            }
-                            router.push('/orders');
-                          } else {
-                            const data = await response.json();
-                            alert(data.error || 'Failed to delete order');
-                          }
-                        } catch (error) {
-                          console.error('Error deleting order:', error);
-                          alert('Error deleting order');
-                        }
-                      }
-                    }}
-                    className={`inline-flex items-center px-2 sm:px-3 py-1.5 sm:py-2 border ${
-                      order.status !== 'draft' && user?.role === 'admin' 
-                        ? 'border-red-300 text-red-700 hover:bg-red-50' 
-                        : 'border-red-300 text-red-600 hover:bg-red-50'
-                    } rounded-md text-xs sm:text-sm min-h-[44px]`}
-                  >
-                    <Trash2 className="h-3 sm:h-4 w-3 sm:w-4 mr-1 sm:mr-2" />
-                    <span className="hidden sm:inline">Delete Order</span>
-                    <span className="sm:hidden">Delete</span>
-                  </button>
+                          {/* Delete button - moved to dropdown */}
+                          {(order.status === 'draft' || user?.role === 'admin') && (
+                            <>
+                              <hr className="my-1 border-gray-200" />
+                              <button
+                                onClick={async () => {
+                                  const isAdmin = user?.userType === 'internal' && user?.role === 'admin';
+                                  const confirmMessage = isAdmin && order.status !== 'draft'
+                                    ? `⚠️ ADMIN ACTION: Are you sure you want to delete this ${order.status} order?\n\nOrder ID: ${order.id}\nAccount: ${order.account?.email || 'Unknown'}\nValue: ${formatCurrency((order as any).totalRetail || 0)}\n\nThis will permanently delete the order and all related data. This action cannot be undone.`
+                                    : 'Are you sure you want to delete this draft order? This action cannot be undone.';
+                                  
+                                  if (confirm(confirmMessage)) {
+                                    try {
+                                      const response = await fetch(`/api/orders/${order.id}`, {
+                                        method: 'DELETE',
+                                        headers: { 'Content-Type': 'application/json' }
+                                      });
+                                      
+                                      if (response.ok) {
+                                        const data = await response.json();
+                                        if (isAdmin && order.status !== 'draft') {
+                                          console.log('Admin deleted order:', data.deletedOrder);
+                                        }
+                                        router.push('/orders');
+                                      } else {
+                                        const data = await response.json();
+                                        alert(data.error || 'Failed to delete order');
+                                      }
+                                    } catch (error) {
+                                      console.error('Error deleting order:', error);
+                                      alert('Error deleting order');
+                                    }
+                                  }
+                                }}
+                                className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center"
+                              >
+                                <Trash2 className="h-3.5 w-3.5 mr-2" />
+                                Delete Order
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </>
                 )}
               </div>
             </div>
