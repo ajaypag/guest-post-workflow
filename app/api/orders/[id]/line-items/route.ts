@@ -224,6 +224,10 @@ export async function POST(
           inclusionStatus: item.metadata?.inclusionStatus || 'included'
         };
         
+        // Default pricing if not provided: $279 (200 wholesale + 79 service fee)
+        const defaultEstimatedPrice = 27900; // $279 in cents
+        const defaultWholesalePrice = 20000; // $200 in cents
+        
         const [lineItem] = await tx.insert(orderLineItems)
           .values({
             orderId,
@@ -232,7 +236,9 @@ export async function POST(
             targetPageUrl: item.targetPageUrl,
             anchorText: item.anchorText,
             status: item.status || 'draft',
-            estimatedPrice: item.estimatedPrice,
+            estimatedPrice: item.estimatedPrice || defaultEstimatedPrice,
+            wholesalePrice: item.wholesalePrice || metadata?.wholesalePrice || defaultWholesalePrice,
+            serviceFee: 7900, // $79 service fee
             metadata,
             addedBy: session.userId,
             displayOrder: nextDisplayOrder,

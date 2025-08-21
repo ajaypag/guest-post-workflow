@@ -98,17 +98,19 @@ export async function POST(
       if (!domain || !lineItem) continue;
 
       // Get website pricing and metrics information
-      let wholesalePrice = lineItem.wholesalePrice;
-      let estimatedPrice = lineItem.estimatedPrice;
+      // Initialize with defaults if line item doesn't have pricing yet
+      let wholesalePrice = lineItem.wholesalePrice || 20000; // Default $200
+      let estimatedPrice = lineItem.estimatedPrice || 27900; // Default $279
       let domainRating: number | null = null;
       let traffic: number | null = null;
 
       try {
         // Always fetch the website to get latest DR/traffic data
+        // Use proper casting to avoid PostgreSQL parameter type errors
         const website = await db.query.websites.findFirst({
-          where: sql`${websites.domain} = ${domain.domain} 
-                    OR ${websites.domain} = CONCAT('www.', ${domain.domain})
-                    OR CONCAT('www.', ${websites.domain}) = ${domain.domain}`
+          where: sql`${websites.domain} = ${domain.domain}::text 
+                    OR ${websites.domain} = CONCAT('www.'::text, ${domain.domain}::text)
+                    OR CONCAT('www.'::text, ${websites.domain}) = ${domain.domain}::text`
         });
 
         if (website) {
@@ -228,10 +230,34 @@ export async function POST(
       await db.insert(lineItemChanges).values(changeRecords);
     }
 
-    // Update order metadata to track bulk analysis usage
+    // Recalculate order totals based on actual line item prices
+    // This is important for review status where actual prices should be shown
+    const allOrderLineItems = await db.query.orderLineItems.findMany({
+      where: eq(orderLineItems.orderId, orderId)
+    });
+    
+    // Calculate new totals from line items (excluding cancelled/refunded)
+    const activeItems = allOrderLineItems.filter(item => 
+      !['cancelled', 'refunded'].includes(item.status)
+    );
+    
+    const newTotalRetail = activeItems.reduce((sum, item) => 
+      sum + (item.approvedPrice || item.estimatedPrice || 0), 0
+    );
+    
+    const newTotalWholesale = activeItems.reduce((sum, item) => 
+      sum + (item.wholesalePrice || 0), 0
+    );
+    
+    const newProfitMargin = newTotalRetail - newTotalWholesale;
+
+    // Update order with recalculated totals
     await db
       .update(orders)
       .set({
+        totalRetail: newTotalRetail,
+        totalWholesale: newTotalWholesale,
+        profitMargin: newProfitMargin,
         updatedAt: now,
         // metadata: sql`
         //   COALESCE(metadata, '{}'::jsonb) || 

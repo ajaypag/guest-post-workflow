@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
 import { orderLineItems } from '@/lib/db/orderLineItemSchema';
+import { orders } from '@/lib/db/orderSchema';
 import { orderSiteSubmissions } from '@/lib/db/projectOrderAssociationsSchema';
 import { bulkAnalysisDomains } from '@/lib/db/bulkAnalysisSchema';
 import { websites } from '@/lib/db/websiteSchema';
@@ -63,10 +64,11 @@ export async function POST(
 
     try {
       // Fetch the website to get pricing and metrics
+      // Use proper casting to avoid PostgreSQL parameter type errors
       const website = await db.query.websites.findFirst({
-        where: sql`${websites.domain} = ${domain.domain} 
-                  OR ${websites.domain} = CONCAT('www.', ${domain.domain})
-                  OR CONCAT('www.', ${websites.domain}) = ${domain.domain}`
+        where: sql`${websites.domain} = ${domain.domain}::text 
+                  OR ${websites.domain} = CONCAT('www.'::text, ${domain.domain}::text)
+                  OR CONCAT('www.'::text, ${websites.domain}) = ${domain.domain}::text`
       });
 
       if (website) {
@@ -159,6 +161,33 @@ export async function POST(
         .where(eq(orderSiteSubmissions.id, submissionId));
     }
 
+    // Recalculate order totals after assignment
+    const allLineItems = await db.query.orderLineItems.findMany({
+      where: eq(orderLineItems.orderId, params.id)
+    });
+    
+    const activeItems = allLineItems.filter(item => 
+      !['cancelled', 'refunded'].includes(item.status)
+    );
+    
+    const newTotalRetail = activeItems.reduce((sum, item) => 
+      sum + (item.approvedPrice || item.estimatedPrice || 0), 0
+    );
+    
+    const newTotalWholesale = activeItems.reduce((sum, item) => 
+      sum + (item.wholesalePrice || 0), 0
+    );
+    
+    await db
+      .update(orders)
+      .set({
+        totalRetail: newTotalRetail,
+        totalWholesale: newTotalWholesale,
+        profitMargin: newTotalRetail - newTotalWholesale,
+        updatedAt: new Date()
+      })
+      .where(eq(orders.id, params.id));
+
     return NextResponse.json({ 
       success: true,
       message: `Domain ${domain.domain} assigned to line item`
@@ -198,17 +227,50 @@ export async function DELETE(
       return NextResponse.json({ error: 'Line item not found' }, { status: 404 });
     }
 
-    // Remove domain assignment
+    // Remove domain assignment and reset to default pricing
+    const defaultEstimatedPrice = 27900; // $279 default
+    const defaultWholesalePrice = 20000; // $200 default
+    
     await db
       .update(orderLineItems)
       .set({
         assignedDomainId: null,
         assignedDomain: null,
         status: 'pending',
+        // Reset pricing to defaults when domain is removed
+        estimatedPrice: defaultEstimatedPrice,
+        wholesalePrice: defaultWholesalePrice,
         modifiedAt: new Date(),
         modifiedBy: session.userId
       })
       .where(eq(orderLineItems.id, params.lineItemId));
+    
+    // Recalculate order totals after removal
+    const allLineItems = await db.query.orderLineItems.findMany({
+      where: eq(orderLineItems.orderId, params.id)
+    });
+    
+    const activeItems = allLineItems.filter(item => 
+      !['cancelled', 'refunded'].includes(item.status)
+    );
+    
+    const newTotalRetail = activeItems.reduce((sum, item) => 
+      sum + (item.approvedPrice || item.estimatedPrice || 0), 0
+    );
+    
+    const newTotalWholesale = activeItems.reduce((sum, item) => 
+      sum + (item.wholesalePrice || 0), 0
+    );
+    
+    await db
+      .update(orders)
+      .set({
+        totalRetail: newTotalRetail,
+        totalWholesale: newTotalWholesale,
+        profitMargin: newTotalRetail - newTotalWholesale,
+        updatedAt: new Date()
+      })
+      .where(eq(orders.id, params.id));
 
     // Find and update any submission that was assigned to this line item
     const submissions = await db.query.orderSiteSubmissions.findMany();

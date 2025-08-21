@@ -862,7 +862,45 @@ export default function LineItemsReviewTable({
                           </td>
                           {permissions.canViewPricing && (
                             <td className="py-3 px-3 text-sm">
-                              {formatCurrency(item.estimatedPrice || 0)}
+                              {(() => {
+                                // If domain is assigned, show actual price
+                                if (item.assignedDomainId && item.estimatedPrice) {
+                                  return formatCurrency(item.estimatedPrice);
+                                }
+                                
+                                // If no domain assigned but we have a target estimate from benchmark
+                                if (!item.assignedDomainId && benchmarkData?.benchmarkData) {
+                                  // Find the target price from benchmark data
+                                  const clientGroup = benchmarkData.benchmarkData.clientGroups?.find(
+                                    (bg: any) => bg.clientId === item.clientId
+                                  );
+                                  
+                                  if (clientGroup?.targetPages) {
+                                    const targetPage = clientGroup.targetPages.find(
+                                      (tp: any) => tp.url === item.targetPageUrl
+                                    );
+                                    
+                                    // Calculate average price from requested domains or use default
+                                    if (targetPage?.requestedDomains?.length > 0) {
+                                      const avgPrice = targetPage.requestedDomains.reduce(
+                                        (sum: number, d: any) => sum + (d.retailPrice || 0), 0
+                                      ) / targetPage.requestedDomains.length;
+                                      
+                                      if (avgPrice > 0) {
+                                        return <span className="text-gray-500">~{formatCurrency(Math.round(avgPrice))}</span>;
+                                      }
+                                    }
+                                  }
+                                }
+                                
+                                // If we have an estimated price but no domain, show with ~
+                                if (!item.assignedDomainId && item.estimatedPrice) {
+                                  return <span className="text-gray-500">~{formatCurrency(item.estimatedPrice)}</span>;
+                                }
+                                
+                                // Default: show placeholder if no price info
+                                return <span className="text-gray-400">~{formatCurrency(27900)}</span>; // Default $279
+                              })()}
                             </td>
                           )}
                           {(permissions.canEditDomainAssignments || permissions.canApproveReject) && (
