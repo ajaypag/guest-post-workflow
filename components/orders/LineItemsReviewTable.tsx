@@ -337,6 +337,7 @@ export default function LineItemsReviewTable({
   // State
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<string>('client'); // New sort state
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [showFilters, setShowFilters] = useState(false);
@@ -395,16 +396,57 @@ export default function LineItemsReviewTable({
     }
   };
 
-  // Sort line items to maintain consistent order
+  // Sort line items based on selected sort option
   const sortedLineItems = [...lineItems].sort((a, b) => {
-    // First sort by client name for grouping
-    const clientNameA = a.client?.name || 'Unknown';
-    const clientNameB = b.client?.name || 'Unknown';
-    const clientCompare = clientNameA.localeCompare(clientNameB);
-    if (clientCompare !== 0) return clientCompare;
-    
-    // Then sort by ID within each client group for stability
-    return a.id.localeCompare(b.id);
+    switch (sortBy) {
+      case 'client':
+        // Sort by client name, then by ID for stability
+        const clientNameA = a.client?.name || 'Unknown';
+        const clientNameB = b.client?.name || 'Unknown';
+        const clientCompare = clientNameA.localeCompare(clientNameB);
+        if (clientCompare !== 0) return clientCompare;
+        return a.id.localeCompare(b.id);
+      
+      case 'price_asc':
+        // Sort by price ascending
+        const priceA = a.estimatedPrice || 0;
+        const priceB = b.estimatedPrice || 0;
+        return priceA - priceB;
+      
+      case 'price_desc':
+        // Sort by price descending
+        const priceADesc = a.estimatedPrice || 0;
+        const priceBDesc = b.estimatedPrice || 0;
+        return priceBDesc - priceADesc;
+      
+      case 'dr_asc':
+        // Sort by domain rating ascending
+        const drA = a.assignedDomain?.evidence?.da || parseInt(a.assignedDomain?.authorityDirect) || 0;
+        const drB = b.assignedDomain?.evidence?.da || parseInt(b.assignedDomain?.authorityDirect) || 0;
+        return drA - drB;
+      
+      case 'dr_desc':
+        // Sort by domain rating descending
+        const drADesc = a.assignedDomain?.evidence?.da || parseInt(a.assignedDomain?.authorityDirect) || 0;
+        const drBDesc = b.assignedDomain?.evidence?.da || parseInt(b.assignedDomain?.authorityDirect) || 0;
+        return drBDesc - drADesc;
+      
+      case 'domain':
+        // Sort alphabetically by domain
+        const domainA = a.assignedDomain?.domain || '';
+        const domainB = b.assignedDomain?.domain || '';
+        return domainA.localeCompare(domainB);
+      
+      case 'status':
+        // Sort by inclusion status
+        const statusA = a.metadata?.inclusionStatus || 'included';
+        const statusB = b.metadata?.inclusionStatus || 'included';
+        return statusA.localeCompare(statusB);
+      
+      default:
+        // Default to client sorting
+        return 0;
+    }
   });
 
   // Group line items by client
@@ -620,6 +662,20 @@ export default function LineItemsReviewTable({
           </div>
           
           <div className="flex gap-2 items-center">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="client">Sort by Client</option>
+              <option value="domain">Sort by Domain</option>
+              <option value="dr_desc">Sort by DR (High to Low)</option>
+              <option value="dr_asc">Sort by DR (Low to High)</option>
+              <option value="price_desc">Sort by Price (High to Low)</option>
+              <option value="price_asc">Sort by Price (Low to High)</option>
+              <option value="status">Sort by Status</option>
+            </select>
+
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
