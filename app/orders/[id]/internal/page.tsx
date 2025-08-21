@@ -1835,9 +1835,16 @@ export default function InternalOrderManagementPage() {
                     <div className="p-3 bg-gray-50 rounded-lg">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-medium text-gray-700">Order Status Management</span>
-                        <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">
-                          Current: {order.status}
-                        </span>
+                        <div className="flex gap-2">
+                          <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">
+                            Status: {order.status}
+                          </span>
+                          {order.state && (
+                            <span className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded">
+                              State: {order.state === 'sites_ready' ? 'Sites Ready for Review' : order.state}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <div className="flex gap-2">
                         {/* Move Forward */}
@@ -1856,8 +1863,9 @@ export default function InternalOrderManagementPage() {
                           <button
                             onClick={() => handleStatusRollback('pending_confirmation')}
                             className="flex-1 px-2 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700"
+                            title="Use if order was confirmed by mistake or needs major changes"
                           >
-                            ← Back to Pending
+                            ← Back to Pending Confirmation
                           </button>
                         )}
                         
