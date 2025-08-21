@@ -440,6 +440,12 @@ export default function LineItemsReviewTable({
         const domainB = b.assignedDomain?.domain || '';
         return domainA.localeCompare(domainB);
       
+      case 'target_page':
+        // Sort alphabetically by target page URL
+        const targetA = a.targetPageUrl || '';
+        const targetB = b.targetPageUrl || '';
+        return targetA.localeCompare(targetB);
+      
       case 'status':
         // Sort by inclusion status with logical order: included -> saved_for_later -> excluded
         const statusOrder: Record<string, number> = {
@@ -677,6 +683,7 @@ export default function LineItemsReviewTable({
             >
               <option value="none">Default Order</option>
               <option value="domain">Sort by Domain</option>
+              <option value="target_page">Sort by Target Page</option>
               <option value="dr_desc">Sort by DR (High to Low)</option>
               <option value="dr_asc">Sort by DR (Low to High)</option>
               <option value="price_desc">Sort by Price (High to Low)</option>
