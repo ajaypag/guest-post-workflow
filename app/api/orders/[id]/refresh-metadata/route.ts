@@ -84,6 +84,8 @@ export async function POST(
         }
         
         // Get new pricing from website
+        // Note: EnhancedOrderPricingService.getWebsitePrice doesn't use traffic directly,
+        // but we're storing it in metadata for reference
         const pricing = await EnhancedOrderPricingService.getWebsitePrice(
           website.id,
           normalizedDomain,
@@ -98,7 +100,7 @@ export async function POST(
         const updatedMetadata = {
           ...currentMetadata,
           domainRating: website.domainRating,
-          // traffic field doesn't exist in websites table
+          traffic: website.totalTraffic, // Using totalTraffic from websites table
           refreshedAt: new Date().toISOString(),
           refreshedFrom: 'websites_table'
         };
@@ -115,7 +117,7 @@ export async function POST(
           .where(eq(orderLineItems.id, lineItem.id));
         
         updatedCount++;
-        console.log(`Updated line item ${lineItem.id} with DR: ${website.domainRating}, Price: $${pricing.retailPrice / 100}`);
+        console.log(`Updated line item ${lineItem.id} with DR: ${website.domainRating}, Traffic: ${website.totalTraffic || 0}, Price: $${pricing.retailPrice / 100}`);
         
       } catch (error) {
         console.error(`Error updating line item ${lineItem.id}:`, error);
