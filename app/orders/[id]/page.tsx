@@ -593,31 +593,16 @@ export default function OrderDetailPage() {
                     <span className="hidden sm:inline">Review Sites</span>
                     <span className="sm:hidden">Review</span>
                   </Link>
-                ) : isOrderEditable ? (
-                  <>
-                    {/* Show warning if order has progressed beyond draft - more subtle */}
-                    {order.status !== 'draft' && (
-                      <button
-                        onClick={() => setShowEditWarning(true)}
-                        className="inline-flex items-center px-2.5 sm:px-3 py-1.5 border border-amber-200 text-amber-700 rounded-md hover:bg-amber-50 hover:border-amber-300 text-xs sm:text-sm min-h-[36px] transition-colors"
-                      >
-                        <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
-                        <span className="hidden sm:inline">Revise Order</span>
-                        <span className="sm:hidden">Revise</span>
-                      </button>
-                    )}
-                    {/* Normal edit button for draft orders - more subtle */}
-                    {order.status === 'draft' && (
-                      <Link
-                        href={`/orders/${order.id}/edit`}
-                        className="inline-flex items-center px-2.5 sm:px-3 py-1.5 border border-blue-200 text-blue-700 rounded-md hover:bg-blue-50 hover:border-blue-300 text-xs sm:text-sm min-h-[36px] transition-colors"
-                      >
-                        <Edit className="h-3.5 w-3.5 mr-1.5" />
-                        <span className="hidden sm:inline">Edit Order</span>
-                        <span className="sm:hidden">Edit</span>
-                      </Link>
-                    )}
-                  </>
+                ) : isOrderEditable && order.status === 'draft' ? (
+                  /* Only show edit button for draft orders - revise is in nav tabs */
+                  <Link
+                    href={`/orders/${order.id}/edit`}
+                    className="inline-flex items-center px-2.5 sm:px-3 py-1.5 border border-blue-200 text-blue-700 rounded-md hover:bg-blue-50 hover:border-blue-300 text-xs sm:text-sm min-h-[36px] transition-colors"
+                  >
+                    <Edit className="h-3.5 w-3.5 mr-1.5" />
+                    <span className="hidden sm:inline">Edit Order</span>
+                    <span className="sm:hidden">Edit</span>
+                  </Link>
                 ) : null}
                 {user?.userType === 'internal' && (
                   <>
