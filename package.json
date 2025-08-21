@@ -5,9 +5,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
-    "build:with-migrations": "npm run db:migrate-apply && next build",
     "start": "next start",
-    "start:production": "./scripts/start-production.sh",
     "lint": "next lint",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
