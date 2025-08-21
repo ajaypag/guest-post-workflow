@@ -5,10 +5,9 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
-import OrderSiteReviewTableV2 from '@/components/orders/OrderSiteReviewTableV2';
+import LineItemsReviewTable from '@/components/orders/LineItemsReviewTable';
 import BenchmarkDisplay from '@/components/orders/BenchmarkDisplay';
 import OrderProgressSteps, { getStateDisplay, getProgressSteps } from '@/components/orders/OrderProgressSteps';
-import LineItemsTable from '@/components/orders/LineItemsTable';
 import TargetPageSelector from '@/components/orders/TargetPageSelector';
 import { isLineItemsSystemEnabled, enableLineItemsForOrder } from '@/lib/config/featureFlags';
 import ChangeBulkAnalysisProject from '@/components/orders/ChangeBulkAnalysisProject';
@@ -176,8 +175,10 @@ interface OrderDetail {
 // Helper functions for dual-mode support (orderGroups vs lineItems)
 const getTotalLinkCount = (order: OrderDetail): number => {
   if (order.lineItems && order.lineItems.length > 0) {
-    // Count line items
-    return order.lineItems.length;
+    // Count only active line items (exclude cancelled and refunded)
+    return order.lineItems.filter(item => 
+      !['cancelled', 'refunded'].includes(item.status)
+    ).length;
   }
   // Fallback to orderGroups
   return order.orderGroups?.reduce((sum, g) => sum + g.linkCount, 0) || 0;
@@ -188,24 +189,51 @@ const getTotalServiceFees = (order: OrderDetail): number => {
   return 7900 * linkCount; // $79 per link
 };
 
+const getTotalRevenue = (order: OrderDetail): number => {
+  if (order.lineItems && order.lineItems.length > 0) {
+    // Calculate from line items (use approved price if available, otherwise estimated)
+    return order.lineItems
+      .filter(item => !['cancelled', 'refunded'].includes(item.status))
+      .reduce((sum, item) => sum + (item.approvedPrice || item.estimatedPrice || 0), 0);
+  }
+  // Fallback to order total
+  return order.totalPrice || 0;
+};
+
 const getWholesaleTotal = (order: OrderDetail): number => {
   if (order.lineItems && order.lineItems.length > 0) {
     // Calculate from line items
-    return order.lineItems.reduce((sum, item) => sum + (item.wholesalePrice || 0), 0);
+    return order.lineItems
+      .filter(item => !['cancelled', 'refunded'].includes(item.status))
+      .reduce((sum, item) => sum + (item.wholesalePrice || 0), 0);
   }
   // Fallback to order total calculation
-  return order.totalWholesale || (order.totalPrice - getTotalServiceFees(order));
+  return order.totalWholesale || 0;
+};
+
+const getGrossProfit = (order: OrderDetail): number => {
+  return getTotalRevenue(order) - getWholesaleTotal(order);
 };
 
 const getAveragePricePerLink = (order: OrderDetail): number => {
   const linkCount = getTotalLinkCount(order);
-  return linkCount > 0 ? order.totalPrice / linkCount : 0;
+  const revenue = getTotalRevenue(order);
+  return linkCount > 0 ? revenue / linkCount : 0;
 };
 
 const getAverageWholesalePerLink = (order: OrderDetail): number => {
   const linkCount = getTotalLinkCount(order);
   const wholesale = getWholesaleTotal(order);
   return linkCount > 0 ? wholesale / linkCount : 0;
+};
+
+const getCurrentAveragePricePerLink = (order: OrderDetail): number => {
+  if (order.lineItems && order.lineItems.length > 0) {
+    const activeItems = order.lineItems.filter(item => !['cancelled', 'refunded'].includes(item.status));
+    const totalRevenue = activeItems.reduce((sum, item) => sum + (item.approvedPrice || item.estimatedPrice || 0), 0);
+    return activeItems.length > 0 ? totalRevenue / activeItems.length : 0;
+  }
+  return getAveragePricePerLink(order);
 };
 
 export default function InternalOrderManagementPage() {
@@ -305,8 +333,14 @@ export default function InternalOrderManagementPage() {
       }
       
       const data = await response.json();
-      console.log('Order data received:', data);
-      console.log('Order groups:', data.orderGroups);
+      console.log('[INTERNAL_PAGE] Order data received:', {
+        id: data.id,
+        status: data.status,
+        state: data.state,
+        lineItems: data.lineItems?.length,
+        orderGroups: data.orderGroups?.length,
+        firstLineItemMetadata: data.lineItems?.[0]?.metadata
+      });
       
       // Don't load site submissions here - they'll be loaded separately
       
@@ -362,34 +396,70 @@ export default function InternalOrderManagementPage() {
   };
 
   const checkTargetPageStatuses = async () => {
-    if (!order?.orderGroups) return;
-    
-    // Skip target page checking for line items mode
-    if (useLineItemsView || (order.lineItems && order.lineItems.length > 0 && (!order.orderGroups || order.orderGroups.length === 0))) {
-      return;
-    }
-    
     const statuses: TargetPageStatus[] = [];
     
-    for (const group of order.orderGroups) {
-      for (const targetPage of group.targetPages || []) {
-        if (targetPage.pageId) {
+    // Check line items first (new system) - exclude cancelled items
+    if (order?.lineItems && order.lineItems.length > 0) {
+      // Filter out cancelled and refunded line items
+      const activeLineItems = order.lineItems.filter(item => 
+        !['cancelled', 'refunded'].includes(item.status)
+      );
+      
+      for (const lineItem of activeLineItems) {
+        if (lineItem.targetPageId) {
           try {
-            const response = await fetch(`/api/target-pages/${targetPage.pageId}`);
+            const response = await fetch(`/api/target-pages/${lineItem.targetPageId}`);
             if (response.ok) {
               const pageData = await response.json();
               statuses.push({
                 id: pageData.id,
-                url: pageData.url,
+                url: pageData.url || lineItem.targetPageUrl,
                 hasKeywords: !!(pageData.keywords && pageData.keywords.trim() !== ''),
                 hasDescription: !!(pageData.description && pageData.description.trim() !== ''),
                 keywordCount: pageData.keywords ? pageData.keywords.split(',').filter((k: string) => k.trim()).length : 0,
-                clientName: group.client.name,
-                orderGroupId: group.id
+                clientName: lineItem.client?.name || 'Unknown Client',
+                orderGroupId: lineItem.id // Use line item ID as identifier
               });
             }
           } catch (error) {
-            console.error(`Failed to load target page ${targetPage.pageId}:`, error);
+            console.error(`Failed to load target page ${lineItem.targetPageId}:`, error);
+          }
+        } else if (lineItem.targetPageUrl) {
+          // If no pageId but has URL, still track it (may need to create target page)
+          statuses.push({
+            id: `temp-${lineItem.id}`,
+            url: lineItem.targetPageUrl,
+            hasKeywords: false,
+            hasDescription: false,
+            keywordCount: 0,
+            clientName: lineItem.client?.name || 'Unknown Client',
+            orderGroupId: lineItem.id
+          });
+        }
+      }
+    }
+    // Fallback to orderGroups (old system)
+    else if (order?.orderGroups) {
+      for (const group of order.orderGroups) {
+        for (const targetPage of group.targetPages || []) {
+          if (targetPage.pageId) {
+            try {
+              const response = await fetch(`/api/target-pages/${targetPage.pageId}`);
+              if (response.ok) {
+                const pageData = await response.json();
+                statuses.push({
+                  id: pageData.id,
+                  url: pageData.url,
+                  hasKeywords: !!(pageData.keywords && pageData.keywords.trim() !== ''),
+                  hasDescription: !!(pageData.description && pageData.description.trim() !== ''),
+                  keywordCount: pageData.keywords ? pageData.keywords.split(',').filter((k: string) => k.trim()).length : 0,
+                  clientName: group.client.name,
+                  orderGroupId: group.id
+                });
+              }
+            } catch (error) {
+              console.error(`Failed to load target page ${targetPage.pageId}:`, error);
+            }
           }
         }
       }
@@ -662,7 +732,12 @@ export default function InternalOrderManagementPage() {
         type: 'success',
         text: `Order confirmed successfully! Created ${data.projectsCreated} bulk analysis projects.`
       });
+      // Reload the order to get updated line items with project IDs
       await loadOrder();
+      // Also check target page statuses after confirmation
+      if (data.projectsCreated > 0) {
+        await checkTargetPageStatuses();
+      }
     } catch (err) {
       console.error('Error confirming order:', err);
       setMessage({
@@ -1590,7 +1665,7 @@ export default function InternalOrderManagementPage() {
                   <h3 className="text-sm font-medium text-gray-900 mb-3">Internal Actions</h3>
                   <div className="space-y-2">
                     {/* Order Confirmation with Target Page Status */}
-                    {order.status === 'pending_confirmation' && (
+                    {order.status === 'pending_confirmation' ? (
                       <>
                         {/* Target Pages Status Section */}
                         {targetPageStatuses.length > 0 && (
@@ -1691,10 +1766,14 @@ export default function InternalOrderManagementPage() {
                           </p>
                         )}
                       </>
-                    )}
+                    ) : null}
                     
-                    {/* Bulk Analysis Links - Available during analysis and review phases (orderGroups mode only) */}
-                    {!useLineItemsView && (order.state === 'analyzing' || order.state === 'sites_ready' || order.state === 'client_reviewing') && order.orderGroups && (
+                    {/* Bulk Analysis Links - Available during analysis and review phases */}
+                    {(() => {
+                      console.log('[DEBUG] Order state:', order.state, 'Status:', order.status, 'Has lineItems:', order.lineItems?.length, 'Has orderGroups:', order.orderGroups?.length);
+                      return null;
+                    })()}
+                    {(order.state === 'analyzing' || order.state === 'sites_ready' || order.state === 'client_reviewing') && (
                       <div className="space-y-2">
                         <div className="text-xs text-gray-600 mb-1">
                           {(order.state === 'sites_ready' || order.state === 'client_reviewing') ? 
@@ -1702,7 +1781,63 @@ export default function InternalOrderManagementPage() {
                             'Find and analyze sites:'
                           }
                         </div>
-                        {order.orderGroups.map(group => (
+                        {/* For line items - group by client */}
+                        {order.lineItems && order.lineItems.length > 0 ? (
+                          (() => {
+                            // Filter out cancelled and refunded line items first
+                            const activeLineItems = order.lineItems.filter((item: any) => 
+                              !['cancelled', 'refunded'].includes(item.status)
+                            );
+                            
+                            // Group active line items by client
+                            const clientGroups = activeLineItems.reduce((acc: any, item: any) => {
+                              const clientId = item.clientId;
+                              if (!acc[clientId]) {
+                                acc[clientId] = {
+                                  clientId,
+                                  clientName: item.client?.name || 'Unknown Client',
+                                  projectId: item.metadata?.bulkAnalysisProjectId,
+                                  items: []
+                                };
+                              }
+                              acc[clientId].items.push(item);
+                              // Use the first project ID found for this client
+                              if (item.metadata?.bulkAnalysisProjectId && !acc[clientId].projectId) {
+                                acc[clientId].projectId = item.metadata.bulkAnalysisProjectId;
+                              }
+                              return acc;
+                            }, {});
+                            
+                            console.log('[BULK_ANALYSIS_UI] Client groups:', clientGroups);
+                            console.log('[BULK_ANALYSIS_UI] Order state:', order.state);
+                            
+                            return Object.values(clientGroups).map((group: any) => (
+                              <div key={group.clientId} className="space-y-1">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs font-medium text-gray-700">
+                                    {group.clientName} ({group.items.length} links)
+                                  </span>
+                                  <ChangeBulkAnalysisProject
+                                    orderGroupId={group.items[0].id} // Use first line item ID as identifier
+                                    orderId={order.id}
+                                    clientId={group.clientId}
+                                    clientName={group.clientName}
+                                    currentProjectId={group.projectId}
+                                    onProjectChanged={() => loadOrder()}
+                                  />
+                                </div>
+                                {group.projectId && (
+                                  <Link
+                                    href={`/clients/${group.clientId}/bulk-analysis/projects/${group.projectId}?orderId=${params.id}`}
+                                    className="block w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 text-center"
+                                  >
+                                    Analyze {group.clientName}
+                                  </Link>
+                                )}
+                              </div>
+                            ));
+                          })()
+                        ) : order.orderGroups?.map(group => (
                           <div key={group.id} className="space-y-1">
                             <div className="flex items-center justify-between">
                               <span className="text-xs font-medium text-gray-700">
@@ -1719,7 +1854,7 @@ export default function InternalOrderManagementPage() {
                             </div>
                             {group.bulkAnalysisProjectId && (
                               <Link
-                                href={`/clients/${group.clientId}/bulk-analysis/projects/${group.bulkAnalysisProjectId}`}
+                                href={`/clients/${group.clientId}/bulk-analysis/projects/${group.bulkAnalysisProjectId}?orderId=${params.id}`}
                                 className="block w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 text-center"
                               >
                                 Analyze {group.client.name}
@@ -1882,7 +2017,7 @@ export default function InternalOrderManagementPage() {
                     <dl className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <dt className="text-gray-600">Total Revenue</dt>
-                        <dd className="font-medium text-gray-900">{formatCurrency(order.totalPrice)}</dd>
+                        <dd className="font-medium text-gray-900">{formatCurrency(getTotalRevenue(order))}</dd>
                       </div>
                       <div className="flex justify-between text-sm">
                         <dt className="text-gray-600">Wholesale Costs</dt>
@@ -1899,14 +2034,14 @@ export default function InternalOrderManagementPage() {
                       <div className="flex justify-between text-sm pt-2 border-t">
                         <dt className="font-medium text-gray-900">Gross Profit</dt>
                         <dd className="font-bold text-green-600">
-                          {formatCurrency(getTotalServiceFees(order))}
+                          {formatCurrency(getGrossProfit(order))}
                         </dd>
                       </div>
                       <div className="flex justify-between text-sm">
                         <dt className="text-gray-600">Margin</dt>
                         <dd className="font-medium text-gray-900">
-                          {order.totalPrice > 0 ? 
-                            `${Math.round((getTotalServiceFees(order) / order.totalPrice) * 100)}%` : 
+                          {getTotalRevenue(order) > 0 ? 
+                            `${Math.round((getGrossProfit(order) / getTotalRevenue(order)) * 100)}%` : 
                             'N/A'
                           }
                         </dd>
@@ -1920,13 +2055,13 @@ export default function InternalOrderManagementPage() {
                       <div className="flex justify-between text-sm">
                         <dt className="text-gray-600">Avg Client Price</dt>
                         <dd className="font-medium text-gray-900">
-                          {formatCurrency(getAveragePricePerLink(order))}
+                          {formatCurrency(Math.round(getAveragePricePerLink(order)))}
                         </dd>
                       </div>
                       <div className="flex justify-between text-sm">
                         <dt className="text-gray-600">Avg Wholesale</dt>
                         <dd className="font-medium text-gray-900">
-                          {formatCurrency(getAverageWholesalePerLink(order))}
+                          {formatCurrency(Math.round(getAverageWholesalePerLink(order)))}
                         </dd>
                       </div>
                       <div className="flex justify-between text-sm">
@@ -1944,13 +2079,13 @@ export default function InternalOrderManagementPage() {
                         <div className="flex justify-between text-sm mt-1">
                           <dt className="text-blue-900">Current avg per Link</dt>
                           <dd className="font-medium text-blue-700">
-                            {formatCurrency(order.totalPrice / (order.orderGroups?.reduce((sum, g) => sum + g.linkCount, 0) || 1))}
+                            {formatCurrency(Math.round(getCurrentAveragePricePerLink(order)))}
                           </dd>
                         </div>
                         <div className="text-xs text-blue-600 mt-1">
-                          {getAveragePricePerLink(order) <= order.estimatedPricePerLink ? 
+                          {getCurrentAveragePricePerLink(order) <= (order.estimatedPricePerLink || 0) ? 
                             '✓ Within target' : 
-                            `${formatCurrency(getAveragePricePerLink(order) - order.estimatedPricePerLink)} over target`
+                            `${formatCurrency(Math.round(getCurrentAveragePricePerLink(order) - (order.estimatedPricePerLink || 0)))} over target`
                           }
                         </div>
                       </div>
@@ -1967,90 +2102,6 @@ export default function InternalOrderManagementPage() {
                   </div>
                 )}
               </div>
-              
-              {/* Customer Preferences */}
-              {(order.preferencesDrMin || order.preferencesTrafficMin || order.estimatedPricePerLink) && (
-                <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 sm:p-6 mt-4 sm:mt-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                    <Target className="h-5 w-5 mr-2 text-blue-600" />
-                    Customer Preferences
-                  </h3>
-                  <dl className="space-y-3">
-                    {/* Target Budget */}
-                    {order.estimatedPricePerLink && (
-                      <div className="bg-blue-50 p-3 rounded-md">
-                        <dt className="text-sm font-medium text-blue-900">Target Price per Link</dt>
-                        <dd className="text-lg font-bold text-blue-700">{formatCurrency(order.estimatedPricePerLink)}</dd>
-                        <dd className="text-xs text-blue-600 mt-1">
-                          Wholesale: ~{formatCurrency((order.estimatedPricePerLink || 0) - 7900)}
-                        </dd>
-                      </div>
-                    )}
-                    
-                    {/* Total Order Target */}
-                    {order.estimatedLinksCount && order.estimatedPricePerLink && (
-                      <div>
-                        <dt className="text-sm text-gray-500">Target Order Size</dt>
-                        <dd className="text-sm font-medium text-gray-900">
-                          {order.estimatedLinksCount} links × {formatCurrency(order.estimatedPricePerLink)} = {formatCurrency((order.estimatedLinksCount || 0) * (order.estimatedPricePerLink || 0))}
-                        </dd>
-                      </div>
-                    )}
-                    
-                    {/* DR Range */}
-                    {(order.preferencesDrMin || order.preferencesDrMax) && (
-                      <div>
-                        <dt className="text-sm text-gray-500">Domain Rating</dt>
-                        <dd className="text-sm font-medium text-gray-900">
-                          DR {order.preferencesDrMin || 0} - {order.preferencesDrMax || 100}
-                        </dd>
-                      </div>
-                    )}
-                    
-                    {/* Traffic */}
-                    {order.preferencesTrafficMin && (
-                      <div>
-                        <dt className="text-sm text-gray-500">Minimum Traffic</dt>
-                        <dd className="text-sm font-medium text-gray-900">
-                          {order.preferencesTrafficMin.toLocaleString()}+ monthly visitors
-                        </dd>
-                      </div>
-                    )}
-                    
-                    {/* Categories */}
-                    {order.preferencesCategories && order.preferencesCategories.length > 0 && (
-                      <div>
-                        <dt className="text-sm text-gray-500">Categories</dt>
-                        <dd className="text-sm text-gray-900">
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {order.preferencesCategories.map((cat, idx) => (
-                              <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
-                                {cat}
-                              </span>
-                            ))}
-                          </div>
-                        </dd>
-                      </div>
-                    )}
-                    
-                    {/* Niches */}
-                    {order.preferencesNiches && order.preferencesNiches.length > 0 && (
-                      <div>
-                        <dt className="text-sm text-gray-500">Niches</dt>
-                        <dd className="text-sm text-gray-900">
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {order.preferencesNiches.map((niche, idx) => (
-                              <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
-                                {niche}
-                              </span>
-                            ))}
-                          </div>
-                        </dd>
-                      </div>
-                    )}
-                  </dl>
-                </div>
-              )}
             </div>
 
             {/* Middle/Right Columns - Order Details Table */}
@@ -2095,20 +2146,22 @@ export default function InternalOrderManagementPage() {
               
               {/* Benchmark Display - Shows order wishlist vs actual delivery */}
               {order.status === 'confirmed' && (
-                <BenchmarkDisplay
-                  orderId={orderId}
-                  benchmark={benchmarkData}
-                  comparison={comparisonData}
-                  showDetails={true}
-                  canCreateComparison={true}
-                  onCreateComparison={benchmarkData ? handleUpdateComparison : handleCreateBenchmark}
-                  onRefresh={loadBenchmarkData}
-                  userType="internal"
-                />
+                <div className="mb-6">
+                  <BenchmarkDisplay
+                    orderId={orderId}
+                    benchmark={benchmarkData}
+                    comparison={comparisonData}
+                    showDetails={true}
+                    canCreateComparison={true}
+                    onCreateComparison={benchmarkData ? handleUpdateComparison : handleCreateBenchmark}
+                    onRefresh={loadBenchmarkData}
+                    userType="internal"
+                  />
+                </div>
               )}
 
-              {/* View Toggle */}
-              {isLineItemsSystemEnabled() && (
+              {/* View Toggle - Only show when order has BOTH line items AND order groups (migration period) */}
+              {isLineItemsSystemEnabled() && order.orderGroups && order.orderGroups.length > 0 && order.lineItems && order.lineItems.length > 0 && (
                 <div className="mb-4 bg-white rounded-lg border border-gray-200 p-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
@@ -2143,54 +2196,25 @@ export default function InternalOrderManagementPage() {
                 </div>
               )}
 
-              {/* Order Details Table - Conditional Rendering */}
-              {useLineItemsView && isLineItemsSystemEnabled() ? (
-                <LineItemsTable
-                  orderId={orderId}
-                  lineItems={order.lineItems || []}
-                  userType="internal"
-                  canEdit={true}
-                  canAddItems={true}
-                  canDeleteItems={true}
-                  canAssignDomains={true}
-                  canApproveItems={true}
-                  onRefresh={() => {
-                    // Refresh handler for line items
-                    loadOrder();
-                  }}
-                />
-              ) : (
-                <>
-                  <OrderSiteReviewTableV2
-                    orderId={orderId}
-                    orderGroups={order.orderGroups || []}
-                    siteSubmissions={siteSubmissions}
-                  userType="internal"
-                  permissions={{
-                    canChangeStatus: true,
-                    canAssignTargetPages: true,
-                    canApproveReject: true,
-                    canGenerateWorkflows: true,
-                    canMarkSitesReady: true,
-                    canViewInternalTools: true,
-                    canViewPricing: true,
-                    canEditDomainAssignments: true,
-                    canSetExclusionReason: true
-                  }}
-                  workflowStage={workflowStage}
-                  onAssignTargetPage={handleAssignTargetPage}
-                  onChangeInclusionStatus={handleChangeInclusionStatus}
-                  onEditSubmission={handleEditSubmission}
-                  onRemoveSubmission={handleRemoveSubmission}
-                  onRefresh={handleRefresh}
-                  onAssignToLineItem={handleAssignToLineItem}
-                  lineItems={order.lineItems || []}
-                  useStatusSystem={true}
-                  useLineItems={isLineItemsSystemEnabled()}
-                  benchmarkData={benchmarkData}
-                />
-                </>
-              )}
+              {/* Order Details Table - Use LineItemsReviewTable for all views */}
+              <LineItemsReviewTable
+                orderId={orderId}
+                lineItems={order.lineItems || []}
+                userType="internal"
+                permissions={{
+                  canChangeStatus: true,
+                  canAssignTargetPages: true,
+                  canApproveReject: true,
+                  canGenerateWorkflows: true,
+                  canMarkSitesReady: true,
+                  canViewInternalTools: true,
+                  canViewPricing: true,
+                  canEditDomainAssignments: true,
+                  canSetExclusionReason: true
+                }}
+                onRefresh={handleRefresh || loadOrder}
+                benchmarkData={benchmarkData}
+              />
               
               {/* Additional Information Cards */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
@@ -2294,74 +2318,6 @@ export default function InternalOrderManagementPage() {
                 </div>
               )}
               
-              {/* Pricing Details for Internal Users */}
-              <div className="mt-6">
-                <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-                  <h3 className="text-lg font-semibold mb-4 flex items-center">
-                    <DollarSign className="h-5 w-5 mr-2 text-gray-400" />
-                    Pricing Analysis
-                  </h3>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-700 mb-3">Customer Pricing</h4>
-                      <dl className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <dt className="text-gray-600">Subtotal</dt>
-                          <dd className="font-medium">{formatCurrency(order.subtotal || order.totalPrice)}</dd>
-                        </div>
-                        {order.discountAmount && order.discountAmount > 0 && (
-                          <div className="flex justify-between text-sm">
-                            <dt className="text-gray-600">Discount ({order.discountPercent || '0'}%)</dt>
-                            <dd className="font-medium text-green-600">-{formatCurrency(order.discountAmount)}</dd>
-                          </div>
-                        )}
-                        {order.includesClientReview && (
-                          <div className="flex justify-between text-sm">
-                            <dt className="text-gray-600">Client Review</dt>
-                            <dd className="font-medium">{formatCurrency(order.clientReviewFee || 0)}</dd>
-                          </div>
-                        )}
-                        {order.rushDelivery && (
-                          <div className="flex justify-between text-sm">
-                            <dt className="text-gray-600">Rush Delivery</dt>
-                            <dd className="font-medium">{formatCurrency(order.rushFee || 0)}</dd>
-                          </div>
-                        )}
-                        <div className="flex justify-between text-sm pt-2 border-t">
-                          <dt className="font-medium">Total Revenue</dt>
-                          <dd className="font-bold">{formatCurrency(order.totalPrice)}</dd>
-                        </div>
-                      </dl>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-700 mb-3">Profit Analysis</h4>
-                      <dl className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <dt className="text-gray-600">Wholesale Cost</dt>
-                          <dd className="font-medium">{formatCurrency(order.totalWholesale || 0)}</dd>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <dt className="text-gray-600">Revenue</dt>
-                          <dd className="font-medium">{formatCurrency(order.totalPrice)}</dd>
-                        </div>
-                        <div className="flex justify-between text-sm pt-2 border-t">
-                          <dt className="font-medium">Gross Profit</dt>
-                          <dd className="font-bold text-green-600">{formatCurrency(order.profitMargin || (order.totalPrice - (order.totalWholesale || 0)))}</dd>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <dt className="text-gray-600">Margin</dt>
-                          <dd className="font-medium">
-                            {order.totalWholesale ? 
-                              `${Math.round(((order.totalPrice - order.totalWholesale) / order.totalPrice) * 100)}%` : 
-                              'N/A'
-                            }
-                          </dd>
-                        </div>
-                      </dl>
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>

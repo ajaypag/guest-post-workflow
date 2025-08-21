@@ -84,18 +84,26 @@ export class EnhancedOrderPricingService {
             orderContext
           );
           
+          // Convert to cents if needed (assuming finalPrice is in dollars)
+          const priceInCents = finalCalculation.finalPrice < 1000 ? Math.floor(finalCalculation.finalPrice * 100) : finalCalculation.finalPrice;
+          const wholesaleInCents = Math.floor(priceInCents * 0.7); // 30% margin
+          
           return {
-            retailPrice: finalCalculation.finalPrice,
-            wholesalePrice: Math.floor(finalCalculation.finalPrice * 0.6), // 40% margin
+            retailPrice: priceInCents,
+            wholesalePrice: wholesaleInCents,
             source: 'publisher_offerings',
             currency: finalCalculation.currency,
             appliedRules: finalCalculation.appliedRules
           };
         } else {
           // No context, just use base price
+          // Convert to cents if needed (assuming bestPrice is in dollars)
+          const priceInCents = bestPrice < 1000 ? Math.floor(bestPrice * 100) : bestPrice;
+          const wholesaleInCents = Math.floor(priceInCents * 0.7); // 30% margin
+          
           return {
-            retailPrice: bestPrice,
-            wholesalePrice: Math.floor(bestPrice * 0.6), // 40% margin
+            retailPrice: priceInCents,
+            wholesalePrice: wholesaleInCents,
             source: 'publisher_offerings',
             currency: bestOffering.offering.currency
           };
@@ -109,9 +117,13 @@ export class EnhancedOrderPricingService {
     // Fall back to legacy pricing from websites table
     const legacyPrice = website.guestPostCost ? parseFloat(website.guestPostCost) : 0;
     
+    // Convert to cents (prices in DB are in dollars)
+    const wholesalePriceInCents = Math.floor(legacyPrice * 100);
+    const retailPriceInCents = wholesalePriceInCents + 7900; // $79 markup
+    
     return {
-      retailPrice: legacyPrice,
-      wholesalePrice: Math.floor(legacyPrice * 0.6), // 40% margin
+      retailPrice: retailPriceInCents,
+      wholesalePrice: wholesalePriceInCents,
       source: 'legacy_pricing',
       currency: 'USD'
     };

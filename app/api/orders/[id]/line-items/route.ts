@@ -218,7 +218,12 @@ export async function POST(
           throw new Error('clientId is required for each line item');
         }
 
-        // Create the line item
+        // Create the line item with default inclusionStatus of 'included'
+        const metadata = {
+          ...item.metadata,
+          inclusionStatus: item.metadata?.inclusionStatus || 'included'
+        };
+        
         const [lineItem] = await tx.insert(orderLineItems)
           .values({
             orderId,
@@ -228,7 +233,7 @@ export async function POST(
             anchorText: item.anchorText,
             status: item.status || 'draft',
             estimatedPrice: item.estimatedPrice,
-            metadata: item.metadata,
+            metadata,
             addedBy: session.userId,
             displayOrder: nextDisplayOrder,
             version: 1
@@ -247,7 +252,7 @@ export async function POST(
             targetPageUrl: item.targetPageUrl,
             anchorText: item.anchorText
           },
-          changedBy: session.userId,
+          changedBy: session.userType === 'account' ? '00000000-0000-0000-0000-000000000000' : session.userId,
           changeReason: reason || 'Line items added to order',
           batchId
         });
@@ -470,7 +475,7 @@ export async function PATCH(
             changeType: Object.keys(changes).includes('status') ? 'status_changed' : 'modified',
             previousValue: changes,
             newValue: updateData,
-            changedBy: session.userId,
+            changedBy: session.userType === 'account' ? '00000000-0000-0000-0000-000000000000' : session.userId,
             changeReason: reason || update.reason || 'Line item updated',
             batchId
           });
@@ -605,7 +610,7 @@ export async function DELETE(
             changeType: 'cancelled',
             previousValue: { status: cancelledItem.status },
             newValue: { status: 'cancelled' },
-            changedBy: session.userId,
+            changedBy: session.userType === 'account' ? '00000000-0000-0000-0000-000000000000' : session.userId,
             changeReason: reason || 'Line item cancelled',
             batchId
           });

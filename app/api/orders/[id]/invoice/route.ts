@@ -107,9 +107,13 @@ export async function POST(
           }, { status: 400 });
         }
         
-        // Get approved/assigned line items
+        // Get approved/assigned line items (including already invoiced items for regeneration)
         approvedItems = lineItemsList.filter(item => 
-          item.status === 'approved' || item.status === 'assigned' || item.status === 'confirmed'
+          item.status === 'approved' || 
+          item.status === 'assigned' || 
+          item.status === 'confirmed' ||
+          item.status === 'invoiced' || // Allow invoiced items for regeneration
+          (item.assignedDomainId && item.metadata?.inclusionStatus === 'included') // Also check metadata
         );
         
         if (approvedItems.length === 0) {

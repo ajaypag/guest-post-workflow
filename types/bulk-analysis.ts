@@ -44,6 +44,10 @@ export interface BulkAnalysisDomain {
     color?: string | null;
     icon?: string | null;
   };
+  // Target URL Matching fields
+  suggestedTargetUrl?: string;
+  targetMatchData?: any; // JSONB field containing full AI analysis
+  targetMatchedAt?: string;
   // Timestamps
   createdAt?: string;
   updatedAt?: string;

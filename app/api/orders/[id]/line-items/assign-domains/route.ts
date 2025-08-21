@@ -7,6 +7,7 @@ import { websites } from '@/lib/db/websiteSchema';
 import { eq, and, inArray, isNull, sql } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { v4 as uuidv4 } from 'uuid';
+import { EnhancedOrderPricingService } from '@/lib/services/enhancedOrderPricingService';
 
 /**
  * Assign domains from bulk analysis to line items
@@ -40,23 +41,28 @@ export async function POST(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Extract assignments from request
-    const { assignments } = body;
+    // Extract assignments and projectId from request
+    const { assignments, projectId } = body;
     if (!assignments || !Array.isArray(assignments) || assignments.length === 0) {
       return NextResponse.json({ 
         error: 'No domain assignments provided' 
       }, { status: 400 });
     }
 
-    // Validate that all line items exist and are unassigned
+    // Validate that all line items exist, are unassigned, and not cancelled
     const lineItemIds = assignments.map(a => a.lineItemId);
-    const lineItems = await db.query.orderLineItems.findMany({
+    const allLineItems = await db.query.orderLineItems.findMany({
       where: and(
         eq(orderLineItems.orderId, orderId),
         inArray(orderLineItems.id, lineItemIds),
         isNull(orderLineItems.assignedDomainId) // Only unassigned items
       )
     });
+    
+    // Filter out cancelled and refunded items
+    const lineItems = allLineItems.filter(item => 
+      !['cancelled', 'refunded'].includes(item.status)
+    );
 
     if (lineItems.length !== assignments.length) {
       return NextResponse.json({ 
@@ -91,21 +97,63 @@ export async function POST(
 
       if (!domain || !lineItem) continue;
 
-      // Get website pricing information if available
+      // Get website pricing and metrics information
       let wholesalePrice = lineItem.wholesalePrice;
       let estimatedPrice = lineItem.estimatedPrice;
+      let domainRating: number | null = null;
+      let traffic: number | null = null;
 
       try {
+        // Always fetch the website to get latest DR/traffic data
         const website = await db.query.websites.findFirst({
-          where: eq(websites.domain, domain.domain)
+          where: sql`${websites.domain} = ${domain.domain} 
+                    OR ${websites.domain} = CONCAT('www.', ${domain.domain})
+                    OR CONCAT('www.', ${websites.domain}) = ${domain.domain}`
         });
 
-        if (website && (website as any).wholesalePrice) {
-          wholesalePrice = Math.floor((website as any).wholesalePrice * 100); // Convert to cents
-          estimatedPrice = wholesalePrice + 7900; // Add service fee
+        if (website) {
+          // Get DR and traffic from websites table (source of truth)
+          domainRating = website.domainRating || null;
+          traffic = website.totalTraffic || null;
+          
+          // Use the enhanced pricing service for pricing logic
+          const pricingResult = await EnhancedOrderPricingService.getWebsitePrice(
+            website.id, // Pass the website ID now that we have it
+            domain.domain,
+            {
+              quantity: 1,
+              clientType: 'standard',
+              urgency: 'standard'
+            }
+          );
+
+          if (pricingResult.wholesalePrice > 0) {
+            wholesalePrice = pricingResult.wholesalePrice;
+            estimatedPrice = pricingResult.retailPrice;
+          } else if (website.guestPostCost) {
+            // Fallback to direct calculation if enhanced service returns 0
+            wholesalePrice = Math.floor(Number(website.guestPostCost) * 100);
+            estimatedPrice = wholesalePrice + 7900; // $79 in cents
+          }
+        } else {
+          // Try enhanced pricing service without website record
+          const pricingResult = await EnhancedOrderPricingService.getWebsitePrice(
+            null,
+            domain.domain,
+            {
+              quantity: 1,
+              clientType: 'standard',
+              urgency: 'standard'
+            }
+          );
+
+          if (pricingResult.wholesalePrice > 0) {
+            wholesalePrice = pricingResult.wholesalePrice;
+            estimatedPrice = pricingResult.retailPrice;
+          }
         }
       } catch (error) {
-        console.log('Could not fetch website pricing, using defaults');
+        console.log('Could not fetch website data, using defaults:', error);
       }
 
       // Update line item
@@ -127,7 +175,26 @@ export async function POST(
             ...((lineItem.metadata as any) || {}),
             domainQualificationStatus: domain.qualificationStatus,
             domainProjectId: domain.projectId,
-            assignmentMethod: 'bulk_analysis'
+            bulkAnalysisProjectId: projectId || domain.projectId,
+            assignmentMethod: 'bulk_analysis',
+            // Store DR and traffic from websites table (source of truth)
+            domainRating: domainRating,
+            traffic: traffic,
+            // Store rich qualification analysis data
+            aiQualificationReasoning: domain.aiQualificationReasoning,
+            overlapStatus: domain.overlapStatus,
+            authorityDirect: domain.authorityDirect,
+            authorityRelated: domain.authorityRelated,
+            topicScope: domain.topicScope,
+            keywordCount: domain.keywordCount,
+            dataForSeoResultsCount: domain.dataForSeoResultsCount,
+            hasDataForSeoResults: domain.hasDataForSeoResults,
+            evidence: domain.evidence,
+            notes: domain.notes,
+            // Store target URL analysis data
+            suggestedTargetUrl: domain.suggestedTargetUrl,
+            targetMatchData: domain.targetMatchData,
+            targetMatchedAt: domain.targetMatchedAt
           }
         })
         .where(eq(orderLineItems.id, lineItemId));
@@ -176,6 +243,18 @@ export async function POST(
       })
       .where(eq(orders.id, orderId));
 
+    // Update the order benchmark to reflect the new assignments
+    try {
+      const { createOrderBenchmark } = await import('@/lib/orders/benchmarkUtils');
+      await createOrderBenchmark(
+        orderId,
+        session.userId,
+        'manual_update' // This will create a new benchmark snapshot with current data
+      );
+    } catch (benchmarkError) {
+      // Don't fail the whole operation if benchmark update fails
+    }
+
     return NextResponse.json({
       success: true,
       message: `Successfully assigned ${updatedLineItems.length} domains to line items`,
@@ -220,16 +299,18 @@ export async function GET(
       conditions.push(eq(bulkAnalysisDomains.projectId, projectId));
     }
 
-    // Get domains that are qualified and not yet assigned
-    const availableDomains = await db.query.bulkAnalysisDomains.findMany({
-      where: and(
-        ...conditions,
-        eq(bulkAnalysisDomains.qualificationStatus, 'qualified')
-      )
+    // Get domains that are qualified (any positive qualification status)
+    const allDomains = await db.query.bulkAnalysisDomains.findMany({
+      where: and(...conditions)
     });
+    
+    // Filter for qualified domains (multiple statuses count as qualified)
+    const availableDomains = allDomains.filter(d => 
+      ['qualified', 'high_quality', 'good_quality', 'marginal_quality'].includes(d.qualificationStatus || '')
+    );
 
-    // Get unassigned line items for this order
-    const unassignedLineItems = await db.query.orderLineItems.findMany({
+    // Get unassigned line items for this order (exclude cancelled/refunded)
+    const allUnassignedLineItems = await db.query.orderLineItems.findMany({
       where: and(
         eq(orderLineItems.orderId, orderId),
         isNull(orderLineItems.assignedDomainId)
@@ -238,6 +319,11 @@ export async function GET(
         client: true
       }
     });
+    
+    // Filter out cancelled and refunded items
+    const unassignedLineItems = allUnassignedLineItems.filter(item => 
+      !['cancelled', 'refunded'].includes(item.status)
+    );
 
     return NextResponse.json({
       availableDomains,

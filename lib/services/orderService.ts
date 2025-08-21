@@ -16,7 +16,7 @@ import { bulkAnalysisDomains } from '@/lib/db/bulkAnalysisSchema';
 import { websites } from '@/lib/db/websiteSchema';
 import { workflows } from '@/lib/db/schema';
 import { accounts } from '@/lib/db/accountSchema';
-import { eq, and, gte, lte, or, sql, desc, isNull } from 'drizzle-orm';
+import { eq, and, gte, lte, or, sql, desc, isNull, inArray } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
 import EnhancedOrderPricingService from './enhancedOrderPricingService';
@@ -445,6 +445,8 @@ export class OrderService {
    * Get orders for account with order groups
    */
   static async getAccountOrders(accountId: string): Promise<any[]> {
+    const { orderLineItems } = await import('@/lib/db/orderLineItemSchema');
+    
     const accountOrders = await db.query.orders.findMany({
       where: eq(orders.accountId, accountId),
       orderBy: desc(orders.createdAt),
@@ -453,37 +455,87 @@ export class OrderService {
       }
     });
 
-    // Fetch order groups for each order
-    const ordersWithGroups = await Promise.all(
+    // Fetch line items and order groups for each order
+    const ordersWithDetails = await Promise.all(
       accountOrders.map(async (order) => {
+        // Get line items count (excluding cancelled and refunded)
+        const lineItems = await db.query.orderLineItems.findMany({
+          where: eq(orderLineItems.orderId, order.id),
+        });
+        
+        const activeLineItems = lineItems.filter(item => 
+          !['cancelled', 'refunded'].includes(item.status)
+        );
+        
+        // Count completed line items
+        const completedLineItems = lineItems.filter(item => 
+          ['delivered', 'completed', 'published'].includes(item.status)
+        );
+        
+        // Get order groups for backward compatibility
         const groups = await this.getOrderGroups(order.id);
         
-        // Count total items if groups are empty (legacy orders)
-        let itemCount = 0;
-        if (groups.length === 0) {
+        // Count old items if no line items exist
+        let oldItemCount = 0;
+        if (activeLineItems.length === 0 && groups.length === 0) {
           const items = await db.query.orderItems.findMany({
             where: eq(orderItems.orderId, order.id),
           });
-          itemCount = items.length;
+          oldItemCount = items.length;
+        }
+        
+        // Use line item count if available, otherwise fall back to old items or order groups
+        const totalLinks = activeLineItems.length || oldItemCount || groups.reduce((sum, g) => sum + g.linkCount, 0) || 0;
+        const completedCount = completedLineItems.length;
+        
+        // Get unique client names from line items for the "Clients" column
+        let clientNames: string[] = [];
+        try {
+          const { clients } = await import('@/lib/db/schema');
+          const orderClients = await db
+            .selectDistinct({
+              clientName: clients.name
+            })
+            .from(orderLineItems)
+            .innerJoin(clients, eq(orderLineItems.clientId, clients.id))
+            .where(
+              and(
+                eq(orderLineItems.orderId, order.id),
+                sql`${orderLineItems.status} not in ('cancelled', 'refunded')`
+              )
+            );
+          
+          clientNames = orderClients.map(c => c.clientName);
+          
+          // If no line items, fallback to order groups client names
+          if (clientNames.length === 0 && groups.length > 0) {
+            clientNames = groups.map(g => g.clientName).filter(name => name && name !== 'Unknown Client');
+          }
+        } catch (error) {
+          console.error('Error fetching client names for order', order.id, error);
         }
         
         return {
           ...order,
           account: order.account,
-          totalLinks: groups.reduce((sum, g) => sum + g.linkCount, 0) || itemCount,
-          itemCount: itemCount, // For backwards compatibility
-          orderGroups: groups
+          totalLinks,
+          itemCount: totalLinks, // For backwards compatibility
+          completedCount,
+          orderGroups: groups,
+          clientNames // Add the client names for display
         };
       })
     );
 
-    return ordersWithGroups;
+    return ordersWithDetails;
   }
 
   /**
    * Get orders by status with order groups
    */
   static async getOrdersByStatus(status: string): Promise<any[]> {
+    const { orderLineItems } = await import('@/lib/db/orderLineItemSchema');
+    
     const statusOrders = await db.query.orders.findMany({
       where: eq(orders.status, status),
       orderBy: desc(orders.createdAt),
@@ -492,82 +544,154 @@ export class OrderService {
       }
     });
 
-    // Fetch order groups for each order
-    const ordersWithGroups = await Promise.all(
+    // Fetch line items and order groups for each order
+    const ordersWithDetails = await Promise.all(
       statusOrders.map(async (order) => {
+        // Get line items count (excluding cancelled and refunded)
+        const lineItems = await db.query.orderLineItems.findMany({
+          where: eq(orderLineItems.orderId, order.id),
+        });
+        
+        const activeLineItems = lineItems.filter(item => 
+          !['cancelled', 'refunded'].includes(item.status)
+        );
+        
+        // Count completed line items
+        const completedLineItems = lineItems.filter(item => 
+          ['delivered', 'completed', 'published'].includes(item.status)
+        );
+        
+        // Get order groups for backward compatibility
         const groups = await this.getOrderGroups(order.id);
         
-        // Count total items if groups are empty (legacy orders)
-        let itemCount = 0;
-        if (groups.length === 0) {
+        // Count old items if no line items exist
+        let oldItemCount = 0;
+        if (activeLineItems.length === 0 && groups.length === 0) {
           const items = await db.query.orderItems.findMany({
             where: eq(orderItems.orderId, order.id),
           });
-          itemCount = items.length;
+          oldItemCount = items.length;
+        }
+        
+        // Use line item count if available, otherwise fall back to old items or order groups
+        const totalLinks = activeLineItems.length || oldItemCount || groups.reduce((sum, g) => sum + g.linkCount, 0) || 0;
+        const completedCount = completedLineItems.length;
+        
+        // Get unique client names from line items for the "Clients" column
+        let clientNames: string[] = [];
+        try {
+          const { clients } = await import('@/lib/db/schema');
+          const orderClients = await db
+            .selectDistinct({
+              clientName: clients.name
+            })
+            .from(orderLineItems)
+            .innerJoin(clients, eq(orderLineItems.clientId, clients.id))
+            .where(
+              and(
+                eq(orderLineItems.orderId, order.id),
+                sql`${orderLineItems.status} not in ('cancelled', 'refunded')`
+              )
+            );
+          
+          clientNames = orderClients.map(c => c.clientName);
+          
+          // If no line items, fallback to order groups client names
+          if (clientNames.length === 0 && groups.length > 0) {
+            clientNames = groups.map(g => g.clientName).filter(name => name && name !== 'Unknown Client');
+          }
+        } catch (error) {
+          console.error('Error fetching client names for order', order.id, error);
         }
         
         return {
           ...order,
           account: order.account,
-          totalLinks: groups.reduce((sum, g) => sum + g.linkCount, 0) || itemCount,
-          itemCount: itemCount, // For backwards compatibility
-          orderGroups: groups
+          totalLinks,
+          itemCount: totalLinks, // For backwards compatibility
+          completedCount,
+          orderGroups: groups,
+          clientNames // Add the client names for display
         };
       })
     );
 
-    return ordersWithGroups;
+    return ordersWithDetails;
   }
 
   /**
    * Get orders for a client by status with order groups
    */
   static async getClientOrdersByStatus(clientId: string, status: string): Promise<any[]> {
-    const { orderGroups } = await import('@/lib/db/orderGroupSchema');
+    const { orderLineItems } = await import('@/lib/db/orderLineItemSchema');
     
-    // Find all orders for this client with the specified status
-    const clientOrders = await db
+    // For draft orders, we want to show ALL draft orders that could accept items for this client
+    // This includes:
+    // 1. Orders that already have line items for this client
+    // 2. Empty draft orders that could accept new line items
+    // 3. Draft orders with unassigned line items for this client
+    
+    // Get all orders with the specified status
+    const allOrders = await db
       .select({
         order: orders,
-        orderGroup: orderGroups,
         account: accounts
       })
       .from(orders)
-      .innerJoin(orderGroups, eq(orderGroups.orderId, orders.id))
       .leftJoin(accounts, eq(orders.accountId, accounts.id))
-      .where(
-        and(
-          eq(orderGroups.clientId, clientId),
-          eq(orders.status, status)
-        )
-      )
-      .orderBy(desc(orders.createdAt));
+      .where(eq(orders.status, status));
 
     // Transform and fetch additional data
-    const ordersWithGroups = await Promise.all(
-      clientOrders.map(async ({ order, account }) => {
-        const groups = await this.getOrderGroups(order.id);
+    const ordersWithDetails = await Promise.all(
+      allOrders.map(async ({ order, account }) => {
+        // Get ALL line items for the order
+        const allLineItems = await db.query.orderLineItems.findMany({
+          where: eq(orderLineItems.orderId, order.id),
+        });
+
+        // Get line items specifically for this client
+        const clientLineItems = allLineItems.filter(item => 
+          item.clientId === clientId
+        );
+
+        // Get unassigned line items that could be assigned to domains from this client
+        const unassignedLineItems = allLineItems.filter(item => 
+          item.clientId === clientId && 
+          !item.assignedDomainId &&
+          !['cancelled', 'refunded'].includes(item.status)
+        );
         
-        // Count total items if groups are empty (legacy orders)
-        let itemCount = 0;
-        if (groups.length === 0) {
-          const items = await db.query.orderItems.findMany({
-            where: eq(orderItems.orderId, order.id),
-          });
-          itemCount = items.length;
-        }
+        // Count active items
+        const activeLineItems = allLineItems.filter(item => 
+          !['cancelled', 'refunded'].includes(item.status)
+        );
         
         return {
           ...order,
           account: account,
-          totalLinks: groups.reduce((sum, g) => sum + g.linkCount, 0) || itemCount,
-          itemCount: itemCount, // For backwards compatibility
-          orderGroups: groups
+          totalLinks: activeLineItems.length,
+          itemCount: activeLineItems.length,
+          clientItemCount: clientLineItems.length,
+          unassignedItemCount: unassignedLineItems.length,
+          lineItems: allLineItems, // Include all line items
+          hasCapacityForClient: unassignedLineItems.length > 0 || status === 'draft' // Draft orders can always accept new items
         };
       })
     );
 
-    return ordersWithGroups;
+    // For draft status, return all draft orders (they can all potentially accept new line items)
+    // For other statuses, only return orders that have items for this client
+    if (status === 'draft') {
+      return ordersWithDetails.sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+    } else {
+      return ordersWithDetails
+        .filter(order => order.clientItemCount > 0)
+        .sort((a, b) => 
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+    }
   }
 
   /**
@@ -578,28 +702,55 @@ export class OrderService {
     draftOrders: any[];
     defaultOrderId: string | null;
   }> {
-    const { orderGroups } = await import('@/lib/db/orderGroupSchema');
+    const { orderLineItems } = await import('@/lib/db/orderLineItemSchema');
     
-    // Get all order groups that have this project assigned
-    const groupsWithOrders = await db
+    // Get all orders that have line items with this project assigned
+    // Look for bulkAnalysisProjectId in the metadata field
+    const lineItemsWithOrders = await db
       .select({
         order: orders,
-        orderGroup: orderGroups,
+        lineItem: orderLineItems,
         account: accounts
       })
-      .from(orderGroups)
-      .innerJoin(orders, eq(orderGroups.orderId, orders.id))
+      .from(orderLineItems)
+      .innerJoin(orders, eq(orderLineItems.orderId, orders.id))
       .leftJoin(accounts, eq(orders.accountId, accounts.id))
-      .where(eq(orderGroups.bulkAnalysisProjectId, projectId));
+      .where(sql`${orderLineItems.metadata}->>'bulkAnalysisProjectId' = ${projectId}`);
+
+    // Get unique orders (since multiple line items can belong to same order)
+    const uniqueOrdersMap = new Map();
+    lineItemsWithOrders.forEach(({ order, account }) => {
+      if (!uniqueOrdersMap.has(order.id)) {
+        uniqueOrdersMap.set(order.id, { order, account });
+      }
+    });
 
     // Filter orders based on status - exclude completed and cancelled orders
-    const activeOrders = groupsWithOrders.filter(({ order }) => {
+    const activeOrders = Array.from(uniqueOrdersMap.values()).filter(({ order }) => {
       return order.status !== 'completed' && order.status !== 'cancelled';
     });
 
+    // Get line item counts for each order (exclude cancelled and refunded items)
+    const orderIds = activeOrders.map(({ order }) => order.id);
+    let lineItemCounts: any[] = [];
+    
+    if (orderIds.length > 0) {
+      lineItemCounts = await db
+        .select({
+          orderId: orderLineItems.orderId,
+          count: sql<number>`cast(count(case when ${orderLineItems.status} not in ('cancelled', 'refunded') then 1 end) as int)`
+        })
+        .from(orderLineItems)
+        .where(inArray(orderLineItems.orderId, orderIds))
+        .groupBy(orderLineItems.orderId);
+    }
+
+    const countsMap = new Map(lineItemCounts.map(item => [item.orderId, item.count]));
+
     // Transform the data for the frontend
-    const associatedOrders = activeOrders.map(({ order, orderGroup, account }) => ({
+    const associatedOrders = activeOrders.map(({ order, account }) => ({
       id: order.id,
+      orderId: order.id, // Add orderId for compatibility
       account: account ? {
         id: account.id,
         email: account.email,
@@ -610,38 +761,55 @@ export class OrderService {
       accountEmail: account?.email || 'Unknown',
       status: order.status,
       createdAt: order.createdAt.toISOString(),
-      itemCount: orderGroup.linkCount,
+      itemCount: countsMap.get(order.id) || 0,
       totalRetail: order.totalRetail
     }));
 
-    // Also get draft orders for this client (backward compatibility)
-    const clientId = groupsWithOrders[0]?.orderGroup.clientId;
+    // Get the client ID from the first line item if available
+    const clientId = lineItemsWithOrders[0]?.lineItem.clientId;
     let draftOrders: any[] = [];
     
     if (clientId) {
       // Get all draft orders for this client that aren't already associated
-      const associatedOrderIds = groupsWithOrders.map(({ order }) => order.id);
+      const associatedOrderIds = activeOrders.map(({ order }) => order.id);
       
+      // Get draft orders that have line items for this client
       const clientDraftOrders = await db
-        .select({
+        .selectDistinct({
           order: orders,
-          orderGroup: orderGroups,
           account: accounts
         })
         .from(orders)
-        .innerJoin(orderGroups, eq(orderGroups.orderId, orders.id))
+        .innerJoin(orderLineItems, eq(orderLineItems.orderId, orders.id))
         .leftJoin(accounts, eq(orders.accountId, accounts.id))
         .where(
           and(
-            eq(orderGroups.clientId, clientId),
+            eq(orderLineItems.clientId, clientId),
             eq(orders.status, 'draft'),
             associatedOrderIds.length > 0 
               ? sql`${orders.id} NOT IN (${sql.join(associatedOrderIds.map(id => sql`${id}`), sql`, `)})`
-              : undefined
+              : sql`true`
           )
         );
 
-      draftOrders = clientDraftOrders.map(({ order, orderGroup, account }) => ({
+      // Get line item counts for draft orders
+      const draftOrderIds = clientDraftOrders.map(({ order }) => order.id);
+      let draftCounts: any[] = [];
+      
+      if (draftOrderIds.length > 0) {
+        draftCounts = await db
+          .select({
+            orderId: orderLineItems.orderId,
+            count: sql<number>`cast(count(case when ${orderLineItems.status} not in ('cancelled', 'refunded') then 1 end) as int)`
+          })
+          .from(orderLineItems)
+          .where(inArray(orderLineItems.orderId, draftOrderIds))
+          .groupBy(orderLineItems.orderId);
+      }
+
+      const draftCountsMap = new Map(draftCounts.map(item => [item.orderId, item.count]));
+
+      draftOrders = clientDraftOrders.map(({ order, account }) => ({
         id: order.id,
         account: account ? {
           id: account.id,
@@ -653,7 +821,7 @@ export class OrderService {
         accountEmail: account?.email || 'Unknown',
         status: order.status,
         createdAt: order.createdAt.toISOString(),
-        itemCount: orderGroup.linkCount,
+        itemCount: draftCountsMap.get(order.id) || 0,
         totalRetail: order.totalRetail
       }));
     }
@@ -682,7 +850,11 @@ export class OrderService {
    * Get orders with item counts and order groups
    */
   static async getOrdersWithItemCounts(): Promise<any[]> {
-    // First get all orders with item counts and account info
+    const { orderLineItems } = await import('@/lib/db/orderLineItemSchema');
+    const { and, sql } = await import('drizzle-orm');
+    
+    // First get all orders with line item counts and account info
+    // Count non-cancelled/refunded line items
     const ordersWithCounts = await db
       .select({
         id: orders.id,
@@ -715,13 +887,17 @@ export class OrderService {
         cancellationReason: orders.cancellationReason,
         createdAt: orders.createdAt,
         updatedAt: orders.updatedAt,
-        itemCount: sql<number>`cast(count(${orderItems.id}) as int)`,
+        // Count active line items (exclude cancelled and refunded)
+        lineItemCount: sql<number>`cast(count(case when ${orderLineItems.status} not in ('cancelled', 'refunded') then 1 end) as int)`,
+        // Also count old orderItems for backward compatibility
+        oldItemCount: sql<number>`cast(count(${orderItems.id}) as int)`,
         // Account data - select individual fields
         accountEmail: accounts.email,
         accountContactName: accounts.contactName,
         accountCompanyName: accounts.companyName,
       })
       .from(orders)
+      .leftJoin(orderLineItems, eq(orders.id, orderLineItems.orderId))
       .leftJoin(orderItems, eq(orders.id, orderItems.orderId))
       .leftJoin(accounts, eq(orders.accountId, accounts.id))
       .groupBy(
@@ -762,10 +938,38 @@ export class OrderService {
       )
       .orderBy(desc(orders.createdAt));
 
-    // Now fetch order groups for each order
-    const ordersWithGroups = await Promise.all(
+    // Now fetch additional details for each order
+    const ordersWithDetails = await Promise.all(
       ordersWithCounts.map(async (order) => {
+        // Get order groups for backward compatibility
         const groups = await this.getOrderGroups(order.id);
+        
+        // Get unique client names from line items for the "Clients" column
+        let clientNames: string[] = [];
+        try {
+          const { clients } = await import('@/lib/db/schema');
+          const orderClients = await db
+            .selectDistinct({
+              clientName: clients.name
+            })
+            .from(orderLineItems)
+            .innerJoin(clients, eq(orderLineItems.clientId, clients.id))
+            .where(
+              and(
+                eq(orderLineItems.orderId, order.id),
+                sql`${orderLineItems.status} not in ('cancelled', 'refunded')`
+              )
+            );
+          
+          clientNames = orderClients.map(c => c.clientName);
+          
+          // If no line items, fallback to order groups client names
+          if (clientNames.length === 0 && groups.length > 0) {
+            clientNames = groups.map(g => g.clientName).filter(name => name && name !== 'Unknown Client');
+          }
+        } catch (error) {
+          console.error('Error fetching client names for order', order.id, error);
+        }
         
         // Reconstruct account object from individual fields
         const account = order.accountEmail ? {
@@ -776,18 +980,33 @@ export class OrderService {
         } : null;
         
         // Remove the individual account fields and add the account object
-        const { accountEmail, accountContactName, accountCompanyName, ...orderData } = order;
+        const { accountEmail, accountContactName, accountCompanyName, lineItemCount, oldItemCount, ...orderData } = order;
+        
+        // Use line item count if available, otherwise fall back to old items or order groups
+        const totalLinks = lineItemCount || oldItemCount || groups.reduce((sum, g) => sum + g.linkCount, 0) || 0;
+        
+        // Count completed line items
+        const completedLineItems = await db.query.orderLineItems.findMany({
+          where: and(
+            eq(orderLineItems.orderId, order.id),
+            sql`${orderLineItems.status} in ('delivered', 'completed', 'published')`
+          ),
+        });
+        const completedCount = completedLineItems.length;
         
         return {
           ...orderData,
           account,
-          totalLinks: groups.reduce((sum, g) => sum + g.linkCount, 0) || order.itemCount,
-          orderGroups: groups
+          totalLinks,
+          itemCount: totalLinks, // For backward compatibility
+          completedCount,
+          orderGroups: groups,
+          clientNames // Add the client names for display
         };
       })
     );
 
-    return ordersWithGroups;
+    return ordersWithDetails;
   }
 
   /**
@@ -796,39 +1015,46 @@ export class OrderService {
    */
   static async getOrderGroups(orderId: string): Promise<any[]> {
     // During migration, return empty array to force lineItems usage
-    if (true) { // Force migration mode
+    // Temporarily enabled to get client names for legacy orders
+    if (false) { // Force migration mode - disabled to get client names
       return [];
     }
     
-    const { orderGroups } = await import('@/lib/db/orderGroupSchema');
-    const { clients } = await import('@/lib/db/schema');
-    const { orderSiteSelections } = await import('@/lib/db/orderGroupSchema');
-    
-    const groups = await db.query.orderGroups.findMany({
-      where: eq(orderGroups.orderId, orderId),
-      with: {
-        client: true,
-        bulkAnalysisProject: true,
-        siteSelections: true
-      }
-    });
-
-    // Transform to match the UI expectations
-    return groups.map(group => ({
-      id: group.id,
-      clientId: group.clientId,
-      clientName: group.client?.name || 'Unknown Client',
-      clientWebsite: group.client?.website,
-      linkCount: group.linkCount,
-      targetPages: group.targetPages?.map(tp => tp.url) || [],
-      bulkAnalysisProjectId: group.bulkAnalysisProjectId,
-      groupStatus: group.groupStatus || 'pending',
-      siteSelections: {
-        approved: group.siteSelections?.filter(s => s.status === 'approved').length || 0,
-        pending: group.siteSelections?.filter(s => s.status === 'suggested').length || 0,
-        total: group.siteSelections?.length || 0
-      }
-    }));
+    try {
+      const { orderGroups } = await import('@/lib/db/orderGroupSchema');
+      const { clients } = await import('@/lib/db/schema');
+      const { orderSiteSelections } = await import('@/lib/db/orderGroupSchema');
+      
+      // Use the same approach as the individual order API
+      const orderGroupsData = await db
+        .select({
+          orderGroup: orderGroups,
+          client: clients
+        })
+        .from(orderGroups)
+        .leftJoin(clients, eq(orderGroups.clientId, clients.id))
+        .where(eq(orderGroups.orderId, orderId));
+      
+      
+      return orderGroupsData.map(({ orderGroup, client }) => ({
+        id: orderGroup.id,
+        clientId: orderGroup.clientId,
+        clientName: client?.name || 'Unknown Client',
+        clientWebsite: client?.website,
+        linkCount: orderGroup.linkCount,
+        targetPages: orderGroup.targetPages?.map(tp => tp.url) || [],
+        bulkAnalysisProjectId: orderGroup.bulkAnalysisProjectId,
+        groupStatus: orderGroup.groupStatus || 'pending',
+        siteSelections: {
+          approved: 0, // We're not fetching site selections for the list view
+          pending: 0,
+          total: 0
+        }
+      }));
+    } catch (error) {
+      console.error(`Error in getOrderGroups for ${orderId}:`, error);
+      return [];
+    }
   }
 
   /**

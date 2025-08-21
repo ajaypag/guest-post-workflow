@@ -62,6 +62,7 @@ interface Order {
   updatedAt: string;
   orderGroups?: OrderGroup[];
   itemCount?: number; // For backwards compatibility
+  clientNames?: string[]; // New field for client/brand names from line items
 }
 
 interface OrdersTableProps {
@@ -108,44 +109,109 @@ export function OrdersTableMultiClient({
     return statusLabels[status] || status;
   };
 
-  const getActionStatus = (order: Order, isInternal: boolean) => {
+  const renderActionButtons = (order: Order, isInternal: boolean) => {
     // For internal users
     if (isInternal) {
       if (order.status === 'pending_confirmation') {
-        return { text: 'Needs Confirmation', color: 'text-red-600', priority: 'high' };
-      }
-      if (order.status === 'confirmed' && (order.state === 'analyzing')) {
-        return { text: 'Processing', color: 'text-blue-600', priority: 'medium' };
+        return (
+          <button
+            onClick={() => window.location.href = `/orders/${order.id}`}
+            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+          >
+            Confirm Order
+          </button>
+        );
       }
       if (order.status === 'confirmed' && order.state === 'sites_ready') {
-        return { text: 'Ready to Send', color: 'text-yellow-600', priority: 'medium' };
+        return (
+          <button
+            onClick={() => window.location.href = `/orders/${order.id}`}
+            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+          >
+            Send to Client
+          </button>
+        );
+      }
+      if (order.status === 'confirmed' && order.state === 'analyzing') {
+        return (
+          <span className="inline-flex items-center px-2 py-1 text-xs text-blue-600 bg-blue-50 rounded-md">
+            Processing...
+          </span>
+        );
       }
     }
     // For external users  
     else {
       if (order.status === 'draft') {
-        return { text: 'Finish Setup', color: 'text-red-600', priority: 'high' };
+        return (
+          <button
+            onClick={() => window.location.href = `/orders/${order.id}/edit`}
+            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+          >
+            Complete Setup
+          </button>
+        );
       }
       if (order.status === 'confirmed' && (order.state === 'sites_ready' || order.state === 'client_reviewing')) {
-        return { text: 'Review Sites', color: 'text-red-600', priority: 'high' };
+        return (
+          <button
+            onClick={() => window.location.href = `/orders/${order.id}/review`}
+            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+          >
+            Review Sites
+          </button>
+        );
       }
       if (order.status === 'confirmed' && order.state === 'payment_pending') {
-        return { text: 'Payment Due', color: 'text-red-600', priority: 'high' };
+        return (
+          <button
+            onClick={() => window.location.href = `/orders/${order.id}`}
+            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+          >
+            Pay Invoice
+          </button>
+        );
       }
-      if (order.status === 'confirmed' && (order.state === 'analyzing')) {
-        return { text: 'In Progress', color: 'text-blue-600', priority: 'low' };
+      if (order.status === 'invoiced') {
+        return (
+          <button
+            onClick={() => window.location.href = `/orders/${order.id}`}
+            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+          >
+            Pay Invoice
+          </button>
+        );
+      }
+      if (order.status === 'confirmed' && order.state === 'analyzing') {
+        return (
+          <span className="inline-flex items-center px-2 py-1 text-xs text-blue-600 bg-blue-50 rounded-md">
+            In Progress
+          </span>
+        );
       }
     }
     
     // Default cases
     if (order.status === 'paid' || order.status === 'in_progress') {
-      return { text: 'In Progress', color: 'text-blue-600', priority: 'low' };
+      return (
+        <span className="inline-flex items-center px-2 py-1 text-xs text-blue-600 bg-blue-50 rounded-md">
+          In Progress
+        </span>
+      );
     }
     if (order.status === 'completed') {
-      return { text: 'Complete', color: 'text-green-600', priority: 'low' };
+      return (
+        <span className="inline-flex items-center px-2 py-1 text-xs text-green-600 bg-green-50 rounded-md">
+          Complete
+        </span>
+      );
     }
     
-    return { text: 'No Action', color: 'text-gray-500', priority: 'low' };
+    return (
+      <span className="inline-flex items-center px-2 py-1 text-xs text-gray-500 bg-gray-50 rounded-md">
+        No Action
+      </span>
+    );
   };
 
   const toggleOrderExpanded = (orderId: string) => {
@@ -257,7 +323,16 @@ export function OrdersTableMultiClient({
                   <div className="grid grid-cols-3 gap-3 text-center">
                     <div>
                       <p className="text-xs text-gray-500">Clients</p>
-                      <p className="text-sm font-semibold text-gray-900">{totalClients}</p>
+                      <p className="text-sm font-semibold text-gray-900">
+                        {order.clientNames && order.clientNames.length > 0 
+                          ? order.clientNames.length 
+                          : hasGroups 
+                            ? totalClients
+                            : '—'}
+                      </p>
+                      {!order.clientNames?.length && !hasGroups && (
+                        <p className="text-xs text-gray-500">No client data</p>
+                      )}
                     </div>
                     <div>
                       <p className="text-xs text-gray-500">Items</p>
@@ -284,7 +359,7 @@ export function OrdersTableMultiClient({
                   )}
 
                   {/* Expand/Collapse for Groups */}
-                  {hasGroups && (
+                  {(hasGroups || (order.clientNames && order.clientNames.length > 0)) && (
                     <button
                       onClick={() => toggleOrderExpanded(order.id)}
                       className="w-full flex items-center justify-center gap-2 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
@@ -297,7 +372,7 @@ export function OrdersTableMultiClient({
                       ) : (
                         <>
                           <ChevronDown className="h-4 w-4" />
-                          Show {totalClients} Clients
+                          Show {order.clientNames && order.clientNames.length > 0 ? order.clientNames.length : totalClients} Clients
                         </>
                       )}
                     </button>
@@ -323,25 +398,44 @@ export function OrdersTableMultiClient({
                 </div>
 
                 {/* Expanded Client Groups */}
-                {isExpanded && hasGroups && (
+                {isExpanded && (
                   <div className="mt-4 space-y-3 pl-4 border-l-2 border-gray-200">
-                    {order.orderGroups?.map((group) => (
-                      <div key={group.id} className="bg-gray-50 rounded-lg p-3">
-                        <div className="flex items-start justify-between mb-2">
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">
-                              {group.clientName}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {group.linkCount} links
-                            </p>
+                    {/* Show client names from line items if available */}
+                    {order.clientNames && order.clientNames.length > 0 ? (
+                      order.clientNames.map((clientName, index) => (
+                        <div key={`client-${index}`} className="bg-gray-50 rounded-lg p-3">
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">
+                                {clientName}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                Line items system
+                              </p>
+                            </div>
                           </div>
-                          <span className="text-sm font-medium text-gray-900">
-                            {formatCurrency(0)}
-                          </span>
                         </div>
-                      </div>
-                    ))}
+                      ))
+                    ) : (
+                      /* Fallback to legacy order groups */
+                      hasGroups && order.orderGroups?.map((group) => (
+                        <div key={group.id} className="bg-gray-50 rounded-lg p-3">
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">
+                                {group.clientName}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {group.linkCount} links (legacy)
+                              </p>
+                            </div>
+                            <span className="text-sm font-medium text-gray-900">
+                              {formatCurrency(0)}
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 )}
               </div>
@@ -358,9 +452,11 @@ export function OrdersTableMultiClient({
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Order
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Account
-              </th>
+              {isInternal && (
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Account
+                </th>
+              )}
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Clients
               </th>
@@ -393,7 +489,7 @@ export function OrdersTableMultiClient({
                   <tr className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">
-                        {hasGroups && (
+                        {(hasGroups || (order.clientNames && order.clientNames.length > 0)) && (
                           <button
                             onClick={() => toggleOrderExpanded(order.id)}
                             className="text-gray-400 hover:text-gray-600"
@@ -427,23 +523,46 @@ export function OrdersTableMultiClient({
                       </div>
                     </td>
 
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="font-medium text-sm">{order.account?.contactName || order.account?.companyName || 'Unknown'}</div>
-                        {order.account?.companyName && order.account?.contactName && (
-                          <div className="text-xs text-gray-500">{order.account.companyName}</div>
-                        )}
-                        <div className="text-xs text-gray-500">{order.account?.email || 'No email'}</div>
-                      </div>
-                    </td>
+                    {isInternal && (
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div>
+                          <div className="font-medium text-sm">{order.account?.contactName || order.account?.companyName || 'Unknown'}</div>
+                          {order.account?.companyName && order.account?.contactName && (
+                            <div className="text-xs text-gray-500">{order.account.companyName}</div>
+                          )}
+                          <div className="text-xs text-gray-500">{order.account?.email || 'No email'}</div>
+                        </div>
+                      </td>
+                    )}
 
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-1">
                         <Users className="h-4 w-4 text-gray-400" />
-                        <span className="text-sm font-medium">{totalClients}</span>
-                        {totalClients === 1 && !hasGroups && (
-                          <span className="text-xs text-gray-500 ml-1">(legacy)</span>
-                        )}
+                        <div className="flex flex-col">
+                          {order.clientNames && order.clientNames.length > 0 ? (
+                            <>
+                              <span className="text-sm font-medium">
+                                {order.clientNames.slice(0, 2).join(', ')}
+                                {order.clientNames.length > 2 && (
+                                  <span className="text-gray-500"> +{order.clientNames.length - 2} more</span>
+                                )}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                {order.clientNames.length} client{order.clientNames.length !== 1 ? 's' : ''}
+                              </span>
+                            </>
+                          ) : hasGroups ? (
+                            <>
+                              <span className="text-sm font-medium">{totalClients}</span>
+                              <span className="text-xs text-gray-500">(legacy)</span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="text-sm font-medium text-gray-400">—</span>
+                              <span className="text-xs text-gray-500">No client data</span>
+                            </>
+                          )}
+                        </div>
                       </div>
                     </td>
 
@@ -462,22 +581,7 @@ export function OrdersTableMultiClient({
                     </td>
 
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {(() => {
-                        const actionStatus = getActionStatus(order, isInternal);
-                        return (
-                          <div className="flex items-center gap-2">
-                            {actionStatus.priority === 'high' && (
-                              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                            )}
-                            {actionStatus.priority === 'medium' && (
-                              <div className="w-2 h-2 bg-yellow-500 rounded-full" />
-                            )}
-                            <span className={`text-sm font-medium ${actionStatus.color}`}>
-                              {actionStatus.text}
-                            </span>
-                          </div>
-                        );
-                      })()}
+                      {renderActionButtons(order, isInternal)}
                     </td>
 
                     <td className="px-6 py-4 whitespace-nowrap text-right">
@@ -630,65 +734,112 @@ export function OrdersTableMultiClient({
                   </tr>
 
                   {/* Expanded client groups */}
-                  {isExpanded && hasGroups && (
+                  {isExpanded && (hasGroups || (order.clientNames && order.clientNames.length > 0)) && (
                     <tr>
-                      <td colSpan={8} className="px-0 py-0">
+                      <td colSpan={isInternal ? 8 : 7} className="px-0 py-0">
                         <div className="bg-gray-50 border-t border-gray-200">
                           <table className="min-w-full">
                             <tbody className="divide-y divide-gray-200">
-                              {order.orderGroups!.map((group) => (
-                                <tr key={group.id} className="hover:bg-gray-100">
-                                  <td className="pl-16 pr-6 py-3 whitespace-nowrap">
-                                    <div className="flex items-center gap-2">
-                                      <LinkIcon className="h-4 w-4 text-gray-400" />
-                                      <div>
-                                        <div className="text-sm font-medium text-gray-900">
-                                          {group.clientName}
+                              {/* Show client names from line items if available */}
+                              {order.clientNames && order.clientNames.length > 0 ? (
+                                order.clientNames.map((clientName, index) => (
+                                  <tr key={`client-${index}`} className="hover:bg-gray-100">
+                                    <td className="pl-16 pr-6 py-3 whitespace-nowrap">
+                                      <div className="flex items-center gap-2">
+                                        <LinkIcon className="h-4 w-4 text-gray-400" />
+                                        <div>
+                                          <div className="text-sm font-medium text-gray-900">
+                                            {clientName}
+                                          </div>
+                                          <div className="text-xs text-gray-500">Line items system</div>
                                         </div>
-                                        {group.clientWebsite && (
-                                          <div className="text-xs text-gray-500">{group.clientWebsite}</div>
-                                        )}
                                       </div>
-                                    </div>
-                                  </td>
-                                  <td className="px-6 py-3 whitespace-nowrap">
-                                    <span className="text-sm text-gray-600">
-                                      {group.linkCount} {group.linkCount === 1 ? 'link' : 'links'}
-                                    </span>
-                                  </td>
-                                  <td className="px-6 py-3 whitespace-nowrap">
-                                    {group.targetPages && group.targetPages.length > 0 && (
+                                    </td>
+                                    <td className="px-6 py-3 whitespace-nowrap">
+                                      <span className="text-sm text-gray-600">
+                                        New system
+                                      </span>
+                                    </td>
+                                    <td className="px-6 py-3 whitespace-nowrap">
                                       <div className="text-xs text-gray-500">
-                                        {group.targetPages.slice(0, 2).join(', ')}
-                                        {group.targetPages.length > 2 && ` +${group.targetPages.length - 2} more`}
+                                        Managed via line items
                                       </div>
-                                    )}
-                                  </td>
-                                  <td className="px-6 py-3 whitespace-nowrap">
-                                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getGroupStatusColor(group.groupStatus)}`}>
-                                      {group.groupStatus.replace(/_/g, ' ')}
-                                    </span>
-                                  </td>
-                                  <td className="px-6 py-3 whitespace-nowrap">
-                                    {group.siteSelections && (
+                                    </td>
+                                    <td className="px-6 py-3 whitespace-nowrap">
+                                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                        active
+                                      </span>
+                                    </td>
+                                    <td className="px-6 py-3 whitespace-nowrap">
                                       <div className="text-xs text-gray-600">
-                                        {group.siteSelections.approved}/{group.siteSelections.total} sites selected
+                                        Line items
                                       </div>
-                                    )}
-                                  </td>
-                                  <td className="px-6 py-3 whitespace-nowrap text-right">
-                                    {group.bulkAnalysisProjectId ? (
-                                      <Link href={`/clients/${group.clientId}/bulk-analysis/projects/${group.bulkAnalysisProjectId}`}>
+                                    </td>
+                                    <td className="px-6 py-3 whitespace-nowrap text-right">
+                                      <Link href={`/orders/${order.id}`}>
                                         <button className="text-blue-600 hover:text-blue-900 text-xs">
-                                          View Analysis
+                                          View Order
                                         </button>
                                       </Link>
-                                    ) : (
-                                      <span className="text-xs text-gray-400">No analysis yet</span>
-                                    )}
-                                  </td>
-                                </tr>
-                              ))}
+                                    </td>
+                                  </tr>
+                                ))
+                              ) : (
+                                /* Fallback to legacy order groups */
+                                hasGroups && order.orderGroups!.map((group) => (
+                                  <tr key={group.id} className="hover:bg-gray-100">
+                                    <td className="pl-16 pr-6 py-3 whitespace-nowrap">
+                                      <div className="flex items-center gap-2">
+                                        <LinkIcon className="h-4 w-4 text-gray-400" />
+                                        <div>
+                                          <div className="text-sm font-medium text-gray-900">
+                                            {group.clientName}
+                                          </div>
+                                          {group.clientWebsite && (
+                                            <div className="text-xs text-gray-500">{group.clientWebsite}</div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </td>
+                                    <td className="px-6 py-3 whitespace-nowrap">
+                                      <span className="text-sm text-gray-600">
+                                        {group.linkCount} {group.linkCount === 1 ? 'link' : 'links'} (legacy)
+                                      </span>
+                                    </td>
+                                    <td className="px-6 py-3 whitespace-nowrap">
+                                      {group.targetPages && group.targetPages.length > 0 && (
+                                        <div className="text-xs text-gray-500">
+                                          {group.targetPages.slice(0, 2).join(', ')}
+                                          {group.targetPages.length > 2 && ` +${group.targetPages.length - 2} more`}
+                                        </div>
+                                      )}
+                                    </td>
+                                    <td className="px-6 py-3 whitespace-nowrap">
+                                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getGroupStatusColor(group.groupStatus)}`}>
+                                        {group.groupStatus.replace(/_/g, ' ')}
+                                      </span>
+                                    </td>
+                                    <td className="px-6 py-3 whitespace-nowrap">
+                                      {group.siteSelections && (
+                                        <div className="text-xs text-gray-600">
+                                          {group.siteSelections.approved}/{group.siteSelections.total} sites selected
+                                        </div>
+                                      )}
+                                    </td>
+                                    <td className="px-6 py-3 whitespace-nowrap text-right">
+                                      {group.bulkAnalysisProjectId ? (
+                                        <Link href={`/clients/${group.clientId}/bulk-analysis/projects/${group.bulkAnalysisProjectId}`}>
+                                          <button className="text-blue-600 hover:text-blue-900 text-xs">
+                                            View Analysis
+                                          </button>
+                                        </Link>
+                                      ) : (
+                                        <span className="text-xs text-gray-400">No analysis yet</span>
+                                      )}
+                                    </td>
+                                  </tr>
+                                ))
+                              )}
                             </tbody>
                           </table>
                         </div>

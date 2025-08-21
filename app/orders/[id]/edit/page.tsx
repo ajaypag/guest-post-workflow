@@ -538,6 +538,14 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
     updateAvailableTargets();
   }, [updateAvailableTargets]);
   
+  // Helper function to check if an ID is a real database ID (UUID) vs temporary ID
+  const isRealDatabaseId = (id: string) => {
+    // Real database IDs are UUIDs (format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
+    // Temporary IDs contain patterns like "placeholder", timestamps, or random numbers
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(id) && !id.includes('placeholder');
+  };
+
   // Auto-save functionality
   const saveOrderDraft = useCallback(async () => {
     if (!session) return;
@@ -684,7 +692,10 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
               }
             }));
             
-            // First get existing line items to clear them
+            // PROPER DIFFERENTIAL UPDATE - Track by IDs, not composite keys
+            console.log('[DIFFERENTIAL UPDATE] Starting proper differential save...');
+            
+            // First get existing line items from database
             const existingItemsResponse = await fetch(`/api/orders/${draftOrderId}/line-items`, {
               credentials: 'include'
             });
@@ -695,38 +706,152 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
               existingItems = existingData.lineItems || [];
             }
             
-            // Clear existing line items if any exist
-            if (existingItems.length > 0) {
-              const existingItemIds = existingItems.map((item: any) => item.id);
-              await fetch(`/api/orders/${draftOrderId}/line-items`, {
-                method: 'DELETE',
+            console.log('[DIFFERENTIAL UPDATE] Existing items from DB:', existingItems.length);
+            console.log('[DIFFERENTIAL UPDATE] Current items in form:', lineItemsData.length);
+            
+            // FIXED: The key insight is to distinguish items with real database IDs vs temporary IDs
+            // Real database IDs are UUIDs, temporary IDs contain timestamp/random patterns
+            
+            // Create a map of existing items by ID for fast lookup
+            const existingItemsById = new Map<string, any>();
+            existingItems.forEach((item: any) => {
+              existingItemsById.set(item.id, item);
+            });
+            
+            
+            // Track what operations we need to perform
+            const itemsToAdd: any[] = [];
+            const itemsToUpdate: any[] = [];
+            const itemsToRemove: any[] = [];
+            const processedExistingIds = new Set<string>();
+            
+            // Go through current UI line items and match them properly using their IDs
+            lineItems.forEach((currentUIItem: any, index: number) => {
+              const currentData = lineItemsData[index];
+              if (!currentData) return; // Skip if no corresponding data
+              
+              if (isRealDatabaseId(currentUIItem.id) && existingItemsById.has(currentUIItem.id)) {
+                // This is an existing item with real database ID - UPDATE
+                const existingItem = existingItemsById.get(currentUIItem.id);
+                processedExistingIds.add(currentUIItem.id);
+                
+                // Check if it needs updating
+                const needsUpdate = 
+                  existingItem.targetPageUrl !== currentData.targetPageUrl ||
+                  existingItem.anchorText !== currentData.anchorText ||
+                  existingItem.estimatedPrice !== currentData.estimatedPrice ||
+                  JSON.stringify(existingItem.metadata) !== JSON.stringify(currentData.metadata);
+                
+                if (needsUpdate) {
+                  itemsToUpdate.push({
+                    id: currentUIItem.id,
+                    ...currentData
+                  });
+                }
+                
+                console.log('[DIFFERENTIAL UPDATE] UPDATE item:', currentUIItem.id);
+              } else {
+                // This is a new item with temporary ID - ADD
+                itemsToAdd.push(currentData);
+                console.log('[DIFFERENTIAL UPDATE] ADD item (temp ID):', currentUIItem.id);
+              }
+            });
+            
+            // Any existing items not processed should be removed (soft delete)
+            existingItems.forEach((item: any) => {
+              if (!processedExistingIds.has(item.id) && item.status !== 'cancelled') {
+                itemsToRemove.push(item);
+                console.log('[DIFFERENTIAL UPDATE] REMOVE item:', item.id);
+              }
+            });
+            
+            let allOperationsSucceeded = true;
+            
+            console.log('[DIFFERENTIAL UPDATE] Changes detected:', {
+              toAdd: itemsToAdd.length,
+              toUpdate: itemsToUpdate.length,
+              toRemove: itemsToRemove.length
+            });
+            
+            // Add new items
+            if (itemsToAdd.length > 0) {
+              const addResponse = await fetch(`/api/orders/${draftOrderId}/line-items`, {
+                method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
                 body: JSON.stringify({
-                  itemIds: existingItemIds,
-                  reason: 'Clearing items before draft save'
+                  items: itemsToAdd,
+                  reason: 'Adding new items from edit page'
                 })
               });
+              if (!addResponse.ok) {
+                allOperationsSucceeded = false;
+                console.error('[AUTO_SAVE] Failed to add new items');
+              } else {
+                // CRITICAL: Update UI state with the real database IDs returned from the API
+                const addResult = await addResponse.json();
+                if (addResult.lineItems && addResult.lineItems.length > 0) {
+                  console.log('[DIFFERENTIAL UPDATE] Updating UI with new database IDs:', addResult.lineItems.length);
+                  
+                  // Update the lineItems state to replace temporary IDs with real database IDs
+                  setLineItems(prevItems => {
+                    const updatedItems = [...prevItems];
+                    let addedIndex = 0;
+                    
+                    // Find items with temporary IDs and replace them with the returned items (which have real IDs)
+                    for (let i = 0; i < updatedItems.length; i++) {
+                      if (!isRealDatabaseId(updatedItems[i].id) && addedIndex < addResult.lineItems.length) {
+                        const newItem = addResult.lineItems[addedIndex];
+                        updatedItems[i] = {
+                          ...updatedItems[i],
+                          id: newItem.id  // Replace temporary ID with real database ID
+                        };
+                        addedIndex++;
+                        console.log('[DIFFERENTIAL UPDATE] Updated item ID:', newItem.id);
+                      }
+                    }
+                    
+                    return updatedItems;
+                  });
+                }
+              }
             }
             
-            // Now create new line items
-            const lineItemsResponse = await fetch(`/api/orders/${draftOrderId}/line-items`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              credentials: 'include',
-              body: JSON.stringify({
-                items: lineItemsData,
-                reason: 'Order draft saved from edit page'
-              })
-            });
+            // Update modified items
+            if (itemsToUpdate.length > 0) {
+              const updateResponse = await fetch(`/api/orders/${draftOrderId}/line-items`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                  updates: itemsToUpdate,
+                  reason: 'Updating items from edit page'
+                })
+              });
+              if (!updateResponse.ok) {
+                allOperationsSucceeded = false;
+                console.error('[AUTO_SAVE] Failed to update items');
+              }
+            }
             
-            if (lineItemsResponse.ok) {
+            // Remove deleted items (soft delete)
+            for (const item of itemsToRemove) {
+              const deleteResponse = await fetch(`/api/orders/${draftOrderId}/line-items/${item.id}`, {
+                method: 'DELETE',
+                credentials: 'include'
+              });
+              if (!deleteResponse.ok) {
+                allOperationsSucceeded = false;
+                console.error('[AUTO_SAVE] Failed to remove item:', item.id);
+              }
+            }
+            
+            if (allOperationsSucceeded) {
               console.log('[AUTO_SAVE] Successfully saved order and line items');
               setSaveStatus('saved');
               setLastSaved(new Date());
             } else {
-              const errorData = await lineItemsResponse.json();
-              console.error('[AUTO_SAVE] Failed to save line items:', errorData);
+              console.error('[AUTO_SAVE] Failed to save line items');
               setSaveStatus('error');
             }
           } else {
@@ -802,31 +927,25 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
   // Draft loading is handled by loadDrafts() in the main useEffect above
 
   const toggleClientSelection = (clientId: string, selected: boolean) => {
-    setSelectedClients(prev => {
-      const newMap = new Map(prev);
-      if (selected) {
-        newMap.set(clientId, { selected: true, linkCount: prev.get(clientId)?.linkCount || 1 });
-        // Automatically create 1 placeholder when selecting a client
-        const client = clients.find(c => c.id === clientId);
-        if (client && !prev.has(clientId)) {
-          setLineItems(prevItems => [...prevItems, {
-            id: `${clientId}-placeholder-${Date.now()}-0`,
-            clientId,
-            clientName: client.name,
-            targetPageId: undefined,
-            targetPageUrl: undefined,
-            anchorText: undefined,
-            wholesalePrice: getCurrentWholesaleEstimate(), // Dynamic wholesale from pricing estimator
-            price: getCurrentWholesaleEstimate() + SERVICE_FEE_CENTS,
-          }]);
-        }
-      } else {
+    if (selected) {
+      // Use updateClientLinkCount to handle the line item creation consistently
+      setSelectedClients(prev => {
+        const newMap = new Map(prev);
+        newMap.set(clientId, { selected: true, linkCount: 1 });
+        return newMap;
+      });
+      
+      // Ensure we have exactly 1 line item for this client
+      updateClientLinkCount(clientId, 1);
+    } else {
+      setSelectedClients(prev => {
+        const newMap = new Map(prev);
         newMap.delete(clientId);
-        // Remove line items for this client
-        setLineItems(prevItems => prevItems.filter(item => item.clientId !== clientId));
-      }
-      return newMap;
-    });
+        return newMap;
+      });
+      // Remove line items for this client
+      setLineItems(prevItems => prevItems.filter(item => item.clientId !== clientId));
+    }
   };
 
   const updateClientLinkCount = (clientId: string, count: number) => {
@@ -858,7 +977,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
         const newItems: OrderLineItem[] = [];
         for (let i = 0; i < difference; i++) {
           newItems.push({
-            id: `${clientId}-placeholder-${Date.now()}-${i}`,
+            id: `${clientId}-placeholder-${Date.now()}-${currentCount + i}`, // Use currentCount + i to avoid ID conflicts
             clientId,
             clientName: client.name,
             targetPageId: undefined,
@@ -969,15 +1088,17 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
     const itemToRemove = lineItems.find(item => item.id === id);
     if (!itemToRemove) return;
     
+    // Calculate the new count BEFORE removing the item
+    const clientItems = lineItems.filter(item => item.clientId === itemToRemove.clientId);
+    const newCount = clientItems.length - 1; // -1 for the item being removed
+    
     setLineItems(prev => {
       const updated = prev.filter(item => item.id !== id);
       calculatePricing(updated);
       return updated;
     });
     
-    // Update the link count in selected clients
-    const clientItems = lineItems.filter(item => item.clientId === itemToRemove.clientId);
-    const newCount = clientItems.length - 1; // -1 for the item being removed
+    // Update the link count in selected clients with the pre-calculated count
     
     if (newCount === 0) {
       // If no items left for this client, deselect it

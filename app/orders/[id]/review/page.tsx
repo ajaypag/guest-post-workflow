@@ -6,8 +6,8 @@ import Link from 'next/link';
 import { Loader2, CheckCircle, XCircle, AlertCircle, ArrowRight, ArrowLeft, DollarSign, Bell } from 'lucide-react';
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
-import OrderSiteReviewTableV2 from '@/components/orders/OrderSiteReviewTableV2';
-import type { OrderGroup, SiteSubmission, LineItem } from '@/components/orders/OrderSiteReviewTableV2';
+import LineItemsReviewTable from '@/components/orders/LineItemsReviewTable';
+import type { LineItem } from '@/components/orders/LineItemsReviewTable';
 import BenchmarkDisplay from '@/components/orders/BenchmarkDisplay';
 import { formatCurrency } from '@/lib/utils/formatting';
 import { isLineItemsSystemEnabled } from '@/lib/config/featureFlags';
@@ -20,8 +20,8 @@ interface OrderData {
   state?: string;
   createdAt: string;
   approvedAt?: string;
-  orderGroups: OrderGroup[];
-  lineItems?: any[];
+  invoicedAt?: string;
+  lineItems: LineItem[];
 }
 
 export default function ExternalOrderReviewPage() {
@@ -31,12 +31,10 @@ export default function ExternalOrderReviewPage() {
   
   const [loading, setLoading] = useState(true);
   const [order, setOrder] = useState<OrderData | null>(null);
-  const [siteSubmissions, setSiteSubmissions] = useState<Record<string, SiteSubmission[]>>({});
-  const [selectedSubmissions, setSelectedSubmissions] = useState<Set<string>>(new Set());
-  const [actionLoading, setActionLoading] = useState(false);
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
   const [benchmarkData, setBenchmarkData] = useState<any>(null);
   const [comparisonData, setComparisonData] = useState<any>(null);
+  const [generatingInvoice, setGeneratingInvoice] = useState(false);
 
   useEffect(() => {
     fetchOrder();
@@ -62,22 +60,64 @@ export default function ExternalOrderReviewPage() {
     }
   };
 
+  const handleStatusChange = async (itemId: string, status: 'included' | 'excluded' | 'saved_for_later', reason?: string) => {
+    try {
+      const response = await fetch(`/api/orders/${orderId}/line-items/${itemId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          metadata: {
+            inclusionStatus: status,
+            ...(reason && { exclusionReason: reason })
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update status');
+      }
+
+      // Refresh the order data
+      await fetchOrder();
+    } catch (error) {
+      console.error('Error updating status:', error);
+      alert('Failed to update status. Please try again.');
+    }
+  };
+
+  const handleEditItem = async (itemId: string, updates: any) => {
+    try {
+      const response = await fetch(`/api/orders/${orderId}/line-items/${itemId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates)
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update item');
+      }
+
+      // Refresh the order data
+      await fetchOrder();
+    } catch (error) {
+      console.error('Error updating item:', error);
+      alert('Failed to update item. Please try again.');
+    }
+  };
+
   const fetchOrder = async () => {
     try {
       setLoading(true);
       
-      // Fetch order details
-      const response = await fetch(`/api/orders/${orderId}`);
+      // Fetch order details (skip order groups for performance)
+      const response = await fetch(`/api/orders/${orderId}?skipOrderGroups=true`);
       if (!response.ok) throw new Error('Failed to fetch order');
       const orderData = await response.json();
       
-      // Fetch line items and available domains (NEW APPROACH)
+      // Fetch line items with assigned domains
       const lineItemsRes = await fetch(`/api/orders/${orderId}/line-items`);
-      const domainsRes = await fetch(`/api/orders/${orderId}/line-items/available-domains`);
       
       let items: LineItem[] = [];
-      let submissionsData: Record<string, SiteSubmission[]> = {};
-      let orderGroups: OrderGroup[] = [];
       
       if (lineItemsRes.ok) {
         const lineItemsData = await lineItemsRes.json();
@@ -86,86 +126,12 @@ export default function ExternalOrderReviewPage() {
         console.log('[REVIEW PAGE] Loaded', items.length, 'line items');
       }
       
-      if (domainsRes.ok) {
-        const domainsData = await domainsRes.json();
-        
-        // Transform domains to submission format grouped by client
-        // Create pseudo-groups from line items grouped by client
-        const clientGroups: Record<string, any> = {};
-        
-        // Group line items by client
-        items.forEach((item: any) => {
-          if (!clientGroups[item.clientId]) {
-            clientGroups[item.clientId] = {
-              id: `client-${item.clientId}`,
-              clientId: item.clientId,
-              client: item.client || { 
-                id: item.clientId, 
-                name: item.client?.name || `Client ${item.clientId.slice(0, 8)}`,
-                website: item.client?.website || ''
-              },
-              linkCount: 0,
-              lineItems: []
-            };
-          }
-          clientGroups[item.clientId].linkCount++;
-          clientGroups[item.clientId].lineItems.push(item);
-        });
-        
-        // Convert domains to submissions format for each client group
-        Object.keys(domainsData.domains || {}).forEach(clientId => {
-          const groupId = `client-${clientId}`;
-          const domains = domainsData.domains[clientId] || [];
-          
-          // Transform domains to submission format for UI compatibility
-          submissionsData[groupId] = domains.map((domain: any) => ({
-            id: `domain-${domain.id}`,
-            orderGroupId: groupId,
-            domainId: domain.id,
-            domain: {
-              id: domain.id,
-              domain: domain.domain,
-              qualificationStatus: domain.qualificationStatus,
-              overlapStatus: domain.overlapStatus,
-              authorityDirect: domain.authorityDirect,
-              authorityRelated: domain.authorityRelated,
-              topicScope: domain.topicScope,
-              topicReasoning: domain.topicReasoning,
-              aiQualificationReasoning: domain.aiQualificationReasoning,
-              evidence: domain.evidence
-            },
-            domainRating: domain.domainRating,
-            traffic: domain.traffic,
-            price: domain.price,
-            wholesalePrice: domain.wholesalePrice,
-            status: domain.isAssigned ? 'client_approved' : 'pending',
-            inclusionStatus: domain.inclusionStatus || (domain.isAssigned ? 'included' : 'excluded'),
-            targetPageUrl: domain.assignedToLineItemId ? 
-              items.find((li: any) => li.id === domain.assignedToLineItemId)?.targetPageUrl : null,
-            anchorText: domain.assignedToLineItemId ? 
-              items.find((li: any) => li.id === domain.assignedToLineItemId)?.anchorText : null
-          }));
-        });
-        
-        // Convert client groups to array for orderGroups prop
-        orderGroups = Object.values(clientGroups);
-        console.log('[REVIEW PAGE] Created', orderGroups.length, 'client groups with domains');
-      }
-      
-      // Fallback to old system if no line items (shouldn't happen but safety check)
-      if (items.length === 0 && orderData.orderGroups && orderData.orderGroups.length > 0) {
-        console.warn('[REVIEW PAGE] Falling back to order groups (legacy)');
-        orderGroups = orderData.orderGroups;
-      }
-      
       // Fetch benchmark data if order is confirmed, paid, or pending confirmation (for external review)
       if (orderData.status === 'confirmed' || orderData.status === 'paid' || orderData.status === 'pending_confirmation') {
         try {
           const benchmarkRes = await fetch(`/api/orders/${orderId}/benchmark?comparison=true`);
           if (benchmarkRes.ok) {
             const benchData = await benchmarkRes.json();
-            // The API returns { benchmark: ..., comparison: ..., hasBenchmark: true }
-            // We need to pass both benchmark and comparison objects to the component
             setBenchmarkData(benchData.benchmark || benchData);
             setComparisonData(benchData.comparison || null);
           }
@@ -174,13 +140,10 @@ export default function ExternalOrderReviewPage() {
         }
       }
       
-      // Use the transformed data
       setOrder({
         ...orderData,
-        orderGroups: orderGroups, // Use client-grouped line items
-        lineItems: items // Keep line items for reference
+        lineItems: items
       });
-      setSiteSubmissions(submissionsData);
     } catch (error) {
       console.error('Error fetching order:', error);
     } finally {
@@ -188,259 +151,24 @@ export default function ExternalOrderReviewPage() {
     }
   };
 
-  const handleApprove = async (submissionId: string, groupId: string) => {
-    try {
-      // Find the domain and line item from the submission
-      const domainId = submissionId.replace('domain-', '');
-      
-      // Find an unassigned line item for this client
-      const clientId = groupId.replace('client-', '');
-      const unassignedLineItem = lineItems.find(item => 
-        item.clientId === clientId && !item.assignedDomainId
-      );
-      
-      if (!unassignedLineItem) {
-        alert('No available line items for this client');
-        return;
-      }
-      
-      // Assign the domain to the line item
-      const response = await fetch(
-        `/api/orders/${orderId}/line-items/${unassignedLineItem.id}/assign-domain`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            domainId: domainId,
-            submissionId: submissionId
-          })
-        }
-      );
-      
-      if (!response.ok) throw new Error('Failed to approve site');
-      
-      // Refresh data
-      await fetchOrder();
-    } catch (error) {
-      console.error('Error approving site:', error);
-    }
-  };
-
-  const handleReject = async (submissionId: string, groupId: string, reason: string) => {
-    try {
-      // For reject, we just mark the domain as rejected in our UI state
-      // Since we're not actually updating the backend (domains are shared across orders)
-      // We could store rejection reasons in line item metadata or order metadata
-      
-      console.log(`Site rejected: ${submissionId} for reason: ${reason}`);
-      
-      // Optionally update line item metadata to track rejections
-      // This would require a new API endpoint
-      
-      // For now, just refresh to reset the UI
-      await fetchOrder();
-    } catch (error) {
-      console.error('Error rejecting site:', error);
-    }
-  };
-
-  const handleEditSubmission = async (submissionId: string, groupId: string, updates: any) => {
-    try {
-      // With line items, we update the line item that has this domain assigned
-      // Find the line item with this domain
-      const domainId = submissionId.replace('domain-', '');
-      const lineItem = lineItems.find(item => item.assignedDomainId === domainId);
-      
-      if (lineItem) {
-        // Update the line item with new target page and anchor text
-        const response = await fetch(`/api/orders/${orderId}/line-items`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({
-            updates: [{
-              id: lineItem.id,
-              targetPageUrl: updates.targetPageUrl,
-              anchorText: updates.anchorText,
-              metadata: {
-                ...lineItem.metadata,
-                specialInstructions: updates.specialInstructions,
-                priceOverride: updates.priceOverride
-              }
-            }],
-            reason: 'Updated from review page'
-          })
-        });
-        
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-          throw new Error(errorData.error || 'Failed to edit line item');
-        }
-      } else {
-        // No line item assigned yet, store updates in submission metadata
-        console.log('No line item assigned for this domain yet, updates will be applied when assigned');
-      }
-      
-      await fetchOrder();
-    } catch (error: any) {
-      console.error('Error editing submission:', error);
-      alert(error.message || 'Failed to edit submission');
-    }
-  };
-
-  const handleChangeInclusionStatus = async (submissionId: string, groupId: string, status: 'included' | 'excluded' | 'saved_for_later', reason?: string) => {
-    try {
-      // Similar to approve/reject, we handle inclusion status changes
-      const domainId = submissionId.replace('domain-', '');
-      const clientId = groupId.replace('client-', '');
-      
-      if (status === 'included') {
-        // Find an unassigned line item and assign the domain
-        const unassignedLineItem = lineItems.find(item => 
-          item.clientId === clientId && !item.assignedDomainId
-        );
-        
-        if (unassignedLineItem) {
-          const response = await fetch(
-            `/api/orders/${orderId}/line-items/${unassignedLineItem.id}/assign-domain`,
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ domainId, submissionId })
-            }
-          );
-          
-          if (!response.ok) throw new Error('Failed to include site');
-        }
-      } else if (status === 'excluded') {
-        // Find the line item with this domain and unassign it
-        const assignedLineItem = lineItems.find(item => 
-          item.assignedDomainId === domainId
-        );
-        
-        if (assignedLineItem) {
-          const response = await fetch(
-            `/api/orders/${orderId}/line-items/${assignedLineItem.id}/assign-domain`,
-            {
-              method: 'DELETE',
-              headers: { 'Content-Type': 'application/json' }
-            }
-          );
-          
-          if (!response.ok) throw new Error('Failed to exclude site');
-        }
-      }
-      
-      await fetchOrder();
-      await loadBenchmarkData();
-    } catch (error) {
-      console.error('Error updating status:', error);
-    }
-  };
-
-  const handleAssignToLineItem = async (submissionId: string, lineItemId: string) => {
-    try {
-      // Find the submission to get domain ID
-      let domainId: string | null = null;
-      for (const [groupId, submissions] of Object.entries(siteSubmissions)) {
-        const submission = submissions.find(s => s.id === submissionId);
-        if (submission) {
-          domainId = submission.domainId;
-          break;
-        }
-      }
-
-      if (!domainId) {
-        throw new Error('Submission not found');
-      }
-
-      const response = await fetch(
-        `/api/orders/${orderId}/line-items/${lineItemId}/assign-domain`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ submissionId, domainId })
-        }
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to assign domain to line item');
-      }
-
-      // Refresh data
-      await fetchOrder();
-    } catch (error) {
-      console.error('Error assigning to line item:', error);
-      alert(error instanceof Error ? error.message : 'Failed to assign domain to line item');
-    }
-  };
-
-  const handleAssignTargetPage = async (submissionId: string, targetPageUrl: string, groupId: string) => {
-    try {
-      // With line items, we update the target page URL on the line item
-      const domainId = submissionId.replace('domain-', '');
-      const lineItem = lineItems.find(item => item.assignedDomainId === domainId);
-      
-      if (lineItem) {
-        const response = await fetch(`/api/orders/${orderId}/line-items`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({
-            updates: [{
-              id: lineItem.id,
-              targetPageUrl: targetPageUrl
-            }],
-            reason: 'Target page assigned from review page'
-          })
-        });
-        
-        if (!response.ok) throw new Error('Failed to assign target page');
-      } else {
-        console.log('No line item assigned for this domain yet');
-      }
-      
-      await fetchOrder();
-    } catch (error) {
-      console.error('Error assigning target page:', error);
-    }
-  };
-
-  const handleBulkAction = async (action: 'approve' | 'reject') => {
-    if (selectedSubmissions.size === 0) return;
-    
-    setActionLoading(true);
-    try {
-      // Process each selected submission
-      for (const submissionId of selectedSubmissions) {
-        // Find which group this submission belongs to
-        for (const [groupId, submissions] of Object.entries(siteSubmissions)) {
-          const submission = submissions.find(s => s.id === submissionId);
-          if (submission) {
-            if (action === 'approve') {
-              await handleApprove(submissionId, groupId);
-            } else {
-              await handleReject(submissionId, groupId, 'Bulk rejection');
-            }
-          }
-        }
-      }
-      
-      setSelectedSubmissions(new Set());
-      await fetchOrder();
-    } catch (error) {
-      console.error(`Error during bulk ${action}:`, error);
-    } finally {
-      setActionLoading(false);
-    }
-  };
 
   const handleProceed = async () => {
-    // After selecting sites (included status), check if order needs invoicing
-    if (order && includedCount > 0) {
+    // If invoice already exists, just navigate to it
+    if (order?.invoicedAt) {
+      router.push(`/orders/${orderId}/invoice`);
+      return;
+    }
+    
+    // Count included items (check metadata.inclusionStatus)
+    const includedItems = lineItems.filter(item => 
+      item.assignedDomain && (item.metadata?.inclusionStatus === 'included' || 
+      (!item.metadata?.inclusionStatus && item.assignedDomain)) // Default to included if has domain
+    );
+    
+    if (order && includedItems.length > 0) {
       try {
-        console.log(`[INVOICE] Generating invoice for order ${orderId} with ${includedCount} included sites`);
+        setGeneratingInvoice(true);
+        console.log(`[INVOICE] Generating invoice for order ${orderId} with ${includedItems.length} included sites`);
         
         // Trigger invoice generation for included sites
         const response = await fetch(`/api/orders/${orderId}/invoice`, {
@@ -471,6 +199,8 @@ export default function ExternalOrderReviewPage() {
       } catch (error) {
         console.error('[INVOICE] Error generating invoice:', error);
         alert('Failed to generate invoice due to network error. Please try again.');
+      } finally {
+        setGeneratingInvoice(false);
       }
     } else {
       // No approved sites, go to order page
@@ -503,23 +233,22 @@ export default function ExternalOrderReviewPage() {
     );
   }
 
-  // Calculate statistics (supporting both old and new systems)
-  const allSubmissions = Object.values(siteSubmissions).flat();
-  const totalSubmissions = allSubmissions.length;
-  
-  // Count based on inclusion status (new system) or approval status (old system)
-  const includedCount = allSubmissions
-    .filter(s => s.inclusionStatus === 'included' || s.status === 'client_approved').length;
-  const excludedCount = allSubmissions
-    .filter(s => s.inclusionStatus === 'excluded' || s.status === 'client_rejected').length;
-  const savedForLaterCount = allSubmissions
-    .filter(s => s.inclusionStatus === 'saved_for_later').length;
-  const pendingCount = allSubmissions
-    .filter(s => !s.inclusionStatus && s.status === 'pending').length;
-    
-  // For backward compatibility
-  const approvedCount = includedCount;
-  const rejectedCount = excludedCount;
+  // Calculate statistics from line items
+  const totalItems = lineItems.length;
+  // Count items based on metadata.inclusionStatus (where the actual status is stored)
+  const includedCount = lineItems.filter(item => 
+    item.metadata?.inclusionStatus === 'included' || 
+    (!item.metadata?.inclusionStatus && item.assignedDomain) // Default to included if has domain but no status
+  ).length;
+  const excludedCount = lineItems.filter(item => 
+    item.metadata?.inclusionStatus === 'excluded'
+  ).length;
+  const savedForLaterCount = lineItems.filter(item => 
+    item.metadata?.inclusionStatus === 'saved_for_later'
+  ).length;
+  const pendingCount = lineItems.filter(item => 
+    !item.assignedDomain && !item.metadata?.inclusionStatus
+  ).length;
 
   return (
     <AuthWrapper>
@@ -548,12 +277,12 @@ export default function ExternalOrderReviewPage() {
               </div>
               <div className="text-left sm:text-right">
                 <p className="text-sm text-gray-500">Total Sites</p>
-                <p className="text-2xl font-bold text-gray-900">{totalSubmissions}</p>
+                <p className="text-2xl font-bold text-gray-900">{totalItems}</p>
               </div>
             </div>
 
             {/* Clear instructions for users */}
-            {totalSubmissions > 0 && (
+            {totalItems > 0 && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 flex items-center gap-3">
                 <Bell className="h-5 w-5 text-blue-600" />
                 <div className="flex-1">
@@ -563,8 +292,8 @@ export default function ExternalOrderReviewPage() {
                       : 'Review and select sites for your order'}
                   </p>
                   <p className="text-xs text-blue-700 mt-0.5">
-                    Our team has pre-organized sites based on your requirements. Sites marked as "✅ Use This Site" will be included in your order.
-                    You can adjust the selection using the status dropdown in the table below.
+                    Our team has pre-organized sites based on your requirements. Sites marked as "Included" will be part of your order.
+                    You can adjust the selection using the status dropdown in the table below: "Included", "Excluded", or "Saved for Later".
                     {savedForLaterCount > 0 && ` ${savedForLaterCount} additional sites have been saved to your Site Bank for future orders.`}
                   </p>
                 </div>
@@ -576,7 +305,23 @@ export default function ExternalOrderReviewPage() {
               <div className="mt-6">
                 <BenchmarkDisplay 
                   benchmark={benchmarkData}
-                  comparison={comparisonData}
+                  comparison={{
+                    ...comparisonData,
+                    comparisonData: {
+                      ...comparisonData?.comparisonData,
+                      // Calculate current selection in real-time
+                      deliveredLinks: includedCount,
+                      requestedLinks: benchmarkData?.benchmarkData?.totalRequestedLinks || totalItems,
+                      actualRevenue: lineItems
+                        .filter(item => 
+                          item.metadata?.inclusionStatus === 'included' || 
+                          (!item.metadata?.inclusionStatus && item.assignedDomain)
+                        )
+                        .reduce((sum, item) => sum + (item.estimatedPrice || item.wholesalePrice || 0), 0),
+                      drRange: comparisonData?.comparisonData?.drRange,
+                      trafficRange: comparisonData?.comparisonData?.trafficRange
+                    }
+                  }}
                   orderId={orderId}
                   userType="account"
                 />
@@ -610,18 +355,15 @@ export default function ExternalOrderReviewPage() {
             </div>
           </div>
 
-          {/* Remove confusing action bar - users should use status dropdown instead */}
-
           {/* Site Review Table */}
-          <OrderSiteReviewTableV2
+          <LineItemsReviewTable
             orderId={orderId}
-            orderGroups={order.orderGroups}
             lineItems={lineItems}
-            siteSubmissions={siteSubmissions}
             userType="account"
             permissions={{
               canApproveReject: false,  // Disable confusing approve/reject buttons
-              canViewPricing: true,
+              canViewPricing: true,    // External users can see pricing column
+              canEditPricing: false,   // External users cannot edit price overrides
               canViewInternalTools: false,
               canChangeStatus: true,  // External users CAN organize sites (included/excluded/saved)
               canAssignTargetPages: true,  // External users CAN assign/change target pages
@@ -630,26 +372,9 @@ export default function ExternalOrderReviewPage() {
               canEditDomainAssignments: true,  // External users CAN edit all domain details
               canSetExclusionReason: false  // Only this is restricted - internal notes
             }}
-            workflowStage="site_selection_with_sites"
-            onApprove={handleApprove}
-            onReject={handleReject}
-            onEditSubmission={handleEditSubmission}
-            onChangeInclusionStatus={handleChangeInclusionStatus}
-            onAssignTargetPage={handleAssignTargetPage}
-            onAssignToLineItem={handleAssignToLineItem}
+            onChangeStatus={handleStatusChange}
+            onEditItem={handleEditItem}
             onRefresh={fetchOrder}
-            selectedSubmissions={selectedSubmissions}
-            onSelectionChange={(submissionId, selected) => {
-              const newSelected = new Set(selectedSubmissions);
-              if (selected) {
-                newSelected.add(submissionId);
-              } else {
-                newSelected.delete(submissionId);
-              }
-              setSelectedSubmissions(newSelected);
-            }}
-            useLineItems={isLineItemsSystemEnabled()}
-            useStatusSystem={true}  // External users CAN use status system for organization
             benchmarkData={benchmarkData}
           />
 
@@ -664,54 +389,71 @@ export default function ExternalOrderReviewPage() {
               </div>
               
               <div className="space-y-3">
-                {Object.entries(siteSubmissions).map(([groupId, submissions]) => {
-                  const includedSubmissions = submissions.filter(s => 
-                    s.inclusionStatus === 'included' || s.status === 'client_approved'
-                  );
-                  if (includedSubmissions.length === 0) return null;
+                {/* Group line items by client */}
+                {(() => {
+                  const clientGroups: Record<string, LineItem[]> = {};
+                  lineItems
+                    .filter(item => 
+                      item.metadata?.inclusionStatus === 'included' || 
+                      (!item.metadata?.inclusionStatus && item.assignedDomain)
+                    )
+                    .forEach(item => {
+                      if (!clientGroups[item.clientId]) {
+                        clientGroups[item.clientId] = [];
+                      }
+                      clientGroups[item.clientId].push(item);
+                    });
                   
-                  const group = order?.orderGroups.find(g => g.id === groupId);
-                  const groupTotal = includedSubmissions.reduce((sum, sub) => sum + (sub.price || 0), 0);
-                  
-                  return (
-                    <div key={groupId} className="flex flex-col sm:flex-row sm:justify-between py-3 border-b border-gray-100 last:border-b-0 gap-1 sm:gap-0">
-                      <div>
-                        <span className="font-medium text-gray-900">{group?.client.name || 'Unknown Client'}</span>
-                        <span className="text-sm text-gray-500 ml-2">
-                          ({includedSubmissions.length} site{includedSubmissions.length > 1 ? 's' : ''})
+                  return Object.entries(clientGroups).map(([clientId, items]) => {
+                    const groupTotal = items.reduce((sum, item) => 
+                      sum + (item.estimatedPrice || item.wholesalePrice || 0), 0
+                    );
+                    const clientName = items[0]?.client?.name || 'Unknown Client';
+                    
+                    return (
+                      <div key={clientId} className="flex flex-col sm:flex-row sm:justify-between py-3 border-b border-gray-100 last:border-b-0 gap-1 sm:gap-0">
+                        <div>
+                          <span className="font-medium text-gray-900">{clientName}</span>
+                          <span className="text-sm text-gray-500 ml-2">
+                            ({items.length} site{items.length > 1 ? 's' : ''})
+                          </span>
+                        </div>
+                        <span className="font-medium text-gray-900 text-right sm:text-left">
+                          {groupTotal > 0 ? formatCurrency(groupTotal) : (
+                            <span className="text-gray-500 italic text-sm">TBD</span>
+                          )}
                         </span>
                       </div>
-                      <span className="font-medium text-gray-900 text-right sm:text-left">
-                        {groupTotal > 0 ? formatCurrency(groupTotal) : (
-                          <span className="text-gray-500 italic text-sm">Pricing pending</span>
-                        )}
-                      </span>
-                    </div>
-                  );
-                })}
+                    );
+                  });
+                })()}
                 
                 {/* Total */}
                 <div className="pt-3 border-t border-gray-200">
                   <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0">
-                    <span className="text-lg font-semibold text-gray-900">Total Investment</span>
+                    <span className="text-lg font-semibold text-gray-900">Total</span>
                     <span className="text-lg font-bold text-gray-900">
                       {(() => {
-                        const totalPrice = Object.values(siteSubmissions)
-                          .flat()
-                          .filter(s => s.inclusionStatus === 'included' || s.status === 'client_approved')
-                          .reduce((sum, sub) => sum + (sub.price || 0), 0);
+                        const totalPrice = lineItems
+                          .filter(item => 
+                            item.metadata?.inclusionStatus === 'included' || 
+                            (!item.metadata?.inclusionStatus && item.assignedDomain)
+                          )
+                          .reduce((sum, item) => sum + (item.estimatedPrice || item.wholesalePrice || 0), 0);
                         
                         return totalPrice > 0 ? formatCurrency(totalPrice) : (
                           <span className="text-gray-500 italic text-base font-normal">
-                            Final pricing will be confirmed
+                            To be determined
                           </span>
                         );
                       })()}
                     </span>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1 text-left sm:text-right">
-                    Final pricing confirmed at approval
-                  </p>
+                  {lineItems.some(item => !item.wholesalePrice && !item.estimatedPrice) && (
+                    <p className="text-xs text-gray-500 mt-1 text-left sm:text-right">
+                      Pricing will be finalized before order confirmation
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -723,16 +465,33 @@ export default function ExternalOrderReviewPage() {
               <>
                 <button
                   onClick={handleProceed}
-                  className="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium shadow-lg min-h-[44px]"
+                  disabled={generatingInvoice}
+                  className="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium shadow-lg min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Generate Invoice for {includedCount} Site{includedCount !== 1 ? 's' : ''}
-                  <ArrowRight className="w-5 h-5 ml-2" />
+                  {generatingInvoice ? (
+                    <>
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                      Generating Invoice...
+                    </>
+                  ) : order?.invoicedAt ? (
+                    <>
+                      View Invoice
+                      <ArrowRight className="w-5 h-5 ml-2" />
+                    </>
+                  ) : (
+                    <>
+                      Generate Invoice for {includedCount} Site{includedCount !== 1 ? 's' : ''}
+                      <ArrowRight className="w-5 h-5 ml-2" />
+                    </>
+                  )}
                 </button>
                 <p className="text-sm text-gray-600 mt-2">
-                  You can adjust your selection using the status dropdowns above
+                  {order?.invoicedAt 
+                    ? "Invoice already generated. Click to view or make changes to regenerate."
+                    : "You can adjust your selection using the status dropdowns above"}
                 </p>
               </>
-            ) : totalSubmissions > 0 ? (
+            ) : totalItems > 0 ? (
               <div className="bg-gray-50 rounded-lg p-4 sm:p-6 border border-gray-200">
                 <p className="text-gray-600 mb-2">
                   No sites selected for this order

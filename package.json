@@ -103,6 +103,7 @@
     "eslint-config-next": "^15.3.5",
     "jest": "^30.0.5",
     "jest-environment-node": "^30.0.5",
+    "node-fetch": "^2.7.0",
     "playwright": "^1.54.2",
     "supertest": "^7.1.4",
     "tailwindcss": "^4",

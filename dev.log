@@ -2,140 +2,1924 @@
 > guest-post-workflow@1.0.0 dev
 > next dev --turbopack
 
+ ⚠ Port 3000 is in use, using available port 3002 instead.
    ▲ Next.js 15.3.4 (Turbopack)
-   - Local:        http://localhost:3000
-   - Network:      http://10.255.255.254:3000
-   - Environments: .env.local
+   - Local:        http://localhost:3002
+   - Network:      http://10.255.255.254:3002
+   - Environments: .env.local, .env
 
  ✓ Starting...
- ✓ Ready in 1421ms
+ ✓ Compiled middleware in 311ms
+ ✓ Ready in 1982ms
  ⚠ Webpack is configured while Turbopack is not, which may cause problems.
  ⚠ See instructions if you need to configure Turbopack:
   https://nextjs.org/docs/app/api-reference/next-config-js/turbo
 
- ○ Compiling /api/admin/add-datasource-fields ...
- ✓ Compiled /api/admin/add-datasource-fields in 1004ms
- ⨯ [Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.918jo6ofvv'] {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.918jo6ofvv'
+ ○ Compiling /api/health ...
+ ✓ Compiled /api/health in 1010ms
+ GET /api/health 200 in 1234ms
+ ○ Compiling /_not-found/page ...
+ ✓ Compiled /_not-found/page in 3.5s
+ POST /api/register 404 in 3678ms
+ ○ Compiling /api/auth/login ...
+ ✓ Compiled /api/auth/login in 715ms
+🔗 Database connection string: postgresql:****@localhost:5434/guest_post_workflow?sslmode=disable
+Error loading user by email: Error: Failed query: select "id", "email", "name", "password_hash", "role", "is_active", "last_login", "created_at", "updated_at" from "users" where "users"."email" = $1
+params: test@example.com
+    at async UserService.getUserByEmail (lib/db/userService.ts:32:21)
+    at async UserService.verifyPassword (lib/db/userService.ts:107:19)
+    at async POST (app/api/auth/login/route.ts:43:15)
+  30 |   static async getUserByEmail(email: string): Promise<User | null> {
+  31 |     try {
+> 32 |       const result = await db.select().from(users).where(eq(users.email, email));
+     |                     ^
+  33 |       return result[0] || null;
+  34 |     } catch (error) {
+  35 |       console.error('Error loading user by email:', error); {
+  query: 'select "id", "email", "name", "password_hash", "role", "is_active", "last_login", "created_at", "updated_at" from "users" where "users"."email" = $1',
+  params: [Array],
+  [cause]: error: database "guest_post_workflow" does not exist
+      at async UserService.getUserByEmail (lib/db/userService.ts:32:21)
+      at async UserService.verifyPassword (lib/db/userService.ts:107:19)
+      at async POST (app/api/auth/login/route.ts:43:15)
+    30 |   static async getUserByEmail(email: string): Promise<User | null> {
+    31 |     try {
+  > 32 |       const result = await db.select().from(users).where(eq(users.email, email));
+       |                     ^
+    33 |       return result[0] || null;
+    34 |     } catch (error) {
+    35 |       console.error('Error loading user by email:', error); {
+    length: 105,
+    severity: 'FATAL',
+    code: '3D000',
+    detail: undefined,
+    hint: undefined,
+    position: undefined,
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'postinit.c',
+    line: '1032',
+    routine: 'InitPostgres'
+  }
 }
- ○ Compiling /_error ...
- ✓ Compiled /_error in 1112ms
- ⨯ [Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.p7puvzmfyk'] {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.p7puvzmfyk'
+Login error: Error: Failed query: select "id", "email", "password", "role", "contact_name", "company_name", "phone", "website", "tax_id", "billing_address", "billing_city", "billing_state", "billing_zip", "billing_country", "credit_terms", "credit_limit", "primary_client_id", "status", "email_verified", "email_verification_token", "reset_token", "reset_token_expiry", "internal_notes", "order_preferences", "onboarding_completed", "onboarding_steps", "onboarding_completed_at", "ai_permissions", "can_use_ai_keywords", "can_use_ai_descriptions", "can_use_ai_content_generation", "created_at", "updated_at", "last_login_at" from "accounts" "accounts" where "accounts"."email" = $1 limit $2
+params: test@example.com,1
+    at async POST (app/api/auth/login/route.ts:49:22)
+  47 |     if (!user) {
+  48 |       // If not found in users table, check accounts table
+> 49 |       const account = await db.query.accounts.findFirst({
+     |                      ^
+  50 |         where: eq(accounts.email, email.toLowerCase()),
+  51 |       });
+  52 |        {
+  query: 'select "id", "email", "password", "role", "contact_name", "company_name", "phone", "website", "tax_id", "billing_address", "billing_city", "billing_state", "billing_zip", "billing_country", "credit_terms", "credit_limit", "primary_client_id", "status", "email_verified", "email_verification_token", "reset_token", "reset_token_expiry", "internal_notes", "order_preferences", "onboarding_completed", "onboarding_steps", "onboarding_completed_at", "ai_permissions", "can_use_ai_keywords", "can_use_ai_descriptions", "can_use_ai_content_generation", "created_at", "updated_at", "last_login_at" from "accounts" "accounts" where "accounts"."email" = $1 limit $2',
+  params: [Array],
+  [cause]: error: database "guest_post_workflow" does not exist
+      at async POST (app/api/auth/login/route.ts:49:22)
+    47 |     if (!user) {
+    48 |       // If not found in users table, check accounts table
+  > 49 |       const account = await db.query.accounts.findFirst({
+       |                      ^
+    50 |         where: eq(accounts.email, email.toLowerCase()),
+    51 |       });
+    52 |        {
+    length: 105,
+    severity: 'FATAL',
+    code: '3D000',
+    detail: undefined,
+    hint: undefined,
+    position: undefined,
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'postinit.c',
+    line: '1032',
+    routine: 'InitPostgres'
+  }
 }
-[Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.918jo6ofvv'] {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.918jo6ofvv'
+ POST /api/auth/login 500 in 1129ms
+ POST /api/register 404 in 80ms
+Login error: Error: Failed query: select "id", "email", "password", "role", "contact_name", "company_name", "phone", "website", "tax_id", "billing_address", "billing_city", "billing_state", "billing_zip", "billing_country", "credit_terms", "credit_limit", "primary_client_id", "status", "email_verified", "email_verification_token", "reset_token", "reset_token_expiry", "internal_notes", "order_preferences", "onboarding_completed", "onboarding_steps", "onboarding_completed_at", "ai_permissions", "can_use_ai_keywords", "can_use_ai_descriptions", "can_use_ai_content_generation", "created_at", "updated_at", "last_login_at" from "accounts" "accounts" where "accounts"."email" = $1 limit $2
+params: test@example.com,1
+    at async POST (app/api/auth/login/route.ts:49:22)
+  47 |     if (!user) {
+  48 |       // If not found in users table, check accounts table
+> 49 |       const account = await db.query.accounts.findFirst({
+     |                      ^
+  50 |         where: eq(accounts.email, email.toLowerCase()),
+  51 |       });
+  52 |        {
+  query: 'select "id", "email", "password", "role", "contact_name", "company_name", "phone", "website", "tax_id", "billing_address", "billing_city", "billing_state", "billing_zip", "billing_country", "credit_terms", "credit_limit", "primary_client_id", "status", "email_verified", "email_verification_token", "reset_token", "reset_token_expiry", "internal_notes", "order_preferences", "onboarding_completed", "onboarding_steps", "onboarding_completed_at", "ai_permissions", "can_use_ai_keywords", "can_use_ai_descriptions", "can_use_ai_content_generation", "created_at", "updated_at", "last_login_at" from "accounts" "accounts" where "accounts"."email" = $1 limit $2',
+  params: [Array],
+  [cause]: error: relation "accounts" does not exist
+      at async POST (app/api/auth/login/route.ts:49:22)
+    47 |     if (!user) {
+    48 |       // If not found in users table, check accounts table
+  > 49 |       const account = await db.query.accounts.findFirst({
+       |                      ^
+    50 |         where: eq(accounts.email, email.toLowerCase()),
+    51 |       });
+    52 |        {
+    length: 108,
+    severity: 'ERROR',
+    code: '42P01',
+    detail: undefined,
+    hint: undefined,
+    position: '597',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_relation.c',
+    line: '1449',
+    routine: 'parserOpenTable'
+  }
 }
- ⨯ [Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.iko397t85kg'] {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.iko397t85kg'
+ POST /api/auth/login 500 in 208ms
+ ○ Compiling / ...
+ ✓ Compiled / in 1939ms
+ GET / 200 in 2148ms
+ ○ Compiling /api/users ...
+ GET /api/users 200 in 1064ms
+ ✓ Compiled /api/users in 1215ms
+ GET /favicon.ico?favicon.45db1c09.ico 200 in 1047ms
+Could not fetch marketing stats: Error: Failed query: select count(*) from "websites"
+params: 
+    at async getMarketingStats (lib/marketing-stats.ts:13:23)
+    at async GET (app/api/marketing/stats/route.ts:5:16)
+  11 |   try {
+  12 |     // Get total website count - same query as guest-posting-sites page
+> 13 |     const totalSites = await db
+     |                       ^
+  14 |       .select({ count: sql<number>`count(*)` })
+  15 |       .from(websites);
+  16 |      {
+  query: 'select count(*) from "websites"',
+  params: [],
+  [cause]: error: relation "websites" does not exist
+      at async getMarketingStats (lib/marketing-stats.ts:13:23)
+      at async GET (app/api/marketing/stats/route.ts:5:16)
+    11 |   try {
+    12 |     // Get total website count - same query as guest-posting-sites page
+  > 13 |     const totalSites = await db
+       |                       ^
+    14 |       .select({ count: sql<number>`count(*)` })
+    15 |       .from(websites);
+    16 |      {
+    length: 107,
+    severity: 'ERROR',
+    code: '42P01',
+    detail: undefined,
+    hint: undefined,
+    position: '22',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_relation.c',
+    line: '1449',
+    routine: 'parserOpenTable'
+  }
 }
-[Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.b1mylzon37g'] {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.b1mylzon37g'
+ GET /api/marketing/stats 200 in 906ms
+Could not fetch marketing stats: Error: Failed query: select count(*) from "websites"
+params: 
+    at async getMarketingStats (lib/marketing-stats.ts:13:23)
+    at async GET (app/api/marketing/stats/route.ts:5:16)
+  11 |   try {
+  12 |     // Get total website count - same query as guest-posting-sites page
+> 13 |     const totalSites = await db
+     |                       ^
+  14 |       .select({ count: sql<number>`count(*)` })
+  15 |       .from(websites);
+  16 |      {
+  query: 'select count(*) from "websites"',
+  params: [],
+  [cause]: error: relation "websites" does not exist
+      at async getMarketingStats (lib/marketing-stats.ts:13:23)
+      at async GET (app/api/marketing/stats/route.ts:5:16)
+    11 |   try {
+    12 |     // Get total website count - same query as guest-posting-sites page
+  > 13 |     const totalSites = await db
+       |                       ^
+    14 |       .select({ count: sql<number>`count(*)` })
+    15 |       .from(websites);
+    16 |      {
+    length: 107,
+    severity: 'ERROR',
+    code: '42P01',
+    detail: undefined,
+    hint: undefined,
+    position: '22',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_relation.c',
+    line: '1449',
+    routine: 'parserOpenTable'
+  }
 }
- ⨯ [Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.yug5t56no3b'] {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.yug5t56no3b'
+ GET /api/marketing/stats 200 in 120ms
+ ○ Compiling /login ...
+ ✓ Compiled /login in 977ms
+ GET /login 200 in 1164ms
+Login error: Error: Failed query: select "id", "email", "password", "role", "contact_name", "company_name", "phone", "website", "tax_id", "billing_address", "billing_city", "billing_state", "billing_zip", "billing_country", "credit_terms", "credit_limit", "primary_client_id", "status", "email_verified", "email_verification_token", "reset_token", "reset_token_expiry", "internal_notes", "order_preferences", "onboarding_completed", "onboarding_steps", "onboarding_completed_at", "ai_permissions", "can_use_ai_keywords", "can_use_ai_descriptions", "can_use_ai_content_generation", "created_at", "updated_at", "last_login_at" from "accounts" "accounts" where "accounts"."email" = $1 limit $2
+params: abelino@factbites.com,1
+    at async POST (app/api/auth/login/route.ts:49:22)
+  47 |     if (!user) {
+  48 |       // If not found in users table, check accounts table
+> 49 |       const account = await db.query.accounts.findFirst({
+     |                      ^
+  50 |         where: eq(accounts.email, email.toLowerCase()),
+  51 |       });
+  52 |        {
+  query: 'select "id", "email", "password", "role", "contact_name", "company_name", "phone", "website", "tax_id", "billing_address", "billing_city", "billing_state", "billing_zip", "billing_country", "credit_terms", "credit_limit", "primary_client_id", "status", "email_verified", "email_verification_token", "reset_token", "reset_token_expiry", "internal_notes", "order_preferences", "onboarding_completed", "onboarding_steps", "onboarding_completed_at", "ai_permissions", "can_use_ai_keywords", "can_use_ai_descriptions", "can_use_ai_content_generation", "created_at", "updated_at", "last_login_at" from "accounts" "accounts" where "accounts"."email" = $1 limit $2',
+  params: [Array],
+  [cause]: error: relation "accounts" does not exist
+      at async POST (app/api/auth/login/route.ts:49:22)
+    47 |     if (!user) {
+    48 |       // If not found in users table, check accounts table
+  > 49 |       const account = await db.query.accounts.findFirst({
+       |                      ^
+    50 |         where: eq(accounts.email, email.toLowerCase()),
+    51 |       });
+    52 |        {
+    length: 108,
+    severity: 'ERROR',
+    code: '42P01',
+    detail: undefined,
+    hint: undefined,
+    position: '597',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_relation.c',
+    line: '1449',
+    routine: 'parserOpenTable'
+  }
 }
- ⨯ [Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.w8zm3bobdwl'] {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.w8zm3bobdwl'
+ POST /api/auth/login 500 in 195ms
+Login error: Error: Failed query: select "id", "email", "password", "role", "contact_name", "company_name", "phone", "website", "tax_id", "billing_address", "billing_city", "billing_state", "billing_zip", "billing_country", "credit_terms", "credit_limit", "primary_client_id", "status", "email_verified", "email_verification_token", "reset_token", "reset_token_expiry", "internal_notes", "order_preferences", "onboarding_completed", "onboarding_steps", "onboarding_completed_at", "ai_permissions", "can_use_ai_keywords", "can_use_ai_descriptions", "can_use_ai_content_generation", "created_at", "updated_at", "last_login_at" from "accounts" "accounts" where "accounts"."email" = $1 limit $2
+params: abelino@factbites.com,1
+    at async POST (app/api/auth/login/route.ts:49:22)
+  47 |     if (!user) {
+  48 |       // If not found in users table, check accounts table
+> 49 |       const account = await db.query.accounts.findFirst({
+     |                      ^
+  50 |         where: eq(accounts.email, email.toLowerCase()),
+  51 |       });
+  52 |        {
+  query: 'select "id", "email", "password", "role", "contact_name", "company_name", "phone", "website", "tax_id", "billing_address", "billing_city", "billing_state", "billing_zip", "billing_country", "credit_terms", "credit_limit", "primary_client_id", "status", "email_verified", "email_verification_token", "reset_token", "reset_token_expiry", "internal_notes", "order_preferences", "onboarding_completed", "onboarding_steps", "onboarding_completed_at", "ai_permissions", "can_use_ai_keywords", "can_use_ai_descriptions", "can_use_ai_content_generation", "created_at", "updated_at", "last_login_at" from "accounts" "accounts" where "accounts"."email" = $1 limit $2',
+  params: [Array],
+  [cause]: error: relation "accounts" does not exist
+      at async POST (app/api/auth/login/route.ts:49:22)
+    47 |     if (!user) {
+    48 |       // If not found in users table, check accounts table
+  > 49 |       const account = await db.query.accounts.findFirst({
+       |                      ^
+    50 |         where: eq(accounts.email, email.toLowerCase()),
+    51 |       });
+    52 |        {
+    length: 108,
+    severity: 'ERROR',
+    code: '42P01',
+    detail: undefined,
+    hint: undefined,
+    position: '597',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_relation.c',
+    line: '1449',
+    routine: 'parserOpenTable'
+  }
 }
-[Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.yug5t56no3b'] {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.yug5t56no3b'
+ POST /api/auth/login 500 in 174ms
+Login error: Error: Failed query: select "id", "email", "password", "role", "contact_name", "company_name", "phone", "website", "tax_id", "billing_address", "billing_city", "billing_state", "billing_zip", "billing_country", "credit_terms", "credit_limit", "primary_client_id", "status", "email_verified", "email_verification_token", "reset_token", "reset_token_expiry", "internal_notes", "order_preferences", "onboarding_completed", "onboarding_steps", "onboarding_completed_at", "ai_permissions", "can_use_ai_keywords", "can_use_ai_descriptions", "can_use_ai_content_generation", "created_at", "updated_at", "last_login_at" from "accounts" "accounts" where "accounts"."email" = $1 limit $2
+params: emma@vowtobechic.com,1
+    at async POST (app/api/auth/login/route.ts:49:22)
+  47 |     if (!user) {
+  48 |       // If not found in users table, check accounts table
+> 49 |       const account = await db.query.accounts.findFirst({
+     |                      ^
+  50 |         where: eq(accounts.email, email.toLowerCase()),
+  51 |       });
+  52 |        {
+  query: 'select "id", "email", "password", "role", "contact_name", "company_name", "phone", "website", "tax_id", "billing_address", "billing_city", "billing_state", "billing_zip", "billing_country", "credit_terms", "credit_limit", "primary_client_id", "status", "email_verified", "email_verification_token", "reset_token", "reset_token_expiry", "internal_notes", "order_preferences", "onboarding_completed", "onboarding_steps", "onboarding_completed_at", "ai_permissions", "can_use_ai_keywords", "can_use_ai_descriptions", "can_use_ai_content_generation", "created_at", "updated_at", "last_login_at" from "accounts" "accounts" where "accounts"."email" = $1 limit $2',
+  params: [Array],
+  [cause]: error: relation "accounts" does not exist
+      at async POST (app/api/auth/login/route.ts:49:22)
+    47 |     if (!user) {
+    48 |       // If not found in users table, check accounts table
+  > 49 |       const account = await db.query.accounts.findFirst({
+       |                      ^
+    50 |         where: eq(accounts.email, email.toLowerCase()),
+    51 |       });
+    52 |        {
+    length: 108,
+    severity: 'ERROR',
+    code: '42P01',
+    detail: undefined,
+    hint: undefined,
+    position: '597',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_relation.c',
+    line: '1449',
+    routine: 'parserOpenTable'
+  }
 }
- ⨯ [Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.c92u2rx0bis'] {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.c92u2rx0bis'
+ POST /api/auth/login 500 in 198ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 89ms
+   Reload env: .env.local
+ GET /login 200 in 347ms
+ GET / 200 in 321ms
+🔗 Database connection string: postgresql:****@localhost:5434/guest_post_test?sslmode=disable
+ GET /api/users 200 in 233ms
+ GET /api/marketing/stats 200 in 191ms
+ GET /api/marketing/stats 200 in 84ms
+ GET /login 200 in 195ms
+🔐 Setting cookie with: {
+  name: 'auth-token',
+  value: 'eyJhbGciOiJIUzI1NiJ9...',
+  httpOnly: true,
+  secure: false,
+  nodeEnv: 'development',
+  sameSite: 'lax',
+  path: '/',
+  domain: undefined
 }
-[Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.44foje2mwc'] {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.44foje2mwc'
+🔐 Login successful, cookie set for: abelino@factbites.com
+🔐 Response headers: auth-token=eyJhbGciOiJIUzI1NiJ9.eyJ1c2VySWQiOiJmYzg3MGY2Ni1mNGEzLTQwMzQtYTE1NC00MTRhY2YwYzAxMjEiLCJlbWFpbCI6ImFiZWxpbm9AZmFjdGJpdGVzLmNvbSIsIm5hbWUiOiJBYmVsaW5vIFNpbHZhIiwicm9sZSI6ImFjY291bnQiLCJ1c2VyVHlwZSI6ImFjY291bnQiLCJleHAiOjE3NTYxNzg5NTZ9.9WWmnGM5CqVMH6gjliI7KDMDi-KStLCV2pLWX4YhXbc; Path=/; Expires=Tue, 26 Aug 2025 03:29:16 GMT; Max-Age=604800; HttpOnly; SameSite=lax
+ POST /api/auth/login 200 in 234ms
+ ○ Compiling /account/dashboard ...
+ ✓ Compiled /account/dashboard in 2s
+ GET /account/dashboard 200 in 2168ms
+ GET /api/users 200 in 187ms
+ ○ Compiling /api/auth/account/verify ...
+ ✓ Compiled /api/auth/account/verify in 752ms
+🔐 AuthServiceServer.getSession - Starting
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: 'auth-token-account',
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token-account', '__next_hmr_refresh_hash__', 'auth-token' ]
 }
- ○ Compiling /api/admin/check-dataforseo-status ...
- ✓ Compiled /api/admin/check-dataforseo-status in 917ms
- ⨯ [Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.22x8elj5z4h'] {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.22x8elj5z4h'
+🔐 Attempting to verify JWT token
+ GET /api/auth/account/verify 200 in 894ms
+🔐 AuthServiceServer.getSession - Starting
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: 'auth-token-account',
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token-account', '__next_hmr_refresh_hash__', 'auth-token' ]
 }
- ⨯ [Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/server/pages/_app/build-manifest.json'] {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/server/pages/_app/build-manifest.json'
+🔐 Attempting to verify JWT token
+ GET /api/auth/account/verify 200 in 203ms
+ ○ Compiling /api/orders ...
+ GET /favicon.ico?favicon.45db1c09.ico 200 in 390ms
+ ✓ Compiled /api/orders in 749ms
+🔐 AuthServiceServer.getSession - Starting
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: 'auth-token-account',
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token-account', '__next_hmr_refresh_hash__', 'auth-token' ]
 }
-[Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.22x8elj5z4h'] {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.22x8elj5z4h'
+🔐 Attempting to verify JWT token
+ GET /api/orders 200 in 890ms
+🔐 AuthServiceServer.getSession - Starting
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: 'auth-token-account',
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token-account', '__next_hmr_refresh_hash__', 'auth-token' ]
 }
- ⨯ [Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/server/pages/_app/build-manifest.json'] {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/server/pages/_app/build-manifest.json'
+🔐 Attempting to verify JWT token
+ GET /api/orders 200 in 157ms
+🔐 AuthServiceServer.getSession - Starting
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: 'auth-token-account',
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token-account', '__next_hmr_refresh_hash__', 'auth-token' ]
 }
-[Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/server/pages/_app/build-manifest.json'] {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/server/pages/_app/build-manifest.json'
+🔐 Attempting to verify JWT token
+ GET /api/orders 200 in 222ms
+ ○ Compiling /api/accounts/client ...
+ ✓ Compiled /api/accounts/client in 755ms
+🔐 AuthServiceServer.getSession - Starting
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: 'auth-token-account',
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token-account', '__next_hmr_refresh_hash__', 'auth-token' ]
 }
- ⨯ [Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.l60kedfllib'] {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.l60kedfllib'
+🔐 Attempting to verify JWT token
+ GET /api/accounts/client 200 in 889ms
+🔐 AuthServiceServer.getSession - Starting
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: 'auth-token-account',
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token-account', '__next_hmr_refresh_hash__', 'auth-token' ]
 }
- ⨯ [Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/server/pages/_app/build-manifest.json'] {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/server/pages/_app/build-manifest.json'
+🔐 Attempting to verify JWT token
+ GET /api/accounts/client 200 in 90ms
+🔐 AuthServiceServer.getSession - Starting
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: 'auth-token-account',
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token-account', '__next_hmr_refresh_hash__', 'auth-token' ]
 }
-[Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.l60kedfllib'] {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.l60kedfllib'
+🔐 Attempting to verify JWT token
+ GET /api/accounts/client 200 in 120ms
+ ○ Compiling /orders/new ...
+ ✓ Compiled /orders/new in 1073ms
+ GET /orders/new 200 in 1175ms
+🔐 AuthServiceServer.getSession - Starting
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: 'auth-token-account',
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token-account', '__next_hmr_refresh_hash__', 'auth-token' ]
 }
- ⨯ [Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/server/pages/_app/build-manifest.json'] {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/server/pages/_app/build-manifest.json'
+🔐 Attempting to verify JWT token
+🔐 AuthServiceServer.getSession - Starting
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: 'auth-token-account',
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token-account', '__next_hmr_refresh_hash__', 'auth-token' ]
 }
-[Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/server/pages/_app/build-manifest.json'] {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/server/pages/_app/build-manifest.json'
+🔐 Attempting to verify JWT token
+ POST /api/orders 200 in 199ms
+ POST /api/orders 200 in 166ms
+ ○ Compiling /orders/[id]/edit ...
+ ✓ Compiled /orders/[id]/edit in 1227ms
+ GET /orders/89ec46cd-8fc8-4ecc-aee5-1395e41ad33e/edit 200 in 1738ms
+ GET /orders/8d6da7ec-85ab-4a83-94e1-fc7f85139f7a/edit 200 in 1766ms
+ ○ Compiling /api/websites/filters ...
+ GET /api/websites/filters 200 in 1089ms
+🔐 AuthServiceServer.getSession - Starting
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: 'auth-token-account',
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token-account', '__next_hmr_refresh_hash__', 'auth-token' ]
 }
+🔐 Attempting to verify JWT token
+ GET /api/account/clients 200 in 1261ms
+ GET /api/websites/filters 200 in 176ms
+🔐 AuthServiceServer.getSession - Starting
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: 'auth-token-account',
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token-account', '__next_hmr_refresh_hash__', 'auth-token' ]
+}
+🔐 Attempting to verify JWT token
+ GET /api/account/clients 200 in 139ms
+ GET /api/orders/estimate-pricing?drMin=30&drMax=100&minTraffic=100&priceMin=0&priceMax=999999&categories=&types=&niches=&linkCount=1 200 in 1026ms
+ ✓ Compiled /api/websites/filters in 1986ms
+🔗 Database connection string: postgresql:****@localhost:5434/guest_post_test?sslmode=disable
+🔐 AuthServiceServer.getSession - Starting
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: 'auth-token-account',
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token-account', '__next_hmr_refresh_hash__', 'auth-token' ]
+}
+🔐 Attempting to verify JWT token
+ GET /api/orders/89ec46cd-8fc8-4ecc-aee5-1395e41ad33e 200 in 1248ms
+🔐 AuthServiceServer.getSession - Starting
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: 'auth-token-account',
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token-account', '__next_hmr_refresh_hash__', 'auth-token' ]
+}
+🔐 Attempting to verify JWT token
+ GET /api/orders/89ec46cd-8fc8-4ecc-aee5-1395e41ad33e 200 in 160ms
+🔗 Database connection string: postgresql:****@localhost:5434/guest_post_test?sslmode=disable
+🔐 AuthServiceServer.getSession - Starting
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: 'auth-token-account',
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token-account', '__next_hmr_refresh_hash__', 'auth-token' ]
+}
+🔐 Attempting to verify JWT token
+ PUT /api/orders/89ec46cd-8fc8-4ecc-aee5-1395e41ad33e 200 in 231ms
+🔗 Database connection string: postgresql:****@localhost:5434/guest_post_test?sslmode=disable
+ ○ Compiling /api/orders/[id]/line-items ...
+ ✓ Compiled /api/orders/[id]/line-items in 739ms
+🔗 Database connection string: postgresql:****@localhost:5434/guest_post_test?sslmode=disable
+🔐 AuthServiceServer.getSession - Starting
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: 'auth-token-account',
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token-account', '__next_hmr_refresh_hash__', 'auth-token' ]
+}
+🔐 Attempting to verify JWT token
+ GET /api/orders/89ec46cd-8fc8-4ecc-aee5-1395e41ad33e/line-items 200 in 2066ms
+🔐 AuthServiceServer.getSession - Starting
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: 'auth-token-account',
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token-account', '__next_hmr_refresh_hash__', 'auth-token' ]
+}
+🔐 Attempting to verify JWT token
+Error creating line items: Error: Failed query: insert into "line_item_changes" ("id", "line_item_id", "order_id", "change_type", "previous_value", "new_value", "changed_by", "changed_at", "change_reason", "batch_id", "metadata") values (default, $1, $2, $3, default, $4, $5, default, $6, $7, default)
+params: 4f29106b-c750-439d-8d1d-9921116ed8af,89ec46cd-8fc8-4ecc-aee5-1395e41ad33e,created,{"clientId":"62062ec5-7e2d-497c-83fe-3b192787262c","targetPageUrl":"https://factbites.com/best-beauty-blogs/","anchorText":"Fact Bites services"},fc870f66-f4a3-4034-a154-414acf0c0121,Order draft saved from edit page,c57c526d-4197-4231-9883-5ad657f8492e
+    at async (app/api/orders/[id]/line-items/route.ts:241:8)
+    at async POST (app/api/orders/[id]/line-items/route.ts:209:25)
+  239 |
+  240 |         // Create change log entry
+> 241 |         await tx.insert(lineItemChanges).values({
+      |        ^
+  242 |           lineItemId: lineItem.id,
+  243 |           orderId,
+  244 |           changeType: 'created', {
+  query: 'insert into "line_item_changes" ("id", "line_item_id", "order_id", "change_type", "previous_value", "new_value", "changed_by", "changed_at", "change_reason", "batch_id", "metadata") values (default, $1, $2, $3, default, $4, $5, default, $6, $7, default)',
+  params: [Array],
+  [cause]: error: column "order_id" of relation "line_item_changes" does not exist
+      at async (app/api/orders/[id]/line-items/route.ts:241:8)
+      at async POST (app/api/orders/[id]/line-items/route.ts:209:25)
+    239 |
+    240 |         // Create change log entry
+  > 241 |         await tx.insert(lineItemChanges).values({
+        |        ^
+    242 |           lineItemId: lineItem.id,
+    243 |           orderId,
+    244 |           changeType: 'created', {
+    length: 138,
+    severity: 'ERROR',
+    code: '42703',
+    detail: undefined,
+    hint: undefined,
+    position: '56',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_target.c',
+    line: '1065',
+    routine: 'checkInsertTargets'
+  }
+}
+ POST /api/orders/89ec46cd-8fc8-4ecc-aee5-1395e41ad33e/line-items 500 in 262ms
+🔗 Database connection string: postgresql:****@localhost:5434/guest_post_test?sslmode=disable
+ ○ Compiling /api/orders/[id]/submit ...
+ ✓ Compiled /api/orders/[id]/submit in 771ms
+🔗 Database connection string: postgresql:****@localhost:5434/guest_post_test?sslmode=disable
+🔐 AuthServiceServer.getSession - Starting
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: 'auth-token-account',
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token-account', '__next_hmr_refresh_hash__', 'auth-token' ]
+}
+🔐 Attempting to verify JWT token
+✅ Created benchmark for submitted order 89ec46cd-8fc8-4ecc-aee5-1395e41ad33e
+ POST /api/orders/89ec46cd-8fc8-4ecc-aee5-1395e41ad33e/submit 200 in 1358ms
+ ○ Compiling /orders/[id] ...
+ ✓ Compiled /orders/[id] in 1505ms
+ GET /orders/89ec46cd-8fc8-4ecc-aee5-1395e41ad33e 200 in 2012ms
+🔐 AuthServiceServer.getSession - Starting
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: 'auth-token-account',
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token-account', '__next_hmr_refresh_hash__', 'auth-token' ]
+}
+🔐 Attempting to verify JWT token
+ GET /api/orders/89ec46cd-8fc8-4ecc-aee5-1395e41ad33e 200 in 164ms
+🔐 AuthServiceServer.getSession - Starting
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: 'auth-token-account',
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token-account', '__next_hmr_refresh_hash__', 'auth-token' ]
+}
+🔐 Attempting to verify JWT token
+ GET /api/orders/89ec46cd-8fc8-4ecc-aee5-1395e41ad33e 200 in 204ms
+🔗 Database connection string: postgresql:****@localhost:5434/guest_post_test?sslmode=disable
+ ○ Compiling /api/orders/[id]/benchmark ...
+ ✓ Compiled /api/orders/[id]/benchmark in 905ms
+🔗 Database connection string: postgresql:****@localhost:5434/guest_post_test?sslmode=disable
+🔐 AuthServiceServer.getSession - Starting
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: 'auth-token-account',
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token-account', '__next_hmr_refresh_hash__', 'auth-token' ]
+}
+🔐 Attempting to verify JWT token
+ GET /api/orders/89ec46cd-8fc8-4ecc-aee5-1395e41ad33e/benchmark?comparison=true 200 in 1537ms
+🔐 AuthServiceServer.getSession - Starting
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: 'auth-token-account',
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token-account', '__next_hmr_refresh_hash__', 'auth-token' ]
+}
+🔐 Attempting to verify JWT token
+ GET /api/orders/89ec46cd-8fc8-4ecc-aee5-1395e41ad33e/benchmark?comparison=true 200 in 147ms
+🔗 Database connection string: postgresql:****@localhost:5434/guest_post_test?sslmode=disable
+🔐 AuthServiceServer.getSession - Starting
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: undefined,
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token' ]
+}
+🔐 Attempting to verify JWT token
+ GET /api/orders/89ec46cd-8fc8-4ecc-aee5-1395e41ad33e/line-items 200 in 181ms
+🔐 AuthServiceServer.getSession - Starting
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: undefined,
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token' ]
+}
+🔐 Attempting to verify JWT token
+Error creating line items: Error: Failed query: insert into "line_item_changes" ("id", "line_item_id", "order_id", "change_type", "previous_value", "new_value", "changed_by", "changed_at", "change_reason", "batch_id", "metadata") values (default, $1, $2, $3, default, $4, $5, default, $6, $7, default)
+params: ac881ae3-4ee8-4de2-baba-a74527d20f6f,89ec46cd-8fc8-4ecc-aee5-1395e41ad33e,created,{"clientId":"62062ec5-7e2d-497c-83fe-3b192787262c","targetPageUrl":"https://factbites.com/test-page-1/","anchorText":"Test Anchor 1"},fc870f66-f4a3-4034-a154-414acf0c0121,Testing line items creation after schema fix,522d9dd3-79c2-4acc-b2fa-a629ded6287a
+    at async (app/api/orders/[id]/line-items/route.ts:241:8)
+    at async POST (app/api/orders/[id]/line-items/route.ts:209:25)
+  239 |
+  240 |         // Create change log entry
+> 241 |         await tx.insert(lineItemChanges).values({
+      |        ^
+  242 |           lineItemId: lineItem.id,
+  243 |           orderId,
+  244 |           changeType: 'created', {
+  query: 'insert into "line_item_changes" ("id", "line_item_id", "order_id", "change_type", "previous_value", "new_value", "changed_by", "changed_at", "change_reason", "batch_id", "metadata") values (default, $1, $2, $3, default, $4, $5, default, $6, $7, default)',
+  params: [Array],
+  [cause]: error: insert or update on table "line_item_changes" violates foreign key constraint "line_item_changes_changed_by_fkey"
+      at async (app/api/orders/[id]/line-items/route.ts:241:8)
+      at async POST (app/api/orders/[id]/line-items/route.ts:209:25)
+    239 |
+    240 |         // Create change log entry
+  > 241 |         await tx.insert(lineItemChanges).values({
+        |        ^
+    242 |           lineItemId: lineItem.id,
+    243 |           orderId,
+    244 |           changeType: 'created', {
+    length: 334,
+    severity: 'ERROR',
+    code: '23503',
+    detail: 'Key (changed_by)=(fc870f66-f4a3-4034-a154-414acf0c0121) is not present in table "users".',
+    hint: undefined,
+    position: undefined,
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: 'public',
+    table: 'line_item_changes',
+    column: undefined,
+    dataType: undefined,
+    constraint: 'line_item_changes_changed_by_fkey',
+    file: 'ri_triggers.c',
+    line: '2599',
+    routine: 'ri_ReportViolation'
+  }
+}
+ POST /api/orders/89ec46cd-8fc8-4ecc-aee5-1395e41ad33e/line-items 500 in 253ms
+🔗 Database connection string: postgresql:****@localhost:5434/guest_post_test?sslmode=disable
+🔗 Database connection string: postgresql:****@localhost:5434/guest_post_test?sslmode=disable
+🔐 AuthServiceServer.getSession - Starting
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: undefined,
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token' ]
+}
+🔐 Attempting to verify JWT token
+ GET /api/orders/89ec46cd-8fc8-4ecc-aee5-1395e41ad33e/line-items 200 in 389ms
+🔐 AuthServiceServer.getSession - Starting
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: undefined,
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token' ]
+}
+🔐 Attempting to verify JWT token
+ POST /api/orders/89ec46cd-8fc8-4ecc-aee5-1395e41ad33e/line-items 200 in 164ms
+🔐 AuthServiceServer.getSession - Starting
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: undefined,
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token' ]
+}
+🔐 Attempting to verify JWT token
+ GET /api/orders/89ec46cd-8fc8-4ecc-aee5-1395e41ad33e/line-items 200 in 123ms
+🔗 Database connection string: postgresql:****@localhost:5434/guest_post_test?sslmode=disable
+🔐 AuthServiceServer.getSession - Starting
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: undefined,
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token' ]
+}
+🔐 Attempting to verify JWT token
+ GET /api/orders/89ec46cd-8fc8-4ecc-aee5-1395e41ad33e/line-items?includeChanges=true 200 in 135ms
+🔗 Database connection string: postgresql:****@localhost:5434/guest_post_test?sslmode=disable
+ GET /login 200 in 150ms
+ GET /orders/89ec46cd-8fc8-4ecc-aee5-1395e41ad33e 200 in 324ms
+ GET /api/users 200 in 146ms
+🔐 AuthServiceServer.getSession - Starting
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: 'auth-token-account',
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token-account', '__next_hmr_refresh_hash__', 'auth-token' ]
+}
+🔐 Attempting to verify JWT token
+ GET /login?redirect=%2Forders%2F89ec46cd-8fc8-4ecc-aee5-1395e41ad33e 200 in 260ms
+ GET /api/orders/89ec46cd-8fc8-4ecc-aee5-1395e41ad33e 200 in 241ms
+🔐 AuthServiceServer.getSession - Starting
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: 'auth-token-account',
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token-account', '__next_hmr_refresh_hash__', 'auth-token' ]
+}
+🔐 Attempting to verify JWT token
+ GET /api/orders/89ec46cd-8fc8-4ecc-aee5-1395e41ad33e/benchmark?comparison=true 200 in 177ms
+🔗 Database connection string: postgresql:****@localhost:5434/guest_post_test?sslmode=disable
+🔗 Database connection string: postgresql:****@localhost:5434/guest_post_test?sslmode=disable
+ GET /login 200 in 170ms
+🔐 Setting cookie with: {
+  name: 'auth-token',
+  value: 'eyJhbGciOiJIUzI1NiJ9...',
+  httpOnly: true,
+  secure: false,
+  nodeEnv: 'development',
+  sameSite: 'lax',
+  path: '/',
+  domain: undefined
+}
+🔐 Login successful, cookie set for: ajay@outreachlabs.com
+🔐 Response headers: auth-token=eyJhbGciOiJIUzI1NiJ9.eyJ1c2VySWQiOiI5N2FjYTE2Zi04YjgxLTQ0YWQtYTUzMi1hNmUzZmE5NmNiZmMiLCJlbWFpbCI6ImFqYXlAb3V0cmVhY2hsYWJzLmNvbSIsIm5hbWUiOiJBamF5IFBhZ2hkYWwiLCJyb2xlIjoiYWRtaW4iLCJ1c2VyVHlwZSI6ImludGVybmFsIiwiZXhwIjoxNzU2MTc5ODkxfQ.-r7IuRhjGrxs-2e9dG7MBeRsgYQHPnS5jz4OxWe1nXY; Path=/; Expires=Tue, 26 Aug 2025 03:44:51 GMT; Max-Age=604800; HttpOnly; SameSite=lax
+ POST /api/auth/login 200 in 350ms
+ GET / 200 in 92ms
+ GET /api/users 200 in 199ms
+ GET /api/users 200 in 184ms
+ GET /api/users 200 in 156ms
+ ○ Compiling /api/bulk-analysis/assigned-projects ...
+ ✓ Compiled /api/bulk-analysis/assigned-projects in 1098ms
+🔐 AuthServiceServer.getSession - Starting
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: 'auth-token-account',
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token-account', '__next_hmr_refresh_hash__', 'auth-token' ]
+}
+🔐 Attempting to verify JWT token
+ GET /api/bulk-analysis/assigned-projects 401 in 1265ms
+ GET /favicon.ico?favicon.45db1c09.ico 200 in 339ms
+ GET /api/workflows 200 in 1628ms
+🔐 AuthServiceServer.getSession - Starting
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: 'auth-token-account',
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token-account', '__next_hmr_refresh_hash__', 'auth-token' ]
+}
+🔐 Attempting to verify JWT token
+ GET /api/bulk-analysis/assigned-projects 401 in 401ms
+ GET /api/workflows 200 in 556ms
+ ○ Compiling /orders ...
+ ✓ Compiled /orders in 1242ms
+ GET /orders 200 in 1343ms
+🔐 AuthServiceServer.getSession - Starting
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: 'auth-token-account',
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token-account', '__next_hmr_refresh_hash__', 'auth-token' ]
+}
+🔐 Attempting to verify JWT token
+ GET /api/orders? 200 in 188ms
+ ○ Compiling /api/notifications/summary ...
+ ✓ Compiled /api/notifications/summary in 624ms
+🔐 AuthServiceServer.getSession - Starting
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: 'auth-token-account',
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token-account', '__next_hmr_refresh_hash__', 'auth-token' ]
+}
+🔐 Attempting to verify JWT token
+ GET /api/notifications/summary 200 in 742ms
+ ○ Compiling /orders/[id]/internal ...
+ ✓ Compiled /orders/[id]/internal in 1837ms
+ GET /orders/89ec46cd-8fc8-4ecc-aee5-1395e41ad33e/internal 200 in 2488ms
+🔐 AuthServiceServer.getSession - Starting
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: 'auth-token-account',
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token-account', '__next_hmr_refresh_hash__', 'auth-token' ]
+}
+🔐 Attempting to verify JWT token
+ GET /api/orders/89ec46cd-8fc8-4ecc-aee5-1395e41ad33e 200 in 223ms
+🔐 AuthServiceServer.getSession - Starting
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: 'auth-token-account',
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token-account', '__next_hmr_refresh_hash__', 'auth-token' ]
+}
+🔐 Attempting to verify JWT token
+🔐 AuthServiceServer.getSession - Starting
+ GET /api/orders/89ec46cd-8fc8-4ecc-aee5-1395e41ad33e 200 in 392ms
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: 'auth-token-account',
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token-account', '__next_hmr_refresh_hash__', 'auth-token' ]
+}
+🔐 Attempting to verify JWT token
+ GET /api/orders/89ec46cd-8fc8-4ecc-aee5-1395e41ad33e/benchmark?comparison=true 200 in 320ms
+🔐 AuthServiceServer.getSession - Starting
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: 'auth-token-account',
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token-account', '__next_hmr_refresh_hash__', 'auth-token' ]
+}
+🔐 Attempting to verify JWT token
+ GET /api/orders/89ec46cd-8fc8-4ecc-aee5-1395e41ad33e/benchmark?comparison=true 200 in 214ms
+🔗 Database connection string: postgresql:****@localhost:5434/guest_post_test?sslmode=disable
+🔗 Database connection string: postgresql:****@localhost:5434/guest_post_test?sslmode=disable
+ ○ Compiling /api/orders/[id]/confirm ...
+ ✓ Compiled /api/orders/[id]/confirm in 929ms
+🔗 Database connection string: postgresql:****@localhost:5434/guest_post_test?sslmode=disable
+🔐 AuthServiceServer.getSession - Starting
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: 'auth-token-account',
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token-account', '__next_hmr_refresh_hash__', 'auth-token' ]
+}
+🔐 Attempting to verify JWT token
+ POST /api/orders/89ec46cd-8fc8-4ecc-aee5-1395e41ad33e/confirm 403 in 1544ms
+🔐 Setting cookie with: {
+  name: 'auth-token',
+  value: 'eyJhbGciOiJIUzI1NiJ9...',
+  httpOnly: true,
+  secure: false,
+  nodeEnv: 'development',
+  sameSite: 'lax',
+  path: '/',
+  domain: undefined
+}
+🔐 Login successful, cookie set for: ajay@outreachlabs.com
+🔐 Response headers: auth-token=eyJhbGciOiJIUzI1NiJ9.eyJ1c2VySWQiOiI5N2FjYTE2Zi04YjgxLTQ0YWQtYTUzMi1hNmUzZmE5NmNiZmMiLCJlbWFpbCI6ImFqYXlAb3V0cmVhY2hsYWJzLmNvbSIsIm5hbWUiOiJBamF5IFBhZ2hkYWwiLCJyb2xlIjoiYWRtaW4iLCJ1c2VyVHlwZSI6ImludGVybmFsIiwiZXhwIjoxNzU2MTgwMDE2fQ.fdK7W7c8x2dIyFjQt4fJ83FlOa07280tgCEJ26g0eqc; Path=/; Expires=Tue, 26 Aug 2025 03:46:56 GMT; Max-Age=604800; HttpOnly; SameSite=lax
+ POST /api/auth/login 200 in 520ms
+🔐 AuthServiceServer.getSession - Starting
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: undefined,
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token', '26 Aug 2025 03:46:56 GMT' ]
+}
+🔐 Attempting to verify JWT token
+ GET /api/orders/89ec46cd-8fc8-4ecc-aee5-1395e41ad33e 200 in 239ms
+🔐 AuthServiceServer.getSession - Starting
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: undefined,
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token', '26 Aug 2025 03:46:56 GMT' ]
+}
+🔐 Attempting to verify JWT token
+Error confirming order: Error: Failed query: update "order_line_items" set "modified_at" = $1, "metadata" = 
+                COALESCE(metadata, '{}'::jsonb) || 
+                jsonb_build_object('bulkAnalysisProjectId', $2)
+               where ("order_line_items"."order_id" = $3 and "order_line_items"."client_id" = $4)
+params: 2025-08-19T03:46:57.248Z,14a90be7-b4ab-4663-aae1-946c66462126,89ec46cd-8fc8-4ecc-aee5-1395e41ad33e,62062ec5-7e2d-497c-83fe-3b192787262c
+    at async (app/api/orders/[id]/confirm/route.ts:205:10)
+    at async (app/api/orders/[id]/confirm/route.ts:224:29)
+    at async POST (app/api/orders/[id]/confirm/route.ts:34:11)
+  203 |           
+  204 |           // Update line items with project ID in metadata
+> 205 |           await tx
+      |          ^
+  206 |             .update(orderLineItems)
+  207 |             .set({
+  208 |               metadata: sql` {
+  query: 'update "order_line_items" set "modified_at" = $1, "metadata" = \n' +
+    "                COALESCE(metadata, '{}'::jsonb) || \n" +
+    "                jsonb_build_object('bulkAnalysisProjectId', $2)\n" +
+    '               where ("order_line_items"."order_id" = $3 and "order_line_items"."client_id" = $4)',
+  params: [Array],
+  [cause]: error: could not determine data type of parameter $2
+      at async (app/api/orders/[id]/confirm/route.ts:205:10)
+      at async (app/api/orders/[id]/confirm/route.ts:224:29)
+      at async POST (app/api/orders/[id]/confirm/route.ts:34:11)
+    203 |           
+    204 |           // Update line items with project ID in metadata
+  > 205 |           await tx
+        |          ^
+    206 |             .update(orderLineItems)
+    207 |             .set({
+    208 |               metadata: sql` {
+    length: 124,
+    severity: 'ERROR',
+    code: '42P18',
+    detail: undefined,
+    hint: undefined,
+    position: undefined,
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'postgres.c',
+    line: '742',
+    routine: 'pg_analyze_and_rewrite_varparams'
+  }
+}
+ POST /api/orders/89ec46cd-8fc8-4ecc-aee5-1395e41ad33e/confirm 500 in 507ms
+🔗 Database connection string: postgresql:****@localhost:5434/guest_post_test?sslmode=disable
+🔗 Database connection string: postgresql:****@localhost:5434/guest_post_test?sslmode=disable
+Error loading user by email: Error: Failed query: select "id", "email", "name", "password_hash", "role", "is_active", "last_login", "created_at", "updated_at" from "users" where "users"."email" = $1
+params: ajay@outreachlabs.com
+    at async UserService.getUserByEmail (lib/db/userService.ts:32:21)
+    at async UserService.verifyPassword (lib/db/userService.ts:107:19)
+    at async POST (app/api/auth/login/route.ts:43:15)
+  30 |   static async getUserByEmail(email: string): Promise<User | null> {
+  31 |     try {
+> 32 |       const result = await db.select().from(users).where(eq(users.email, email));
+     |                     ^
+  33 |       return result[0] || null;
+  34 |     } catch (error) {
+  35 |       console.error('Error loading user by email:', error); {
+  query: 'select "id", "email", "name", "password_hash", "role", "is_active", "last_login", "created_at", "updated_at" from "users" where "users"."email" = $1',
+  params: [Array],
+  [cause]: Error: connect ECONNREFUSED 127.0.0.1:5434
+      at <unknown> (Error: connect ECONNREFUSED 127.0.0.1:5434)
+      at async UserService.getUserByEmail (lib/db/userService.ts:32:21)
+      at async UserService.verifyPassword (lib/db/userService.ts:107:19)
+      at async POST (app/api/auth/login/route.ts:43:15)
+    30 |   static async getUserByEmail(email: string): Promise<User | null> {
+    31 |     try {
+  > 32 |       const result = await db.select().from(users).where(eq(users.email, email));
+       |                     ^
+    33 |       return result[0] || null;
+    34 |     } catch (error) {
+    35 |       console.error('Error loading user by email:', error); {
+    errno: -111,
+    code: 'ECONNREFUSED',
+    syscall: 'connect',
+    address: '127.0.0.1',
+    port: 5434
+  }
+}
+Login error: Error: Failed query: select "id", "email", "password", "role", "contact_name", "company_name", "phone", "website", "tax_id", "billing_address", "billing_city", "billing_state", "billing_zip", "billing_country", "credit_terms", "credit_limit", "primary_client_id", "status", "email_verified", "email_verification_token", "reset_token", "reset_token_expiry", "internal_notes", "order_preferences", "onboarding_completed", "onboarding_steps", "onboarding_completed_at", "ai_permissions", "can_use_ai_keywords", "can_use_ai_descriptions", "can_use_ai_content_generation", "created_at", "updated_at", "last_login_at" from "accounts" "accounts" where "accounts"."email" = $1 limit $2
+params: ajay@outreachlabs.com,1
+    at async POST (app/api/auth/login/route.ts:49:22)
+  47 |     if (!user) {
+  48 |       // If not found in users table, check accounts table
+> 49 |       const account = await db.query.accounts.findFirst({
+     |                      ^
+  50 |         where: eq(accounts.email, email.toLowerCase()),
+  51 |       });
+  52 |        {
+  query: 'select "id", "email", "password", "role", "contact_name", "company_name", "phone", "website", "tax_id", "billing_address", "billing_city", "billing_state", "billing_zip", "billing_country", "credit_terms", "credit_limit", "primary_client_id", "status", "email_verified", "email_verification_token", "reset_token", "reset_token_expiry", "internal_notes", "order_preferences", "onboarding_completed", "onboarding_steps", "onboarding_completed_at", "ai_permissions", "can_use_ai_keywords", "can_use_ai_descriptions", "can_use_ai_content_generation", "created_at", "updated_at", "last_login_at" from "accounts" "accounts" where "accounts"."email" = $1 limit $2',
+  params: [Array],
+  [cause]: Error: connect ECONNREFUSED 127.0.0.1:5434
+      at <unknown> (Error: connect ECONNREFUSED 127.0.0.1:5434)
+      at async POST (app/api/auth/login/route.ts:49:22)
+    47 |     if (!user) {
+    48 |       // If not found in users table, check accounts table
+  > 49 |       const account = await db.query.accounts.findFirst({
+       |                      ^
+    50 |         where: eq(accounts.email, email.toLowerCase()),
+    51 |       });
+    52 |        {
+    errno: -111,
+    code: 'ECONNREFUSED',
+    syscall: 'connect',
+    address: '127.0.0.1',
+    port: 5434
+  }
+}
+ POST /api/auth/login 500 in 441ms
+ GET /orders/89ec46cd-8fc8-4ecc-aee5-1395e41ad33e/intern 404 in 736ms
+🔐 AuthServiceServer.getSession - Starting
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: 'auth-token-account',
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token-account', '__next_hmr_refresh_hash__', 'auth-token' ]
+}
+🔐 Attempting to verify JWT token
+Error fetching notification summary: Error: Failed query: select "orders"."id", "orders"."status", "orders"."state", "orders"."updated_at", "orders"."account_id", "order_groups"."id", "order_groups"."order_id", "order_groups"."client_id", "order_groups"."link_count", "order_groups"."target_pages", "order_groups"."anchor_texts", "order_groups"."requirement_overrides", "order_groups"."bulk_analysis_project_id", "order_groups"."analysis_started_at", "order_groups"."analysis_completed_at", "order_groups"."group_status", "order_groups"."created_at", "order_groups"."updated_at" from "orders" left join "order_groups" on "orders"."id" = "order_groups"."order_id" where "orders"."account_id" = $1 order by "orders"."updated_at" desc
+params: fc870f66-f4a3-4034-a154-414acf0c0121
+    at async GET (app/api/notifications/summary/route.ts:25:22)
+  23 |
+  24 |     // Get all orders with their groups to check for more suggestions needed
+> 25 |     const allOrders = await db
+     |                      ^
+  26 |       .select({
+  27 |         id: orders.id,
+  28 |         status: orders.status, {
+  query: 'select "orders"."id", "orders"."status", "orders"."state", "orders"."updated_at", "orders"."account_id", "order_groups"."id", "order_groups"."order_id", "order_groups"."client_id", "order_groups"."link_count", "order_groups"."target_pages", "order_groups"."anchor_texts", "order_groups"."requirement_overrides", "order_groups"."bulk_analysis_project_id", "order_groups"."analysis_started_at", "order_groups"."analysis_completed_at", "order_groups"."group_status", "order_groups"."created_at", "order_groups"."updated_at" from "orders" left join "order_groups" on "orders"."id" = "order_groups"."order_id" where "orders"."account_id" = $1 order by "orders"."updated_at" desc',
+  params: [Array],
+  [cause]: error: database "guest_post_test" does not exist
+      at async GET (app/api/notifications/summary/route.ts:25:22)
+    23 |
+    24 |     // Get all orders with their groups to check for more suggestions needed
+  > 25 |     const allOrders = await db
+       |                      ^
+    26 |       .select({
+    27 |         id: orders.id,
+    28 |         status: orders.status, {
+    length: 101,
+    severity: 'FATAL',
+    code: '3D000',
+    detail: undefined,
+    hint: undefined,
+    position: undefined,
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'postinit.c',
+    line: '1032',
+    routine: 'InitPostgres'
+  }
+}
+ GET /api/notifications/summary 500 in 1794ms
+ GET /orders/89ec46cd-8fc8-4ecc-aee5-1395e41ad33e/internal 200 in 576ms
+Error loading users: Error: Failed query: select "id", "email", "name", "password_hash", "role", "is_active", "last_login", "created_at", "updated_at" from "users"
+params: 
+    at async UserService.getAllUsers (lib/db/userService.ts:11:13)
+    at async GET (app/api/users/route.ts:6:18)
+   9 |   static async getAllUsers(): Promise<User[]> {
+  10 |     try {
+> 11 |       return await db.select().from(users);
+     |             ^
+  12 |     } catch (error) {
+  13 |       console.error('Error loading users:', error);
+  14 |       return []; {
+  query: 'select "id", "email", "name", "password_hash", "role", "is_active", "last_login", "created_at", "updated_at" from "users"',
+  params: [],
+  [cause]: error: database "guest_post_test" does not exist
+      at async UserService.getAllUsers (lib/db/userService.ts:11:13)
+      at async GET (app/api/users/route.ts:6:18)
+     9 |   static async getAllUsers(): Promise<User[]> {
+    10 |     try {
+  > 11 |       return await db.select().from(users);
+       |             ^
+    12 |     } catch (error) {
+    13 |       console.error('Error loading users:', error);
+    14 |       return []; {
+    length: 101,
+    severity: 'FATAL',
+    code: '3D000',
+    detail: undefined,
+    hint: undefined,
+    position: undefined,
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'postinit.c',
+    line: '1032',
+    routine: 'InitPostgres'
+  }
+}
+ GET /api/users 200 in 1716ms
+🔐 AuthServiceServer.getSession - Starting
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: 'auth-token-account',
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token-account', '__next_hmr_refresh_hash__', 'auth-token' ]
+}
+🔐 Attempting to verify JWT token
+🔐 AuthServiceServer.getSession - Starting
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: 'auth-token-account',
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token-account', '__next_hmr_refresh_hash__', 'auth-token' ]
+}
+🔐 Attempting to verify JWT token
+Error fetching notification summary: Error: Failed query: select "orders"."id", "orders"."status", "orders"."state", "orders"."updated_at", "orders"."account_id", "order_groups"."id", "order_groups"."order_id", "order_groups"."client_id", "order_groups"."link_count", "order_groups"."target_pages", "order_groups"."anchor_texts", "order_groups"."requirement_overrides", "order_groups"."bulk_analysis_project_id", "order_groups"."analysis_started_at", "order_groups"."analysis_completed_at", "order_groups"."group_status", "order_groups"."created_at", "order_groups"."updated_at" from "orders" left join "order_groups" on "orders"."id" = "order_groups"."order_id" where "orders"."account_id" = $1 order by "orders"."updated_at" desc
+params: fc870f66-f4a3-4034-a154-414acf0c0121
+    at async GET (app/api/notifications/summary/route.ts:25:22)
+  23 |
+  24 |     // Get all orders with their groups to check for more suggestions needed
+> 25 |     const allOrders = await db
+     |                      ^
+  26 |       .select({
+  27 |         id: orders.id,
+  28 |         status: orders.status, {
+  query: 'select "orders"."id", "orders"."status", "orders"."state", "orders"."updated_at", "orders"."account_id", "order_groups"."id", "order_groups"."order_id", "order_groups"."client_id", "order_groups"."link_count", "order_groups"."target_pages", "order_groups"."anchor_texts", "order_groups"."requirement_overrides", "order_groups"."bulk_analysis_project_id", "order_groups"."analysis_started_at", "order_groups"."analysis_completed_at", "order_groups"."group_status", "order_groups"."created_at", "order_groups"."updated_at" from "orders" left join "order_groups" on "orders"."id" = "order_groups"."order_id" where "orders"."account_id" = $1 order by "orders"."updated_at" desc',
+  params: [Array],
+  [cause]: error: database "guest_post_test" does not exist
+      at async GET (app/api/notifications/summary/route.ts:25:22)
+    23 |
+    24 |     // Get all orders with their groups to check for more suggestions needed
+  > 25 |     const allOrders = await db
+       |                      ^
+    26 |       .select({
+    27 |         id: orders.id,
+    28 |         status: orders.status, {
+    length: 101,
+    severity: 'FATAL',
+    code: '3D000',
+    detail: undefined,
+    hint: undefined,
+    position: undefined,
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'postinit.c',
+    line: '1032',
+    routine: 'InitPostgres'
+  }
+}
+ GET /api/notifications/summary 500 in 2293ms
+Error fetching order: Error: Failed query: select "orders"."id", "orders"."account_id", "orders"."order_type", "orders"."status", "orders"."state", "orders"."subtotal_retail", "orders"."discount_percent", "orders"."discount_amount", "orders"."total_retail", "orders"."total_wholesale", "orders"."profit_margin", "orders"."includes_client_review", "orders"."client_review_fee", "orders"."rush_delivery", "orders"."rush_fee", "orders"."requires_client_review", "orders"."review_completed_at", "orders"."share_token", "orders"."share_expires_at", "orders"."proposal_video_url", "orders"."proposal_message", "orders"."estimated_budget_min", "orders"."estimated_budget_max", "orders"."estimated_links_count", "orders"."preferences_dr_min", "orders"."preferences_dr_max", "orders"."preferences_traffic_min", "orders"."preferences_categories", "orders"."preferences_types", "orders"."preferences_niches", "orders"."estimator_snapshot", "orders"."estimated_price_per_link", "orders"."actual_price_per_link", "orders"."preference_match_score", "orders"."is_template", "orders"."template_name", "orders"."copied_from_order_id", "orders"."approved_at", "orders"."invoiced_at", "orders"."invoice_data", "orders"."paid_at", "orders"."completed_at", "orders"."cancelled_at", "orders"."refunded_at", "orders"."partial_refund_amount", "orders"."created_by", "orders"."assigned_to", "orders"."internal_notes", "orders"."account_notes", "orders"."cancellation_reason", "orders"."created_at", "orders"."updated_at", "orders_account"."data" as "account", "orders_items"."data" as "items" from "orders" "orders" left join lateral (select json_build_array("orders_account"."id", "orders_account"."email", "orders_account"."password", "orders_account"."role", "orders_account"."contact_name", "orders_account"."company_name", "orders_account"."phone", "orders_account"."website", "orders_account"."tax_id", "orders_account"."billing_address", "orders_account"."billing_city", "orders_account"."billing_state", "orders_account"."billing_zip", "orders_account"."billing_country", "orders_account"."credit_terms", "orders_account"."credit_limit", "orders_account"."primary_client_id", "orders_account"."status", "orders_account"."email_verified", "orders_account"."email_verification_token", "orders_account"."reset_token", "orders_account"."reset_token_expiry", "orders_account"."internal_notes", "orders_account"."order_preferences", "orders_account"."onboarding_completed", "orders_account"."onboarding_steps", "orders_account"."onboarding_completed_at", "orders_account"."ai_permissions", "orders_account"."can_use_ai_keywords", "orders_account"."can_use_ai_descriptions", "orders_account"."can_use_ai_content_generation", "orders_account"."created_at", "orders_account"."updated_at", "orders_account"."last_login_at") as "data" from (select * from "accounts" "orders_account" where "orders_account"."id" = "orders"."account_id" limit $1) "orders_account") "orders_account" on true left join lateral (select coalesce(json_agg(json_build_array("orders_items"."id", "orders_items"."order_id", "orders_items"."domain_id", "orders_items"."target_page_id", "orders_items"."order_group_id", "orders_items"."site_selection_id", "orders_items"."domain", "orders_items"."domain_rating", "orders_items"."traffic", "orders_items"."retail_price", "orders_items"."wholesale_price", "orders_items"."workflow_id", "orders_items"."workflow_status", "orders_items"."workflow_created_at", "orders_items"."workflow_completed_at", "orders_items"."published_url", "orders_items"."published_at", "orders_items"."publication_verified", "orders_items"."has_issues", "orders_items"."issue_notes", "orders_items"."issue_resolved_at", "orders_items"."status", "orders_items"."created_at", "orders_items"."updated_at")), '[]'::json) as "data" from "guest_post_items" "orders_items" where "orders_items"."order_id" = "orders"."id") "orders_items" on true where "orders"."id" = $2 limit $3
+params: 1,89ec46cd-8fc8-4ecc-aee5-1395e41ad33e,1
+    at async GET (app/api/orders/[id]/route.ts:25:18)
+  23 |
+  24 |     // Fetch the order with relationships
+> 25 |     const order = await db.query.orders.findFirst({
+     |                  ^
+  26 |       where: eq(orders.id, id),
+  27 |       with: {
+  28 |         account: true, {
+  query: `select "orders"."id", "orders"."account_id", "orders"."order_type", "orders"."status", "orders"."state", "orders"."subtotal_retail", "orders"."discount_percent", "orders"."discount_amount", "orders"."total_retail", "orders"."total_wholesale", "orders"."profit_margin", "orders"."includes_client_review", "orders"."client_review_fee", "orders"."rush_delivery", "orders"."rush_fee", "orders"."requires_client_review", "orders"."review_completed_at", "orders"."share_token", "orders"."share_expires_at", "orders"."proposal_video_url", "orders"."proposal_message", "orders"."estimated_budget_min", "orders"."estimated_budget_max", "orders"."estimated_links_count", "orders"."preferences_dr_min", "orders"."preferences_dr_max", "orders"."preferences_traffic_min", "orders"."preferences_categories", "orders"."preferences_types", "orders"."preferences_niches", "orders"."estimator_snapshot", "orders"."estimated_price_per_link", "orders"."actual_price_per_link", "orders"."preference_match_score", "orders"."is_template", "orders"."template_name", "orders"."copied_from_order_id", "orders"."approved_at", "orders"."invoiced_at", "orders"."invoice_data", "orders"."paid_at", "orders"."completed_at", "orders"."cancelled_at", "orders"."refunded_at", "orders"."partial_refund_amount", "orders"."created_by", "orders"."assigned_to", "orders"."internal_notes", "orders"."account_notes", "orders"."cancellation_reason", "orders"."created_at", "orders"."updated_at", "orders_account"."data" as "account", "orders_items"."data" as "items" from "orders" "orders" left join lateral (select json_build_array("orders_account"."id", "orders_account"."email", "orders_account"."password", "orders_account"."role", "orders_account"."contact_name", "orders_account"."company_name", "orders_account"."phone", "orders_account"."website", "orders_account"."tax_id", "orders_account"."billing_address", "orders_account"."billing_city", "orders_account"."billing_state", "orders_account"."billing_zip", "orders_account"."billing_country", "orders_account"."credit_terms", "orders_account"."credit_limit", "orders_account"."primary_client_id", "orders_account"."status", "orders_account"."email_verified", "orders_account"."email_verification_token", "orders_account"."reset_token", "orders_account"."reset_token_expiry", "orders_account"."internal_notes", "orders_account"."order_preferences", "orders_account"."onboarding_completed", "orders_account"."onboarding_steps", "orders_account"."onboarding_completed_at", "orders_account"."ai_permissions", "orders_account"."can_use_ai_keywords", "orders_account"."can_use_ai_descriptions", "orders_account"."can_use_ai_content_generation", "orders_account"."created_at", "orders_account"."updated_at", "orders_account"."last_login_at") as "data" from (select * from "accounts" "orders_account" where "orders_account"."id" = "orders"."account_id" limit $1) "orders_account") "orders_account" on true left join lateral (select coalesce(json_agg(json_build_array("orders_items"."id", "orders_items"."order_id", "orders_items"."domain_id", "orders_items"."target_page_id", "orders_items"."order_group_id", "orders_items"."site_selection_id", "orders_items"."domain", "orders_items"."domain_rating", "orders_items"."traffic", "orders_items"."retail_price", "orders_items"."wholesale_price", "orders_items"."workflow_id", "orders_items"."workflow_status", "orders_items"."workflow_created_at", "orders_items"."workflow_completed_at", "orders_items"."published_url", "orders_items"."published_at", "orders_items"."publication_verified", "orders_items"."has_issues", "orders_items"."issue_notes", "orders_items"."issue_resolved_at", "orders_items"."status", "orders_items"."created_at", "orders_items"."updated_at")), '[]'::json) as "data" from "guest_post_items" "orders_items" where "orders_items"."order_id" = "orders"."id") "orders_items" on true where "orders"."id" = $2 limit $3`,
+  params: [Array],
+  [cause]: error: database "guest_post_test" does not exist
+      at async GET (app/api/orders/[id]/route.ts:25:18)
+    23 |
+    24 |     // Fetch the order with relationships
+  > 25 |     const order = await db.query.orders.findFirst({
+       |                  ^
+    26 |       where: eq(orders.id, id),
+    27 |       with: {
+    28 |         account: true, {
+    length: 101,
+    severity: 'FATAL',
+    code: '3D000',
+    detail: undefined,
+    hint: undefined,
+    position: undefined,
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'postinit.c',
+    line: '1032',
+    routine: 'InitPostgres'
+  }
+}
+ GET /api/orders/89ec46cd-8fc8-4ecc-aee5-1395e41ad33e 500 in 2478ms
+Error loading user by email: Error: Failed query: select "id", "email", "name", "password_hash", "role", "is_active", "last_login", "created_at", "updated_at" from "users" where "users"."email" = $1
+params: admin@example.com
+    at async UserService.getUserByEmail (lib/db/userService.ts:32:21)
+    at async UserService.createUser (lib/db/userService.ts:44:27)
+    at async POST (app/api/users/route.ts:28:17)
+  30 |   static async getUserByEmail(email: string): Promise<User | null> {
+  31 |     try {
+> 32 |       const result = await db.select().from(users).where(eq(users.email, email));
+     |                     ^
+  33 |       return result[0] || null;
+  34 |     } catch (error) {
+  35 |       console.error('Error loading user by email:', error); {
+  query: 'select "id", "email", "name", "password_hash", "role", "is_active", "last_login", "created_at", "updated_at" from "users" where "users"."email" = $1',
+  params: [Array],
+  [cause]: error: database "guest_post_test" does not exist
+      at async UserService.getUserByEmail (lib/db/userService.ts:32:21)
+      at async UserService.createUser (lib/db/userService.ts:44:27)
+      at async POST (app/api/users/route.ts:28:17)
+    30 |   static async getUserByEmail(email: string): Promise<User | null> {
+    31 |     try {
+  > 32 |       const result = await db.select().from(users).where(eq(users.email, email));
+       |                     ^
+    33 |       return result[0] || null;
+    34 |     } catch (error) {
+    35 |       console.error('Error loading user by email:', error); {
+    length: 101,
+    severity: 'FATAL',
+    code: '3D000',
+    detail: undefined,
+    hint: undefined,
+    position: undefined,
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'postinit.c',
+    line: '1032',
+    routine: 'InitPostgres'
+  }
+}
+🔗 Database connection string: postgresql:****@localhost:5434/guest_post_test?sslmode=disable
+Error creating user: Error: Failed query: insert into "users" ("id", "email", "name", "password_hash", "role", "is_active", "last_login", "created_at", "updated_at") values ($1, $2, $3, $4, $5, $6, default, $7, $8) returning "id", "email", "name", "password_hash", "role", "is_active", "last_login", "created_at", "updated_at"
+params: 5fa59c58-9952-4b0d-8590-d9741efa7dda,admin@example.com,Admin User,$2b$12$i.gCG5x9qVP1qs8Qz3PPGOlJv664ge.UxmYOfbeD8KAN99yJLfsBu,admin,true,2025-08-19T03:49:01.548Z,2025-08-19T03:49:01.548Z
+    at async UserService.createUser (lib/db/userService.ts:64:21)
+    at async POST (app/api/users/route.ts:28:17)
+  62 |       };
+  63 |
+> 64 |       const result = await db.insert(users).values(newUserData).returning();
+     |                     ^
+  65 |       return result[0];
+  66 |     } catch (error) {
+  67 |       console.error('Error creating user:', error); {
+  query: 'insert into "users" ("id", "email", "name", "password_hash", "role", "is_active", "last_login", "created_at", "updated_at") values ($1, $2, $3, $4, $5, $6, default, $7, $8) returning "id", "email", "name", "password_hash", "role", "is_active", "last_login", "created_at", "updated_at"',
+  params: [Array],
+  [cause]: error: database "guest_post_test" does not exist
+      at async UserService.createUser (lib/db/userService.ts:64:21)
+      at async POST (app/api/users/route.ts:28:17)
+    62 |       };
+    63 |
+  > 64 |       const result = await db.insert(users).values(newUserData).returning();
+       |                     ^
+    65 |       return result[0];
+    66 |     } catch (error) {
+    67 |       console.error('Error creating user:', error); {
+    length: 101,
+    severity: 'FATAL',
+    code: '3D000',
+    detail: undefined,
+    hint: undefined,
+    position: undefined,
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'postinit.c',
+    line: '1032',
+    routine: 'InitPostgres'
+  }
+}
+Error creating user: Error: Failed query: insert into "users" ("id", "email", "name", "password_hash", "role", "is_active", "last_login", "created_at", "updated_at") values ($1, $2, $3, $4, $5, $6, default, $7, $8) returning "id", "email", "name", "password_hash", "role", "is_active", "last_login", "created_at", "updated_at"
+params: 5fa59c58-9952-4b0d-8590-d9741efa7dda,admin@example.com,Admin User,$2b$12$i.gCG5x9qVP1qs8Qz3PPGOlJv664ge.UxmYOfbeD8KAN99yJLfsBu,admin,true,2025-08-19T03:49:01.548Z,2025-08-19T03:49:01.548Z
+    at async UserService.createUser (lib/db/userService.ts:64:21)
+    at async POST (app/api/users/route.ts:28:17)
+  62 |       };
+  63 |
+> 64 |       const result = await db.insert(users).values(newUserData).returning();
+     |                     ^
+  65 |       return result[0];
+  66 |     } catch (error) {
+  67 |       console.error('Error creating user:', error); {
+  query: 'insert into "users" ("id", "email", "name", "password_hash", "role", "is_active", "last_login", "created_at", "updated_at") values ($1, $2, $3, $4, $5, $6, default, $7, $8) returning "id", "email", "name", "password_hash", "role", "is_active", "last_login", "created_at", "updated_at"',
+  params: [Array],
+  [cause]: error: database "guest_post_test" does not exist
+      at async UserService.createUser (lib/db/userService.ts:64:21)
+      at async POST (app/api/users/route.ts:28:17)
+    62 |       };
+    63 |
+  > 64 |       const result = await db.insert(users).values(newUserData).returning();
+       |                     ^
+    65 |       return result[0];
+    66 |     } catch (error) {
+    67 |       console.error('Error creating user:', error); {
+    length: 101,
+    severity: 'FATAL',
+    code: '3D000',
+    detail: undefined,
+    hint: undefined,
+    position: undefined,
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'postinit.c',
+    line: '1032',
+    routine: 'InitPostgres'
+  }
+}
+ POST /api/users 500 in 2845ms
+ GET /orders 200 in 290ms
+🔐 AuthServiceServer.getSession - Starting
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: 'auth-token-account',
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token-account', '__next_hmr_refresh_hash__', 'auth-token' ]
+}
+🔐 Attempting to verify JWT token
+Error fetching orders: Error: Failed query: select "orders"."id", "orders"."account_id", "orders"."order_type", "orders"."status", "orders"."state", "orders"."subtotal_retail", "orders"."discount_percent", "orders"."discount_amount", "orders"."total_retail", "orders"."total_wholesale", "orders"."profit_margin", "orders"."includes_client_review", "orders"."client_review_fee", "orders"."rush_delivery", "orders"."rush_fee", "orders"."requires_client_review", "orders"."review_completed_at", "orders"."share_token", "orders"."share_expires_at", "orders"."proposal_video_url", "orders"."proposal_message", "orders"."estimated_budget_min", "orders"."estimated_budget_max", "orders"."estimated_links_count", "orders"."preferences_dr_min", "orders"."preferences_dr_max", "orders"."preferences_traffic_min", "orders"."preferences_categories", "orders"."preferences_types", "orders"."preferences_niches", "orders"."estimator_snapshot", "orders"."estimated_price_per_link", "orders"."actual_price_per_link", "orders"."preference_match_score", "orders"."is_template", "orders"."template_name", "orders"."copied_from_order_id", "orders"."approved_at", "orders"."invoiced_at", "orders"."invoice_data", "orders"."paid_at", "orders"."completed_at", "orders"."cancelled_at", "orders"."refunded_at", "orders"."partial_refund_amount", "orders"."created_by", "orders"."assigned_to", "orders"."internal_notes", "orders"."account_notes", "orders"."cancellation_reason", "orders"."created_at", "orders"."updated_at", "orders_account"."data" as "account" from "orders" "orders" left join lateral (select json_build_array("orders_account"."id", "orders_account"."email", "orders_account"."password", "orders_account"."role", "orders_account"."contact_name", "orders_account"."company_name", "orders_account"."phone", "orders_account"."website", "orders_account"."tax_id", "orders_account"."billing_address", "orders_account"."billing_city", "orders_account"."billing_state", "orders_account"."billing_zip", "orders_account"."billing_country", "orders_account"."credit_terms", "orders_account"."credit_limit", "orders_account"."primary_client_id", "orders_account"."status", "orders_account"."email_verified", "orders_account"."email_verification_token", "orders_account"."reset_token", "orders_account"."reset_token_expiry", "orders_account"."internal_notes", "orders_account"."order_preferences", "orders_account"."onboarding_completed", "orders_account"."onboarding_steps", "orders_account"."onboarding_completed_at", "orders_account"."ai_permissions", "orders_account"."can_use_ai_keywords", "orders_account"."can_use_ai_descriptions", "orders_account"."can_use_ai_content_generation", "orders_account"."created_at", "orders_account"."updated_at", "orders_account"."last_login_at") as "data" from (select * from "accounts" "orders_account" where "orders_account"."id" = "orders"."account_id" limit $1) "orders_account") "orders_account" on true where "orders"."account_id" = $2 order by "orders"."created_at" desc
+params: 1,fc870f66-f4a3-4034-a154-414acf0c0121
+    at async OrderService.getAccountOrders (lib/services/orderService.ts:448:26)
+    at async GET (app/api/orders/route.ts:45:15)
+  446 |    */
+  447 |   static async getAccountOrders(accountId: string): Promise<any[]> {
+> 448 |     const accountOrders = await db.query.orders.findMany({
+      |                          ^
+  449 |       where: eq(orders.accountId, accountId),
+  450 |       orderBy: desc(orders.createdAt),
+  451 |       with: { {
+  query: 'select "orders"."id", "orders"."account_id", "orders"."order_type", "orders"."status", "orders"."state", "orders"."subtotal_retail", "orders"."discount_percent", "orders"."discount_amount", "orders"."total_retail", "orders"."total_wholesale", "orders"."profit_margin", "orders"."includes_client_review", "orders"."client_review_fee", "orders"."rush_delivery", "orders"."rush_fee", "orders"."requires_client_review", "orders"."review_completed_at", "orders"."share_token", "orders"."share_expires_at", "orders"."proposal_video_url", "orders"."proposal_message", "orders"."estimated_budget_min", "orders"."estimated_budget_max", "orders"."estimated_links_count", "orders"."preferences_dr_min", "orders"."preferences_dr_max", "orders"."preferences_traffic_min", "orders"."preferences_categories", "orders"."preferences_types", "orders"."preferences_niches", "orders"."estimator_snapshot", "orders"."estimated_price_per_link", "orders"."actual_price_per_link", "orders"."preference_match_score", "orders"."is_template", "orders"."template_name", "orders"."copied_from_order_id", "orders"."approved_at", "orders"."invoiced_at", "orders"."invoice_data", "orders"."paid_at", "orders"."completed_at", "orders"."cancelled_at", "orders"."refunded_at", "orders"."partial_refund_amount", "orders"."created_by", "orders"."assigned_to", "orders"."internal_notes", "orders"."account_notes", "orders"."cancellation_reason", "orders"."created_at", "orders"."updated_at", "orders_account"."data" as "account" from "orders" "orders" left join lateral (select json_build_array("orders_account"."id", "orders_account"."email", "orders_account"."password", "orders_account"."role", "orders_account"."contact_name", "orders_account"."company_name", "orders_account"."phone", "orders_account"."website", "orders_account"."tax_id", "orders_account"."billing_address", "orders_account"."billing_city", "orders_account"."billing_state", "orders_account"."billing_zip", "orders_account"."billing_country", "orders_account"."credit_terms", "orders_account"."credit_limit", "orders_account"."primary_client_id", "orders_account"."status", "orders_account"."email_verified", "orders_account"."email_verification_token", "orders_account"."reset_token", "orders_account"."reset_token_expiry", "orders_account"."internal_notes", "orders_account"."order_preferences", "orders_account"."onboarding_completed", "orders_account"."onboarding_steps", "orders_account"."onboarding_completed_at", "orders_account"."ai_permissions", "orders_account"."can_use_ai_keywords", "orders_account"."can_use_ai_descriptions", "orders_account"."can_use_ai_content_generation", "orders_account"."created_at", "orders_account"."updated_at", "orders_account"."last_login_at") as "data" from (select * from "accounts" "orders_account" where "orders_account"."id" = "orders"."account_id" limit $1) "orders_account") "orders_account" on true where "orders"."account_id" = $2 order by "orders"."created_at" desc',
+  params: [Array],
+  [cause]: error: database "guest_post_test" does not exist
+      at async OrderService.getAccountOrders (lib/services/orderService.ts:448:26)
+      at async GET (app/api/orders/route.ts:45:15)
+    446 |    */
+    447 |   static async getAccountOrders(accountId: string): Promise<any[]> {
+  > 448 |     const accountOrders = await db.query.orders.findMany({
+        |                          ^
+    449 |       where: eq(orders.accountId, accountId),
+    450 |       orderBy: desc(orders.createdAt),
+    451 |       with: { {
+    length: 101,
+    severity: 'FATAL',
+    code: '3D000',
+    detail: undefined,
+    hint: undefined,
+    position: undefined,
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'postinit.c',
+    line: '1032',
+    routine: 'InitPostgres'
+  }
+}
+ GET /api/orders? 500 in 807ms
+ GET /orders 200 in 1168ms
+🔐 AuthServiceServer.getSession - Starting
+🔐 Cookie check: {
+  hasAuthToken: true,
+  cookieValue: 'Token present',
+  publisherTokenCookie: undefined,
+  accountTokenCookie: 'auth-token-account',
+  authTokenCookie: 'auth-token',
+  allCookies: [ 'auth-token-account', '__next_hmr_refresh_hash__', 'auth-token' ]
+}
+🔐 Attempting to verify JWT token
+Error fetching notification summary: Error: Failed query: select "orders"."id", "orders"."status", "orders"."state", "orders"."updated_at", "orders"."account_id", "order_groups"."id", "order_groups"."order_id", "order_groups"."client_id", "order_groups"."link_count", "order_groups"."target_pages", "order_groups"."anchor_texts", "order_groups"."requirement_overrides", "order_groups"."bulk_analysis_project_id", "order_groups"."analysis_started_at", "order_groups"."analysis_completed_at", "order_groups"."group_status", "order_groups"."created_at", "order_groups"."updated_at" from "orders" left join "order_groups" on "orders"."id" = "order_groups"."order_id" where "orders"."account_id" = $1 order by "orders"."updated_at" desc
+params: fc870f66-f4a3-4034-a154-414acf0c0121
+    at async GET (app/api/notifications/summary/route.ts:25:22)
+  23 |
+  24 |     // Get all orders with their groups to check for more suggestions needed
+> 25 |     const allOrders = await db
+     |                      ^
+  26 |       .select({
+  27 |         id: orders.id,
+  28 |         status: orders.status, {
+  query: 'select "orders"."id", "orders"."status", "orders"."state", "orders"."updated_at", "orders"."account_id", "order_groups"."id", "order_groups"."order_id", "order_groups"."client_id", "order_groups"."link_count", "order_groups"."target_pages", "order_groups"."anchor_texts", "order_groups"."requirement_overrides", "order_groups"."bulk_analysis_project_id", "order_groups"."analysis_started_at", "order_groups"."analysis_completed_at", "order_groups"."group_status", "order_groups"."created_at", "order_groups"."updated_at" from "orders" left join "order_groups" on "orders"."id" = "order_groups"."order_id" where "orders"."account_id" = $1 order by "orders"."updated_at" desc',
+  params: [Array],
+  [cause]: error: database "guest_post_test" does not exist
+      at async GET (app/api/notifications/summary/route.ts:25:22)
+    23 |
+    24 |     // Get all orders with their groups to check for more suggestions needed
+  > 25 |     const allOrders = await db
+       |                      ^
+    26 |       .select({
+    27 |         id: orders.id,
+    28 |         status: orders.status, {
+    length: 101,
+    severity: 'FATAL',
+    code: '3D000',
+    detail: undefined,
+    hint: undefined,
+    position: undefined,
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'postinit.c',
+    line: '1032',
+    routine: 'InitPostgres'
+  }
+}
+ GET /api/notifications/summary 500 in 904ms
+ GET /orders 200 in 1432ms
+ GET /login?redirect=%2Forders 200 in 1278ms
+ GET /favicon.ico?favicon.45db1c09.ico 200 in 2149ms
+Error loading user by email: Error: Failed query: select "id", "email", "name", "password_hash", "role", "is_active", "last_login", "created_at", "updated_at" from "users" where "users"."email" = $1
+params: ajay@outreachlabs.com
+    at async UserService.getUserByEmail (lib/db/userService.ts:32:21)
+    at async UserService.verifyPassword (lib/db/userService.ts:107:19)
+    at async POST (app/api/auth/login/route.ts:43:15)
+  30 |   static async getUserByEmail(email: string): Promise<User | null> {
+  31 |     try {
+> 32 |       const result = await db.select().from(users).where(eq(users.email, email));
+     |                     ^
+  33 |       return result[0] || null;
+  34 |     } catch (error) {
+  35 |       console.error('Error loading user by email:', error); {
+  query: 'select "id", "email", "name", "password_hash", "role", "is_active", "last_login", "created_at", "updated_at" from "users" where "users"."email" = $1',
+  params: [Array],
+  [cause]: error: database "guest_post_test" does not exist
+      at async UserService.getUserByEmail (lib/db/userService.ts:32:21)
+      at async UserService.verifyPassword (lib/db/userService.ts:107:19)
+      at async POST (app/api/auth/login/route.ts:43:15)
+    30 |   static async getUserByEmail(email: string): Promise<User | null> {
+    31 |     try {
+  > 32 |       const result = await db.select().from(users).where(eq(users.email, email));
+       |                     ^
+    33 |       return result[0] || null;
+    34 |     } catch (error) {
+    35 |       console.error('Error loading user by email:', error); {
+    length: 101,
+    severity: 'FATAL',
+    code: '3D000',
+    detail: undefined,
+    hint: undefined,
+    position: undefined,
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'postinit.c',
+    line: '1032',
+    routine: 'InitPostgres'
+  }
+}
+Login error: Error: Failed query: select "id", "email", "password", "role", "contact_name", "company_name", "phone", "website", "tax_id", "billing_address", "billing_city", "billing_state", "billing_zip", "billing_country", "credit_terms", "credit_limit", "primary_client_id", "status", "email_verified", "email_verification_token", "reset_token", "reset_token_expiry", "internal_notes", "order_preferences", "onboarding_completed", "onboarding_steps", "onboarding_completed_at", "ai_permissions", "can_use_ai_keywords", "can_use_ai_descriptions", "can_use_ai_content_generation", "created_at", "updated_at", "last_login_at" from "accounts" "accounts" where "accounts"."email" = $1 limit $2
+params: ajay@outreachlabs.com,1
+    at async POST (app/api/auth/login/route.ts:49:22)
+  47 |     if (!user) {
+  48 |       // If not found in users table, check accounts table
+> 49 |       const account = await db.query.accounts.findFirst({
+     |                      ^
+  50 |         where: eq(accounts.email, email.toLowerCase()),
+  51 |       });
+  52 |        {
+  query: 'select "id", "email", "password", "role", "contact_name", "company_name", "phone", "website", "tax_id", "billing_address", "billing_city", "billing_state", "billing_zip", "billing_country", "credit_terms", "credit_limit", "primary_client_id", "status", "email_verified", "email_verification_token", "reset_token", "reset_token_expiry", "internal_notes", "order_preferences", "onboarding_completed", "onboarding_steps", "onboarding_completed_at", "ai_permissions", "can_use_ai_keywords", "can_use_ai_descriptions", "can_use_ai_content_generation", "created_at", "updated_at", "last_login_at" from "accounts" "accounts" where "accounts"."email" = $1 limit $2',
+  params: [Array],
+  [cause]: error: database "guest_post_test" does not exist
+      at async POST (app/api/auth/login/route.ts:49:22)
+    47 |     if (!user) {
+    48 |       // If not found in users table, check accounts table
+  > 49 |       const account = await db.query.accounts.findFirst({
+       |                      ^
+    50 |         where: eq(accounts.email, email.toLowerCase()),
+    51 |       });
+    52 |        {
+    length: 101,
+    severity: 'FATAL',
+    code: '3D000',
+    detail: undefined,
+    hint: undefined,
+    position: undefined,
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'postinit.c',
+    line: '1032',
+    routine: 'InitPostgres'
+  }
+}
+ POST /api/auth/login 500 in 2393ms
+ GET /.well-known/appspecific/com.chrome.devtools.json 404 in 291ms
+Error loading user by email: Error: Failed query: select "id", "email", "name", "password_hash", "role", "is_active", "last_login", "created_at", "updated_at" from "users" where "users"."email" = $1
+params: ajay@outreachlabs.com
+    at async UserService.getUserByEmail (lib/db/userService.ts:32:21)
+    at async UserService.verifyPassword (lib/db/userService.ts:107:19)
+    at async POST (app/api/auth/login/route.ts:43:15)
+  30 |   static async getUserByEmail(email: string): Promise<User | null> {
+  31 |     try {
+> 32 |       const result = await db.select().from(users).where(eq(users.email, email));
+     |                     ^
+  33 |       return result[0] || null;
+  34 |     } catch (error) {
+  35 |       console.error('Error loading user by email:', error); {
+  query: 'select "id", "email", "name", "password_hash", "role", "is_active", "last_login", "created_at", "updated_at" from "users" where "users"."email" = $1',
+  params: [Array],
+  [cause]: error: database "guest_post_test" does not exist
+      at async UserService.getUserByEmail (lib/db/userService.ts:32:21)
+      at async UserService.verifyPassword (lib/db/userService.ts:107:19)
+      at async POST (app/api/auth/login/route.ts:43:15)
+    30 |   static async getUserByEmail(email: string): Promise<User | null> {
+    31 |     try {
+  > 32 |       const result = await db.select().from(users).where(eq(users.email, email));
+       |                     ^
+    33 |       return result[0] || null;
+    34 |     } catch (error) {
+    35 |       console.error('Error loading user by email:', error); {
+    length: 101,
+    severity: 'FATAL',
+    code: '3D000',
+    detail: undefined,
+    hint: undefined,
+    position: undefined,
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'postinit.c',
+    line: '1032',
+    routine: 'InitPostgres'
+  }
+}
+Login error: Error: Failed query: select "id", "email", "password", "role", "contact_name", "company_name", "phone", "website", "tax_id", "billing_address", "billing_city", "billing_state", "billing_zip", "billing_country", "credit_terms", "credit_limit", "primary_client_id", "status", "email_verified", "email_verification_token", "reset_token", "reset_token_expiry", "internal_notes", "order_preferences", "onboarding_completed", "onboarding_steps", "onboarding_completed_at", "ai_permissions", "can_use_ai_keywords", "can_use_ai_descriptions", "can_use_ai_content_generation", "created_at", "updated_at", "last_login_at" from "accounts" "accounts" where "accounts"."email" = $1 limit $2
+params: ajay@outreachlabs.com,1
+    at async POST (app/api/auth/login/route.ts:49:22)
+  47 |     if (!user) {
+  48 |       // If not found in users table, check accounts table
+> 49 |       const account = await db.query.accounts.findFirst({
+     |                      ^
+  50 |         where: eq(accounts.email, email.toLowerCase()),
+  51 |       });
+  52 |        {
+  query: 'select "id", "email", "password", "role", "contact_name", "company_name", "phone", "website", "tax_id", "billing_address", "billing_city", "billing_state", "billing_zip", "billing_country", "credit_terms", "credit_limit", "primary_client_id", "status", "email_verified", "email_verification_token", "reset_token", "reset_token_expiry", "internal_notes", "order_preferences", "onboarding_completed", "onboarding_steps", "onboarding_completed_at", "ai_permissions", "can_use_ai_keywords", "can_use_ai_descriptions", "can_use_ai_content_generation", "created_at", "updated_at", "last_login_at" from "accounts" "accounts" where "accounts"."email" = $1 limit $2',
+  params: [Array],
+  [cause]: error: database "guest_post_test" does not exist
+      at async POST (app/api/auth/login/route.ts:49:22)
+    47 |     if (!user) {
+    48 |       // If not found in users table, check accounts table
+  > 49 |       const account = await db.query.accounts.findFirst({
+       |                      ^
+    50 |         where: eq(accounts.email, email.toLowerCase()),
+    51 |       });
+    52 |        {
+    length: 101,
+    severity: 'FATAL',
+    code: '3D000',
+    detail: undefined,
+    hint: undefined,
+    position: undefined,
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'postinit.c',
+    line: '1032',
+    routine: 'InitPostgres'
+  }
+}
+ POST /api/auth/login 500 in 362ms
+Error loading user by email: Error: Failed query: select "id", "email", "name", "password_hash", "role", "is_active", "last_login", "created_at", "updated_at" from "users" where "users"."email" = $1
+params: ajay@outreachlabs.com
+    at async UserService.getUserByEmail (lib/db/userService.ts:32:21)
+    at async UserService.verifyPassword (lib/db/userService.ts:107:19)
+    at async POST (app/api/auth/login/route.ts:43:15)
+  30 |   static async getUserByEmail(email: string): Promise<User | null> {
+  31 |     try {
+> 32 |       const result = await db.select().from(users).where(eq(users.email, email));
+     |                     ^
+  33 |       return result[0] || null;
+  34 |     } catch (error) {
+  35 |       console.error('Error loading user by email:', error); {
+  query: 'select "id", "email", "name", "password_hash", "role", "is_active", "last_login", "created_at", "updated_at" from "users" where "users"."email" = $1',
+  params: [Array],
+  [cause]: error: database "guest_post_test" does not exist
+      at async UserService.getUserByEmail (lib/db/userService.ts:32:21)
+      at async UserService.verifyPassword (lib/db/userService.ts:107:19)
+      at async POST (app/api/auth/login/route.ts:43:15)
+    30 |   static async getUserByEmail(email: string): Promise<User | null> {
+    31 |     try {
+  > 32 |       const result = await db.select().from(users).where(eq(users.email, email));
+       |                     ^
+    33 |       return result[0] || null;
+    34 |     } catch (error) {
+    35 |       console.error('Error loading user by email:', error); {
+    length: 101,
+    severity: 'FATAL',
+    code: '3D000',
+    detail: undefined,
+    hint: undefined,
+    position: undefined,
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'postinit.c',
+    line: '1032',
+    routine: 'InitPostgres'
+  }
+}
+Login error: Error: Failed query: select "id", "email", "password", "role", "contact_name", "company_name", "phone", "website", "tax_id", "billing_address", "billing_city", "billing_state", "billing_zip", "billing_country", "credit_terms", "credit_limit", "primary_client_id", "status", "email_verified", "email_verification_token", "reset_token", "reset_token_expiry", "internal_notes", "order_preferences", "onboarding_completed", "onboarding_steps", "onboarding_completed_at", "ai_permissions", "can_use_ai_keywords", "can_use_ai_descriptions", "can_use_ai_content_generation", "created_at", "updated_at", "last_login_at" from "accounts" "accounts" where "accounts"."email" = $1 limit $2
+params: ajay@outreachlabs.com,1
+    at async POST (app/api/auth/login/route.ts:49:22)
+  47 |     if (!user) {
+  48 |       // If not found in users table, check accounts table
+> 49 |       const account = await db.query.accounts.findFirst({
+     |                      ^
+  50 |         where: eq(accounts.email, email.toLowerCase()),
+  51 |       });
+  52 |        {
+  query: 'select "id", "email", "password", "role", "contact_name", "company_name", "phone", "website", "tax_id", "billing_address", "billing_city", "billing_state", "billing_zip", "billing_country", "credit_terms", "credit_limit", "primary_client_id", "status", "email_verified", "email_verification_token", "reset_token", "reset_token_expiry", "internal_notes", "order_preferences", "onboarding_completed", "onboarding_steps", "onboarding_completed_at", "ai_permissions", "can_use_ai_keywords", "can_use_ai_descriptions", "can_use_ai_content_generation", "created_at", "updated_at", "last_login_at" from "accounts" "accounts" where "accounts"."email" = $1 limit $2',
+  params: [Array],
+  [cause]: error: database "guest_post_test" does not exist
+      at async POST (app/api/auth/login/route.ts:49:22)
+    47 |     if (!user) {
+    48 |       // If not found in users table, check accounts table
+  > 49 |       const account = await db.query.accounts.findFirst({
+       |                      ^
+    50 |         where: eq(accounts.email, email.toLowerCase()),
+    51 |       });
+    52 |        {
+    length: 101,
+    severity: 'FATAL',
+    code: '3D000',
+    detail: undefined,
+    hint: undefined,
+    position: undefined,
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'postinit.c',
+    line: '1032',
+    routine: 'InitPostgres'
+  }
+}
+ POST /api/auth/login 500 in 420ms
+Error loading user by email: Error: Failed query: select "id", "email", "name", "password_hash", "role", "is_active", "last_login", "created_at", "updated_at" from "users" where "users"."email" = $1
+params: ajay@outreachlabs.com
+    at async UserService.getUserByEmail (lib/db/userService.ts:32:21)
+    at async UserService.verifyPassword (lib/db/userService.ts:107:19)
+    at async POST (app/api/auth/login/route.ts:43:15)
+  30 |   static async getUserByEmail(email: string): Promise<User | null> {
+  31 |     try {
+> 32 |       const result = await db.select().from(users).where(eq(users.email, email));
+     |                     ^
+  33 |       return result[0] || null;
+  34 |     } catch (error) {
+  35 |       console.error('Error loading user by email:', error); {
+  query: 'select "id", "email", "name", "password_hash", "role", "is_active", "last_login", "created_at", "updated_at" from "users" where "users"."email" = $1',
+  params: [Array],
+  [cause]: error: database "guest_post_test" does not exist
+      at async UserService.getUserByEmail (lib/db/userService.ts:32:21)
+      at async UserService.verifyPassword (lib/db/userService.ts:107:19)
+      at async POST (app/api/auth/login/route.ts:43:15)
+    30 |   static async getUserByEmail(email: string): Promise<User | null> {
+    31 |     try {
+  > 32 |       const result = await db.select().from(users).where(eq(users.email, email));
+       |                     ^
+    33 |       return result[0] || null;
+    34 |     } catch (error) {
+    35 |       console.error('Error loading user by email:', error); {
+    length: 101,
+    severity: 'FATAL',
+    code: '3D000',
+    detail: undefined,
+    hint: undefined,
+    position: undefined,
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'postinit.c',
+    line: '1032',
+    routine: 'InitPostgres'
+  }
+}
+Login error: Error: Failed query: select "id", "email", "password", "role", "contact_name", "company_name", "phone", "website", "tax_id", "billing_address", "billing_city", "billing_state", "billing_zip", "billing_country", "credit_terms", "credit_limit", "primary_client_id", "status", "email_verified", "email_verification_token", "reset_token", "reset_token_expiry", "internal_notes", "order_preferences", "onboarding_completed", "onboarding_steps", "onboarding_completed_at", "ai_permissions", "can_use_ai_keywords", "can_use_ai_descriptions", "can_use_ai_content_generation", "created_at", "updated_at", "last_login_at" from "accounts" "accounts" where "accounts"."email" = $1 limit $2
+params: ajay@outreachlabs.com,1
+    at async POST (app/api/auth/login/route.ts:49:22)
+  47 |     if (!user) {
+  48 |       // If not found in users table, check accounts table
+> 49 |       const account = await db.query.accounts.findFirst({
+     |                      ^
+  50 |         where: eq(accounts.email, email.toLowerCase()),
+  51 |       });
+  52 |        {
+  query: 'select "id", "email", "password", "role", "contact_name", "company_name", "phone", "website", "tax_id", "billing_address", "billing_city", "billing_state", "billing_zip", "billing_country", "credit_terms", "credit_limit", "primary_client_id", "status", "email_verified", "email_verification_token", "reset_token", "reset_token_expiry", "internal_notes", "order_preferences", "onboarding_completed", "onboarding_steps", "onboarding_completed_at", "ai_permissions", "can_use_ai_keywords", "can_use_ai_descriptions", "can_use_ai_content_generation", "created_at", "updated_at", "last_login_at" from "accounts" "accounts" where "accounts"."email" = $1 limit $2',
+  params: [Array],
+  [cause]: error: database "guest_post_test" does not exist
+      at async POST (app/api/auth/login/route.ts:49:22)
+    47 |     if (!user) {
+    48 |       // If not found in users table, check accounts table
+  > 49 |       const account = await db.query.accounts.findFirst({
+       |                      ^
+    50 |         where: eq(accounts.email, email.toLowerCase()),
+    51 |       });
+    52 |        {
+    length: 101,
+    severity: 'FATAL',
+    code: '3D000',
+    detail: undefined,
+    hint: undefined,
+    position: undefined,
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'postinit.c',
+    line: '1032',
+    routine: 'InitPostgres'
+  }
+}
+ POST /api/auth/login 500 in 324ms
+   Reload env: .env.local
+[?25h

@@ -200,9 +200,10 @@ export async function POST(request: NextRequest) {
       let retailPrice = 0;
       
       if (priceInfo.found && priceInfo.wholesalePrice > 0) {
-        // Use actual website data
+        // PricingService now correctly returns wholesale as publisher cost
+        // and retail as wholesale + $79
         wholesalePrice = Math.floor(priceInfo.wholesalePrice * 100); // Convert to cents
-        retailPrice = wholesalePrice + SERVICE_FEE_CENTS; // Add $79 service fee
+        retailPrice = Math.floor(priceInfo.retailPrice * 100); // Convert to cents
       } else {
         // Fallback for domains not in website table (keep existing logic temporarily)
         const dr = 50;
@@ -273,9 +274,10 @@ export async function POST(request: NextRequest) {
         let retailPrice = 0;
         
         if (priceInfo.found && priceInfo.wholesalePrice > 0) {
-          // Use actual website data
+          // PricingService now correctly returns wholesale as publisher cost
+          // and retail as wholesale + $79
           wholesalePrice = Math.floor(priceInfo.wholesalePrice * 100); // Convert to cents
-          retailPrice = wholesalePrice + SERVICE_FEE_CENTS; // Add $79 service fee
+          retailPrice = Math.floor(priceInfo.retailPrice * 100); // Convert to cents
         } else {
           // Fallback for domains not in website table
           const dr = 50;
@@ -286,13 +288,14 @@ export async function POST(request: NextRequest) {
         const targetPageId = domainTargetPageMap.get(domain.id) || null;
         const lineItemId = uuidv4();
         
-        // Create line item
+        // Create line item with both wholesale and retail prices
         const lineItemData = {
           orderId,
           clientId,
           addedBy: session.userId,
           status: 'draft' as const,
           estimatedPrice: retailPrice,
+          wholesalePrice: wholesalePrice,
           displayOrder: displayOrder,
           ...(targetPageId ? { targetPageId } : {}),
           ...(domain.id ? { assignedDomainId: domain.id } : {}),

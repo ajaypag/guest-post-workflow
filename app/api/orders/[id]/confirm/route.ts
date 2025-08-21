@@ -50,7 +50,7 @@ export async function POST(
       const { orderLineItems } = await import('@/lib/db/orderLineItemSchema');
       const { projectOrderAssociations } = await import('@/lib/db/projectOrderAssociationsSchema');
       
-      const lineItems = await tx
+      const allLineItems = await tx
         .select({
           lineItem: orderLineItems,
           client: clients
@@ -59,11 +59,16 @@ export async function POST(
         .innerJoin(clients, eq(orderLineItems.clientId, clients.id))
         .where(eq(orderLineItems.orderId, orderId));
       
+      // Filter out cancelled and refunded line items for bulk analysis project creation
+      const lineItems = allLineItems.filter(item => 
+        !['cancelled', 'refunded'].includes(item.lineItem.status)
+      );
+      
       if (lineItems.length === 0) {
-        throw new Error('No line items found in order');
+        throw new Error('No active line items found in order');
       }
       
-      // Group lineItems by client for project creation
+      // Group active lineItems by client for project creation
       const lineItemsByClient = new Map<string, typeof lineItems>();
       lineItems.forEach(item => {
         const clientId = item.client.id;
@@ -239,7 +244,59 @@ export async function POST(
         .filter(p => p !== null)
         .map(p => ({ projectId: p!.project.id, targetPageIds: p!.targetPageIds }));
       
-      // Update order status to confirmed
+      // Calculate pricing and totals from line items
+      let subtotalRetail = 0;
+      let totalRetail = 0;
+      let totalWholesale = 0;
+      let totalEstimatedPrice = 0;
+      let totalLineItems = 0;
+      let minDr: number | null = null;
+      let maxDr: number | null = null;
+      let minTraffic: number | null = null;
+      
+      lineItems.forEach(item => {
+        const lineItem = item.lineItem;
+        
+        // Note: cancelled and refunded items are already filtered out above
+        
+        // Use approved price if available, otherwise estimated price
+        const itemPrice = lineItem.approvedPrice || lineItem.estimatedPrice || 0;
+        if (itemPrice > 0) {
+          totalEstimatedPrice += itemPrice;
+          totalLineItems++;
+          subtotalRetail += itemPrice;
+          totalRetail += itemPrice;
+          
+          // Calculate wholesale (subtract service fee)
+          const wholesalePrice = Math.max(itemPrice - 7900, 0);
+          totalWholesale += wholesalePrice;
+        }
+        
+        // Extract DR and traffic from metadata if available
+        const metadata = lineItem.metadata as any;
+        if (metadata) {
+          if (metadata.domainRating) {
+            const dr = metadata.domainRating;
+            if (minDr === null || dr < minDr) minDr = dr;
+            if (maxDr === null || dr > maxDr) maxDr = dr;
+          }
+          if (metadata.totalTraffic) {
+            const traffic = metadata.totalTraffic;
+            if (minTraffic === null || traffic < minTraffic) minTraffic = traffic;
+          }
+        }
+      });
+      
+      const estimatedPricePerLink = totalLineItems > 0 
+        ? Math.round(totalEstimatedPrice / totalLineItems)
+        : null;
+      
+      // Calculate profit margin as integer (store as basis points for precision)
+      const profitMargin = totalRetail > 0 
+        ? Math.round(((totalRetail - totalWholesale) / totalRetail) * 100)
+        : 0;
+      
+      // Update order status to confirmed with calculated totals
       const [updatedOrder] = await tx
         .update(orders)
         .set({
@@ -247,7 +304,21 @@ export async function POST(
           state: 'analyzing',
           assignedTo: assignedTo || null,
           approvedAt: new Date(),
-          updatedAt: new Date()
+          updatedAt: new Date(),
+          // Pricing fields
+          subtotalRetail: subtotalRetail,
+          totalRetail: totalRetail,
+          totalWholesale: totalWholesale,
+          profitMargin: profitMargin,
+          estimatedPricePerLink: estimatedPricePerLink,
+          // Preferences (if not already set) - use nullish coalescing with defaults
+          preferencesDrMin: order.preferencesDrMin ?? minDr ?? 0,
+          preferencesDrMax: order.preferencesDrMax ?? maxDr ?? 100,
+          preferencesTrafficMin: order.preferencesTrafficMin ?? minTraffic ?? 0,
+          // Budget estimates (if not already set)
+          estimatedBudgetMin: order.estimatedBudgetMin || Math.round(totalRetail * 0.8),
+          estimatedBudgetMax: order.estimatedBudgetMax || Math.round(totalRetail * 1.2),
+          estimatedLinksCount: order.estimatedLinksCount || totalLineItems
         })
         .where(eq(orders.id, orderId))
         .returning();

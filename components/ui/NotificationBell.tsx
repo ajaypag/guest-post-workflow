@@ -2,8 +2,9 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Bell, AlertCircle, Clock, ChevronRight, RefreshCw, Users } from 'lucide-react';
+import { Bell, AlertCircle, Clock, ChevronRight, RefreshCw, Users, Building, Package, DollarSign } from 'lucide-react';
 import { useNotifications } from '@/lib/contexts/NotificationContext';
+import { formatCurrency } from '@/lib/utils/formatting';
 
 export default function NotificationBell() {
   const { notifications, loading, refreshNotifications } = useNotifications();
@@ -90,19 +91,40 @@ export default function NotificationBell() {
                       key={order.id}
                       href={`/orders/${order.id}/internal`}
                       onClick={() => setShowDropdown(false)}
-                      className="block p-3 bg-purple-100 hover:bg-purple-200 rounded-lg border border-purple-300 transition-colors group"
+                      className="block p-4 bg-purple-100 hover:bg-purple-200 rounded-lg border border-purple-300 transition-colors group"
                     >
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <div className="font-medium text-purple-900 text-sm flex items-center gap-2">
-                            <Users className="h-3 w-3" />
-                            Order #{order.shortId}
+                          <div className="flex items-center gap-2 mb-2">
+                            <Building className="h-4 w-4 text-purple-600" />
+                            <span className="font-semibold text-purple-900 text-sm">
+                              {order.accountName}
+                            </span>
+                            <span className="text-purple-700 text-xs">
+                              #{order.shortId}
+                            </span>
                           </div>
-                          <div className="text-purple-800 text-xs mt-1">
+                          
+                          <div className="grid grid-cols-2 gap-3 mb-2">
+                            <div className="flex items-center gap-1">
+                              <Package className="h-3 w-3 text-purple-600" />
+                              <span className="text-xs text-purple-800">
+                                {order.lineItemCount} links
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <DollarSign className="h-3 w-3 text-purple-600" />
+                              <span className="text-xs text-purple-800">
+                                {formatCurrency(order.totalRetail)}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <div className="text-purple-800 text-xs">
                             {order.message}
                           </div>
                         </div>
-                        <ChevronRight className="h-4 w-4 text-purple-700 group-hover:translate-x-1 transition-transform" />
+                        <ChevronRight className="h-4 w-4 text-purple-700 group-hover:translate-x-1 transition-transform mt-1" />
                       </div>
                     </Link>
                   ))}
@@ -128,18 +150,40 @@ export default function NotificationBell() {
                       key={order.id}
                       href={`/orders/${order.id}`}
                       onClick={() => setShowDropdown(false)}
-                      className="block p-3 bg-red-50 hover:bg-red-100 rounded-lg border border-red-200 transition-colors group"
+                      className="block p-4 bg-red-50 hover:bg-red-100 rounded-lg border border-red-200 transition-colors group"
                     >
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <div className="font-medium text-red-900 text-sm">
-                            Order #{order.shortId}
+                          <div className="flex items-center gap-2 mb-2">
+                            <Building className="h-4 w-4 text-red-600" />
+                            <span className="font-semibold text-red-900 text-sm">
+                              {order.accountName}
+                            </span>
+                            <span className="text-red-700 text-xs">
+                              #{order.shortId}
+                            </span>
                           </div>
-                          <div className="text-red-700 text-xs mt-1">
+                          
+                          <div className="grid grid-cols-2 gap-3 mb-2">
+                            <div className="flex items-center gap-1">
+                              <Package className="h-3 w-3 text-red-600" />
+                              <span className="text-xs text-red-800">
+                                {order.lineItemCount} links
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <DollarSign className="h-3 w-3 text-red-600" />
+                              <span className="text-xs text-red-800">
+                                {formatCurrency(order.totalRetail)}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <div className="text-red-700 text-xs">
                             {order.message}
                           </div>
                         </div>
-                        <ChevronRight className="h-4 w-4 text-red-600 group-hover:translate-x-1 transition-transform" />
+                        <ChevronRight className="h-4 w-4 text-red-600 group-hover:translate-x-1 transition-transform mt-1" />
                       </div>
                     </Link>
                   ))}
