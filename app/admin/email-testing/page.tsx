@@ -189,23 +189,103 @@ export default function EmailTestingPage() {
                     <div className="bg-white rounded p-3">
                       <h4 className="font-semibold text-sm mb-2">Model Configuration:</h4>
                       <pre className="text-xs bg-gray-100 p-2 rounded overflow-x-auto">
-{`model: 'gpt-4o'
-3 separate API calls:
-1. Extract sender info
-2. Extract offerings
-3. Extract websites`}
+{`model: 'o3-mini' (recently updated from gpt-4o)
+reasoning_effort: 'medium'
+max_completion_tokens: 5000
+
+3 separate API calls with different prompts:`}
                       </pre>
                     </div>
                     
+                    <details className="bg-white rounded p-3">
+                      <summary className="cursor-pointer font-semibold text-sm">Call 1: Extract Basic Info & Websites</summary>
+                      <div className="mt-2 space-y-2">
+                        <p className="text-xs text-gray-600">Focuses on identifying the sender and their websites</p>
+                        <pre className="text-xs bg-gray-100 p-2 rounded overflow-x-auto whitespace-pre-wrap">
+{`Context: This is an outreach conversation. We reached out asking about guest posting on THEIR website.
+
+CRITICAL UNDERSTANDING:
+- We likely mentioned THEIR website (e.g., "Hi, I'd like a guest post on yoursite.com")
+- When they reply with pricing, they're talking about THAT website
+- Look for contextual clues like "our rates are..." - they're talking about the site we inquired about
+
+Extract:
+1. Their name (from signature or email content)
+2. Their company/business name  
+3. Their website(s) - CRITICAL LOGIC:
+   - If our outreach says "I want to post on [domain.com]" and they reply with pricing, then [domain.com] IS their website
+   - Check their email signature for website URLs
+   - The email domain is likely theirs (unless gmail.com, outlook.com, etc.)
+   - If they list multiple sites with different prices, those are ALL their websites`}
+                        </pre>
+                      </div>
+                    </details>
+
+                    <details className="bg-white rounded p-3">
+                      <summary className="cursor-pointer font-semibold text-sm">Call 2: Extract All Pricing Information</summary>
+                      <div className="mt-2 space-y-2">
+                        <p className="text-xs text-gray-600">Comprehensive pricing extraction with complex structures</p>
+                        <pre className="text-xs bg-gray-100 p-2 rounded overflow-x-auto whitespace-pre-wrap">
+{`PRICES: Extract EVERY price mentioned:
+- "Guest posts are $250" → guest_post_price: 250
+- "$200 (includes 2 do-follow links)" → guest_post_price: 200, max_links_included: 2
+- "Additional links: $30 each" → additional_link_price: 30
+- "Link insertion: $80" → link_insertion_price: 80
+
+COMPLEX PRICING STRUCTURES:
+- Listicle positions (1st: $999, 2nd: $899, etc.) → Store in listicle_pricing array
+- Transactional vs non-transactional pricing → Store both with clear labels
+- SAAS/niche-specific pricing → Store in niche_pricing with adjustment
+
+TURNAROUND TIME: Look for ANY mention:
+- "delivered in 7 days", "48 hours", "1 week turnaround"
+- If NOT mentioned, return null (DO NOT make up values)
+
+BULK/PACKAGE DEALS:
+- "10% off for 5+ posts" → bulk_discounts
+- "Package of 3 for $500" → package_deals
+
+RAW PRICING TEXT: ALWAYS include the exact pricing text from the email`}
+                        </pre>
+                      </div>
+                    </details>
+
+                    <details className="bg-white rounded p-3">
+                      <summary className="cursor-pointer font-semibold text-sm">Call 3: Extract Requirements & Restrictions</summary>
+                      <div className="mt-2 space-y-2">
+                        <p className="text-xs text-gray-600">Captures all content requirements and prohibited topics</p>
+                        <pre className="text-xs bg-gray-100 p-2 rounded overflow-x-auto whitespace-pre-wrap">
+{`LINK POLICIES:
+- "do-follow", "dofollow", "DF" → accepts_dofollow: true
+- "includes 2 do-follow links" → max_links: 2, accepts_dofollow: true
+- "Additional links: $30 each" → implies base number of links included
+
+PROHIBITED/RESTRICTED CONTENT:
+- "We do not accept...", "No content about...", "Prohibited topics include..."
+- Common: CBD, casino, gambling, adult, porn, dating, essay writing, crypto, weapons, payday loans
+- IMPORTANT: Copy the EXACT text about restrictions
+
+WORD COUNT:
+- "500-1000 words", "minimum 500 words", "at least 800 words"
+
+WHAT THEY DON'T DO:
+- "We do not barter" → no_barter: true
+- "We don't do link exchanges" → no_link_exchanges: true
+- "No free posts" → no_free_posts: true
+
+Return includes: prohibited_topics array, restricted_niches_notes, word counts, link policies, etc.`}
+                        </pre>
+                      </div>
+                    </details>
+
                     <div className="bg-white rounded p-3">
-                      <h4 className="font-semibold text-sm mb-2">Original Extraction Approach:</h4>
-                      <ul className="text-xs space-y-1 list-disc list-inside">
-                        <li>Makes 3 separate OpenAI calls for different data types</li>
-                        <li>Returns confidence scores for each field</li>
-                        <li>Identifies missing fields explicitly</li>
-                        <li>Supports transactional and niche-specific pricing</li>
-                        <li>Extracts raw pricing and requirements text</li>
-                        <li>More verbose but potentially less accurate</li>
+                      <h4 className="font-semibold text-sm mb-2">Key Issues with V1:</h4>
+                      <ul className="text-xs space-y-1 list-disc list-inside text-orange-600">
+                        <li>3x the cost (3 API calls vs 1)</li>
+                        <li>3x slower (sequential calls)</li>
+                        <li>Risk of inconsistency between calls</li>
+                        <li>May miss connections between data points</li>
+                        <li>Harder to maintain (3 separate prompts)</li>
                       </ul>
                     </div>
                   </div>

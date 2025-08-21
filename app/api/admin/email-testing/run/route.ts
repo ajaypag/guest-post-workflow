@@ -37,7 +37,7 @@ export async function POST(request: Request) {
         const parserService = new EmailParserService();
         const parserResult = await parserService.parseEmail({
           subject: emailSubject || '',
-          body: emailContent,
+          content: emailContent,
           from: emailFrom
         });
         
