@@ -1,13 +1,12 @@
 import { NextResponse } from 'next/server';
-import { AuthServiceServer } from '@/lib/services/authServiceServer';
+import { AuthServiceServer } from '@/lib/auth-server';
 import { EmailParserServiceV2 } from '@/lib/services/emailParserServiceV2';
 import { emailQualificationService } from '@/lib/services/emailQualificationService';
 
 export async function POST(request: Request) {
   try {
     // Check auth
-    const authService = new AuthServiceServer();
-    const session = await authService.getSession();
+    const session = await AuthServiceServer.getSession();
     
     if (!session || session.userType !== 'internal') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

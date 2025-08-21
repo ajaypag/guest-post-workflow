@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { AuthServiceClient } from '@/lib/services/authServiceClient';
+import { AuthService } from '@/lib/auth';
 
 interface EmailSample {
   id: string;
@@ -39,6 +39,8 @@ export default function EmailTestingPage() {
   const [testResults, setTestResults] = useState<TestResults | null>(null);
   const [loading, setLoading] = useState(false);
   const [testType, setTestType] = useState<'parser' | 'qualification' | 'both'>('both');
+  const [showParserPrompt, setShowParserPrompt] = useState(false);
+  const [showQualificationLogic, setShowQualificationLogic] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -46,8 +48,7 @@ export default function EmailTestingPage() {
   }, []);
 
   const checkAuth = async () => {
-    const authService = AuthServiceClient.getInstance();
-    const currentSession = await authService.getSession();
+    const currentSession = AuthService.getSession();
     
     if (!currentSession || currentSession.userType !== 'internal') {
       window.location.href = '/login';
@@ -152,6 +153,157 @@ export default function EmailTestingPage() {
                 {loading ? 'Running Test...' : 'Run Test'}
               </button>
             </div>
+          </div>
+
+          {/* Test Type Details */}
+          <div className="mt-6 space-y-4">
+            {(testType === 'parser' || testType === 'both') && (
+              <div className="border rounded-lg p-4 bg-blue-50">
+                <button
+                  onClick={() => setShowParserPrompt(!showParserPrompt)}
+                  className="flex items-center justify-between w-full text-left"
+                >
+                  <div>
+                    <h3 className="font-semibold text-blue-900">Parser V2 Details</h3>
+                    <p className="text-sm text-blue-700 mt-1">
+                      Uses OpenAI o3-mini to extract publisher info, offerings, and pricing from emails
+                    </p>
+                  </div>
+                  <span className="text-blue-600">{showParserPrompt ? '▼' : '▶'}</span>
+                </button>
+                
+                {showParserPrompt && (
+                  <div className="mt-4 space-y-3">
+                    <div className="bg-white rounded p-3">
+                      <h4 className="font-semibold text-sm mb-2">Model Configuration:</h4>
+                      <pre className="text-xs bg-gray-100 p-2 rounded overflow-x-auto">
+{`model: 'o3-mini'
+max_completion_tokens: 5000
+reasoning_effort: 'medium'`}
+                      </pre>
+                    </div>
+                    
+                    <div className="bg-white rounded p-3">
+                      <h4 className="font-semibold text-sm mb-2">Key Extraction Logic:</h4>
+                      <ul className="text-xs space-y-1 list-disc list-inside">
+                        <li>Extracts publisher email, name, company, and websites</li>
+                        <li>Creates separate offering records for each service type</li>
+                        <li>Converts all prices to cents (multiplies dollars by 100)</li>
+                        <li>Identifies guest_post, link_insertion, listicle_placement, sponsored_review</li>
+                        <li>Captures complex pricing in attributes field (bulk discounts, niche surcharges)</li>
+                        <li>Normalizes domain names automatically</li>
+                      </ul>
+                    </div>
+                    
+                    <details className="bg-white rounded p-3">
+                      <summary className="cursor-pointer font-semibold text-sm">View Full Prompt Template</summary>
+                      <pre className="text-xs mt-2 bg-gray-100 p-2 rounded overflow-x-auto whitespace-pre-wrap">
+{`Your task: Extract ALL information and create offering records that match our exact database schema.
+
+DATABASE SCHEMA FOR OFFERINGS:
+{
+  "offeringType": "guest_post" | "link_insertion" | "listicle_placement" | "sponsored_review",
+  "basePrice": INTEGER_IN_CENTS, // CRITICAL: $250 = 25000
+  "currency": "USD" | "EUR" | "GBP",
+  "turnaroundDays": INTEGER or null,
+  "attributes": {
+    "restrictions": {"niches": ["cbd", "casino"]},
+    "includedLinks": 2,
+    "additionalLinkPrice": 3000, // in cents!
+    "rawPricingText": "exact pricing text from email"
+  }
+}
+
+EXTRACTION EXAMPLES:
+1. "Guest posts are $250" → basePrice: 25000
+2. "$200 (includes 2 do-follow links), additional links $30 each"
+   → basePrice: 20000, attributes.includedLinks: 2, attributes.additionalLinkPrice: 3000`}
+                      </pre>
+                    </details>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {(testType === 'qualification' || testType === 'both') && (
+              <div className="border rounded-lg p-4 bg-green-50">
+                <button
+                  onClick={() => setShowQualificationLogic(!showQualificationLogic)}
+                  className="flex items-center justify-between w-full text-left"
+                >
+                  <div>
+                    <h3 className="font-semibold text-green-900">Qualification Logic Details</h3>
+                    <p className="text-sm text-green-700 mt-1">
+                      Determines if email should create a publisher record based on business rules
+                    </p>
+                  </div>
+                  <span className="text-green-600">{showQualificationLogic ? '▼' : '▶'}</span>
+                </button>
+                
+                {showQualificationLogic && (
+                  <div className="mt-4 space-y-3">
+                    <div className="bg-white rounded p-3">
+                      <h4 className="font-semibold text-sm mb-2">Qualification Checks (in order):</h4>
+                      <ol className="text-xs space-y-2 list-decimal list-inside">
+                        <li className="ml-2">
+                          <strong>Must have offerings with pricing</strong>
+                          <br />→ Disqualified if no offerings found
+                        </li>
+                        <li className="ml-2">
+                          <strong>Must have valid pricing (not zero)</strong>
+                          <br />→ Disqualified if all prices are $0
+                        </li>
+                        <li className="ml-2">
+                          <strong>If mentions prices/costs → QUALIFIED</strong>
+                          <br />→ Trumps all other checks (pricing terms: price, cost, fee, charge, $, USD, payment)
+                        </li>
+                        <li className="ml-2">
+                          <strong>Check for rejections</strong>
+                          <br />→ Disqualified if contains: "not interested", "no thanks", "unsubscribe", etc.
+                        </li>
+                        <li className="ml-2">
+                          <strong>Check for link swaps</strong>
+                          <br />→ Disqualified if contains: "in exchange", "reciprocal", "link swap", "free", etc.
+                        </li>
+                        <li className="ml-2">
+                          <strong>Check for vague responses</strong>
+                          <br />→ Disqualified if shows interest but no concrete pricing
+                        </li>
+                      </ol>
+                    </div>
+                    
+                    <div className="bg-white rounded p-3">
+                      <h4 className="font-semibold text-sm mb-2">Disqualification Reasons:</h4>
+                      <div className="text-xs space-y-1">
+                        <div><code className="bg-gray-100 px-1">no_offerings</code> - No paid offerings found</div>
+                        <div><code className="bg-gray-100 px-1">no_pricing</code> - No pricing information provided</div>
+                        <div><code className="bg-gray-100 px-1">link_swap</code> - Link exchange offer (not paid)</div>
+                        <div><code className="bg-gray-100 px-1">rejection</code> - Declined/rejected the offer</div>
+                        <div><code className="bg-gray-100 px-1">vague_response</code> - Vague response without details</div>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-white rounded p-3">
+                      <h4 className="font-semibold text-sm mb-2">Key Logic:</h4>
+                      <pre className="text-xs bg-gray-100 p-2 rounded overflow-x-auto">
+{`// Pricing mentions override everything
+if (checkForPricingMentions(email)) {
+  return QUALIFIED;
+}
+
+// Otherwise check disqualifiers
+if (checkForRejection(email)) {
+  return DISQUALIFIED("rejection");
+}
+if (checkForLinkSwap(email)) {
+  return DISQUALIFIED("link_swap");
+}`}
+                      </pre>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

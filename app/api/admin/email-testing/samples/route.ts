@@ -2,13 +2,12 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
 import { emailProcessingLogs } from '@/lib/db/emailProcessingSchema';
 import { desc, isNotNull, and, ne } from 'drizzle-orm';
-import { AuthServiceServer } from '@/lib/services/authServiceServer';
+import { AuthServiceServer } from '@/lib/auth-server';
 
 export async function GET() {
   try {
     // Check auth
-    const authService = new AuthServiceServer();
-    const session = await authService.getSession();
+    const session = await AuthServiceServer.getSession();
     
     if (!session || session.userType !== 'internal') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
