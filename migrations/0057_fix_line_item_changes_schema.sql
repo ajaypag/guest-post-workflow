@@ -1,73 +1,70 @@
--- Migration 0057: Fix line_item_changes table to match frontend schema
--- Converting FROM: field_name, old_value, new_value 
--- Converting TO: order_id, change_type, previous_value, new_value, batch_id, metadata
+-- Migration 0057: Fix line_item_changes table based on ACTUAL current schema
+-- Current: id, line_item_id, field_name, old_value, new_value, changed_by, changed_at, change_reason
+-- Target: id, line_item_id, order_id, change_type, previous_value, new_value, changed_by, changed_at, change_reason, batch_id, metadata
 
--- Add missing columns
+-- Add the missing columns
 ALTER TABLE line_item_changes 
-ADD COLUMN IF NOT EXISTS order_id UUID,
-ADD COLUMN IF NOT EXISTS change_type VARCHAR(50),
-ADD COLUMN IF NOT EXISTS previous_value JSONB,
-ADD COLUMN IF NOT EXISTS batch_id UUID,
-ADD COLUMN IF NOT EXISTS metadata JSONB;
+ADD COLUMN order_id UUID,
+ADD COLUMN change_type VARCHAR(50),
+ADD COLUMN previous_value JSONB,
+ADD COLUMN batch_id UUID,
+ADD COLUMN metadata JSONB;
 
--- Migrate data from old columns to new columns
--- Convert field_name -> change_type (use field_name as change type for now)
+-- Convert field_name to change_type (table is empty but let's be safe)
 UPDATE line_item_changes 
-SET change_type = COALESCE(field_name, 'unknown')
-WHERE change_type IS NULL;
+SET change_type = CASE 
+    WHEN field_name = 'status' THEN 'status_changed'
+    WHEN field_name = 'target_page_url' THEN 'target_changed'
+    WHEN field_name = 'anchor_text' THEN 'anchor_changed'
+    WHEN field_name = 'estimated_price' THEN 'price_changed'
+    WHEN field_name = 'assigned_domain_id' THEN 'domain_assigned'
+    WHEN field_name = 'wholesale_price' THEN 'price_changed'
+    WHEN field_name = 'inclusion_status' THEN 'inclusion_changed'
+    ELSE COALESCE(field_name, 'field_changed')
+END;
 
--- Convert old_value -> previous_value (wrap text in JSON)
+-- Convert old_value to previous_value JSONB
 UPDATE line_item_changes 
 SET previous_value = CASE 
-    WHEN old_value IS NOT NULL THEN to_jsonb(old_value)
-    ELSE NULL 
-END
-WHERE previous_value IS NULL;
-
--- Convert new_value -> new_value (already exists, but wrap text in JSON)
--- First create temp column, then replace
-ALTER TABLE line_item_changes ADD COLUMN temp_new_value JSONB;
-UPDATE line_item_changes 
-SET temp_new_value = CASE 
-    WHEN new_value IS NOT NULL THEN to_jsonb(new_value)
+    WHEN old_value IS NOT NULL AND old_value != '' THEN 
+        jsonb_build_object('value', old_value)
     ELSE NULL 
 END;
 
--- Set order_id by joining to line items
+-- Set order_id from line items (join with order_line_items)
 UPDATE line_item_changes 
 SET order_id = oli.order_id
 FROM order_line_items oli
 WHERE line_item_changes.line_item_id = oli.id
 AND line_item_changes.order_id IS NULL;
 
+-- Set default change_type for any NULL values
+UPDATE line_item_changes 
+SET change_type = 'field_changed' 
+WHERE change_type IS NULL;
+
+-- Make change_type NOT NULL
+ALTER TABLE line_item_changes 
+ALTER COLUMN change_type SET NOT NULL;
+
 -- Drop old columns
 ALTER TABLE line_item_changes 
-DROP COLUMN IF EXISTS field_name,
-DROP COLUMN IF EXISTS old_value;
+DROP COLUMN field_name,
+DROP COLUMN old_value;
 
--- Replace new_value with temp column
-ALTER TABLE line_item_changes DROP COLUMN new_value;
-ALTER TABLE line_item_changes RENAME COLUMN temp_new_value TO new_value;
-
--- Make required columns NOT NULL
-ALTER TABLE line_item_changes 
-ALTER COLUMN change_type SET NOT NULL,
-ALTER COLUMN order_id SET NOT NULL;
-
--- Add foreign key constraints
+-- Add foreign key for order_id
 ALTER TABLE line_item_changes 
 ADD CONSTRAINT fk_line_item_changes_order_id 
 FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE;
 
--- Create missing indexes
-CREATE INDEX IF NOT EXISTS changes_order_id_idx ON line_item_changes(order_id);
-CREATE INDEX IF NOT EXISTS changes_batch_id_idx ON line_item_changes(batch_id);
+-- Create indexes
+CREATE INDEX idx_line_item_changes_order_id ON line_item_changes(order_id);
+CREATE INDEX idx_line_item_changes_change_type ON line_item_changes(change_type);
+CREATE INDEX idx_line_item_changes_batch_id ON line_item_changes(batch_id) WHERE batch_id IS NOT NULL;
 
--- Add migration tracking
+-- Record migration
 INSERT INTO migrations (name, applied_at) 
 SELECT '0057_fix_line_item_changes_schema', NOW()
 WHERE NOT EXISTS (
     SELECT 1 FROM migrations WHERE name = '0057_fix_line_item_changes_schema'
 );
-
-COMMENT ON TABLE line_item_changes IS 'Audit trail for all changes to line items - schema fixed to match frontend';
