@@ -25,9 +25,6 @@ class RateLimiter {
   }
   
   check(identifier: string): { allowed: boolean; retryAfter?: number } {
-    // TEMPORARILY DISABLED FOR TESTING
-    return { allowed: true };
-    
     // Skip rate limiting for E2E tests
     if (process.env.E2E_TESTING === 'true') {
       return { allowed: true };

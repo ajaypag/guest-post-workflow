@@ -144,7 +144,7 @@ export async function GET() {
         const countResult = await db.execute(sql`
           SELECT COUNT(*) as count FROM line_item_changes
         `);
-        rowCount = parseInt(countResult.rows[0]?.count || '0');
+        rowCount = parseInt((countResult.rows[0] as any)?.count || '0');
 
         // Get last change
         try {
@@ -153,8 +153,8 @@ export async function GET() {
             ORDER BY changed_at DESC 
             LIMIT 1
           `);
-          if (lastChangeResult.rows[0]?.changed_at) {
-            lastChange = lastChangeResult.rows[0].changed_at.toISOString();
+          if ((lastChangeResult.rows[0] as any)?.changed_at) {
+            lastChange = new Date((lastChangeResult.rows[0] as any).changed_at).toISOString();
           }
         } catch (e) {
           // Column might not exist yet
@@ -166,8 +166,8 @@ export async function GET() {
         version: migration.version,
         description: migration.description,
         status: migrationRecord.rows.length > 0 ? 'completed' : 'not_run',
-        appliedAt: migrationRecord.rows[0]?.applied_at?.toISOString(),
-        tableExists: tableExists.rows[0]?.exists || false,
+        appliedAt: (migrationRecord.rows[0] as any)?.applied_at ? new Date((migrationRecord.rows[0] as any).applied_at).toISOString() : undefined,
+        tableExists: Boolean((tableExists.rows[0] as any)?.exists),
         columnCheck,
         rowCount,
         lastChange
