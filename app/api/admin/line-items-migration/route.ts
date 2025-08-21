@@ -26,9 +26,34 @@ interface MigrationStatus {
 
 const MIGRATIONS = [
   {
-    version: '0057',
-    file: '0057_fix_line_item_changes_schema.sql',
-    description: 'Fix line_item_changes table to match frontend schema'
+    version: '0057a',
+    file: '0057a_add_order_id_column.sql',
+    description: 'Add order_id column to line_item_changes'
+  },
+  {
+    version: '0057b',
+    file: '0057b_add_change_type_column.sql',
+    description: 'Add and populate change_type column'
+  },
+  {
+    version: '0057c',
+    file: '0057c_add_previous_value_column.sql',
+    description: 'Add and populate previous_value JSONB column'
+  },
+  {
+    version: '0057d',
+    file: '0057d_add_metadata_columns.sql',
+    description: 'Add batch_id and metadata columns'
+  },
+  {
+    version: '0057e',
+    file: '0057e_drop_old_columns.sql',
+    description: 'Drop old field_name and old_value columns'
+  },
+  {
+    version: '0057f',
+    file: '0057f_add_indexes_and_constraints.sql',
+    description: 'Add indexes and foreign key constraints'
   },
   {
     version: '0058',

@@ -46,10 +46,40 @@ export default function LineItemsMigrationPage() {
 
   const migrationList = [
     {
-      version: '0057',
-      file: '0057_fix_line_item_changes_schema.sql',
-      description: 'Fix line_item_changes table to match frontend schema',
-      details: 'Converts field_name → change_type, old_value → previous_value, adds order_id'
+      version: '0057a',
+      file: '0057a_add_order_id_column.sql',
+      description: 'Step 1: Add order_id column',
+      details: 'Adds order_id column and populates it from order_line_items'
+    },
+    {
+      version: '0057b',
+      file: '0057b_add_change_type_column.sql',
+      description: 'Step 2: Add change_type column',
+      details: 'Adds change_type column and migrates data from field_name'
+    },
+    {
+      version: '0057c',
+      file: '0057c_add_previous_value_column.sql',
+      description: 'Step 3: Add previous_value column',
+      details: 'Adds previous_value JSONB column and migrates from old_value'
+    },
+    {
+      version: '0057d',
+      file: '0057d_add_metadata_columns.sql',
+      description: 'Step 4: Add metadata columns',
+      details: 'Adds batch_id and metadata JSONB columns'
+    },
+    {
+      version: '0057e',
+      file: '0057e_drop_old_columns.sql',
+      description: 'Step 5: Drop old columns',
+      details: 'Removes field_name and old_value columns after migration'
+    },
+    {
+      version: '0057f',
+      file: '0057f_add_indexes_and_constraints.sql',
+      description: 'Step 6: Add indexes and constraints',
+      details: 'Creates indexes and foreign key constraints for performance'
     },
     {
       version: '0058', 
