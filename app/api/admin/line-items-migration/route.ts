@@ -44,6 +44,11 @@ const MIGRATIONS = [
 
 export async function GET() {
   try {
+    // Log database URL for debugging (hide password)
+    const dbUrl = process.env.DATABASE_URL || 'NOT_SET';
+    const maskedUrl = dbUrl.replace(/:([^:@]+)@/, ':****@');
+    console.log('🔗 Admin API Database URL:', maskedUrl);
+    
     const migrations: MigrationStatus[] = [];
 
     for (const migration of MIGRATIONS) {
