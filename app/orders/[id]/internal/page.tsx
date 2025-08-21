@@ -1878,143 +1878,237 @@ export default function InternalOrderManagementPage() {
                 <div className="mt-6 pt-6 border-t">
                   <h3 className="text-sm font-medium text-gray-900 mb-3">Internal Actions</h3>
                   <div className="space-y-2">
-                    {/* Status Management - Always visible for internal users */}
+                    {/* Unified Status & State Management */}
                     <div className="p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-medium text-gray-700">Order Status Management</span>
-                        <div className="flex gap-2">
-                          <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">
-                            Status: {order.status}
-                          </span>
-                          {order.state && (
-                            <span className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded">
-                              State: {order.state === 'sites_ready' ? 'Sites Ready for Review' : order.state}
+                      {/* Show status + state breakdown */}
+                      {order.status === 'confirmed' && order.state ? (
+                        <div className="mb-3 p-2 bg-white rounded text-xs">
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-600">Order Status:</span>
+                            <span className="font-medium text-green-700">Confirmed ✓</span>
+                          </div>
+                          <div className="flex justify-between items-center mt-1">
+                            <span className="text-gray-600">Sub-Status:</span>
+                            <span className="font-medium text-blue-700">
+                              {(() => {
+                                const stateLabels: Record<string, string> = {
+                                  'analyzing': 'Finding Sites',
+                                  'sites_ready': 'Sites Ready for Review',
+                                  'client_reviewing': 'Client Reviewing Sites',
+                                  'payment_pending': 'Awaiting Payment'
+                                };
+                                return stateLabels[order.state] || order.state;
+                              })()}
                             </span>
-                          )}
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex gap-2">
-                        {/* Move Forward */}
-                        {order.status === 'pending_confirmation' && !order.approvedAt && (
-                          <button
-                            onClick={handleConfirmOrder}
-                            disabled={actionLoading.confirm || targetPageStatuses.some(p => !p.hasKeywords)}
-                            className="flex-1 px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 disabled:opacity-50"
-                          >
-                            → Confirm Order
-                          </button>
+                      ) : (
+                        <div className="mb-3 p-2 bg-white rounded text-xs">
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-600">Current Status:</span>
+                            <span className="font-medium text-blue-700">
+                              {(() => {
+                                if (order.status === 'pending_confirmation') return 'Pending Confirmation';
+                                if (order.status === 'draft') return 'Draft';
+                                if (order.status === 'cancelled') return 'Cancelled';
+                                if (order.status === 'completed') return 'Completed';
+                                if (order.status === 'paid') {
+                                  if (order.state === 'payment_received') return 'Paid - Processing';
+                                  if (order.state === 'workflows_generated') return 'Paid - Workflows Ready';
+                                  if (order.state === 'in_progress') return 'Paid - In Progress';
+                                  return 'Paid';
+                                }
+                                return order.status;
+                              })()}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Available transitions based on current status+state */}
+                      <div className="space-y-2">
+                        {/* Pending Confirmation → Can Confirm */}
+                        {order.status === 'pending_confirmation' && (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={handleConfirmOrder}
+                              disabled={actionLoading.confirm || targetPageStatuses.some(p => !p.hasKeywords)}
+                              className="flex-1 px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 disabled:opacity-50"
+                            >
+                              → Confirm Order (Start Finding Sites)
+                            </button>
+                          </div>
                         )}
                         
-                        {/* Rollback Options */}
-                        {order.status === 'confirmed' && !order.invoicedAt && (
-                          <button
-                            onClick={() => handleStatusRollback('pending_confirmation')}
-                            className="flex-1 px-2 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700"
-                            title="Use if order was confirmed by mistake or needs major changes"
-                          >
-                            ← Back to Pending Confirmation
-                          </button>
+                        {/* Confirmed + Various States */}
+                        {order.status === 'confirmed' && (
+                          <div className="space-y-2">
+                            {/* Analyzing State */}
+                            {order.state === 'analyzing' && (
+                              <div className="space-y-2">
+                                {/* Sub-status transitions within confirmed status */}
+                                <div className="space-y-1">
+                                  <div className="text-xs text-gray-600 font-medium">Sub-Status:</div>
+                                  <button
+                                    onClick={() => handleStateRollback('sites_ready')}
+                                    className="w-full px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 border border-green-700"
+                                    title="Change sub-status within confirmed status"
+                                  >
+                                    → Sites Ready for Review
+                                  </button>
+                                </div>
+                                {/* Order status rollback */}
+                                {!order.invoicedAt && (
+                                  <div className="space-y-1">
+                                    <div className="text-xs text-gray-600 font-medium">Order Status:</div>
+                                    <button
+                                      onClick={() => handleStatusRollback('pending_confirmation')}
+                                      className="px-2 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700 border-2 border-yellow-800"
+                                      title="⚠️ Major rollback - changes order status AND resets workflow state"
+                                    >
+                                      ⚠️ ← Unconfirm Order (Major Rollback)
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            
+                            {/* Sites Ready State */}
+                            {order.state === 'sites_ready' && (
+                              <div className="space-y-2">
+                                {/* Sub-status transitions within confirmed status */}
+                                <div className="space-y-1">
+                                  <div className="text-xs text-gray-600 font-medium">Sub-Status:</div>
+                                  <div className="flex gap-2 flex-wrap">
+                                    <button
+                                      onClick={() => handleStateRollback('analyzing')}
+                                      className="px-2 py-1 bg-orange-600 text-white text-xs rounded hover:bg-orange-700 border border-orange-700"
+                                      title="Change sub-status within confirmed status"
+                                    >
+                                      ← Back to Finding Sites
+                                    </button>
+                                    <button
+                                      onClick={() => handleStateRollback('client_reviewing')}
+                                      className="flex-1 px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 border border-blue-700"
+                                      title="Change sub-status within confirmed status"
+                                    >
+                                      → Send for Client Review
+                                    </button>
+                                    <button
+                                      onClick={() => handleStateRollback('payment_pending')}
+                                      className="flex-1 px-2 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 border border-purple-700"
+                                      title="Change sub-status within confirmed status"
+                                    >
+                                      → Ready for Payment
+                                    </button>
+                                  </div>
+                                </div>
+                                {/* Order status rollback */}
+                                {!order.invoicedAt && (
+                                  <div className="space-y-1">
+                                    <div className="text-xs text-gray-600 font-medium">Order Status:</div>
+                                    <button
+                                      onClick={() => handleStatusRollback('pending_confirmation')}
+                                      className="px-2 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700 border-2 border-yellow-800"
+                                      title="⚠️ Major rollback - changes order status AND resets workflow state"
+                                    >
+                                      ⚠️ ← Unconfirm Order (Major Rollback)
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            
+                            {/* Client Reviewing State */}
+                            {order.state === 'client_reviewing' && (
+                              <div className="space-y-2">
+                                {/* State transitions */}
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => handleStateRollback('sites_ready')}
+                                    className="px-2 py-1 bg-orange-600 text-white text-xs rounded hover:bg-orange-700"
+                                  >
+                                    ← Back to Sites Ready
+                                  </button>
+                                  <button
+                                    onClick={() => handleStateRollback('payment_pending')}
+                                    className="flex-1 px-2 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700"
+                                  >
+                                    → Proceed to Payment
+                                  </button>
+                                </div>
+                                {/* Status rollback (separate) */}
+                                {!order.invoicedAt && (
+                                  <button
+                                    onClick={() => handleStatusRollback('pending_confirmation')}
+                                    className="px-2 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700"
+                                    title="Rollback if order needs major changes"
+                                  >
+                                    ← Unconfirm Order
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                            
+                            {/* Payment Pending State */}
+                            {order.state === 'payment_pending' && (
+                              <div className="space-y-2">
+                                {/* State transitions */}
+                                {!order.paidAt && (
+                                  <button
+                                    onClick={() => handleStateRollback('sites_ready')}
+                                    className="px-2 py-1 bg-orange-600 text-white text-xs rounded hover:bg-orange-700"
+                                    title="Go back to adjust sites or pricing"
+                                  >
+                                    ← Back to Sites Ready
+                                  </button>
+                                )}
+                                {order.invoicedAt && (
+                                  <p className="text-xs text-gray-500 italic">
+                                    Invoice sent - awaiting payment
+                                  </p>
+                                )}
+                                {/* Status rollback (separate) */}
+                                {!order.invoicedAt && (
+                                  <button
+                                    onClick={() => handleStatusRollback('pending_confirmation')}
+                                    className="px-2 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700"
+                                    title="Rollback if order needs major changes"
+                                  >
+                                    ← Unconfirm Order
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                            
+                            {order.invoicedAt && (
+                              <p className="text-xs text-gray-500 italic mt-1">
+                                ⚠️ Invoice exists - limited rollback options
+                              </p>
+                            )}
+                          </div>
                         )}
                         
-                        {order.status === 'paid' && !order.hasWorkflows && (
-                          <button
-                            onClick={() => handleStatusRollback('confirmed')}
-                            className="flex-1 px-2 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700"
-                          >
-                            ← Back to Confirmed
-                          </button>
-                        )}
-                        
-                        {(order.status === 'confirmed' && order.invoicedAt) && (
-                          <p className="text-xs text-gray-500 italic">
-                            Cannot rollback - invoice exists
-                          </p>
-                        )}
-                        
-                        {(order.status === 'paid' && order.hasWorkflows) && (
-                          <p className="text-xs text-gray-500 italic">
-                            Cannot rollback - workflows exist
-                          </p>
+                        {/* Paid Status */}
+                        {order.status === 'paid' && (
+                          <div className="space-y-2">
+                            {!order.hasWorkflows && (
+                              <button
+                                onClick={() => handleStatusRollback('confirmed')}
+                                className="px-2 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700"
+                              >
+                                ← Rollback to Confirmed (Payment Pending)
+                              </button>
+                            )}
+                            {order.hasWorkflows && (
+                              <p className="text-xs text-gray-500 italic">
+                                Workflows exist - cannot rollback
+                              </p>
+                            )}
+                          </div>
                         )}
                       </div>
                     </div>
-                    
-                    {/* State Management - For orders in 'confirmed' status */}
-                    {order.status === 'confirmed' && order.state && (
-                      <div className="p-3 bg-gray-50 rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-medium text-gray-700">Order State Transitions</span>
-                          <span className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded">
-                            Current: {(() => {
-                              const stateLabels: Record<string, string> = {
-                                'configuring': 'Configuring',
-                                'analyzing': 'Finding Sites',
-                                'sites_ready': 'Sites Ready',
-                                'client_reviewing': 'Client Reviewing',
-                                'payment_pending': 'Payment Pending'
-                              };
-                              return stateLabels[order.state] || order.state;
-                            })()}
-                          </span>
-                        </div>
-                        <div className="flex gap-2 flex-wrap">
-                          {/* State-specific transitions */}
-                          {order.state === 'sites_ready' && (
-                            <>
-                              <button
-                                onClick={() => handleStateRollback('analyzing')}
-                                className="px-2 py-1 bg-orange-600 text-white text-xs rounded hover:bg-orange-700"
-                                title="Go back to finding sites if the current selection isn't satisfactory"
-                              >
-                                ← Back to Finding Sites
-                              </button>
-                              <button
-                                onClick={() => handleStateRollback('client_reviewing')}
-                                className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
-                              >
-                                → Move to Client Review
-                              </button>
-                            </>
-                          )}
-                          
-                          {order.state === 'client_reviewing' && (
-                            <>
-                              <button
-                                onClick={() => handleStateRollback('sites_ready')}
-                                className="px-2 py-1 bg-orange-600 text-white text-xs rounded hover:bg-orange-700"
-                              >
-                                ← Back to Sites Ready
-                              </button>
-                              <button
-                                onClick={() => handleStateRollback('payment_pending')}
-                                className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
-                              >
-                                → Move to Payment Pending
-                              </button>
-                            </>
-                          )}
-                          
-                          {order.state === 'analyzing' && (
-                            <button
-                              onClick={() => handleStateRollback('sites_ready')}
-                              className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
-                            >
-                              → Mark Sites Ready
-                            </button>
-                          )}
-                          
-                          {order.state === 'payment_pending' && !order.paidAt && (
-                            <button
-                              onClick={() => handleStateRollback('sites_ready')}
-                              className="px-2 py-1 bg-orange-600 text-white text-xs rounded hover:bg-orange-700"
-                              title="Go back if invoice needs adjustment or sites need review"
-                            >
-                              ← Back to Sites Ready
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    )}
                     
                     {/* Order Confirmation with Target Page Status */}
                     {order.status === 'pending_confirmation' ? (

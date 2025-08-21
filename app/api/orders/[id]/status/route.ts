@@ -190,9 +190,28 @@ export async function PATCH(
       if (newStatus === 'pending_confirmation') {
         updateData.approvedAt = null;
         updateData.approvedBy = null;
+        // Reset state to configuring when going back to pending_confirmation
+        updateData.state = 'configuring';
       }
       if (newStatus === 'confirmed') {
         updateData.paidAt = null;
+        // When rolling back to confirmed from paid, set state to payment_pending
+        // (since it was likely paid, we assume it was ready for payment)
+        if (currentStatus === 'paid') {
+          updateData.state = 'payment_pending';
+        }
+      }
+    }
+    
+    // Set appropriate state when moving forward
+    if (!isBackward) {
+      if (newStatus === 'confirmed' && currentStatus === 'pending_confirmation') {
+        // When confirming an order, set state to analyzing (finding sites)
+        updateData.state = 'analyzing';
+      }
+      if (newStatus === 'paid' && currentStatus === 'confirmed') {
+        // When marking as paid, set state to payment_received
+        updateData.state = 'payment_received';
       }
     }
 
