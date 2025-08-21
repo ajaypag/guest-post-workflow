@@ -1196,6 +1196,72 @@ export default function InternalOrderManagementPage() {
     }
   };
 
+  const handleStatusRollback = async (targetStatus: string) => {
+    if (!confirm(`Are you sure you want to rollback the order status to "${targetStatus}"? This action may have consequences.`)) {
+      return;
+    }
+
+    try {
+      // First check what rollback would affect
+      const response = await fetch(`/api/orders/${orderId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ 
+          newStatus: targetStatus,
+          force: false 
+        })
+      });
+
+      const data = await response.json();
+
+      // If there are warnings, show them and ask for confirmation
+      if (data.requiresConfirmation && data.warnings) {
+        const warningMessage = data.warnings.join('\n');
+        if (!confirm(`Warning:\n${warningMessage}\n\nDo you still want to proceed?`)) {
+          return;
+        }
+
+        // Retry with force flag
+        const forceResponse = await fetch(`/api/orders/${orderId}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ 
+            newStatus: targetStatus,
+            force: true 
+          })
+        });
+
+        if (!forceResponse.ok) {
+          throw new Error('Failed to rollback status');
+        }
+
+        const forceData = await forceResponse.json();
+        setMessage({
+          type: 'success',
+          text: forceData.message || `Status rolled back to ${targetStatus}`
+        });
+      } else if (response.ok) {
+        setMessage({
+          type: 'success',
+          text: data.message || `Status rolled back to ${targetStatus}`
+        });
+      } else {
+        throw new Error(data.error || 'Failed to rollback status');
+      }
+
+      // Reload the order
+      await loadOrder();
+    } catch (error) {
+      console.error('Error rolling back status:', error);
+      setMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Failed to rollback status'
+      });
+    }
+  };
+
   const handleRefreshMetadata = async () => {
     setActionLoading(prev => ({ ...prev, refresh_metadata: true }));
     try {
@@ -1765,6 +1831,59 @@ export default function InternalOrderManagementPage() {
                 <div className="mt-6 pt-6 border-t">
                   <h3 className="text-sm font-medium text-gray-900 mb-3">Internal Actions</h3>
                   <div className="space-y-2">
+                    {/* Status Management - Always visible for internal users */}
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-medium text-gray-700">Order Status Management</span>
+                        <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">
+                          Current: {order.status}
+                        </span>
+                      </div>
+                      <div className="flex gap-2">
+                        {/* Move Forward */}
+                        {order.status === 'pending_confirmation' && !order.approvedAt && (
+                          <button
+                            onClick={handleConfirmOrder}
+                            disabled={actionLoading.confirm || targetPageStatuses.some(p => !p.hasKeywords)}
+                            className="flex-1 px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 disabled:opacity-50"
+                          >
+                            → Confirm Order
+                          </button>
+                        )}
+                        
+                        {/* Rollback Options */}
+                        {order.status === 'confirmed' && !order.invoicedAt && (
+                          <button
+                            onClick={() => handleStatusRollback('pending_confirmation')}
+                            className="flex-1 px-2 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700"
+                          >
+                            ← Back to Pending
+                          </button>
+                        )}
+                        
+                        {order.status === 'paid' && !order.hasWorkflows && (
+                          <button
+                            onClick={() => handleStatusRollback('confirmed')}
+                            className="flex-1 px-2 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700"
+                          >
+                            ← Back to Confirmed
+                          </button>
+                        )}
+                        
+                        {(order.status === 'confirmed' && order.invoicedAt) && (
+                          <p className="text-xs text-gray-500 italic">
+                            Cannot rollback - invoice exists
+                          </p>
+                        )}
+                        
+                        {(order.status === 'paid' && order.hasWorkflows) && (
+                          <p className="text-xs text-gray-500 italic">
+                            Cannot rollback - workflows exist
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    
                     {/* Order Confirmation with Target Page Status */}
                     {order.status === 'pending_confirmation' ? (
                       <>
