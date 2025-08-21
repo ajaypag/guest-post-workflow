@@ -1126,6 +1126,40 @@ export default function InternalOrderManagementPage() {
     }
   };
 
+  const handleChangeLineItemStatus = async (itemId: string, newStatus: string, reason?: string) => {
+    try {
+      const response = await fetch(`/api/orders/${orderId}/line-items/${itemId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ 
+          metadata: {
+            inclusionStatus: newStatus,
+            exclusionReason: reason
+          }
+        })
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to update status');
+      }
+
+      setMessage({
+        type: 'success',
+        text: `Item ${newStatus === 'excluded' ? 'excluded' : newStatus === 'saved_for_later' ? 'saved for later' : 'included'}`
+      });
+      
+      await loadOrder();
+    } catch (error) {
+      console.error('Error updating line item status:', error);
+      setMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Failed to update status'
+      });
+    }
+  };
+
   const handleRefreshMetadata = async () => {
     setActionLoading(prev => ({ ...prev, refresh_metadata: true }));
     try {
@@ -2286,6 +2320,7 @@ export default function InternalOrderManagementPage() {
                   canSetExclusionReason: true
                 }}
                 onRefresh={handleRefresh || loadOrder}
+                onChangeStatus={handleChangeLineItemStatus}
                 benchmarkData={benchmarkData}
               />
               
