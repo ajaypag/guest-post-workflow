@@ -1,55 +1,66 @@
--- Migration 0057: Fix line_item_changes table based on ACTUAL current schema
--- Current: id, line_item_id, field_name, old_value, new_value, changed_by, changed_at, change_reason
--- Target: id, line_item_id, order_id, change_type, previous_value, new_value, changed_by, changed_at, change_reason, batch_id, metadata
+-- Migration 0057: Smart line_item_changes schema migration
+-- Handles case where schema may already be correct
 
--- Add the missing columns with explicit error handling
 DO $$
+DECLARE
+    required_cols TEXT[] := ARRAY['order_id', 'change_type', 'previous_value', 'batch_id', 'metadata'];
+    missing_cols TEXT[] := ARRAY[]::TEXT[];
+    col TEXT;
+    has_old_cols BOOLEAN := FALSE;
 BEGIN
-    -- Add order_id column
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'line_item_changes' AND column_name = 'order_id') THEN
+    RAISE NOTICE 'Starting Migration 0057: line_item_changes schema check';
+    
+    -- Check for old schema columns that need migration
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'line_item_changes' AND column_name = 'field_name') THEN
+        has_old_cols := TRUE;
+        RAISE NOTICE 'Found old schema with field_name column - will migrate data';
+    END IF;
+    
+    -- Check which required columns are missing
+    FOREACH col IN ARRAY required_cols LOOP
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'line_item_changes' AND column_name = col) THEN
+            missing_cols := array_append(missing_cols, col);
+        END IF;
+    END LOOP;
+    
+    -- Report status
+    IF array_length(missing_cols, 1) IS NULL THEN
+        RAISE NOTICE 'Schema is already correct - all required columns exist';
+    ELSE
+        RAISE NOTICE 'Missing columns: %', array_to_string(missing_cols, ', ');
+    END IF;
+    
+    -- Add missing columns only if needed
+    IF 'order_id' = ANY(missing_cols) THEN
         ALTER TABLE line_item_changes ADD COLUMN order_id UUID;
         RAISE NOTICE 'Added order_id column';
-    ELSE
-        RAISE NOTICE 'order_id column already exists';
     END IF;
-
-    -- Add change_type column
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'line_item_changes' AND column_name = 'change_type') THEN
+    
+    IF 'change_type' = ANY(missing_cols) THEN
         ALTER TABLE line_item_changes ADD COLUMN change_type VARCHAR(50);
         RAISE NOTICE 'Added change_type column';
-    ELSE
-        RAISE NOTICE 'change_type column already exists';
     END IF;
-
-    -- Add previous_value column
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'line_item_changes' AND column_name = 'previous_value') THEN
+    
+    IF 'previous_value' = ANY(missing_cols) THEN
         ALTER TABLE line_item_changes ADD COLUMN previous_value JSONB;
         RAISE NOTICE 'Added previous_value column';
-    ELSE
-        RAISE NOTICE 'previous_value column already exists';
     END IF;
-
-    -- Add batch_id column
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'line_item_changes' AND column_name = 'batch_id') THEN
+    
+    IF 'batch_id' = ANY(missing_cols) THEN
         ALTER TABLE line_item_changes ADD COLUMN batch_id UUID;
         RAISE NOTICE 'Added batch_id column';
-    ELSE
-        RAISE NOTICE 'batch_id column already exists';
     END IF;
-
-    -- Add metadata column
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'line_item_changes' AND column_name = 'metadata') THEN
+    
+    IF 'metadata' = ANY(missing_cols) THEN
         ALTER TABLE line_item_changes ADD COLUMN metadata JSONB;
         RAISE NOTICE 'Added metadata column';
-    ELSE
-        RAISE NOTICE 'metadata column already exists';
     END IF;
-END $$;
-
--- Convert field_name to change_type (only if field_name exists)
-DO $$
-BEGIN
-    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'line_item_changes' AND column_name = 'field_name') THEN
+    
+    -- Only migrate data if we have old schema
+    IF has_old_cols THEN
+        RAISE NOTICE 'Migrating data from old schema';
+        
+        -- Convert field_name to change_type
         UPDATE line_item_changes 
         SET change_type = CASE 
             WHEN field_name = 'status' THEN 'status_changed'
@@ -60,65 +71,51 @@ BEGIN
             WHEN field_name = 'wholesale_price' THEN 'price_changed'
             WHEN field_name = 'inclusion_status' THEN 'inclusion_changed'
             ELSE COALESCE(field_name, 'field_changed')
-        END;
-        RAISE NOTICE 'Converted field_name to change_type';
-    ELSE
-        RAISE NOTICE 'field_name column does not exist, skipping conversion';
-    END IF;
-END $$;
-
--- Convert old_value to previous_value JSONB (only if old_value exists)
-DO $$
-BEGIN
-    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'line_item_changes' AND column_name = 'old_value') THEN
+        END
+        WHERE change_type IS NULL;
+        
+        -- Convert old_value to previous_value JSONB
         UPDATE line_item_changes 
         SET previous_value = CASE 
             WHEN old_value IS NOT NULL AND old_value != '' THEN 
                 jsonb_build_object('value', old_value)
             ELSE NULL 
-        END;
-        RAISE NOTICE 'Converted old_value to previous_value';
-    ELSE
-        RAISE NOTICE 'old_value column does not exist, skipping conversion';
+        END
+        WHERE previous_value IS NULL;
+        
+        -- Set order_id from line items
+        UPDATE line_item_changes 
+        SET order_id = oli.order_id
+        FROM order_line_items oli
+        WHERE line_item_changes.line_item_id = oli.id
+        AND line_item_changes.order_id IS NULL;
+        
+        -- Drop old columns
+        ALTER TABLE line_item_changes DROP COLUMN IF EXISTS field_name;
+        ALTER TABLE line_item_changes DROP COLUMN IF EXISTS old_value;
+        
+        RAISE NOTICE 'Data migration completed';
     END IF;
-END $$;
-
--- Set order_id from line items (join with order_line_items)
-UPDATE line_item_changes 
-SET order_id = oli.order_id
-FROM order_line_items oli
-WHERE line_item_changes.line_item_id = oli.id
-AND line_item_changes.order_id IS NULL;
-
--- Set default change_type for any NULL values
-UPDATE line_item_changes 
-SET change_type = 'field_changed' 
-WHERE change_type IS NULL;
-
--- Make change_type NOT NULL (only if the column exists)
-DO $$
-BEGIN
-    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'line_item_changes' AND column_name = 'change_type') THEN
+    
+    -- Ensure change_type has defaults and constraints
+    UPDATE line_item_changes 
+    SET change_type = 'field_changed' 
+    WHERE change_type IS NULL;
+    
+    -- Make change_type NOT NULL if it isn't already
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'line_item_changes' 
+        AND column_name = 'change_type' 
+        AND is_nullable = 'YES'
+    ) THEN
         ALTER TABLE line_item_changes ALTER COLUMN change_type SET NOT NULL;
         RAISE NOTICE 'Made change_type NOT NULL';
     END IF;
+    
 END $$;
 
--- Drop old columns (only if they exist)
-DO $$
-BEGIN
-    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'line_item_changes' AND column_name = 'field_name') THEN
-        ALTER TABLE line_item_changes DROP COLUMN field_name;
-        RAISE NOTICE 'Dropped field_name column';
-    END IF;
-
-    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'line_item_changes' AND column_name = 'old_value') THEN
-        ALTER TABLE line_item_changes DROP COLUMN old_value;
-        RAISE NOTICE 'Dropped old_value column';
-    END IF;
-END $$;
-
--- Add foreign key for order_id (only if it doesn't exist)
+-- Add foreign key constraint if it doesn't exist
 DO $$
 BEGIN
     IF NOT EXISTS (
@@ -131,30 +128,36 @@ BEGIN
         FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE;
         RAISE NOTICE 'Added foreign key constraint for order_id';
     ELSE
-        RAISE NOTICE 'Foreign key constraint for order_id already exists';
+        RAISE NOTICE 'Foreign key constraint already exists';
     END IF;
 END $$;
 
--- Create indexes (only if they don't exist)
+-- Create indexes only if they don't exist
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_line_item_changes_order_id') THEN
         CREATE INDEX idx_line_item_changes_order_id ON line_item_changes(order_id);
         RAISE NOTICE 'Created index on order_id';
+    ELSE
+        RAISE NOTICE 'Index on order_id already exists';
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_line_item_changes_change_type') THEN
         CREATE INDEX idx_line_item_changes_change_type ON line_item_changes(change_type);
         RAISE NOTICE 'Created index on change_type';
+    ELSE
+        RAISE NOTICE 'Index on change_type already exists';
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_line_item_changes_batch_id') THEN
         CREATE INDEX idx_line_item_changes_batch_id ON line_item_changes(batch_id) WHERE batch_id IS NOT NULL;
         RAISE NOTICE 'Created index on batch_id';
+    ELSE
+        RAISE NOTICE 'Index on batch_id already exists';
     END IF;
 END $$;
 
--- Record migration (handle different migration table schemas)
+-- Record migration completion
 DO $$
 BEGIN
     -- Try the new schema first
@@ -175,5 +178,25 @@ BEGIN
         RAISE NOTICE 'Recorded migration in migration_history table';
     ELSE
         RAISE NOTICE 'No suitable migrations table found';
+    END IF;
+END $$;
+
+-- Final verification
+DO $$
+DECLARE
+    required_cols TEXT[] := ARRAY['order_id', 'change_type', 'previous_value', 'batch_id', 'metadata'];
+    missing_cols TEXT[] := ARRAY[]::TEXT[];
+    col TEXT;
+BEGIN
+    FOREACH col IN ARRAY required_cols LOOP
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'line_item_changes' AND column_name = col) THEN
+            missing_cols := array_append(missing_cols, col);
+        END IF;
+    END LOOP;
+    
+    IF array_length(missing_cols, 1) > 0 THEN
+        RAISE EXCEPTION 'Migration 0057 failed: Missing columns: %', array_to_string(missing_cols, ', ');
+    ELSE
+        RAISE NOTICE 'Migration 0057 completed successfully - schema verified';
     END IF;
 END $$;
