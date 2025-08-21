@@ -11,8 +11,9 @@ async function runMigrations() {
   
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) {
-    console.error('❌ DATABASE_URL environment variable is required');
-    process.exit(1);
+    console.log('⚠️ DATABASE_URL not available during build - skipping migrations');
+    console.log('💡 Migrations will run automatically at startup');
+    process.exit(0);
   }
   
   const pool = new Pool({
