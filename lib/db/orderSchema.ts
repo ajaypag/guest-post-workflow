@@ -109,6 +109,16 @@ export const orders = pgTable('orders', {
   accountNotes: text('account_notes'),
   cancellationReason: text('cancellation_reason'),
   
+  // Workflow completion tracking (added in migration 0065)
+  totalWorkflows: integer('total_workflows').default(0),
+  completedWorkflows: integer('completed_workflows').default(0),
+  workflowCompletionPercentage: decimal('workflow_completion_percentage', { precision: 5, scale: 2 }).default('0'),
+  fulfillmentStartedAt: timestamp('fulfillment_started_at'),
+  fulfillmentCompletedAt: timestamp('fulfillment_completed_at'),
+  readyForDelivery: boolean('ready_for_delivery').default(false),
+  deliveredAt: timestamp('delivered_at'),
+  clientNotifiedAt: timestamp('client_notified_at'),
+  
   // Timestamps
   createdAt: timestamp('created_at').notNull(),
   updatedAt: timestamp('updated_at').notNull(),

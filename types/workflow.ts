@@ -62,6 +62,11 @@ export const WORKFLOW_STEPS = [
     description: 'Find topic overlap between the guest post site and your client to identify content opportunities with ranking potential.'
   },
   {
+    id: 'publisher-pre-approval',
+    title: 'Publisher Pre-Approval',
+    description: 'Confirm pricing and topic with blogger before content creation. Send professional outreach email with topic proposals, pricing confirmation, and timeline expectations to ensure alignment before proceeding.'
+  },
+  {
     id: 'topic-generation',
     title: 'Topic Generation',
     description: 'Generate guest post topics that meet three criteria: relevant to the guest post site, relevant to your client URL, and have search volume (10-50 searches/month target range).'
@@ -130,5 +135,15 @@ export const WORKFLOW_STEPS = [
     id: 'email-template',
     title: 'Email Template',
     description: 'Generate professional email template for sending guest post to publisher with all relevant details and links.'
+  },
+  {
+    id: 'publication-outreach',
+    title: 'Publication & Outreach',
+    description: 'Send final article to publisher with payment terms and publication timeline. Coordinate publication scheduling and track publisher response and confirmation.'
+  },
+  {
+    id: 'publication-verification',
+    title: 'Publication Verification & QA',
+    description: 'Verify published article meets quality standards. Complete QA checklist: confirm URL, validate all links, verify images, check formatting, and authorize payment to publisher upon successful completion.'
   }
 ];
