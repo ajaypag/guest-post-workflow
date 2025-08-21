@@ -79,13 +79,17 @@ export default function ChangeBulkAnalysisProject({
       setChanging(true);
       setError('');
 
+      // Use the new line-items compatible endpoint
       const response = await fetch(
-        `/api/orders/${orderId}/groups/${orderGroupId}/change-project`,
+        `/api/orders/${orderId}/change-project`,
         {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-          body: JSON.stringify({ projectId: selectedProjectId })
+          body: JSON.stringify({ 
+            projectId: selectedProjectId,
+            clientId: clientId
+          })
         }
       );
 
