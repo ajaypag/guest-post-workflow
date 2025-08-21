@@ -210,7 +210,7 @@ export default function LineItemsDisplay({
                             Draft
                           </span>
                         )}
-                        {item.status === 'pending' && (
+                        {(item.status === 'pending' || item.status === 'pending_selection') && (
                           <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-yellow-700 bg-yellow-100 rounded-full">
                             <Clock className="w-3 h-3" />
                             Pending
@@ -232,6 +232,13 @@ export default function LineItemsDisplay({
                           <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-red-700 bg-red-100 rounded-full">
                             <AlertCircle className="w-3 h-3" />
                             Cancelled
+                          </span>
+                        )}
+                        {/* Fallback: Show Draft for any unmatched status to avoid blank status */}
+                        {!['draft', 'pending', 'pending_selection', 'approved', 'completed', 'cancelled'].includes(item.status) && (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded-full">
+                            <Clock className="w-3 h-3" />
+                            Draft
                           </span>
                         )}
                       </td>

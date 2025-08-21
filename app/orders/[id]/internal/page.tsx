@@ -1181,6 +1181,9 @@ export default function InternalOrderManagementPage() {
           type: 'success',
           text: `Item ${newStatus === 'excluded' ? 'excluded' : newStatus === 'saved_for_later' ? 'saved for later' : 'included'}`
         });
+        
+        // Refresh the order data to show updated status immediately
+        await loadOrder();
       }
       
       return result;

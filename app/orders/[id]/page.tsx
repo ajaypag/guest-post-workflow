@@ -418,11 +418,18 @@ export default function OrderDetailPage() {
 
   const loadBenchmarkData = async () => {
     try {
+      console.log('Loading benchmark data for order:', params.id);
       const response = await fetch(`/api/orders/${params.id}/benchmark?comparison=true`);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('Benchmark data loaded:', data);
         setBenchmarkData(data.benchmark);
         setComparisonData(data.comparison);
+      } else {
+        console.error('Benchmark API error:', response.status, response.statusText);
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
       }
     } catch (error) {
       console.error('Failed to load benchmark data:', error);
@@ -460,10 +467,16 @@ export default function OrderDetailPage() {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await loadOrder();
-    // Line items and site submissions are loaded as part of loadOrder
-    if (order?.status === 'confirmed' || order?.status === 'paid' || order?.status === 'in_progress' || order?.status === 'completed') {
+    try {
+      await loadOrder();
+      // Line items and site submissions are loaded as part of loadOrder
+      
+      // Always try to load benchmark data if order exists - let the API decide if it's valid
+      console.log('Refreshing benchmark data for order:', params.id);
       await loadBenchmarkData();
+      
+    } catch (error) {
+      console.error('Error during refresh:', error);
     }
     setTimeout(() => setRefreshing(false), 1000);
   };
