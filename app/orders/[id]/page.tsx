@@ -868,30 +868,36 @@ export default function OrderDetailPage() {
                   className="mt-4"
                 />
                 
-                {/* Quick Actions based on state */}
-                {(user?.userType === 'internal' || order.state === 'payment_pending' || (order.state === 'ready_for_review' || order.state === 'client_reviewing')) && (
-                  <div className="mt-6 pt-6 border-t">
-                    <h3 className="text-sm font-medium text-gray-900 mb-3">Quick Actions</h3>
-                    <div className="space-y-2">
-                      {/* Pay Invoice Action for External Users */}
-                      {user?.userType !== 'internal' && order.state === 'payment_pending' && order.invoicedAt && !order.paidAt && (
-                        <Link
-                          href={`/orders/${order.id}/invoice`}
-                          className="block w-full px-3 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 text-center font-medium"
-                        >
-                          <span className="flex items-center justify-center gap-2">
-                            <CreditCard className="h-4 w-4" />
-                            Pay Invoice - ${(((order as any).totalRetail || 0) / 100).toFixed(2)}
-                          </span>
-                        </Link>
-                      )}
-                      
-                      {/* Review Sites Action for External Users */}
-                      {user?.userType !== 'internal' && (order.state === 'ready_for_review' || order.state === 'client_reviewing') && (
-                        <Link
-                          href={`/orders/${order.id}/review`}
-                          className="block w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 text-center font-medium"
-                        >
+                {/* Quick Actions based on state - only show if there are actions */}
+                {(() => {
+                  const hasPayAction = user?.userType !== 'internal' && order.state === 'payment_pending' && order.invoicedAt && !order.paidAt;
+                  const hasReviewAction = user?.userType !== 'internal' && (order.state === 'ready_for_review' || order.state === 'client_reviewing');
+                  
+                  if (!hasPayAction && !hasReviewAction) return null;
+                  
+                  return (
+                    <div className="mt-6 pt-6 border-t">
+                      <h3 className="text-sm font-medium text-gray-900 mb-3">Quick Actions</h3>
+                      <div className="space-y-2">
+                        {/* Pay Invoice Action for External Users */}
+                        {hasPayAction && (
+                          <Link
+                            href={`/orders/${order.id}/invoice`}
+                            className="block w-full px-3 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 text-center font-medium"
+                          >
+                            <span className="flex items-center justify-center gap-2">
+                              <CreditCard className="h-4 w-4" />
+                              Pay Invoice - ${(((order as any).totalRetail || 0) / 100).toFixed(2)}
+                            </span>
+                          </Link>
+                        )}
+                        
+                        {/* Review Sites Action for External Users */}
+                        {hasReviewAction && (
+                          <Link
+                            href={`/orders/${order.id}/review`}
+                            className="block w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 text-center font-medium"
+                          >
                           <span className="flex items-center justify-center gap-2">
                             <Eye className="h-4 w-4" />
                             Review & Approve Sites
@@ -1023,10 +1029,11 @@ export default function OrderDetailPage() {
                             </div>
                           </div>
                         </div>
-                      )}
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
                 
                 {/* Status Message for External Users when sites are ready */}
                 {user?.userType !== 'internal' && (order.state === 'sites_ready' || order.state === 'client_reviewing') && (
