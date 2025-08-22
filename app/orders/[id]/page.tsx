@@ -555,8 +555,8 @@ export default function OrderDetailPage() {
   return (
     <AuthWrapper>
       <Header />
-      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
-        <div className="max-w-7xl mx-auto">
+      <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-8">
+        <div className="max-w-full">
           {/* Header */}
           <div className="mb-6">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -888,10 +888,10 @@ export default function OrderDetailPage() {
             </div>
           </div>
 
-          {/* Three Column Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+          {/* Three Column Layout - Optimized for wide screens */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-6">
             {/* Left Column - Progress Steps */}
-            <div className="lg:col-span-1">
+            <div className="lg:col-span-1 xl:col-span-1 2xl:col-span-1">
               <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
                 <h2 className="text-lg font-semibold mb-4">Order Progress</h2>
                 <OrderProgressSteps 
@@ -1116,7 +1116,7 @@ export default function OrderDetailPage() {
             </div>
 
             {/* Middle/Right Columns - Order Details Table */}
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-3 xl:col-span-4 2xl:col-span-5">
               {/* Site Review Summary Card */}
               {order.state === 'sites_ready' && siteSubmissions.length > 0 && (
                 <div className="bg-purple-50 border border-purple-200 rounded-lg p-6 mb-6">
@@ -1223,7 +1223,7 @@ export default function OrderDetailPage() {
               {/* OLD TABLE CODE REMOVED - NOW USING OrderDetailsTable COMPONENT */}
               
               {/* Additional Information Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mt-4 sm:mt-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 mt-4 sm:mt-6">
                 {/* Timeline */}
                 <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 sm:p-6">
                   <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Timeline</h3>
@@ -1395,7 +1395,7 @@ export default function OrderDetailPage() {
               
               {/* Notes Section - Full Width */}
               {(order.internalNotes || order.accountNotes) && (
-                <div className="lg:col-span-2 mt-6">
+                <div className="mt-6">
                   <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
                     <h3 className="text-lg font-semibold mb-4 flex items-center">
                       <FileText className="h-5 w-5 mr-2 text-gray-400" />
@@ -1421,13 +1421,13 @@ export default function OrderDetailPage() {
               
               {/* Pricing Details for Internal Users */}
               {user?.userType === 'internal' && (
-                <div className="lg:col-span-2 mt-6">
+                <div className="mt-6">
                   <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
                     <h3 className="text-lg font-semibold mb-4 flex items-center">
                       <DollarSign className="h-5 w-5 mr-2 text-gray-400" />
                       Pricing Details
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                       <div>
                         <h4 className="text-sm font-medium text-gray-700 mb-3">Customer Pricing</h4>
                         <dl className="space-y-2">
