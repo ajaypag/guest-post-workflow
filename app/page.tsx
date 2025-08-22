@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { AuthService, type AuthSession } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
-import WorkflowList from '@/components/WorkflowList';
+import WorkflowListEnhanced from '@/components/WorkflowListEnhanced';
 import QuickActions from '@/components/QuickActions';
 import AssignedProjectsNotification from '@/components/AssignedProjectsNotification';
 import MarketingHomepage from '@/app/marketing/page';
@@ -77,7 +77,7 @@ export default function Home() {
           {/* Quick Actions Pipeline */}
           <QuickActions />
           
-          <WorkflowList />
+          <WorkflowListEnhanced />
         </main>
       </div>
     );
