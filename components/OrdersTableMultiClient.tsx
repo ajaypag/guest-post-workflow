@@ -449,30 +449,33 @@ export function OrdersTableMultiClient({
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Order
               </th>
               {isInternal && (
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Account
                 </th>
               )}
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Clients
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Items
+              </th>
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Status
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Action Status
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Value
+              <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Value / Profit
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Created
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Dates
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
@@ -487,7 +490,7 @@ export function OrdersTableMultiClient({
               return (
                 <React.Fragment key={order.id}>
                   <tr className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-3 whitespace-nowrap">
                       <div className="flex items-center gap-2">
                         {(hasGroups || (order.clientNames && order.clientNames.length > 0)) && (
                           <button
@@ -524,7 +527,7 @@ export function OrdersTableMultiClient({
                     </td>
 
                     {isInternal && (
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-4 py-3 whitespace-nowrap">
                         <div>
                           <div className="font-medium text-sm">{order.account?.contactName || order.account?.companyName || 'Unknown'}</div>
                           {order.account?.companyName && order.account?.contactName && (
@@ -535,7 +538,7 @@ export function OrdersTableMultiClient({
                       </td>
                     )}
 
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-3 whitespace-nowrap">
                       <div className="flex items-center gap-1">
                         <Users className="h-4 w-4 text-gray-400" />
                         <div className="flex flex-col">
@@ -566,7 +569,13 @@ export function OrdersTableMultiClient({
                       </div>
                     </td>
 
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-3 whitespace-nowrap text-center">
+                      <span className="text-sm font-semibold text-gray-900">
+                        {order.orderGroups?.reduce((sum, g) => sum + (g.linkCount || 0), 0) || order.itemCount || order.totalLinks || 0}
+                      </span>
+                    </td>
+
+                    <td className="px-4 py-3 whitespace-nowrap">
                       <div className="space-y-1">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(order.status)}`}>
                           {getStatusLabel(order.status)}
@@ -580,29 +589,29 @@ export function OrdersTableMultiClient({
                       </div>
                     </td>
 
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-3 whitespace-nowrap">
                       {renderActionButtons(order, isInternal)}
                     </td>
 
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <td className="px-4 py-3 whitespace-nowrap text-right">
                       <div className="font-medium">{formatCurrency(order.totalRetail)}</div>
-                      {order.discountAmount > 0 && (
+                      {order.profitMargin > 0 && (
                         <div className="text-xs text-green-600">
-                          -{formatCurrency(order.discountAmount)} ({order.discountPercent}%)
+                          +{formatCurrency(order.profitMargin)} profit
                         </div>
                       )}
                     </td>
 
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-3 whitespace-nowrap">
                       <div className="text-sm">
                         {new Date(order.createdAt).toLocaleDateString()}
                       </div>
                       <div className="text-xs text-gray-500">
-                        {new Date(order.createdAt).toLocaleTimeString()}
+                        Updated: {new Date(order.updatedAt).toLocaleDateString()}
                       </div>
                     </td>
 
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <td className="px-4 py-3 whitespace-nowrap text-right">
                       <div className="flex items-center justify-end gap-2">
                         {/* View button - always show first */}
                         <Link

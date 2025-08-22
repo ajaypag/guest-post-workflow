@@ -212,7 +212,7 @@ function OrdersPageContent() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="max-w-full px-4 lg:px-8 py-8">
       <div className="mb-8">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -244,98 +244,98 @@ function OrdersPageContent() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-2 mb-6">
           <button 
             onClick={() => setStatusFilter('all')}
-            className={`bg-white rounded-lg border-2 shadow-sm hover:shadow-md transition-all p-4 text-left group cursor-pointer ${
+            className={`bg-white rounded-lg border shadow-sm hover:shadow-md transition-all p-3 text-left group cursor-pointer ${
               statusFilter === 'all' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'
             }`}
           >
             <div className="flex items-center">
-              <div className={`p-2 rounded-lg transition-colors ${
+              <div className={`p-1.5 rounded transition-colors ${
                 statusFilter === 'all' ? 'bg-blue-100' : 'bg-blue-50 group-hover:bg-blue-100'
               }`}>
-                <FileText className="h-5 w-5 text-blue-600" />
+                <FileText className="h-4 w-4 text-blue-600" />
               </div>
-              <div className="ml-3">
+              <div className="ml-2">
                 <p className="text-xs font-medium text-gray-600">Total</p>
-                <p className="text-xl font-bold text-gray-900">{orderStats.total}</p>
+                <p className="text-lg font-bold text-gray-900">{orderStats.total}</p>
               </div>
             </div>
           </button>
 
           <button 
             onClick={() => setStatusFilter('draft')}
-            className={`bg-white rounded-lg border-2 shadow-sm hover:shadow-md transition-all p-4 text-left group cursor-pointer ${
+            className={`bg-white rounded-lg border shadow-sm hover:shadow-md transition-all p-3 text-left group cursor-pointer ${
               statusFilter === 'draft' ? 'border-gray-500 bg-gray-50' : 'border-gray-200 hover:border-gray-300'
             }`}
           >
             <div className="flex items-center">
-              <div className={`p-2 rounded-lg transition-colors ${
+              <div className={`p-1.5 rounded transition-colors ${
                 statusFilter === 'draft' ? 'bg-gray-100' : 'bg-gray-50 group-hover:bg-gray-100'
               }`}>
-                <FileText className="h-5 w-5 text-gray-500" />
+                <FileText className="h-4 w-4 text-gray-500" />
               </div>
-              <div className="ml-3">
+              <div className="ml-2">
                 <p className="text-xs font-medium text-gray-600">Draft</p>
-                <p className="text-xl font-bold text-gray-900">{orderStats.draft}</p>
+                <p className="text-lg font-bold text-gray-900">{orderStats.draft}</p>
               </div>
             </div>
           </button>
 
           <button 
             onClick={() => setStatusFilter('pending_confirmation')}
-            className={`bg-white rounded-lg border-2 shadow-sm hover:shadow-md transition-all p-4 text-left group cursor-pointer ${
+            className={`bg-white rounded-lg border shadow-sm hover:shadow-md transition-all p-3 text-left group cursor-pointer ${
               statusFilter === 'pending_confirmation' ? 'border-yellow-500 bg-yellow-50' : 'border-gray-200 hover:border-yellow-300'
             }`}
           >
             <div className="flex items-center">
-              <div className={`p-2 rounded-lg transition-colors ${
+              <div className={`p-1.5 rounded transition-colors ${
                 statusFilter === 'pending_confirmation' ? 'bg-yellow-100' : 'bg-yellow-50 group-hover:bg-yellow-100'
               }`}>
-                <Clock className="h-5 w-5 text-yellow-600" />
+                <Clock className="h-4 w-4 text-yellow-600" />
               </div>
-              <div className="ml-3">
+              <div className="ml-2">
                 <p className="text-xs font-medium text-gray-600">Pending</p>
-                <p className="text-xl font-bold text-gray-900">{orderStats.pending}</p>
+                <p className="text-lg font-bold text-gray-900">{orderStats.pending}</p>
               </div>
             </div>
           </button>
 
           <button 
             onClick={() => setStatusFilter('in_progress')}
-            className={`bg-white rounded-lg border-2 shadow-sm hover:shadow-md transition-all p-4 text-left group cursor-pointer ${
+            className={`bg-white rounded-lg border shadow-sm hover:shadow-md transition-all p-3 text-left group cursor-pointer ${
               statusFilter === 'in_progress' ? 'border-orange-500 bg-orange-50' : 'border-gray-200 hover:border-orange-300'
             }`}
           >
             <div className="flex items-center">
-              <div className={`p-2 rounded-lg transition-colors ${
+              <div className={`p-1.5 rounded transition-colors ${
                 statusFilter === 'in_progress' ? 'bg-orange-100' : 'bg-orange-50 group-hover:bg-orange-100'
               }`}>
-                <Activity className="h-5 w-5 text-orange-600" />
+                <Activity className="h-4 w-4 text-orange-600" />
               </div>
-              <div className="ml-3">
+              <div className="ml-2">
                 <p className="text-xs font-medium text-gray-600">Active</p>
-                <p className="text-xl font-bold text-gray-900">{orderStats.active}</p>
+                <p className="text-lg font-bold text-gray-900">{orderStats.active}</p>
               </div>
             </div>
           </button>
 
           <button 
             onClick={() => setStatusFilter('completed')}
-            className={`bg-white rounded-lg border-2 shadow-sm hover:shadow-md transition-all p-4 text-left group cursor-pointer ${
+            className={`bg-white rounded-lg border shadow-sm hover:shadow-md transition-all p-3 text-left group cursor-pointer ${
               statusFilter === 'completed' ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-green-300'
             }`}
           >
             <div className="flex items-center">
-              <div className={`p-2 rounded-lg transition-colors ${
+              <div className={`p-1.5 rounded transition-colors ${
                 statusFilter === 'completed' ? 'bg-green-100' : 'bg-green-50 group-hover:bg-green-100'
               }`}>
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
+                <CheckCircle2 className="h-4 w-4 text-green-600" />
               </div>
-              <div className="ml-3">
+              <div className="ml-2">
                 <p className="text-xs font-medium text-gray-600">Completed</p>
-                <p className="text-xl font-bold text-gray-900">{orderStats.completed}</p>
+                <p className="text-lg font-bold text-gray-900">{orderStats.completed}</p>
               </div>
             </div>
           </button>
