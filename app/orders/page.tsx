@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Search, Plus, FileText, DollarSign, Clock, CheckCircle2, Activity, X } from 'lucide-react';
-import { OrdersTableWidescreen } from '@/components/OrdersTableWidescreen';
+import { OrdersTableMultiClient } from '@/components/OrdersTableMultiClient';
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
 import { AuthService } from '@/lib/auth';
@@ -443,7 +443,7 @@ function OrdersPageContent() {
       )}
 
       {/* Orders Table */}
-      <OrdersTableWidescreen
+      <OrdersTableMultiClient
         orders={filteredOrders}
         loading={loading}
         onRefresh={fetchOrders}
