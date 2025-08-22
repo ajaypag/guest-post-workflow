@@ -29,13 +29,13 @@ export async function GET(request: NextRequest) {
         hasGuestPost: websites.hasGuestPost,
       })
       .from(websites)
-      .where(eq(websites.domain, normalizedDomain))
+      .where(eq(websites.domain, normalizedDomain.domain))
       .limit(1);
 
     if (website.length === 0) {
       return NextResponse.json(
         { 
-          domain: normalizedDomain,
+          domain: normalizedDomain.domain,
           guestPostCost: null,
           message: 'Website not found in database' 
         },

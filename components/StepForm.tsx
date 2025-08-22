@@ -21,7 +21,10 @@ import {
   ImagesStep,
   LinkRequestsStep,
   UrlSuggestionStep,
-  EmailTemplateStep
+  EmailTemplateStep,
+  PublisherPreApprovalStep,
+  PublicationOutreachStep,
+  PublicationVerificationStep
 } from './steps';
 import { KeywordResearchStepClean } from './steps/KeywordResearchStepClean';
 import { DomainSelectionStepClean } from './steps/DomainSelectionStepClean';
@@ -46,6 +49,7 @@ const stepForms: Record<string, React.FC<{ step: WorkflowStep; workflow: GuestPo
   'domain-selection': DomainSelectionStepClean,
   'keyword-research': KeywordResearchStepClean,
   'topic-generation': TopicGenerationImproved, // IMPROVED: Better visual hierarchy. To revert: change to TopicGenerationStepClean
+  'publisher-pre-approval': PublisherPreApprovalStep,
   'deep-research': DeepResearchStepClean,
   'article-draft': ArticleDraftStepClean,
   'content-audit': ContentAuditStepClean,
@@ -59,6 +63,8 @@ const stepForms: Record<string, React.FC<{ step: WorkflowStep; workflow: GuestPo
   'link-requests': LinkRequestsStep,
   'url-suggestion': UrlSuggestionStep,
   'link-orchestration': LinkOrchestrationStep,
+  'publication-outreach': PublicationOutreachStep,
+  'publication-verification': PublicationVerificationStep,
   'email-template': EmailTemplateStep,
 };
 

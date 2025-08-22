@@ -14,7 +14,7 @@ import ChangeBulkAnalysisProject from '@/components/orders/ChangeBulkAnalysisPro
 import { AuthService, type AuthSession } from '@/lib/auth';
 import { formatCurrency } from '@/lib/utils/formatting';
 import { 
-  ArrowLeft, Loader2, CheckCircle, Clock, Users, FileText, 
+  ArrowLeft, Loader2, CheckCircle, CheckCircle2, Clock, Users, FileText, 
   RefreshCw, ExternalLink, Globe, LinkIcon, Eye, Package,
   Target, ChevronRight, ChevronUp, ChevronDown, AlertCircle, Activity, Building, User, DollarSign,
   Download, Share2, XCircle, CreditCard, Trash2, Zap, PlayCircle,
@@ -171,6 +171,12 @@ interface OrderDetail {
   estimatedPricePerLink?: number;
   estimatedBudgetMin?: number;
   estimatedBudgetMax?: number;
+  // Fulfillment tracking fields
+  fulfillmentStartedAt?: string;
+  fulfillmentCompletedAt?: string;
+  totalWorkflows?: number;
+  completedWorkflows?: number;
+  workflowCompletionPercentage?: string;
 }
 
 // Helper functions for dual-mode support (orderGroups vs lineItems)
@@ -1113,7 +1119,11 @@ export default function InternalOrderManagementPage() {
     try {
       const response = await fetch(`/api/orders/${orderId}/generate-workflows`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          skipPaymentCheck: false,
+          autoAssign: false
+        })
       });
       
       if (!response.ok) {
@@ -2065,7 +2075,7 @@ export default function InternalOrderManagementPage() {
                           ) : (
                             <span className="flex items-center justify-center gap-2">
                               <Sparkles className="h-4 w-4" />
-                              {order.hasWorkflows ? 'Regenerate Workflows' : 'Generate Workflows (Required)'}
+                              {order.hasWorkflows ? 'Generate Missing Workflows' : 'Generate Workflows (Required)'}
                             </span>
                           )}
                         </button>
@@ -2376,6 +2386,27 @@ export default function InternalOrderManagementPage() {
                         </div>
                       </div>
                     )}
+                    {order.fulfillmentStartedAt && (
+                      <div className="flex items-start gap-3">
+                        <Zap className="h-4 w-4 text-blue-500 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">Fulfillment Started</p>
+                          <p className="text-sm text-gray-600">
+                            {new Date(order.fulfillmentStartedAt).toLocaleDateString()}
+                            {order.totalWorkflows && ` • ${order.totalWorkflows} workflow${order.totalWorkflows > 1 ? 's' : ''}`}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    {order.fulfillmentCompletedAt && (
+                      <div className="flex items-start gap-3">
+                        <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">Fulfillment Complete</p>
+                          <p className="text-sm text-gray-600">{new Date(order.fulfillmentCompletedAt).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
                 
@@ -2405,6 +2436,31 @@ export default function InternalOrderManagementPage() {
                               sum + subs.filter(s => s.status === 'pending').length, 0
                             )} sites awaiting decision
                           </p>
+                        </div>
+                      </div>
+                    )}
+                    {order.totalWorkflows && order.totalWorkflows > 0 && (
+                      <div className="flex items-start gap-3">
+                        <div className={`w-2 h-2 rounded-full mt-1.5 ${
+                          Number(order.workflowCompletionPercentage || 0) === 100 ? 'bg-green-500' : 
+                          Number(order.workflowCompletionPercentage || 0) > 0 ? 'bg-blue-500 animate-pulse' : 
+                          'bg-gray-400'
+                        }`} />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">
+                            Workflow Progress: {order.completedWorkflows || 0}/{order.totalWorkflows}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <div className="flex-1 bg-gray-200 rounded-full h-2 max-w-[100px]">
+                              <div 
+                                className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                                style={{ width: `${Number(order.workflowCompletionPercentage || 0)}%` }}
+                              />
+                            </div>
+                            <span className="text-xs text-gray-500">
+                              {order.workflowCompletionPercentage || 0}%
+                            </span>
+                          </div>
                         </div>
                       </div>
                     )}
