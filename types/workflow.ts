@@ -32,6 +32,8 @@ export interface GuestPostWorkflow {
   currentStep: number;
   createdBy: string; // User name who created the workflow
   createdByEmail?: string; // Optional: User email for more identification
+  userId?: string; // ID of user who created the workflow
+  assignedUserId?: string; // ID of user currently assigned to work on this workflow
   steps: WorkflowStep[];
   metadata: {
     pitchKeyword?: string;

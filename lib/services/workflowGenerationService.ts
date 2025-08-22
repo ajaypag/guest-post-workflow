@@ -213,11 +213,13 @@ export class WorkflowGenerationService {
       };
 
       // Create workflow using existing service
+      // Assign to order creator by default (can be changed later)
       const createdWorkflow = await WorkflowService.createGuestPostWorkflow(
         workflowData,
         userId,
         account?.contactName || 'System',
-        account?.email
+        account?.email,
+        order.userId || userId // Assign to order creator or current user
       );
 
       return createdWorkflow;
@@ -490,11 +492,13 @@ export class WorkflowGenerationService {
       };
 
       // Create workflow using existing service
+      // Assign to order creator by default (can be changed later)
       const createdWorkflow = await WorkflowService.createGuestPostWorkflow(
         workflowData,
         userId,
         account?.contactName || 'System',
-        account?.email
+        account?.email,
+        orderGroup.userId || userId // Assign to order creator or current user
       );
 
       // Link workflow to order

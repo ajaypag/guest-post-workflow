@@ -3,12 +3,15 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Check, Clock, AlertCircle, FileText, Package } from 'lucide-react';
+import { ArrowLeft, Check, Clock, AlertCircle, FileText, Package, User } from 'lucide-react';
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
 import { GuestPostWorkflow, WORKFLOW_STEPS } from '@/types/workflow';
 import { storage } from '@/lib/storage';
 import StepForm from '@/components/StepForm';
+import { AuthService } from '@/lib/auth';
+import { userStorage } from '@/lib/userStorage';
+import { User as UserType } from '@/types/user';
 
 export default function WorkflowDetail() {
   const params = useParams();
@@ -17,11 +20,23 @@ export default function WorkflowDetail() {
   const [workflow, setWorkflow] = useState<GuestPostWorkflow | null>(null);
   const [activeStep, setActiveStep] = useState(0);
   const [orderDetails, setOrderDetails] = useState<any>(null);
+  const [users, setUsers] = useState<UserType[]>([]);
+  const [session, setSession] = useState<any>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const loadWorkflow = async () => {
       try {
+        // Get current session
+        const currentSession = AuthService.getSession();
+        setSession(currentSession);
+        
+        // Load all users if internal user
+        if (currentSession?.userType === 'internal' || currentSession?.role === 'admin') {
+          const allUsers = await userStorage.getAllUsers();
+          setUsers(allUsers.filter((u: any) => u.role === 'internal' || u.role === 'admin'));
+        }
+        
         const data = await storage.getWorkflow(params.id as string);
         if (data) {
           setWorkflow(data);
@@ -205,6 +220,37 @@ export default function WorkflowDetail() {
                       Domain: {workflow.targetDomain} • 
                       {orderDetails.lineItems?.length || 0} total guest posts
                     </p>
+                  )}
+                  {(session?.userType === 'internal' || session?.role === 'admin') && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <User className="w-4 h-4 text-gray-500" />
+                      <label className="text-sm text-gray-600">Assigned to:</label>
+                      <select
+                        value={workflow.assignedUserId || workflow.userId}
+                        onChange={async (e) => {
+                          const newAssigneeId = e.target.value;
+                          try {
+                            const response = await fetch(`/api/workflows/${workflow.id}/assign`, {
+                              method: 'PATCH',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ assignedUserId: newAssigneeId })
+                            });
+                            if (response.ok) {
+                              setWorkflow({ ...workflow, assignedUserId: newAssigneeId });
+                            }
+                          } catch (error) {
+                            console.error('Failed to reassign:', error);
+                          }
+                        }}
+                        className="px-2 py-1 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        {users.map(user => (
+                          <option key={user.id} value={user.id}>
+                            {user.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   )}
                 </div>
                 <div className="bg-gray-50 border border-gray-200 rounded-full px-4 py-2">

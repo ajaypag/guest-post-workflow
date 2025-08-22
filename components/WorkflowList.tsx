@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, FileText, Trash2, Calendar, ExternalLink, Filter } from 'lucide-react';
+import { Plus, FileText, Trash2, Calendar, ExternalLink, Filter, User } from 'lucide-react';
 import { GuestPostWorkflow, WORKFLOW_STEPS } from '@/types/workflow';
 import { storage } from '@/lib/storage';
 import { userStorage } from '@/lib/userStorage';
@@ -16,9 +16,10 @@ export default function WorkflowList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [users, setUsers] = useState<UserType[]>([]);
-  const [selectedUser, setSelectedUser] = useState<string>('me'); // 'me', 'all', or specific userId/email
+  const [selectedUser, setSelectedUser] = useState<string>('created_by_me'); // 'created_by_me', 'assigned_to_me', 'all', or specific userId
   const [selectedClient, setSelectedClient] = useState<string>('all'); // 'all' or specific client name
   const [currentUserEmail, setCurrentUserEmail] = useState<string>('');
+  const [currentUserId, setCurrentUserId] = useState<string>('');
 
   useEffect(() => {
     loadData();
@@ -26,7 +27,7 @@ export default function WorkflowList() {
 
   useEffect(() => {
     filterWorkflows();
-  }, [workflows, selectedUser, selectedClient, currentUserEmail]);
+  }, [workflows, selectedUser, selectedClient, currentUserEmail, currentUserId]);
 
   const loadData = async () => {
     try {
@@ -36,6 +37,7 @@ export default function WorkflowList() {
       const session = AuthService.getSession();
       if (session) {
         setCurrentUserEmail(session.email);
+        setCurrentUserId(session.userId);
       }
       
       // Load workflows and users
@@ -62,10 +64,12 @@ export default function WorkflowList() {
     let filtered = [...workflows];
 
     // Filter by user
-    if (selectedUser === 'me') {
+    if (selectedUser === 'created_by_me') {
       filtered = filtered.filter(w => w.createdByEmail === currentUserEmail);
+    } else if (selectedUser === 'assigned_to_me') {
+      filtered = filtered.filter(w => w.assignedUserId === currentUserId || (!w.assignedUserId && w.userId === currentUserId));
     } else if (selectedUser !== 'all') {
-      // Filter by specific user
+      // Filter by specific user (shows workflows created by them)
       const selectedUserData = users.find(u => u.id === selectedUser);
       if (selectedUserData) {
         filtered = filtered.filter(w => w.createdByEmail === selectedUserData.email);
@@ -133,9 +137,10 @@ export default function WorkflowList() {
                 onChange={(e) => setSelectedUser(e.target.value)}
                 className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="me">My Workflows</option>
-                <option value="all">All Users</option>
-                <optgroup label="Specific Users">
+                <option value="created_by_me">Created by Me</option>
+                <option value="assigned_to_me">Assigned to Me</option>
+                <option value="all">All Workflows</option>
+                <optgroup label="Filter by Creator">
                   {users.map(user => (
                     <option key={user.id} value={user.id}>
                       {user.name} ({user.email})
@@ -215,7 +220,7 @@ export default function WorkflowList() {
               <div className="flex gap-3 justify-center">
                 <button
                   onClick={() => {
-                    setSelectedUser('all');
+                    setSelectedUser('created_by_me');
                     setSelectedClient('all');
                   }}
                   className="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
@@ -297,6 +302,12 @@ export default function WorkflowList() {
                         <span className="ml-2 text-gray-400">by {workflow.createdBy}</span>
                       )}
                     </div>
+                    {workflow.assignedUserId && workflow.assignedUserId !== workflow.userId && (
+                      <div className="flex items-center">
+                        <User className="w-4 h-4 mr-1.5" />
+                        Assigned to: {users.find(u => u.id === workflow.assignedUserId)?.name || 'Unknown'}
+                      </div>
+                    )}
                     <div className="flex items-center">
                       <Calendar className="w-4 h-4 mr-1.5" />
                       Updated {format(new Date(workflow.updatedAt), 'MMM d, h:mm a')}

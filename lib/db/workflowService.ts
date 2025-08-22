@@ -5,9 +5,10 @@ import { GuestPostWorkflow, WORKFLOW_STEPS } from '@/types/workflow';
 
 export class WorkflowService {
   // Transform GuestPostWorkflow to database format (simplified for JSON storage)
-  static guestPostWorkflowToDatabase(guestWorkflow: GuestPostWorkflow, userId: string): {
+  static guestPostWorkflowToDatabase(guestWorkflow: GuestPostWorkflow, userId: string, assignedUserId?: string): {
     id: string;
     userId: string;
+    assignedUserId: string | null;
     clientId: string | null;
     title: string;
     status: string;
@@ -19,6 +20,7 @@ export class WorkflowService {
     return {
       id: crypto.randomUUID(),
       userId: userId,
+      assignedUserId: assignedUserId || userId, // Default to creator if not specified
       clientId: guestWorkflow.metadata?.clientId || null,
       title: guestWorkflow.clientName,
       status: 'active',
@@ -36,6 +38,8 @@ export class WorkflowService {
       return {
         ...workflow.content,
         id: workflow.id, // Ensure we use the database ID
+        userId: workflow.userId,
+        assignedUserId: workflow.assignedUserId,
         createdAt: new Date(workflow.createdAt),
         updatedAt: new Date(workflow.updatedAt),
       };
@@ -134,7 +138,8 @@ export class WorkflowService {
     guestWorkflow: GuestPostWorkflow, 
     userId: string, 
     userName: string, 
-    userEmail?: string
+    userEmail?: string,
+    assignedUserId?: string
   ): Promise<GuestPostWorkflow> {
     try {
       console.log('WorkflowService.createGuestPostWorkflow - Starting', {
@@ -145,7 +150,7 @@ export class WorkflowService {
       });
 
       // Transform to database format (simplified for JSON storage)
-      const workflowData = this.guestPostWorkflowToDatabase(guestWorkflow, userId);
+      const workflowData = this.guestPostWorkflowToDatabase(guestWorkflow, userId, assignedUserId);
       
       console.log('Final workflow data to insert:', JSON.stringify(workflowData, null, 2));
       
