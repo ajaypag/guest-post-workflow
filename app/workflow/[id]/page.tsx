@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Check, Clock, AlertCircle, FileText, Package, User } from 'lucide-react';
+import { ArrowLeft, Check, Clock, AlertCircle, FileText, Package, User, Edit3, X } from 'lucide-react';
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
 import { GuestPostWorkflow, WORKFLOW_STEPS } from '@/types/workflow';
@@ -22,6 +22,7 @@ export default function WorkflowDetail() {
   const [orderDetails, setOrderDetails] = useState<any>(null);
   const [users, setUsers] = useState<UserType[]>([]);
   const [session, setSession] = useState<any>(null);
+  const [isEditingAssignment, setIsEditingAssignment] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -34,7 +35,7 @@ export default function WorkflowDetail() {
         // Load all users if internal user
         if (currentSession?.userType === 'internal' || currentSession?.role === 'admin') {
           const allUsers = await userStorage.getAllUsers();
-          setUsers(allUsers.filter((u: any) => u.role === 'internal' || u.role === 'admin'));
+          setUsers(allUsers.filter((u: any) => u.isActive !== false));
         }
         
         const data = await storage.getWorkflow(params.id as string);
@@ -221,35 +222,76 @@ export default function WorkflowDetail() {
                       {orderDetails.lineItems?.length || 0} total guest posts
                     </p>
                   )}
+                  {workflow.estimatedCompletionDate && (
+                    <p className="text-sm text-gray-600 mt-1">
+                      <span className="inline-flex items-center">
+                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        Estimated Delivery: {new Date(workflow.estimatedCompletionDate).toLocaleDateString('en-US', { 
+                          month: 'long', 
+                          day: 'numeric', 
+                          year: 'numeric' 
+                        })}
+                      </span>
+                    </p>
+                  )}
                   {(session?.userType === 'internal' || session?.role === 'admin') && (
                     <div className="mt-2 flex items-center gap-2">
                       <User className="w-4 h-4 text-gray-500" />
                       <label className="text-sm text-gray-600">Assigned to:</label>
-                      <select
-                        value={workflow.assignedUserId || workflow.userId}
-                        onChange={async (e) => {
-                          const newAssigneeId = e.target.value;
-                          try {
-                            const response = await fetch(`/api/workflows/${workflow.id}/assign`, {
-                              method: 'PATCH',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ assignedUserId: newAssigneeId })
-                            });
-                            if (response.ok) {
-                              setWorkflow({ ...workflow, assignedUserId: newAssigneeId });
-                            }
-                          } catch (error) {
-                            console.error('Failed to reassign:', error);
-                          }
-                        }}
-                        className="px-2 py-1 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        {users.map(user => (
-                          <option key={user.id} value={user.id}>
-                            {user.name}
-                          </option>
-                        ))}
-                      </select>
+                      
+                      {!isEditingAssignment ? (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-gray-900">
+                            {users.find(u => u.id === (workflow.assignedUserId || workflow.userId))?.name || 'Unknown User'}
+                          </span>
+                          <button
+                            onClick={() => setIsEditingAssignment(true)}
+                            className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                            title="Change assignment"
+                          >
+                            <Edit3 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={workflow.assignedUserId || workflow.userId}
+                            onChange={async (e) => {
+                              const newAssigneeId = e.target.value;
+                              try {
+                                const response = await fetch(`/api/workflows/${workflow.id}/assign`, {
+                                  method: 'PATCH',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ assignedUserId: newAssigneeId })
+                                });
+                                if (response.ok) {
+                                  setWorkflow({ ...workflow, assignedUserId: newAssigneeId });
+                                  setIsEditingAssignment(false);
+                                }
+                              } catch (error) {
+                                console.error('Failed to reassign:', error);
+                              }
+                            }}
+                            className="px-2 py-1 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            autoFocus
+                          >
+                            {users.map(user => (
+                              <option key={user.id} value={user.id}>
+                                {user.name}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            onClick={() => setIsEditingAssignment(false)}
+                            className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                            title="Cancel"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

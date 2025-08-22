@@ -11,6 +11,7 @@ import OrderProgressSteps, { getStateDisplay, getProgressSteps } from '@/compone
 import TargetPageSelector from '@/components/orders/TargetPageSelector';
 import { isLineItemsSystemEnabled, enableLineItemsForOrder } from '@/lib/config/featureFlags';
 import ChangeBulkAnalysisProject from '@/components/orders/ChangeBulkAnalysisProject';
+import { UserAssignmentModal } from '@/components/UserAssignmentModal';
 import { AuthService, type AuthSession } from '@/lib/auth';
 import { formatCurrency } from '@/lib/utils/formatting';
 import { 
@@ -271,6 +272,7 @@ export default function InternalOrderManagementPage() {
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   const [showStatusActions, setShowStatusActions] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [showUserAssignmentModal, setShowUserAssignmentModal] = useState(false);
   const [targetPageStatuses, setTargetPageStatuses] = useState<TargetPageStatus[]>([]);
   const [selectedPages, setSelectedPages] = useState<Set<string>>(new Set());
   const [generatingKeywords, setGeneratingKeywords] = useState(false);
@@ -1116,6 +1118,11 @@ export default function InternalOrderManagementPage() {
       return;
     }
     
+    // Show user assignment modal instead of directly generating
+    setShowUserAssignmentModal(true);
+  };
+
+  const handleAssignAndGenerateWorkflows = async (assignedUserId: string) => {
     setActionLoading(prev => ({ ...prev, generate_workflows: true }));
     try {
       const response = await fetch(`/api/orders/${orderId}/generate-workflows`, {
@@ -1123,7 +1130,8 @@ export default function InternalOrderManagementPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           skipPaymentCheck: false,
-          autoAssign: false
+          autoAssign: false,
+          assignedUserId: assignedUserId // Pass the selected user ID
         })
       });
       
@@ -1135,8 +1143,9 @@ export default function InternalOrderManagementPage() {
       const data = await response.json();
       setMessage({
         type: 'success',
-        text: `Successfully generated ${data.workflowsCreated} workflows!`
+        text: `Successfully generated ${data.workflowsCreated} workflows and assigned to user!`
       });
+      setShowUserAssignmentModal(false);
       await loadOrder();
     } catch (err) {
       console.error('Error generating workflows:', err);
@@ -2884,6 +2893,15 @@ export default function InternalOrderManagementPage() {
           </div>
         </div>
       </div>
+      
+      {/* User Assignment Modal */}
+      <UserAssignmentModal
+        isOpen={showUserAssignmentModal}
+        onClose={() => setShowUserAssignmentModal(false)}
+        onAssign={handleAssignAndGenerateWorkflows}
+        title="Assign Workflows To User"
+        loading={actionLoading.generate_workflows}
+      />
     </AuthWrapper>
   );
 }

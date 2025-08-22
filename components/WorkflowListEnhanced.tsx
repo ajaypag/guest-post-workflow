@@ -28,6 +28,7 @@ export default function WorkflowListEnhanced() {
   const [error, setError] = useState<string | null>(null);
   const [users, setUsers] = useState<UserType[]>([]);
   const [clients, setClients] = useState<any[]>([]);
+  const [orders, setOrders] = useState<Map<string, any>>(new Map());
   
   // User session
   const [currentUserEmail, setCurrentUserEmail] = useState<string>('');
@@ -86,6 +87,26 @@ export default function WorkflowListEnhanced() {
         setClients([]); // Set empty array if clients fail to load
       }
       
+      // Load order details for workflows that have orderId
+      const orderIds = [...new Set(allWorkflows
+        .filter(w => w.metadata?.orderId)
+        .map(w => w.metadata!.orderId!)
+      )];
+      
+      const ordersMap = new Map();
+      for (const orderId of orderIds) {
+        try {
+          const orderResponse = await fetch(`/api/orders/${orderId}?skipOrderGroups=true`);
+          if (orderResponse.ok) {
+            const orderData = await orderResponse.json();
+            ordersMap.set(orderId, orderData);
+          }
+        } catch (error) {
+          console.error(`Error loading order ${orderId}:`, error);
+        }
+      }
+      
+      setOrders(ordersMap);
       setWorkflows(allWorkflows);
       setUsers(allUsers);
     } catch (error) {
@@ -631,6 +652,20 @@ export default function WorkflowListEnhanced() {
                         )}
                       </div>
                       
+                      {/* Order Details */}
+                      {workflow.metadata?.orderId && orders.get(workflow.metadata.orderId) && (
+                        <div className="mb-2 flex items-center gap-3 text-sm">
+                          <span className="inline-flex items-center px-2 py-0.5 bg-purple-50 text-purple-700 rounded">
+                            Order #{orders.get(workflow.metadata.orderId).orderNumber || workflow.metadata.orderId.slice(0, 8)}
+                          </span>
+                          {orders.get(workflow.metadata.orderId).account && (
+                            <span className="text-gray-600">
+                              {orders.get(workflow.metadata.orderId).account.companyName || orders.get(workflow.metadata.orderId).account.email}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      
                       <div className="grid grid-cols-2 gap-4 mb-3">
                         <div>
                           <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Target Site</div>
@@ -652,6 +687,12 @@ export default function WorkflowListEnhanced() {
                           <Calendar className="w-4 h-4 mr-1.5" />
                           Updated {format(new Date(workflow.updatedAt), 'MMM d, h:mm a')}
                         </div>
+                        {workflow.estimatedCompletionDate && (
+                          <div className="flex items-center">
+                            <Calendar className="w-4 h-4 mr-1.5" />
+                            Due {format(new Date(workflow.estimatedCompletionDate), 'MMM d')}
+                          </div>
+                        )}
                         {workflow.assignedUserId && workflow.assignedUserId !== workflow.userId && (
                           <div className="flex items-center">
                             <User className="w-4 h-4 mr-1.5" />

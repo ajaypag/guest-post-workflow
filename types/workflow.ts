@@ -34,6 +34,8 @@ export interface GuestPostWorkflow {
   createdByEmail?: string; // Optional: User email for more identification
   userId?: string; // ID of user who created the workflow
   assignedUserId?: string; // ID of user currently assigned to work on this workflow
+  estimatedCompletionDate?: Date; // Expected delivery date (14 days from assignment)
+  assignedAt?: Date; // When the workflow was assigned
   steps: WorkflowStep[];
   metadata: {
     pitchKeyword?: string;

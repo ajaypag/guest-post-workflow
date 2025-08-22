@@ -37,6 +37,7 @@ export function SearchableAccountDropdown({
 
   // Filter accounts based on search
   const filteredAccounts = accounts.filter(account => {
+    if (account.id === 'all') return true; // Always show "All Accounts" option
     const search = searchTerm.toLowerCase();
     return (
       account.email.toLowerCase().includes(search) ||
@@ -71,10 +72,13 @@ export function SearchableAccountDropdown({
   };
 
   const getDisplayText = (account: Account) => {
-    if (account.companyName) {
-      return `${account.companyName} - ${account.contactName} (${account.email})`;
+    if (account.id === 'all') {
+      return 'All Accounts';
     }
-    return `${account.contactName} (${account.email})`;
+    if (account.companyName) {
+      return `${account.companyName} - ${account.contactName}`;
+    }
+    return `${account.contactName}`;
   };
 
   return (
@@ -83,7 +87,7 @@ export function SearchableAccountDropdown({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-3 py-2 text-left text-sm border border-gray-300 rounded-md bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        className="w-full px-3 py-1.5 text-left text-sm border border-gray-300 rounded-lg bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         aria-haspopup="listbox"
         aria-expanded={isOpen}
       >
@@ -91,13 +95,13 @@ export function SearchableAccountDropdown({
           <span className={selectedAccount ? 'text-gray-900' : 'text-gray-500'}>
             {selectedAccount ? getDisplayText(selectedAccount) : placeholder}
           </span>
-          <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+          <ChevronDown className={`h-4 w-4 text-gray-600 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
         </div>
       </button>
 
       {/* Dropdown Panel */}
       {isOpen && (
-        <div className="absolute z-50 mt-1 w-full bg-white rounded-md shadow-lg border border-gray-200">
+        <div className="absolute z-50 mt-1 w-full bg-white rounded-lg shadow-lg border border-gray-200">
           {/* Search Input */}
           <div className="p-2 border-b border-gray-200">
             <div className="relative">
@@ -108,7 +112,7 @@ export function SearchableAccountDropdown({
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search accounts..."
-                className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full pl-9 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 onClick={(e) => e.stopPropagation()}
               />
             </div>
@@ -135,11 +139,13 @@ export function SearchableAccountDropdown({
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="text-sm font-medium text-gray-900">
-                          {account.companyName || account.contactName}
+                          {account.id === 'all' ? 'All Accounts' : (account.companyName || account.contactName)}
                         </div>
-                        <div className="text-xs text-gray-500">
-                          {account.contactName} • {account.email}
-                        </div>
+                        {account.id !== 'all' && (
+                          <div className="text-xs text-gray-500">
+                            {account.contactName} • {account.email}
+                          </div>
+                        )}
                       </div>
                       {account.id === selectedAccountId && (
                         <Check className="h-4 w-4 text-blue-600" />
