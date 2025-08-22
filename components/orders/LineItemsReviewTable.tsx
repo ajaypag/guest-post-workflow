@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { 
   Search, ChevronDown, ChevronRight, ChevronUp, Edit2, Trash2, 
   CheckCircle, XCircle, AlertCircle, Save, X, Plus, Filter,
@@ -10,6 +11,94 @@ import { formatCurrency } from '@/lib/utils/formatting';
 import DomainCell from './DomainCell';
 import ExpandedDomainDetails from './ExpandedDomainDetails';
 import EnhancedTargetPageSelector from './EnhancedTargetPageSelector';
+
+// Simple hook to fetch workflow progress
+const useWorkflowProgress = (workflowId?: string) => {
+  const [progress, setProgress] = useState<{
+    percentage: number;
+    currentStep: string;
+    isComplete: boolean;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!workflowId) return;
+    
+    // Fetch workflow progress
+    const fetchProgress = async () => {
+      try {
+        const response = await fetch(`/api/workflows/${workflowId}/progress`);
+        if (response.ok) {
+          const data = await response.json();
+          setProgress({
+            percentage: data.completionPercentage || 0,
+            currentStep: data.currentStepTitle || 'In Progress',
+            isComplete: data.isComplete || false
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching workflow progress:', error);
+      }
+    };
+
+    fetchProgress();
+  }, [workflowId]);
+
+  return progress;
+};
+
+// Workflow Status Cell Component
+const WorkflowStatusCell = ({ workflowId, userType }: { workflowId?: string; userType: 'internal' | 'account' }) => {
+  const progress = useWorkflowProgress(workflowId);
+
+  if (!workflowId) {
+    return <span className="text-xs text-gray-400">No workflow</span>;
+  }
+
+  if (!progress) {
+    return (
+      <div className="space-y-1">
+        {userType === 'internal' && (
+          <Link 
+            href={`/workflow/${workflowId}`}
+            className="text-blue-600 hover:text-blue-800 text-xs font-medium"
+          >
+            View →
+          </Link>
+        )}
+        <div className="text-xs text-gray-500">Loading...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center gap-2">
+        {userType === 'internal' && (
+          <Link 
+            href={`/workflow/${workflowId}`}
+            className="text-blue-600 hover:text-blue-800 text-xs font-medium"
+          >
+            View →
+          </Link>
+        )}
+        <span className="text-xs font-medium text-gray-700">
+          {progress.percentage}%
+        </span>
+      </div>
+      <div className="w-full bg-gray-200 rounded-full h-1.5">
+        <div 
+          className={`h-1.5 rounded-full transition-all duration-300 ${
+            progress.isComplete ? 'bg-green-500' : 'bg-blue-600'
+          }`}
+          style={{ width: `${progress.percentage}%` }}
+        ></div>
+      </div>
+      <div className="text-xs text-gray-500 truncate">
+        {progress.isComplete ? 'Complete' : progress.currentStep}
+      </div>
+    </div>
+  );
+};
 
 // ============ INTERFACES ============
 export interface LineItem {
@@ -29,6 +118,7 @@ export interface LineItem {
   assignedDomain?: any;
   estimatedPrice?: number;
   wholesalePrice?: number;
+  workflowId?: string;
   metadata?: any;
   modifiedAt?: string | Date; // For tracking when line item was last modified for invoice regeneration
 }
@@ -334,6 +424,9 @@ export default function LineItemsReviewTable({
   onRequestMoreSites,
   onRefresh
 }: LineItemsReviewTableProps) {
+  // Check if any workflows exist - determines workflow column visibility
+  const hasAnyWorkflows = lineItems.some(item => item.workflowId);
+  
   // State
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -750,6 +843,9 @@ export default function LineItemsReviewTable({
                         </th>
                       )}
                       <th className="pb-2 font-medium sticky left-0 bg-white z-10 pr-4 min-w-[150px]">Domain</th>
+                      {hasAnyWorkflows && (
+                        <th className="pb-2 font-medium min-w-[120px]">Workflow</th>
+                      )}
                       <th className="pb-2 font-medium text-center min-w-[50px] hidden lg:table-cell">DR</th>
                       <th className="pb-2 font-medium text-center min-w-[80px] hidden lg:table-cell">Traffic</th>
                       <th className="pb-2 font-medium text-center min-w-[60px] lg:hidden">DR/Traffic</th>
@@ -801,6 +897,12 @@ export default function LineItemsReviewTable({
                               )}
                             </div>
                           </td>
+                          {/* Workflow Progress Column - Show when workflows exist */}
+                          {hasAnyWorkflows && (
+                            <td className="py-3 px-3">
+                              <WorkflowStatusCell workflowId={item.workflowId} userType={userType} />
+                            </td>
+                          )}
                           {/* Separate DR and Traffic columns for large screens */}
                           <td className="py-3 px-2 text-center hidden lg:table-cell">
                             {metrics.dr || '-'}

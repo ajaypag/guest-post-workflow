@@ -1,13 +1,15 @@
 import { db } from '@/lib/db/connection';
 import { workflows, workflowSteps, users } from '@/lib/db/schema';
 import { orderSiteSelections, orderGroups } from '@/lib/db/orderGroupSchema';
-import { orderItems, orders } from '@/lib/db/orderSchema';
+import { orderItems, orders, orderStatusHistory } from '@/lib/db/orderSchema';
+import { orderLineItems } from '@/lib/db/orderLineItemSchema';
 import { bulkAnalysisDomains } from '@/lib/db/bulkAnalysisSchema';
 import { accounts } from '@/lib/db/accountSchema';
 import { eq, and, inArray, sql } from 'drizzle-orm';
 import { GuestPostWorkflow, WORKFLOW_STEPS } from '@/types/workflow';
 import { WorkflowService } from '@/lib/db/workflowService';
 import { v4 as uuidv4 } from 'uuid';
+import { WorkflowProgressService } from './workflowProgressService';
 
 export interface WorkflowGenerationResult {
   success: boolean;
@@ -131,14 +133,32 @@ export class WorkflowGenerationService {
         }
       }
 
-      // Update order state if all workflows created successfully
-      if (errors.length === 0 && workflowsCreated > 0) {
+      // Update order tracking and state if workflows were created
+      if (workflowsCreated > 0) {
+        // Update order state to in_progress
         await db.update(orders)
           .set({
             state: 'in_progress',
+            totalWorkflows: workflowsCreated,
+            fulfillmentStartedAt: new Date(),
             updatedAt: new Date()
           })
           .where(eq(orders.id, orderId));
+
+        // Add order status history entry for workflow generation
+        await db.insert(orderStatusHistory)
+          .values({
+            id: uuidv4(),
+            orderId,
+            oldStatus: order.status,
+            newStatus: order.status, // Status doesn't change, just tracking event
+            changedBy: userId,
+            changedAt: new Date(),
+            notes: `Generated ${workflowsCreated} workflow${workflowsCreated > 1 ? 's' : ''} for fulfillment`
+          });
+
+        // Trigger order completion check to initialize tracking
+        await WorkflowProgressService.checkOrderCompletion(orderId);
       }
 
       return {
@@ -180,7 +200,7 @@ export class WorkflowGenerationService {
         clientName: client.name,
         clientUrl: client.website,
         targetDomain: domain.domain,
-        currentStep: 0,
+        currentStep: 2, // Start at Topic Generation since first 2 steps completed for order-based workflows
         createdBy: account?.contactName || 'System',
         createdByEmail: account?.email,
         steps: this.generateWorkflowStepsForLineItem(lineItem, domain),
@@ -208,21 +228,35 @@ export class WorkflowGenerationService {
   }
 
   /**
-   * Generate workflow steps for line item
+   * Generate workflow steps for line item - FOR ORDER-BASED WORKFLOWS
+   * Marks first 2 steps as completed since site selection & qualification are done for paid orders
    */
   private static generateWorkflowStepsForLineItem(lineItem: any, domain: any): any[] {
-    return WORKFLOW_STEPS.map((stepTemplate, index) => ({
-      id: `step-${index + 1}`,
-      title: stepTemplate.title,
-      description: stepTemplate.description,
-      status: 'pending',
-      inputs: this.getStepInputsForLineItem(stepTemplate.id, lineItem, domain),
-      outputs: {},
-      fields: {
-        inputs: this.getStepInputFields(stepTemplate.id),
-        outputs: this.getStepOutputFields(stepTemplate.id)
-      }
-    }));
+    return WORKFLOW_STEPS.map((step, index) => {
+      // For order-based workflows, mark first 2 steps as completed
+      const isFirstTwoSteps = index === 0 || index === 1;
+      
+      return {
+        ...step,  // Spread ALL properties from WORKFLOW_STEPS including id, title, description
+        status: isFirstTwoSteps ? 'completed' as const : 'pending' as const,
+        inputs: index === 0 ? {
+          domain: domain.domain,
+          targetPageUrl: lineItem.targetPageUrl,
+          anchorText: lineItem.anchorText,
+          dr: domain.dr || 70,
+          traffic: domain.totalTraffic || 10000,
+          niche: domain.primaryNiche || 'General'
+        } : {},
+        outputs: index === 0 ? {
+          domain: domain.domain
+        } : index === 2 && lineItem.targetPageUrl ? {
+          // Auto-populate Topic Generation (step 2) with target URL and anchor text
+          clientTargetUrl: lineItem.targetPageUrl,
+          desiredAnchorText: lineItem.anchorText || ''
+        } : {},
+        completedAt: isFirstTwoSteps ? new Date() : undefined
+      };
+    });
   }
 
   /**
@@ -481,20 +515,24 @@ export class WorkflowGenerationService {
   }
 
   /**
-   * Generate workflow steps with pre-filled data
+   * Generate workflow steps with pre-filled data - EXACTLY like the frontend does it
    */
   private static generateWorkflowSteps(siteSelection: any, domain: any): any[] {
-    return WORKFLOW_STEPS.map((stepTemplate, index) => ({
-      id: `step-${index + 1}`,
-      title: stepTemplate.title,
-      description: stepTemplate.description,
-      status: 'pending',
-      inputs: this.getStepInputs(stepTemplate.id, siteSelection, domain),
-      outputs: {},
-      fields: {
-        inputs: this.getStepInputFields(stepTemplate.id),
-        outputs: this.getStepOutputFields(stepTemplate.id)
-      }
+    return WORKFLOW_STEPS.map((step, index) => ({
+      ...step,  // Spread ALL properties from WORKFLOW_STEPS including id, title, description
+      status: 'pending' as const,
+      inputs: index === 0 ? {
+        domain: domain.domain,
+        targetPageUrl: siteSelection.targetPageUrl,
+        anchorText: siteSelection.anchorText,
+        dr: domain.dr || 70,
+        traffic: domain.totalTraffic || 10000,
+        niche: domain.primaryNiche || 'General'
+      } : {},
+      outputs: index === 0 ? {
+        domain: domain.domain
+      } : {},
+      completedAt: undefined
     }));
   }
 

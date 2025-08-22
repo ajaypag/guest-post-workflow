@@ -70,16 +70,31 @@ export class WorkflowProgressService {
       };
     }
 
-    const totalSteps = workflow.steps.length;
-    const completedSteps = workflow.steps.filter(s => s.status === 'completed').length;
-    const inProgressSteps = workflow.steps.filter(s => s.status === 'in-progress').length;
-    const pendingSteps = workflow.steps.filter(s => s.status === 'pending').length;
+    // Detect if this is an order-based workflow (has orderId metadata)
+    const isOrderWorkflow = !!workflow.metadata?.orderId;
+    
+    // For order workflows, exclude pre-completed steps from progress calculation
+    const relevantSteps = isOrderWorkflow 
+      ? workflow.steps.slice(2) // Skip first 2 pre-completed steps
+      : workflow.steps;
+    
+    const totalSteps = relevantSteps.length;
+    const completedSteps = relevantSteps.filter(s => s.status === 'completed').length;
+    const inProgressSteps = relevantSteps.filter(s => s.status === 'in-progress').length;
+    const pendingSteps = relevantSteps.filter(s => s.status === 'pending').length;
     
     const completionPercentage = totalSteps > 0 
       ? Math.round((completedSteps / totalSteps) * 100) 
       : 0;
     
-    const isComplete = completedSteps === totalSteps && totalSteps > 0;
+    // For order workflows, check if all relevant steps are complete
+    const isComplete = isOrderWorkflow 
+      ? (completedSteps === totalSteps && totalSteps > 0) // Based on relevant steps only
+      : (workflow.steps.filter(s => s.status === 'completed').length === workflow.steps.length && workflow.steps.length > 0); // All steps for manual workflows
+    
+    // Use the workflow's currentStep field
+    const currentStepIndex = workflow.currentStep || 0;
+    const currentStepTitle = workflow.steps[currentStepIndex]?.title || 'Unknown Step';
     
     // Find last completed step
     let lastCompletedStep: WorkflowProgress['lastCompletedStep'];
@@ -102,14 +117,14 @@ export class WorkflowProgressService {
     }
     
     return {
-      totalSteps,
-      completedSteps,
+      totalSteps, // This is now the relevant steps count (17 for orders, 19 for manual)
+      completedSteps, // This is completed relevant steps only
       inProgressSteps,
       pendingSteps,
-      completionPercentage,
+      completionPercentage, // Based on relevant steps only
       isComplete,
-      currentStepIndex: workflow.currentStep || 0,
-      currentStepTitle: workflow.steps[workflow.currentStep || 0]?.title || 'Unknown Step',
+      currentStepIndex: currentStepIndex,
+      currentStepTitle: currentStepTitle,
       lastCompletedStep
     };
   }
