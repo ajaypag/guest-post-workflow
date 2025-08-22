@@ -1,0 +1,1025 @@
+'use client';
+
+import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { StarIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
+
+interface Domain {
+  // Basic domain info
+  id: string;
+  domain: string;
+  qualificationStatus: string;
+  qualifiedAt: string | null;
+  updatedAt: string;
+  
+  // User curation
+  userBookmarked: boolean;
+  userHidden: boolean;
+  userBookmarkedAt: string | null;
+  userHiddenAt: string | null;
+  
+  // AI Qualification Intelligence - RICH DATA
+  overlapStatus: string | null;
+  authorityDirect: string | null;
+  authorityRelated: string | null;
+  topicScope: string | null;
+  topicReasoning: string | null;
+  evidence: {
+    directCount: number;
+    directMedianPosition: number | null;
+    relatedCount: number;
+    relatedMedianPosition: number | null;
+  } | null;
+  aiQualificationReasoning: string | null;
+  keywordCount: number | null;
+  notes: string | null;
+  hasWorkflow: boolean | null;
+  
+  // Target URL Matching Intelligence
+  suggestedTargetUrl: string | null;
+  targetMatchData: any; // JSON data from AI matching
+  targetMatchedAt: string | null;
+  
+  // Data quality indicators
+  hasDataForSeoResults: boolean | null;
+  dataForSeoResultsCount: number | null;
+  wasManuallyQualified: boolean | null;
+  wasHumanVerified: boolean | null;
+  
+  // Project context
+  clientId: string;
+  clientName: string;
+  projectId: string | null;
+  projectName: string | null;
+  
+  // Website metrics
+  websiteId: string | null;
+  domainRating: number | null;
+  traffic: number | null;
+  categories: string[] | null;
+  niche: string[] | null;
+  websiteType: string[] | null;
+  overallQuality: string | null;
+  
+  // Publishing capabilities - RICH DATA
+  hasGuestPost: boolean | null;
+  hasLinkInsert: boolean | null;
+  guestPostPrice: number | null;
+  publisherTier: string | null;
+  typicalTurnaroundDays: number | null;
+  acceptsDoFollow: boolean | null;
+  maxLinksPerPost: number | null;
+  publishedOpportunities: number | null;
+  
+  // Publisher performance - RICH DATA
+  avgResponseTimeHours: number | null;
+  successRatePercentage: number | null;
+  totalPostsPublished: number | null;
+  lastCampaignDate: string | null;
+  internalQualityScore: number | null;
+  
+  // Availability (calculated)
+  activeLineItemsCount: number;
+  availabilityStatus: 'available' | 'used';
+}
+
+interface VettedSitesTableProps {
+  initialData: {
+    domains: Domain[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+    stats: {
+      totalQualified: number;
+      available: number;
+      used: number;
+      bookmarked: number;
+      hidden: number;
+    };
+  };
+  initialFilters: any;
+  userType: string;
+}
+
+export default function VettedSitesTable({ initialData, initialFilters, userType }: VettedSitesTableProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  const [data, setData] = useState(initialData);
+  const [loading, setLoading] = useState(false);
+  const [selectedDomains, setSelectedDomains] = useState<Set<string>>(new Set());
+  const [actionLoading, setActionLoading] = useState<Set<string>>(new Set());
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
+  // Update data when search params change
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const url = new URL('/api/vetted-sites', window.location.origin);
+        searchParams.forEach((value, key) => {
+          url.searchParams.set(key, value);
+        });
+
+        const response = await fetch(url.toString());
+        if (response.ok) {
+          const newData = await response.json();
+          setData(newData);
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Only fetch if search params have actually changed from initial
+    const currentParams = new URLSearchParams(searchParams);
+    const initialParams = new URLSearchParams(initialFilters);
+    
+    if (currentParams.toString() !== initialParams.toString()) {
+      fetchData();
+    }
+  }, [searchParams]);
+
+  const handleUserAction = async (domainId: string, action: 'bookmark' | 'unbookmark' | 'hide' | 'unhide') => {
+    setActionLoading(prev => new Set([...prev, domainId]));
+    
+    try {
+      const response = await fetch(`/api/vetted-sites/${domainId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        
+        // Update local data
+        setData(prevData => ({
+          ...prevData,
+          domains: prevData.domains.map(domain => 
+            domain.id === domainId 
+              ? {
+                  ...domain,
+                  userBookmarked: result.domain.userBookmarked,
+                  userHidden: result.domain.userHidden,
+                  userBookmarkedAt: result.domain.userBookmarkedAt,
+                  userHiddenAt: result.domain.userHiddenAt,
+                }
+              : domain
+          ),
+        }));
+
+        // Update stats
+        if (action === 'bookmark' || action === 'unbookmark') {
+          setData(prevData => ({
+            ...prevData,
+            stats: {
+              ...prevData.stats,
+              bookmarked: action === 'bookmark' 
+                ? prevData.stats.bookmarked + 1
+                : Math.max(0, prevData.stats.bookmarked - 1),
+            },
+          }));
+        }
+        
+        if (action === 'hide' || action === 'unhide') {
+          setData(prevData => ({
+            ...prevData,
+            stats: {
+              ...prevData.stats,
+              hidden: action === 'hide' 
+                ? prevData.stats.hidden + 1
+                : Math.max(0, prevData.stats.hidden - 1),
+            },
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Error performing action:', error);
+    } finally {
+      setActionLoading(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(domainId);
+        return newSet;
+      });
+    }
+  };
+
+  const handleSelectionToggle = (domainId: string) => {
+    setSelectedDomains(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(domainId)) {
+        newSet.delete(domainId);
+      } else {
+        newSet.add(domainId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectedDomains.size === data.domains.length) {
+      setSelectedDomains(new Set());
+    } else {
+      setSelectedDomains(new Set(data.domains.map(d => d.id)));
+    }
+  };
+
+  const formatPrice = (price: number | null) => {
+    if (!price) return 'N/A';
+    return `$${price.toLocaleString()}`;
+  };
+
+  const formatTraffic = (traffic: number | null) => {
+    if (!traffic) return 'N/A';
+    if (traffic >= 1000000) return `${(traffic / 1000000).toFixed(1)}M`;
+    if (traffic >= 1000) return `${(traffic / 1000).toFixed(1)}K`;
+    return traffic.toString();
+  };
+
+  const getQualificationBadge = (status: string) => {
+    const statusConfig = {
+      high_quality: { label: 'High Quality', className: 'bg-green-100 text-green-800' },
+      good_quality: { label: 'Qualified', className: 'bg-blue-100 text-blue-800' },
+      marginal_quality: { label: 'Marginal', className: 'bg-yellow-100 text-yellow-800' },
+      disqualified: { label: 'Disqualified', className: 'bg-red-100 text-red-800' },
+      pending: { label: 'Pending', className: 'bg-gray-100 text-gray-800' },
+    };
+
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
+    return (
+      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.className}`}>
+        {config.label}
+      </span>
+    );
+  };
+
+  const getAvailabilityBadge = (status: string, count: number) => {
+    if (status === 'available') {
+      return (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+          ✓ Available
+        </span>
+      );
+    } else {
+      return (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+          ⚠ In Use ({count})
+        </span>
+      );
+    }
+  };
+
+  const updateURL = (newParams: Record<string, string>) => {
+    const current = new URLSearchParams(searchParams);
+    Object.entries(newParams).forEach(([key, value]) => {
+      if (value) {
+        current.set(key, value);
+      } else {
+        current.delete(key);
+      }
+    });
+    router.push(`/vetted-sites?${current.toString()}`);
+  };
+
+  const handleSort = (sortBy: string) => {
+    const currentSort = searchParams.get('sortBy');
+    const currentOrder = searchParams.get('sortOrder') || 'desc';
+    
+    let newOrder = 'desc';
+    if (currentSort === sortBy && currentOrder === 'desc') {
+      newOrder = 'asc';
+    }
+    
+    updateURL({ sortBy, sortOrder: newOrder });
+  };
+
+  const handlePageChange = (page: number) => {
+    updateURL({ page: page.toString() });
+  };
+
+  const toggleRowExpansion = (domainId: string) => {
+    const newExpanded = new Set(expandedRows);
+    if (newExpanded.has(domainId)) {
+      newExpanded.delete(domainId);
+    } else {
+      newExpanded.add(domainId);
+    }
+    setExpandedRows(newExpanded);
+  };
+
+  if (loading && data.domains.length === 0) {
+    return (
+      <div className="bg-white rounded-lg border">
+        <div className="p-8 text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-2 text-sm text-gray-500">Loading vetted sites...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (data.domains.length === 0) {
+    return (
+      <div className="bg-white rounded-lg border">
+        <div className="p-8 text-center">
+          <div className="text-gray-400 mb-4">
+            <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No domains found</h3>
+          <p className="text-gray-500 mb-4">
+            Try adjusting your filters or search terms to find more domains.
+          </p>
+          <button
+            onClick={() => router.push('/vetted-sites')}
+            className="text-blue-600 hover:text-blue-800 font-medium"
+          >
+            Clear all filters
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-lg border">
+      {/* Table Header with Controls */}
+      <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              checked={selectedDomains.size === data.domains.length && data.domains.length > 0}
+              onChange={handleSelectAll}
+            />
+            <span className="ml-2 text-sm text-gray-700">
+              {selectedDomains.size > 0 ? `${selectedDomains.size} selected` : 'Select all'}
+            </span>
+          </div>
+          
+          {loading && (
+            <div className="flex items-center text-sm text-gray-500">
+              <div className="animate-spin h-4 w-4 border-2 border-gray-300 border-t-blue-600 rounded-full mr-2"></div>
+              Updating...
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center space-x-2 text-sm text-gray-500">
+          <span>
+            {data.total} domains ({data.stats.available} available)
+          </span>
+        </div>
+      </div>
+
+      {/* Selection Actions Bar */}
+      {selectedDomains.size > 0 && (
+        <div className="px-4 py-2 bg-blue-50 border-b flex items-center justify-between">
+          <div className="text-sm font-medium text-blue-900">
+            {selectedDomains.size} domain{selectedDomains.size !== 1 ? 's' : ''} selected
+          </div>
+          <div className="flex items-center space-x-2">
+            <button className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">
+              Add to Order
+            </button>
+            <button className="text-sm bg-white border text-gray-700 px-3 py-1 rounded hover:bg-gray-50">
+              Export
+            </button>
+            <button 
+              onClick={() => setSelectedDomains(new Set())}
+              className="text-sm text-gray-500 hover:text-gray-700"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Table */}
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200 table-fixed xl:table-auto xl:w-full">
+          <thead className="bg-gray-50">
+            <tr>
+              <th scope="col" className="px-3 xl:px-4 py-3 text-left">
+                <span className="sr-only">Select</span>
+              </th>
+              <th 
+                scope="col" 
+                className="px-3 xl:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 w-48 xl:w-auto"
+                onClick={() => handleSort('domain')}
+              >
+                Domain
+              </th>
+              {userType === 'internal' && (
+                <th scope="col" className="px-3 xl:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Client
+                </th>
+              )}
+              <th scope="col" className="px-3 xl:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40 xl:w-auto">
+                Qualification Score
+              </th>
+              <th scope="col" className="px-3 xl:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32 xl:w-auto">
+                Evidence
+              </th>
+              <th scope="col" className="px-3 xl:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-36 xl:w-auto">
+                Target Match
+              </th>
+              <th scope="col" className="px-3 xl:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-44 xl:w-auto">
+                Publishing Options
+              </th>
+              <th scope="col" className="px-3 xl:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32 xl:w-auto">
+                Availability
+              </th>
+              <th scope="col" className="px-3 xl:px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {data.domains.map((domain) => {
+              return (
+              <React.Fragment key={domain.id}>
+              <tr 
+                className={`hover:bg-gray-50 ${selectedDomains.has(domain.id) ? 'bg-blue-50' : ''}`}
+              >
+                <td className="px-3 xl:px-4 py-4">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    checked={selectedDomains.has(domain.id)}
+                    onChange={() => handleSelectionToggle(domain.id)}
+                  />
+                </td>
+                
+                <td className="px-3 xl:px-4 py-4 whitespace-nowrap">
+                  <div className="flex items-center">
+                    <button
+                      onClick={() => toggleRowExpansion(domain.id)}
+                      className="mr-2 p-1 hover:bg-gray-200 rounded"
+                      title={expandedRows.has(domain.id) ? 'Collapse details' : 'Expand details'}
+                    >
+                      {expandedRows.has(domain.id) ? (
+                        <svg className="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      ) : (
+                        <svg className="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      )}
+                    </button>
+                    {domain.userBookmarked && (
+                      <StarIconSolid className="h-4 w-4 text-yellow-400 mr-1" />
+                    )}
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">{domain.domain}</div>
+                      {domain.suggestedTargetUrl && (
+                        <div className="text-xs text-gray-500 mt-1">
+                          Target: {new URL(domain.suggestedTargetUrl).pathname}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </td>
+
+                {userType === 'internal' && (
+                  <td className="px-3 xl:px-4 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{domain.clientName}</div>
+                    {domain.projectName && (
+                      <div className="text-xs text-gray-500">{domain.projectName}</div>
+                    )}
+                  </td>
+                )}
+
+                {/* Qualification Score Column */}
+                <td className="px-3 xl:px-4 py-4">
+                  <div className="flex items-center space-x-2">
+                    {getQualificationBadge(domain.qualificationStatus)}
+                    <div className="text-xs text-gray-500">
+                      DR {domain.domainRating || 'N/A'}
+                    </div>
+                  </div>
+                  {domain.overlapStatus && (
+                    <div className="text-xs text-gray-600 mt-1 capitalize">
+                      {domain.overlapStatus} • {domain.authorityDirect || 'Unknown'} Authority
+                    </div>
+                  )}
+                </td>
+
+                {/* Evidence Column */}
+                <td className="px-3 xl:px-4 py-4">
+                  {domain.evidence ? (
+                    <div>
+                      <div className="text-sm font-medium text-gray-900">
+                        {domain.evidence.directCount + domain.evidence.relatedCount} keywords
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {domain.evidence.directCount} direct • {domain.evidence.relatedCount} related
+                      </div>
+                      {domain.evidence.directMedianPosition && (
+                        <div className="text-xs text-gray-500">
+                          Pos: #{domain.evidence.directMedianPosition}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-sm text-gray-400">No evidence</span>
+                  )}
+                </td>
+
+                {/* Target Match Column */}
+                <td className="px-3 xl:px-4 py-4">
+                  {domain.suggestedTargetUrl ? (
+                    <div>
+                      <div className="text-sm text-gray-900 truncate max-w-32" title={domain.suggestedTargetUrl}>
+                        {domain.suggestedTargetUrl.split('/').pop() || 'Target Page'}
+                      </div>
+                      {domain.targetMatchedAt && (
+                        <div className="text-xs text-green-600">
+                          ✓ AI Matched
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-sm text-gray-400">No target</span>
+                  )}
+                </td>
+
+                {/* Publishing Options Column */}
+                <td className="px-3 xl:px-4 py-4">
+                  <div className="space-y-1">
+                    {domain.hasGuestPost && (
+                      <div className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                        Guest Post ${domain.guestPostPrice || 'N/A'}
+                      </div>
+                    )}
+                    {domain.hasLinkInsert && (
+                      <div className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                        Link Insert
+                      </div>
+                    )}
+                    {domain.typicalTurnaroundDays && (
+                      <div className="text-xs text-gray-500">
+                        {domain.typicalTurnaroundDays} days
+                      </div>
+                    )}
+                  </div>
+                  {!domain.hasGuestPost && !domain.hasLinkInsert && (
+                    <span className="text-sm text-gray-400">No options</span>
+                  )}
+                </td>
+
+                {/* Availability Column */}
+                <td className="px-3 xl:px-4 py-4">
+                  {domain.activeLineItemsCount > 0 ? (
+                    <div>
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                        In Use ({domain.activeLineItemsCount})
+                      </span>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {formatTraffic(domain.traffic)} traffic
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        ✓ Available
+                      </span>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {formatTraffic(domain.traffic)} traffic
+                      </div>
+                    </div>
+                  )}
+                </td>
+
+                <td className="px-3 xl:px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <div className="flex items-center justify-end space-x-2">
+                    <button
+                      onClick={() => handleUserAction(
+                        domain.id, 
+                        domain.userBookmarked ? 'unbookmark' : 'bookmark'
+                      )}
+                      disabled={actionLoading.has(domain.id)}
+                      className="text-gray-400 hover:text-yellow-500 disabled:opacity-50"
+                      title={domain.userBookmarked ? 'Remove bookmark' : 'Bookmark'}
+                    >
+                      {domain.userBookmarked ? (
+                        <StarIconSolid className="h-4 w-4" />
+                      ) : (
+                        <StarIcon className="h-4 w-4" />
+                      )}
+                    </button>
+                    
+                    <button
+                      onClick={() => handleUserAction(
+                        domain.id, 
+                        domain.userHidden ? 'unhide' : 'hide'
+                      )}
+                      disabled={actionLoading.has(domain.id)}
+                      className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                      title={domain.userHidden ? 'Show' : 'Hide'}
+                    >
+                      <EyeSlashIcon className="h-4 w-4" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              
+              {/* Expandable Row Details */}
+              {expandedRows.has(domain.id) && (
+                <tr className="bg-gray-50">
+                  <td colSpan={userType === 'internal' ? 8 : 7} className="px-6 xl:px-8 py-4 xl:py-6 border-t border-gray-200">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-6">
+                      
+                      {/* AI Qualification Analysis */}
+                      <div className="space-y-3">
+                        <h4 className="text-sm font-semibold text-gray-900">AI Qualification Analysis</h4>
+                        
+                        {domain.aiQualificationReasoning && (
+                          <div>
+                            <h5 className="text-xs font-medium text-gray-700 mb-1">Qualification Reasoning</h5>
+                            <p className="text-xs text-gray-600 leading-relaxed">{domain.aiQualificationReasoning}</p>
+                          </div>
+                        )}
+                        
+                        {domain.topicReasoning && (
+                          <div>
+                            <h5 className="text-xs font-medium text-gray-700 mb-1">Topic Analysis</h5>
+                            <p className="text-xs text-gray-600 leading-relaxed">{domain.topicReasoning}</p>
+                            {domain.topicScope && (
+                              <span className="inline-block mt-1 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded">
+                                Scope: {domain.topicScope}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div>
+                            <span className="text-gray-500">Authority Level:</span>
+                            <div className="font-medium">{domain.authorityDirect || 'Unknown'}</div>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Overlap Status:</span>
+                            <div className="font-medium capitalize">{domain.overlapStatus || 'Unknown'}</div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Evidence Breakdown */}
+                      <div className="space-y-3">
+                        <h4 className="text-sm font-semibold text-gray-900">Evidence Breakdown</h4>
+                        
+                        {domain.evidence ? (
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-center py-1 border-b border-gray-200">
+                              <span className="text-xs text-gray-600">Direct Keywords</span>
+                              <div className="text-right">
+                                <div className="text-sm font-semibold text-gray-900">{domain.evidence.directCount}</div>
+                                {domain.evidence.directMedianPosition && (
+                                  <div className="text-xs text-gray-500">Avg Pos: #{domain.evidence.directMedianPosition}</div>
+                                )}
+                              </div>
+                            </div>
+                            
+                            <div className="flex justify-between items-center py-1 border-b border-gray-200">
+                              <span className="text-xs text-gray-600">Related Keywords</span>
+                              <div className="text-right">
+                                <div className="text-sm font-semibold text-gray-900">{domain.evidence.relatedCount}</div>
+                                {domain.evidence.relatedMedianPosition && (
+                                  <div className="text-xs text-gray-500">Avg Pos: #{domain.evidence.relatedMedianPosition}</div>
+                                )}
+                              </div>
+                            </div>
+                            
+                            <div className="pt-2">
+                              <div className="text-xs text-gray-600 mb-1">Evidence Strength</div>
+                              <div className="flex space-x-1">
+                                {Array.from({ length: 5 }, (_, i) => {
+                                  const totalEvidence = (domain.evidence?.directCount || 0) + (domain.evidence?.relatedCount || 0);
+                                  const filled = i < Math.min(5, Math.floor(totalEvidence / 5));
+                                  return (
+                                    <div
+                                      key={i}
+                                      className={`h-2 w-8 rounded ${
+                                        filled ? 'bg-green-400' : 'bg-gray-200'
+                                      }`}
+                                    />
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-xs text-gray-500 italic">No keyword evidence available</div>
+                        )}
+                        
+                        {domain.keywordCount && (
+                          <div className="text-xs text-gray-600">
+                            Total Keywords Analyzed: <span className="font-medium">{domain.keywordCount}</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Target URL Analysis */}
+                      <div className="space-y-3">
+                        <h4 className="text-sm font-semibold text-gray-900">Target URL Analysis</h4>
+                        
+                        {domain.suggestedTargetUrl ? (
+                          <div className="space-y-2">
+                            <div>
+                              <h5 className="text-xs font-medium text-gray-700 mb-1">Recommended Target</h5>
+                              <a 
+                                href={domain.suggestedTargetUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-xs text-blue-600 hover:text-blue-800 underline break-all"
+                              >
+                                {domain.suggestedTargetUrl}
+                              </a>
+                              {domain.targetMatchedAt && (
+                                <div className="text-xs text-green-600 mt-1">
+                                  ✓ AI matched on {new Date(domain.targetMatchedAt).toLocaleDateString()}
+                                </div>
+                              )}
+                            </div>
+                            
+                            {domain.targetMatchData && domain.targetMatchData.target_analysis && (
+                              <div>
+                                <h5 className="text-xs font-medium text-gray-700 mb-1">Match Analysis</h5>
+                                <div className="space-y-1">
+                                  {domain.targetMatchData.target_analysis.slice(0, 3).map((analysis: any, idx: number) => (
+                                    <div key={idx} className="bg-white p-2 rounded border">
+                                      <div className="flex justify-between items-start mb-1">
+                                        <span className="text-xs text-gray-600 truncate flex-1 mr-2">
+                                          {new URL(analysis.target_url).pathname}
+                                        </span>
+                                        <span className="text-xs font-semibold text-green-600">
+                                          {analysis.match_quality}%
+                                        </span>
+                                      </div>
+                                      {analysis.evidence && (
+                                        <div className="text-xs text-gray-500">
+                                          {analysis.evidence.direct_count || 0} direct • {analysis.evidence.related_count || 0} related
+                                        </div>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-xs text-gray-500 italic">No target URL analysis available</div>
+                        )}
+                      </div>
+                      
+                      {/* Publisher Performance */}
+                      <div className="space-y-3">
+                        <h4 className="text-sm font-semibold text-gray-900">Publisher Performance</h4>
+                        
+                        <div className="grid grid-cols-2 gap-3 text-xs">
+                          {domain.publisherTier && (
+                            <div>
+                              <span className="text-gray-500">Tier:</span>
+                              <div className="font-medium capitalize">{domain.publisherTier}</div>
+                            </div>
+                          )}
+                          
+                          {domain.avgResponseTimeHours && (
+                            <div>
+                              <span className="text-gray-500">Avg Response:</span>
+                              <div className="font-medium">{domain.avgResponseTimeHours}h</div>
+                            </div>
+                          )}
+                          
+                          {domain.successRatePercentage && (
+                            <div>
+                              <span className="text-gray-500">Success Rate:</span>
+                              <div className="font-medium">{domain.successRatePercentage}%</div>
+                            </div>
+                          )}
+                          
+                          {domain.totalPostsPublished && (
+                            <div>
+                              <span className="text-gray-500">Posts Published:</span>
+                              <div className="font-medium">{domain.totalPostsPublished}</div>
+                            </div>
+                          )}
+                          
+                          {domain.acceptsDoFollow !== null && (
+                            <div>
+                              <span className="text-gray-500">DoFollow Links:</span>
+                              <div className="font-medium">{domain.acceptsDoFollow ? 'Yes' : 'No'}</div>
+                            </div>
+                          )}
+                          
+                          {domain.maxLinksPerPost && (
+                            <div>
+                              <span className="text-gray-500">Max Links:</span>
+                              <div className="font-medium">{domain.maxLinksPerPost} per post</div>
+                            </div>
+                          )}
+                        </div>
+                        
+                        {domain.internalQualityScore && (
+                          <div>
+                            <div className="text-xs text-gray-600 mb-1">Internal Quality Score</div>
+                            <div className="flex items-center space-x-2">
+                              <div className="flex-1 bg-gray-200 rounded-full h-2">
+                                <div 
+                                  className="bg-blue-600 h-2 rounded-full" 
+                                  style={{ width: `${domain.internalQualityScore}%` }}
+                                />
+                              </div>
+                              <span className="text-xs font-medium">{domain.internalQualityScore}/100</span>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {domain.lastCampaignDate && (
+                          <div className="text-xs text-gray-600">
+                            Last Campaign: <span className="font-medium">
+                              {new Date(domain.lastCampaignDate).toLocaleDateString()}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Website Details */}
+                      <div className="space-y-3">
+                        <h4 className="text-sm font-semibold text-gray-900">Website Details</h4>
+                        
+                        <div className="space-y-2 text-xs">
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <span className="text-gray-500">Domain Rating:</span>
+                              <div className="font-medium">{domain.domainRating || 'N/A'}</div>
+                            </div>
+                            <div>
+                              <span className="text-gray-500">Monthly Traffic:</span>
+                              <div className="font-medium">{formatTraffic(domain.traffic)}</div>
+                            </div>
+                          </div>
+                          
+                          {domain.categories && domain.categories.length > 0 && (
+                            <div>
+                              <span className="text-gray-500">Categories:</span>
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {domain.categories.slice(0, 3).map((category: string, idx: number) => (
+                                  <span key={idx} className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded text-xs">
+                                    {category}
+                                  </span>
+                                ))}
+                                {domain.categories.length > 3 && (
+                                  <span className="text-xs text-gray-500">+{domain.categories.length - 3} more</span>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {domain.niche && domain.niche.length > 0 && (
+                            <div>
+                              <span className="text-gray-500">Niche:</span>
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {domain.niche.slice(0, 2).map((n: string, idx: number) => (
+                                  <span key={idx} className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">
+                                    {n}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {domain.overallQuality && (
+                            <div>
+                              <span className="text-gray-500">Overall Quality:</span>
+                              <div className="font-medium capitalize">{domain.overallQuality}</div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Data Quality Indicators */}
+                      <div className="space-y-3">
+                        <h4 className="text-sm font-semibold text-gray-900">Data Quality</h4>
+                        
+                        <div className="space-y-1 text-xs">
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-600">DataForSEO Results:</span>
+                            <div className="flex items-center space-x-1">
+                              {domain.hasDataForSeoResults ? (
+                                <span className="text-green-600">✓</span>
+                              ) : (
+                                <span className="text-red-500">✗</span>
+                              )}
+                              {domain.dataForSeoResultsCount && (
+                                <span className="text-gray-500">({domain.dataForSeoResultsCount})</span>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-600">Manual Qualification:</span>
+                            <span className={domain.wasManuallyQualified ? 'text-green-600' : 'text-gray-400'}>
+                              {domain.wasManuallyQualified ? '✓' : '✗'}
+                            </span>
+                          </div>
+                          
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-600">Human Verified:</span>
+                            <span className={domain.wasHumanVerified ? 'text-green-600' : 'text-gray-400'}>
+                              {domain.wasHumanVerified ? '✓' : '✗'}
+                            </span>
+                          </div>
+                          
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-600">Has Workflow:</span>
+                            <span className={domain.hasWorkflow ? 'text-green-600' : 'text-gray-400'}>
+                              {domain.hasWorkflow ? '✓' : '✗'}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        {domain.notes && (
+                          <div>
+                            <h5 className="text-xs font-medium text-gray-700 mb-1">Internal Notes</h5>
+                            <p className="text-xs text-gray-600 leading-relaxed">{domain.notes}</p>
+                          </div>
+                        )}
+                        
+                        <div className="text-xs text-gray-500 pt-2 border-t">
+                          Last updated: {new Date(domain.updatedAt).toLocaleDateString()}
+                          {domain.qualifiedAt && (
+                            <div>Qualified: {new Date(domain.qualifiedAt).toLocaleDateString()}</div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              )}
+              </React.Fragment>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Pagination */}
+      {data.totalPages > 1 && (
+        <div className="px-4 py-3 border-t border-gray-200 flex items-center justify-between">
+          <div className="text-sm text-gray-700">
+            Showing page {data.page} of {data.totalPages}
+          </div>
+          <div className="flex items-center space-x-1">
+            <button
+              onClick={() => handlePageChange(data.page - 1)}
+              disabled={data.page === 1}
+              className="px-3 py-1 border rounded text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            
+            {/* Page numbers */}
+            {Array.from({ length: Math.min(5, data.totalPages) }, (_, i) => {
+              const pageNum = Math.max(1, data.page - 2) + i;
+              if (pageNum > data.totalPages) return null;
+              
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => handlePageChange(pageNum)}
+                  className={`px-3 py-1 border rounded text-sm ${
+                    pageNum === data.page
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+            
+            <button
+              onClick={() => handlePageChange(data.page + 1)}
+              disabled={data.page === data.totalPages}
+              className="px-3 py-1 border rounded text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
