@@ -1,49 +1,49 @@
--- Migration: Add publisher coordination fields
--- File: 0064_add_publisher_coordination_fields.sql
--- Date: 2025-08-21
--- Purpose: Add publisher communication and QA tracking to workflows table
+-- Migration 0064: Add publisher coordination fields
+-- Adds fields for tracking publisher communication, QA, and payment authorization
+-- Date: 2025-01-22
 
--- Add publisher coordination columns to workflows table
-ALTER TABLE workflows ADD COLUMN IF NOT EXISTS publisher_email VARCHAR(255);
-ALTER TABLE workflows ADD COLUMN IF NOT EXISTS publisher_pre_approval_sent_at TIMESTAMP;
-ALTER TABLE workflows ADD COLUMN IF NOT EXISTS publisher_pre_approval_status VARCHAR(50);
-ALTER TABLE workflows ADD COLUMN IF NOT EXISTS publisher_final_sent_at TIMESTAMP;
-ALTER TABLE workflows ADD COLUMN IF NOT EXISTS published_url VARCHAR(500);
-ALTER TABLE workflows ADD COLUMN IF NOT EXISTS publication_verified_at TIMESTAMP;
-ALTER TABLE workflows ADD COLUMN IF NOT EXISTS qa_checklist_completed BOOLEAN DEFAULT false;
-ALTER TABLE workflows ADD COLUMN IF NOT EXISTS payment_authorized BOOLEAN DEFAULT false;
+-- Publisher communication tracking
+ALTER TABLE workflows 
+ADD COLUMN IF NOT EXISTS publisher_email VARCHAR(255);
+
+ALTER TABLE workflows 
+ADD COLUMN IF NOT EXISTS publisher_pre_approval_sent_at TIMESTAMP;
+
+ALTER TABLE workflows 
+ADD COLUMN IF NOT EXISTS publisher_pre_approval_status VARCHAR(50) 
+  CHECK (publisher_pre_approval_status IN ('pending', 'approved', 'rejected', 'revision_requested'));
+
+ALTER TABLE workflows 
+ADD COLUMN IF NOT EXISTS publisher_final_sent_at TIMESTAMP;
+
+-- Publication tracking
+ALTER TABLE workflows 
+ADD COLUMN IF NOT EXISTS published_url VARCHAR(500);
+
+ALTER TABLE workflows 
+ADD COLUMN IF NOT EXISTS publication_verified_at TIMESTAMP;
+
+-- QA and payment tracking
+ALTER TABLE workflows 
+ADD COLUMN IF NOT EXISTS qa_checklist_completed BOOLEAN DEFAULT FALSE;
+
+ALTER TABLE workflows 
+ADD COLUMN IF NOT EXISTS payment_authorized BOOLEAN DEFAULT FALSE;
+
+ALTER TABLE workflows 
+ADD COLUMN IF NOT EXISTS payment_authorized_at TIMESTAMP;
+
+ALTER TABLE workflows 
+ADD COLUMN IF NOT EXISTS payment_amount NUMERIC(10,2);
 
 -- Add comments for documentation
-COMMENT ON COLUMN workflows.publisher_email IS 'Email address of publisher/blogger for coordination';
-COMMENT ON COLUMN workflows.publisher_pre_approval_sent_at IS 'When pre-approval email was sent to publisher';
-COMMENT ON COLUMN workflows.publisher_pre_approval_status IS 'Status: pending, approved, rejected';
+COMMENT ON COLUMN workflows.publisher_email IS 'Email address of the publisher/blogger';
+COMMENT ON COLUMN workflows.publisher_pre_approval_sent_at IS 'When pre-approval request was sent to publisher';
+COMMENT ON COLUMN workflows.publisher_pre_approval_status IS 'Status of publisher pre-approval';
 COMMENT ON COLUMN workflows.publisher_final_sent_at IS 'When final article was sent to publisher';
-COMMENT ON COLUMN workflows.published_url IS 'URL where article was actually published';
+COMMENT ON COLUMN workflows.published_url IS 'URL where the guest post was published';
 COMMENT ON COLUMN workflows.publication_verified_at IS 'When publication was verified and QA completed';
-COMMENT ON COLUMN workflows.qa_checklist_completed IS 'True when all QA checks pass';
-COMMENT ON COLUMN workflows.payment_authorized IS 'True when payment to publisher is authorized';
-
--- Create indexes for common queries
-CREATE INDEX IF NOT EXISTS idx_workflows_publisher_email ON workflows(publisher_email);
-CREATE INDEX IF NOT EXISTS idx_workflows_publisher_pre_approval_status ON workflows(publisher_pre_approval_status);
-CREATE INDEX IF NOT EXISTS idx_workflows_qa_checklist_completed ON workflows(qa_checklist_completed);
-CREATE INDEX IF NOT EXISTS idx_workflows_payment_authorized ON workflows(payment_authorized);
-CREATE INDEX IF NOT EXISTS idx_workflows_published_url ON workflows(published_url) WHERE published_url IS NOT NULL;
-
--- Set default values for existing workflows
-UPDATE workflows 
-SET publisher_pre_approval_status = 'pending'
-WHERE publisher_pre_approval_status IS NULL;
-
-UPDATE workflows 
-SET qa_checklist_completed = false
-WHERE qa_checklist_completed IS NULL;
-
-UPDATE workflows 
-SET payment_authorized = false
-WHERE payment_authorized IS NULL;
-
--- Log migration completion
-INSERT INTO migrations (id, name, executed_at) 
-VALUES (64, '0064_add_publisher_coordination_fields', NOW())
-ON CONFLICT (id) DO NOTHING;
+COMMENT ON COLUMN workflows.qa_checklist_completed IS 'Whether all QA checks have passed';
+COMMENT ON COLUMN workflows.payment_authorized IS 'Whether payment to publisher has been authorized';
+COMMENT ON COLUMN workflows.payment_authorized_at IS 'When payment was authorized';
+COMMENT ON COLUMN workflows.payment_amount IS 'Amount to be paid to publisher';
