@@ -62,6 +62,8 @@ interface Domain {
   websiteType: string[] | null;
   overallQuality: string | null;
   
+  // Pricing
+  guestPostCost: string | null;
   
   // Publisher performance - RICH DATA
   avgResponseTimeHours: number | null;
@@ -420,6 +422,9 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
               <th scope="col" className="px-3 xl:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-36 xl:w-auto">
                 Target Match
               </th>
+              <th scope="col" className="px-3 xl:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24 xl:w-auto">
+                Price
+              </th>
               <th scope="col" className="px-3 xl:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32 xl:w-auto">
                 Availability
               </th>
@@ -536,6 +541,21 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
                   ) : (
                     <span className="text-sm text-gray-400">No target</span>
                   )}
+                </td>
+
+                {/* Price Column */}
+                <td className="px-3 xl:px-4 py-4">
+                  <div className="text-sm font-medium text-gray-900">
+                    {(() => {
+                      const wholesalePrice = domain.guestPostCost ? parseFloat(domain.guestPostCost) : null;
+                      if (!wholesalePrice) return <span className="text-gray-400">N/A</span>;
+                      
+                      // For external users, show retail price (wholesale + $79)
+                      // For internal users, show wholesale price
+                      const displayPrice = userType === 'internal' ? wholesalePrice : wholesalePrice + 79;
+                      return `$${displayPrice.toFixed(0)}`;
+                    })()}
+                  </div>
                 </td>
 
                 {/* Availability Column */}

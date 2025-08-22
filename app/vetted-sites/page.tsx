@@ -174,6 +174,8 @@ async function getInitialData(session: any, searchParams: any) {
         websiteType: websites.websiteType,
         overallQuality: websites.overallQuality,
         
+        // Pricing - wholesale cost from website
+        guestPostCost: websites.guestPostCost,
         
         // Publisher performance - RICH DATA
         avgResponseTimeHours: websites.avgResponseTimeHours,
