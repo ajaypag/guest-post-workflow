@@ -174,15 +174,6 @@ async function getInitialData(session: any, searchParams: any) {
         websiteType: websites.websiteType,
         overallQuality: websites.overallQuality,
         
-        // Publishing capabilities - RICH DATA
-        hasGuestPost: websites.hasGuestPost,
-        hasLinkInsert: websites.hasLinkInsert,
-        guestPostPrice: websites.guestPostCost,
-        publisherTier: websites.publisherTier,
-        typicalTurnaroundDays: websites.typicalTurnaroundDays,
-        acceptsDoFollow: websites.acceptsDoFollow,
-        maxLinksPerPost: websites.maxLinksPerPost,
-        publishedOpportunities: websites.publishedOpportunities,
         
         // Publisher performance - RICH DATA
         avgResponseTimeHours: websites.avgResponseTimeHours,

@@ -62,15 +62,6 @@ interface Domain {
   websiteType: string[] | null;
   overallQuality: string | null;
   
-  // Publishing capabilities - RICH DATA
-  hasGuestPost: boolean | null;
-  hasLinkInsert: boolean | null;
-  guestPostPrice: number | null;
-  publisherTier: string | null;
-  typicalTurnaroundDays: number | null;
-  acceptsDoFollow: boolean | null;
-  maxLinksPerPost: number | null;
-  publishedOpportunities: number | null;
   
   // Publisher performance - RICH DATA
   avgResponseTimeHours: number | null;
@@ -231,12 +222,6 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
     }
   };
 
-  const formatPrice = (price: number | null, showRetail: boolean = false) => {
-    if (!price) return 'N/A';
-    // For external users, add $79 service fee to show retail price
-    const displayPrice = showRetail ? price + 79 : price;
-    return `$${displayPrice.toLocaleString()}`;
-  };
 
   const formatTraffic = (traffic: number | null) => {
     if (!traffic) return 'N/A';
@@ -435,9 +420,6 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
               <th scope="col" className="px-3 xl:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-36 xl:w-auto">
                 Target Match
               </th>
-              <th scope="col" className="px-3 xl:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-44 xl:w-auto">
-                Publishing Options
-              </th>
               <th scope="col" className="px-3 xl:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32 xl:w-auto">
                 Availability
               </th>
@@ -553,30 +535,6 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
                     </div>
                   ) : (
                     <span className="text-sm text-gray-400">No target</span>
-                  )}
-                </td>
-
-                {/* Publishing Options Column */}
-                <td className="px-3 xl:px-4 py-4">
-                  <div className="space-y-1">
-                    {domain.hasGuestPost && (
-                      <div className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                        Guest Post {formatPrice(domain.guestPostPrice, userType !== 'internal')}
-                      </div>
-                    )}
-                    {domain.hasLinkInsert && (
-                      <div className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                        Link Insert
-                      </div>
-                    )}
-                    {domain.typicalTurnaroundDays && (
-                      <div className="text-xs text-gray-500">
-                        {domain.typicalTurnaroundDays} days
-                      </div>
-                    )}
-                  </div>
-                  {!domain.hasGuestPost && !domain.hasLinkInsert && (
-                    <span className="text-sm text-gray-400">No options</span>
                   )}
                 </td>
 
