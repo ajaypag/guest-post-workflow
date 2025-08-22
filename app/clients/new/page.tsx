@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 import AuthWrapper from '@/components/AuthWrapper';
+import { areDomainsEquivalent } from '@/lib/utils/domainNormalizer';
 import { 
   Building,
   Globe,
@@ -192,18 +193,48 @@ function NewClientContent() {
     setLoading(true);
     
     try {
-      // Check for duplicate clients
-      const checkResponse = await fetch(`/api/clients?search=${encodeURIComponent(formData.name)}`);
+      // Check for duplicate clients within the specific account only
+      const checkResponse = await fetch(`/api/clients`);
       if (checkResponse.ok) {
         const { clients } = await checkResponse.json();
-        const duplicate = clients.find((c: any) => 
-          c.name.toLowerCase() === formData.name.toLowerCase() ||
-          c.website.toLowerCase() === formData.website.toLowerCase()
-        );
-        if (duplicate) {
-          setError(`A client with this name or website already exists: ${duplicate.name}`);
-          setLoading(false);
-          return;
+        
+        // Debug logging
+        console.log('Duplicate check debug:', {
+          userType,
+          selectedAccountId,
+          totalClients: clients.length,
+          selectedPath
+        });
+        
+        // CRITICAL FIX: Only check duplicates within the selected account
+        // If no account is selected (which shouldn't happen), skip duplicate check
+        if (!selectedAccountId) {
+          console.warn('No account selected for duplicate check - this should not happen');
+          // Don't check for duplicates if no account is selected
+          // This ensures we're always checking account-scoped
+        } else {
+          // Filter clients to only check within the selected account
+          const accountClients = clients.filter((c: any) => c.accountId === selectedAccountId);
+          
+          console.log('Filtered clients for account:', {
+            accountId: selectedAccountId,
+            filteredCount: accountClients.length,
+            allClientAccounts: clients.slice(0, 5).map((c: any) => ({
+              name: c.name,
+              website: c.website,
+              accountId: c.accountId
+            }))
+          });
+          
+          const duplicate = accountClients.find((c: any) => 
+            c.website && areDomainsEquivalent(c.website, formData.website)
+          );
+          
+          if (duplicate) {
+            setError(`A client with this website already exists in this account: ${duplicate.name} (${duplicate.website})`);
+            setLoading(false);
+            return;
+          }
         }
       }
       

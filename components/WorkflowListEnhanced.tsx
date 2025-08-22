@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { 
   Plus, FileText, Trash2, Calendar, ExternalLink, Filter, User, 
   Search, ChevronLeft, ChevronRight, Check, X, ChevronDown,
-  ArrowUpDown, ArrowUp, ArrowDown, Users, RefreshCw
+  ArrowUpDown, ArrowUp, ArrowDown, Users, RefreshCw, Clock
 } from 'lucide-react';
 import { GuestPostWorkflow, WORKFLOW_STEPS } from '@/types/workflow';
 import { storage } from '@/lib/storage';
@@ -13,6 +13,7 @@ import { AuthService } from '@/lib/auth';
 import { User as UserType } from '@/types/user';
 import { format } from 'date-fns';
 import Link from 'next/link';
+import { SearchableAccountDropdown } from '@/components/SearchableAccountDropdown';
 
 const ITEMS_PER_PAGE = 20;
 
@@ -26,6 +27,7 @@ export default function WorkflowListEnhanced() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [users, setUsers] = useState<UserType[]>([]);
+  const [clients, setClients] = useState<any[]>([]);
   
   // User session
   const [currentUserEmail, setCurrentUserEmail] = useState<string>('');
@@ -33,6 +35,8 @@ export default function WorkflowListEnhanced() {
   
   // Filters
   const [selectedUser, setSelectedUser] = useState<string>('created_by_me');
+  const [selectedAssignee, setSelectedAssignee] = useState<string>('all');
+  const [selectedOrder, setSelectedOrder] = useState<string>('all');
   const [selectedClient, setSelectedClient] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -66,11 +70,21 @@ export default function WorkflowListEnhanced() {
         setCurrentUserId(session.userId);
       }
       
-      // Load workflows and users
+      // Load workflows, users, and accounts
       const [allWorkflows, allUsers] = await Promise.all([
         storage.getAllWorkflows(),
         userStorage.getAllUsers()
       ]);
+      
+      // Load clients from API
+      try {
+        const clientsResponse = await fetch('/api/clients');
+        const clientsData = clientsResponse.ok ? await clientsResponse.json() : { clients: [] };
+        setClients(clientsData.clients || []);
+      } catch (error) {
+        console.error('Error loading clients:', error);
+        setClients([]); // Set empty array if clients fail to load
+      }
       
       setWorkflows(allWorkflows);
       setUsers(allUsers);
@@ -106,11 +120,9 @@ export default function WorkflowListEnhanced() {
   const processedWorkflows = useMemo(() => {
     let filtered = [...workflows];
 
-    // User filter
+    // User filter (creator)
     if (selectedUser === 'created_by_me') {
       filtered = filtered.filter(w => w.createdByEmail === currentUserEmail);
-    } else if (selectedUser === 'assigned_to_me') {
-      filtered = filtered.filter(w => w.assignedUserId === currentUserId || (!w.assignedUserId && w.userId === currentUserId));
     } else if (selectedUser !== 'all') {
       const selectedUserData = users.find(u => u.id === selectedUser);
       if (selectedUserData) {
@@ -118,10 +130,46 @@ export default function WorkflowListEnhanced() {
       }
     }
 
+    // Assignee filter
+    if (selectedAssignee === 'assigned_to_me') {
+      filtered = filtered.filter(w => w.assignedUserId === currentUserId || (!w.assignedUserId && w.userId === currentUserId));
+    } else if (selectedAssignee !== 'all') {
+      filtered = filtered.filter(w => w.assignedUserId === selectedAssignee || (!w.assignedUserId && w.userId === selectedAssignee));
+    }
+
+    // Order filter
+    if (selectedOrder !== 'all') {
+      filtered = filtered.filter(w => w.metadata?.orderId === selectedOrder);
+    }
+
     // Client filter
     if (selectedClient !== 'all') {
-      filtered = filtered.filter(w => w.clientName === selectedClient);
+      console.log('🔍 CLIENT FILTER DEBUG:');
+      console.log('- Selected client:', selectedClient);
+      console.log('- Total workflows before filter:', filtered.length);
+      console.log('- Available clients:', clients.map(c => ({ id: c.id, name: c.name })));
+      
+      // Show all available clientIds in workflows for debugging
+      const allClientIds = workflows.map(w => ({
+        id: w.id,
+        metadataClientId: w.metadata?.clientId,
+        directClientId: (w as any).clientId,
+        clientName: w.clientName
+      }));
+      console.log('- All clientIds in workflows:', allClientIds);
+      
+      filtered = filtered.filter(w => {
+        // Check both metadata.clientId and direct clientId property
+        const metadataClientId = w.metadata?.clientId;
+        const directClientId = (w as any).clientId;
+        const match = metadataClientId === selectedClient || directClientId === selectedClient;
+        console.log(`- Workflow ${w.id}: metadataClientId=${metadataClientId}, directClientId=${directClientId}, match=${match}`);
+        return match;
+      });
+      
+      console.log('- Workflows after client filter:', filtered.length);
     }
+
 
     // Status filter
     if (statusFilter !== 'all') {
@@ -173,7 +221,7 @@ export default function WorkflowListEnhanced() {
     });
 
     return filtered;
-  }, [workflows, selectedUser, selectedClient, statusFilter, searchQuery, dateRange, sortField, sortOrder, currentUserEmail, currentUserId, users]);
+  }, [workflows, selectedUser, selectedAssignee, selectedOrder, selectedClient, statusFilter, searchQuery, dateRange, sortField, sortOrder, currentUserEmail, currentUserId, users]);
 
   // Pagination
   const totalPages = Math.ceil(processedWorkflows.length / ITEMS_PER_PAGE);
@@ -185,7 +233,7 @@ export default function WorkflowListEnhanced() {
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedUser, selectedClient, statusFilter, searchQuery, dateRange]);
+  }, [selectedUser, selectedAssignee, selectedOrder, selectedClient, statusFilter, searchQuery, dateRange]);
 
   // Bulk operations
   const handleSelectAll = () => {
@@ -251,6 +299,10 @@ export default function WorkflowListEnhanced() {
   };
 
   const uniqueClients = Array.from(new Set(workflows.map(w => w.clientName))).sort();
+  const uniqueOrders = Array.from(new Set(workflows
+    .filter(w => w.metadata?.orderId)
+    .map(w => w.metadata!.orderId!)
+  )).sort();
 
   return (
     <div className="workflow-list-section">
@@ -285,95 +337,168 @@ export default function WorkflowListEnhanced() {
             </div>
           </div>
 
-          {/* Filter Controls */}
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex items-center">
-              <Filter className="w-4 h-4 text-gray-500 mr-2" />
-              <span className="text-sm font-medium text-gray-700">Filters:</span>
+          {/* Grouped Filter Controls */}
+          <div className="space-y-4">
+            {/* Filter Groups */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* PEOPLE Section */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center mb-3">
+                  <User className="w-4 h-4 text-gray-500 mr-2" />
+                  <span className="text-sm font-semibold text-gray-700 uppercase tracking-wide">People</span>
+                </div>
+                <div className="space-y-2">
+                  <select
+                    value={selectedUser}
+                    onChange={(e) => setSelectedUser(e.target.value)}
+                    className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="created_by_me">Created by Me</option>
+                    <option value="all">All Creators</option>
+                    {users.map(user => (
+                      <option key={user.id} value={user.id}>
+                        {user.name}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={selectedAssignee}
+                    onChange={(e) => setSelectedAssignee(e.target.value)}
+                    className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="all">All Assignees</option>
+                    <option value="assigned_to_me">Assigned to Me</option>
+                    {users.map(user => (
+                      <option key={user.id} value={user.id}>
+                        {user.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* SCOPE Section */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center mb-3">
+                  <FileText className="w-4 h-4 text-gray-500 mr-2" />
+                  <span className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Scope</span>
+                </div>
+                <div className="space-y-2">
+                  <select
+                    value={selectedOrder}
+                    onChange={(e) => setSelectedOrder(e.target.value)}
+                    className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="all">All Orders</option>
+                    {uniqueOrders.map(orderId => (
+                      <option key={orderId} value={orderId}>
+                        Order #{orderId.slice(0, 8)}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="w-full">
+                    <SearchableAccountDropdown
+                      accounts={[
+                        { id: 'all', email: '', contactName: 'All Clients', companyName: '', status: 'active' },
+                        ...clients.map(client => ({
+                          id: client.id,
+                          email: '',
+                          contactName: client.name,
+                          companyName: client.website || '',
+                          status: 'active'
+                        }))
+                      ]}
+                      selectedAccountId={selectedClient}
+                      onSelect={(account) => setSelectedClient(account.id)}
+                      placeholder="Choose client..."
+                      className="w-full"
+                    />
+                  </div>
+                  <select
+                    value={selectedClient}
+                    onChange={(e) => setSelectedClient(e.target.value)}
+                    className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="all">All Clients</option>
+                    {uniqueClients.map(client => (
+                      <option key={client} value={client}>
+                        {client}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* STATUS & TIME Section */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center mb-3">
+                  <Clock className="w-4 h-4 text-gray-500 mr-2" />
+                  <span className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Status & Time</span>
+                </div>
+                <div className="space-y-2">
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+                    className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="all">All Status</option>
+                    <option value="not-started">Not Started</option>
+                    <option value="in-progress">In Progress</option>
+                    <option value="completed">Completed</option>
+                    <option value="stalled">Stalled (7+ days)</option>
+                  </select>
+                  <div className="space-y-1">
+                    <input
+                      type="date"
+                      value={dateRange.start}
+                      onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+                      className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Start date"
+                    />
+                    <input
+                      type="date"
+                      value={dateRange.end}
+                      onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+                      className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="End date"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
-            
-            {/* User Filter */}
-            <select
-              value={selectedUser}
-              onChange={(e) => setSelectedUser(e.target.value)}
-              className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="created_by_me">Created by Me</option>
-              <option value="assigned_to_me">Assigned to Me</option>
-              <option value="all">All Workflows</option>
-              <optgroup label="Filter by Creator">
-                {users.map(user => (
-                  <option key={user.id} value={user.id}>
-                    {user.name} ({user.email})
-                  </option>
-                ))}
-              </optgroup>
-            </select>
 
-            {/* Client Filter */}
-            <select
-              value={selectedClient}
-              onChange={(e) => setSelectedClient(e.target.value)}
-              className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="all">All Clients</option>
-              {uniqueClients.map(client => (
-                <option key={client} value={client}>
-                  {client}
-                </option>
-              ))}
-            </select>
-
-            {/* Status Filter */}
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-              className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="all">All Status</option>
-              <option value="not-started">Not Started</option>
-              <option value="in-progress">In Progress</option>
-              <option value="completed">Completed</option>
-              <option value="stalled">Stalled (7+ days)</option>
-            </select>
-
-            {/* Date Range */}
-            <div className="flex items-center gap-2">
-              <input
-                type="date"
-                value={dateRange.start}
-                onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-                className="px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Start date"
-              />
-              <span className="text-gray-500">to</span>
-              <input
-                type="date"
-                value={dateRange.end}
-                onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-                className="px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="End date"
-              />
-            </div>
-
-            {/* Clear Filters */}
-            {(selectedUser !== 'created_by_me' || selectedClient !== 'all' || statusFilter !== 'all' || searchQuery || dateRange.start || dateRange.end) && (
-              <button
-                onClick={() => {
-                  setSelectedUser('created_by_me');
-                  setSelectedClient('all');
-                  setStatusFilter('all');
-                  setSearchQuery('');
-                  setDateRange({ start: '', end: '' });
-                }}
-                className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 underline"
-              >
-                Clear all
-              </button>
-            )}
-
-            <div className="ml-auto text-sm text-gray-500">
-              Showing {paginatedWorkflows.length} of {processedWorkflows.length} workflows
+            {/* Actions Bar */}
+            <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+              <div className="flex items-center gap-4">
+                {/* Clear Filters */}
+                {(selectedUser !== 'created_by_me' || selectedAssignee !== 'all' || selectedOrder !== 'all' || selectedClient !== 'all' || statusFilter !== 'all' || searchQuery || dateRange.start || dateRange.end) && (
+                  <button
+                    onClick={() => {
+                      setSelectedUser('created_by_me');
+                      setSelectedAssignee('all');
+                      setSelectedOrder('all');
+                      setSelectedClient('all');
+                      setStatusFilter('all');
+                      setSearchQuery('');
+                      setDateRange({ start: '', end: '' });
+                    }}
+                    className="px-3 py-1.5 text-sm text-red-600 hover:text-red-800 underline flex items-center gap-1"
+                  >
+                    <X className="w-3 h-3" />
+                    Clear all filters
+                  </button>
+                )}
+                <button
+                  onClick={loadData}
+                  className="px-3 py-1.5 text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                >
+                  <RefreshCw className="w-3 h-3" />
+                  Refresh
+                </button>
+              </div>
+              <div className="text-sm text-gray-500">
+                Showing {paginatedWorkflows.length} of {processedWorkflows.length} workflows
+              </div>
             </div>
           </div>
 
