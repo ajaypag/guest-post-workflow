@@ -212,7 +212,7 @@ function OrdersPageContent() {
   }
 
   return (
-    <div className="max-w-full px-4 lg:px-8 py-8">
+    <div className="w-full px-4 lg:px-8 py-8 2xl:max-w-[1600px] 2xl:mx-auto">
       <div className="mb-8">
         <div className="flex items-center justify-between mb-6">
           <div>
