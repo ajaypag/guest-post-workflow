@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
     
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
+    const accountId = searchParams.get('accountId');
     const includeArchived = searchParams.get('includeArchived') === 'true';
     
     let clients;
@@ -24,7 +25,10 @@ export async function GET(request: NextRequest) {
     // Check access based on user type
     if (session.userType === 'internal') {
       // Internal users: Full access to all clients
-      if (userId) {
+      if (accountId) {
+        // Filter by account ID
+        clients = await ClientService.getClientsByAccount(accountId, includeArchived);
+      } else if (userId) {
         clients = await ClientService.getUserClients(userId);
       } else {
         clients = await ClientService.getAllClients(includeArchived);

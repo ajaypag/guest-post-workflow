@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
+import { SearchableAccountDropdown } from '@/components/SearchableAccountDropdown';
 import { AuthService } from '@/lib/auth';
 import { formatCurrency } from '@/lib/utils/formatting';
 import { isLineItemsSystemEnabled } from '@/lib/config/featureFlags';
@@ -170,10 +171,16 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
     }
   }, [showMobilePricing]);
 
-  const loadClients = useCallback(async () => {
+  const loadClients = useCallback(async (filterAccountId?: string | null) => {
     try {
       setLoadingClients(true);
-      const url = isAccountUser ? '/api/account/clients' : '/api/clients';
+      let url = isAccountUser ? '/api/account/clients' : '/api/clients';
+      
+      // Add account filter for internal users
+      if (filterAccountId && !isAccountUser) {
+        url += `?accountId=${encodeURIComponent(filterAccountId)}`;
+      }
+      
       const response = await fetch(url);
       
       if (response.ok) {
@@ -1304,29 +1311,20 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
               <div className="sm:col-span-2 md:col-span-1">
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Select Account *</label>
-                <select
-                  value={selectedAccountId || ''}
-                  onChange={(e) => {
-                    const accountId = e.target.value;
-                    setSelectedAccountId(accountId);
-                    // Find selected account and populate fields
-                    const account = accountsList.find(a => a.id === accountId);
-                    if (account) {
-                      setSelectedAccountEmail(account.email);
-                      setSelectedAccountName(account.contactName);
-                      setSelectedAccountCompany(account.companyName || '');
-                    }
+                <SearchableAccountDropdown
+                  accounts={accountsList}
+                  selectedAccountId={selectedAccountId}
+                  onSelect={(account) => {
+                    setSelectedAccountId(account.id);
+                    setSelectedAccountEmail(account.email);
+                    setSelectedAccountName(account.contactName);
+                    setSelectedAccountCompany(account.companyName || '');
+                    // Filter brands to only show those associated with the selected account
+                    loadClients(account.id);
                   }}
-                  className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Choose an account..."
                   required
-                >
-                  <option value="">Choose an account...</option>
-                  {accountsList.map(account => (
-                    <option key={account.id} value={account.id}>
-                      {account.companyName || account.contactName} ({account.email})
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
               {selectedAccountId && (
                 <>
