@@ -2,7 +2,7 @@ import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { db } from '@/lib/db/connection';
-import { clients, bulkAnalysisProjects, bulkAnalysisDomains, accounts } from '@/lib/db/schema';
+import { clients, bulkAnalysisProjects, bulkAnalysisDomains, accounts, targetPages } from '@/lib/db/schema';
 import { guestPostItems } from '@/lib/db/orderSchema';
 import { orderLineItems } from '@/lib/db/orderLineItemSchema';
 import { websites } from '@/lib/db/websiteSchema';
@@ -184,6 +184,9 @@ async function getInitialData(session: any, searchParams: any) {
         lastCampaignDate: websites.lastCampaignDate,
         internalQualityScore: websites.internalQualityScore,
         
+        // Vetting context - target pages used for qualification
+        targetPageIds: bulkAnalysisDomains.targetPageIds,
+        
         // Calculate active line items using this domain
         activeLineItemsCount: sql<number>`(\n          SELECT COUNT(*)::int \n          FROM ${orderLineItems} \n          WHERE ${orderLineItems.assignedDomain} = ${bulkAnalysisDomains.domain} \n          AND ${orderLineItems.status} IN ('approved', 'in_progress', 'delivered')\n        )`
       })
@@ -315,6 +318,23 @@ async function getInitialData(session: any, searchParams: any) {
 
     const stats = statsQuery[0] || { totalQualified: 0, available: 0, bookmarked: 0, hidden: 0 };
 
+    // Fetch target pages for all domains
+    const domainTargetPages = new Map();
+    for (const domain of domains) {
+      if (domain.targetPageIds && Array.isArray(domain.targetPageIds) && domain.targetPageIds.length > 0) {
+        const pages = await db.query.targetPages.findMany({
+          where: inArray(targetPages.id, domain.targetPageIds as string[]),
+          columns: {
+            id: true,
+            url: true,
+            keywords: true,
+            description: true,
+          }
+        });
+        domainTargetPages.set(domain.id, pages);
+      }
+    }
+
     return {
       domains: domains.map(domain => ({
         ...domain,
@@ -326,6 +346,7 @@ async function getInitialData(session: any, searchParams: any) {
           relatedCount: (domain.evidence as any)?.related_count || 0,
           relatedMedianPosition: (domain.evidence as any)?.related_median_position || null,
         } : null,
+        targetPages: domainTargetPages.get(domain.id) || [],
       })),
       total,
       page: filters.page,

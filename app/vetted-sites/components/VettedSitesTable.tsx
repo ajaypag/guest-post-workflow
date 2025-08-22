@@ -41,6 +41,14 @@ interface Domain {
   targetMatchData: any; // JSON data from AI matching
   targetMatchedAt: string | null;
   
+  // Vetting context
+  targetPages?: Array<{
+    id: string;
+    url: string;
+    keywords: string | null;
+    description: string | null;
+  }>;
+  
   // Data quality indicators
   hasDataForSeoResults: boolean | null;
   dataForSeoResultsCount: number | null;
@@ -761,12 +769,6 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
                         <h4 className="text-sm font-semibold text-gray-900">Publisher Performance</h4>
                         
                         <div className="grid grid-cols-2 gap-3 text-xs">
-                          {domain.publisherTier && (
-                            <div>
-                              <span className="text-gray-500">Tier:</span>
-                              <div className="font-medium capitalize">{domain.publisherTier}</div>
-                            </div>
-                          )}
                           
                           {domain.avgResponseTimeHours && (
                             <div>
@@ -789,19 +791,6 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
                             </div>
                           )}
                           
-                          {domain.acceptsDoFollow !== null && (
-                            <div>
-                              <span className="text-gray-500">DoFollow Links:</span>
-                              <div className="font-medium">{domain.acceptsDoFollow ? 'Yes' : 'No'}</div>
-                            </div>
-                          )}
-                          
-                          {domain.maxLinksPerPost && (
-                            <div>
-                              <span className="text-gray-500">Max Links:</span>
-                              <div className="font-medium">{domain.maxLinksPerPost} per post</div>
-                            </div>
-                          )}
                         </div>
                         
                         {domain.internalQualityScore && (
@@ -937,6 +926,36 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
                           )}
                         </div>
                       </div>
+                      
+                      {/* Vetting Context */}
+                      {domain.targetPages && domain.targetPages.length > 0 && (
+                        <div className="space-y-3">
+                          <h4 className="text-sm font-semibold text-gray-900">Vetted Against</h4>
+                          
+                          <div className="space-y-2">
+                            {domain.targetPages.map((targetPage, idx) => (
+                              <div key={targetPage.id} className="border-l-2 border-blue-400 pl-3">
+                                <div className="text-xs font-medium text-gray-700 mb-1">
+                                  Target {idx + 1}
+                                </div>
+                                <div className="text-xs text-gray-600 break-all">
+                                  {targetPage.url}
+                                </div>
+                                {targetPage.keywords && (
+                                  <div className="mt-1">
+                                    <span className="text-xs text-gray-500">Keywords: </span>
+                                    <span className="text-xs text-gray-700">
+                                      {targetPage.keywords.split(',').slice(0, 3).join(', ')}
+                                      {targetPage.keywords.split(',').length > 3 && 
+                                        ` +${targetPage.keywords.split(',').length - 3} more`}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </td>
                 </tr>
