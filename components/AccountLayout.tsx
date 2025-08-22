@@ -10,7 +10,8 @@ import {
   Settings, 
   HelpCircle,
   ChevronRight,
-  Home
+  Home,
+  Database
 } from 'lucide-react';
 
 interface AccountLayoutProps {
@@ -27,6 +28,12 @@ const navigationItems = [
     href: '/account/dashboard',
     icon: Package,
     description: 'Overview of your account and orders'
+  },
+  {
+    name: 'Vetted Sites',
+    href: '/vetted-sites',
+    icon: Database,
+    description: 'Browse and manage qualified domains for guest posts'
   },
   {
     name: 'Account Settings',
@@ -67,6 +74,13 @@ export default function AccountLayout({
     }
     
     // Handle special cases
+    if (pathname.startsWith('/vetted-sites')) {
+      return {
+        title: 'Vetted Sites',
+        description: 'Browse and manage qualified domains for guest posts'
+      };
+    }
+    
     if (pathname.startsWith('/billing')) {
       return {
         title: 'Billing History',
@@ -110,6 +124,7 @@ export default function AccountLayout({
               
               {navigationItems.map((item) => {
                 const isActive = pathname === item.href || 
+                  (item.href === '/vetted-sites' && pathname.startsWith('/vetted-sites')) ||
                   (item.href === '/billing' && pathname.startsWith('/billing')) ||
                   (item.href === '/support' && pathname.startsWith('/support'));
                 

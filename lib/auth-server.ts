@@ -83,6 +83,8 @@ export class AuthServiceServer {
       role: user.role,
       userType: user.userType || 'internal',
       accountId: user.accountId || undefined,
+      clientId: user.clientId || undefined,
+      companyName: user.companyName || undefined,
     })
       .setProtectedHeader({ alg: 'HS256' })
       .setExpirationTime('7d')

@@ -555,8 +555,8 @@ export default function OrderDetailPage() {
   return (
     <AuthWrapper>
       <Header />
-      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
-        <div className="max-w-7xl mx-auto">
+      <div className="px-3 sm:px-4 lg:px-6 xl:px-8 py-4 sm:py-8 max-w-[98vw] mx-auto">
+        <div className="w-full">
           {/* Header */}
           <div className="mb-6">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -870,9 +870,9 @@ export default function OrderDetailPage() {
           </div>
 
           {/* Three Column Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
             {/* Left Column - Progress Steps */}
-            <div className="lg:col-span-1">
+            <div className="lg:col-span-3">
               <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
                 <h2 className="text-lg font-semibold mb-4">Order Progress</h2>
                 <OrderProgressSteps 
@@ -1074,30 +1074,32 @@ export default function OrderDetailPage() {
                 )}
               </div>
               
-              {/* Account Information */}
-              <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mt-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Information</h3>
-                <dl className="space-y-3">
-                  <div>
-                    <dt className="text-sm text-gray-500">Account Name</dt>
-                    <dd className="text-sm font-medium text-gray-900">{order.account?.contactName || order.account?.companyName || 'Unknown'}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm text-gray-500">Email</dt>
-                    <dd className="text-sm font-medium text-gray-900">{order.account?.email || 'No email'}</dd>
-                  </div>
-                  {order.account?.companyName && order.account?.contactName && (
+              {/* Account Information - Only for Internal Users */}
+              {user?.userType === 'internal' && (
+                <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mt-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Information</h3>
+                  <dl className="space-y-3">
                     <div>
-                      <dt className="text-sm text-gray-500">Company</dt>
-                      <dd className="text-sm font-medium text-gray-900">{order.account.companyName}</dd>
+                      <dt className="text-sm text-gray-500">Account Name</dt>
+                      <dd className="text-sm font-medium text-gray-900">{order.account?.contactName || order.account?.companyName || 'Unknown'}</dd>
                     </div>
-                  )}
-                </dl>
-              </div>
+                    <div>
+                      <dt className="text-sm text-gray-500">Email</dt>
+                      <dd className="text-sm font-medium text-gray-900">{order.account?.email || 'No email'}</dd>
+                    </div>
+                    {order.account?.companyName && order.account?.contactName && (
+                      <div>
+                        <dt className="text-sm text-gray-500">Company</dt>
+                        <dd className="text-sm font-medium text-gray-900">{order.account.companyName}</dd>
+                      </div>
+                    )}
+                  </dl>
+                </div>
+              )}
             </div>
 
             {/* Middle/Right Columns - Order Details Table */}
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-9">
               {/* Site Review Summary Card */}
               {order.state === 'sites_ready' && siteSubmissions.length > 0 && (
                 <div className="bg-purple-50 border border-purple-200 rounded-lg p-6 mb-6">
@@ -1400,80 +1402,6 @@ export default function OrderDetailPage() {
                 </div>
               )}
               
-              {/* Pricing Details for Internal Users */}
-              {user?.userType === 'internal' && (
-                <div className="lg:col-span-2 mt-6">
-                  <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-                    <h3 className="text-lg font-semibold mb-4 flex items-center">
-                      <DollarSign className="h-5 w-5 mr-2 text-gray-400" />
-                      Pricing Details
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-700 mb-3">Customer Pricing</h4>
-                        <dl className="space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <dt className="text-gray-600">Subtotal</dt>
-                            <dd className="font-medium">{formatCurrency((order as any).subtotalRetail || (order as any).totalRetail || 0)}</dd>
-                          </div>
-                          {order.discountAmount && order.discountAmount > 0 && (
-                            <div className="flex justify-between text-sm">
-                              <dt className="text-gray-600">Discount ({order.discountPercent || '0'}%)</dt>
-                              <dd className="font-medium text-green-600">-{formatCurrency(order.discountAmount)}</dd>
-                            </div>
-                          )}
-                          {order.includesClientReview && (
-                            <div className="flex justify-between text-sm">
-                              <dt className="text-gray-600">Client Review</dt>
-                              <dd className="font-medium">{formatCurrency(order.clientReviewFee || 0)}</dd>
-                            </div>
-                          )}
-                          {order.rushDelivery && (
-                            <div className="flex justify-between text-sm">
-                              <dt className="text-gray-600">Rush Delivery</dt>
-                              <dd className="font-medium">{formatCurrency(order.rushFee || 0)}</dd>
-                            </div>
-                          )}
-                          <div className="flex justify-between text-sm pt-2 border-t">
-                            <dt className="font-medium">Total Revenue</dt>
-                            <dd className="font-bold">{formatCurrency((order as any).totalRetail || 0)}</dd>
-                          </div>
-                        </dl>
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-700 mb-3">Profit Analysis</h4>
-                        <dl className="space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <dt className="text-gray-600">Site Wholesale Cost</dt>
-                            <dd className="font-medium">{formatCurrency(order.totalWholesale || 0)}</dd>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <dt className="text-gray-600">SEO Content Package ({lineItems.length} × {formatCurrency(SERVICE_FEE_CENTS)})</dt>
-                            <dd className="font-medium">{formatCurrency(SERVICE_FEE_CENTS * lineItems.length)}</dd>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <dt className="text-gray-600">Total Revenue</dt>
-                            <dd className="font-medium">{formatCurrency((order as any).totalRetail || 0)}</dd>
-                          </div>
-                          <div className="flex justify-between text-sm pt-2 border-t">
-                            <dt className="font-medium">Gross Profit</dt>
-                            <dd className="font-bold text-green-600">{formatCurrency(SERVICE_FEE_CENTS * lineItems.length)}</dd>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <dt className="text-gray-600">Margin</dt>
-                            <dd className="font-medium">
-                              {(order as any).totalRetail > 0 ? 
-                                `${Math.round((SERVICE_FEE_CENTS * lineItems.length / (order as any).totalRetail) * 100)}%` : 
-                                'N/A'
-                              }
-                            </dd>
-                          </div>
-                        </dl>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </div>

@@ -6,7 +6,6 @@ import { sessionStorage } from '@/lib/userStorage';
 import { type AuthSession } from '@/lib/auth';
 import { useState, useEffect } from 'react';
 import { User, LogOut, Users, Building2, Zap, Search, BarChart2, Globe, Mail, ShoppingCart, Package, Database, ChevronDown, Settings, CreditCard, HelpCircle, Menu, X } from 'lucide-react';
-import NotificationBell from '@/components/ui/NotificationBell';
 
 export default function Header() {
   const router = useRouter();
@@ -96,6 +95,13 @@ export default function Header() {
                   <ShoppingCart className="w-4 h-4 mr-1.5" />
                   My Orders
                 </Link>
+                <Link
+                  href="/vetted-sites"
+                  className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
+                >
+                  <Database className="w-4 h-4 mr-1.5" />
+                  Vetted Sites
+                </Link>
               </>
             ) : (
               // Internal Team Navigation
@@ -126,6 +132,13 @@ export default function Header() {
                 >
                   <ShoppingCart className="w-4 h-4 mr-1.5" />
                   Orders
+                </Link>
+                <Link
+                  href="/vetted-sites"
+                  className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
+                >
+                  <Database className="w-4 h-4 mr-1.5" />
+                  Vetted Sites
                 </Link>
                 
                 {/* Admin Dropdown */}
@@ -211,7 +224,6 @@ export default function Header() {
             </button>
             {/* Notification Bell - Desktop only */}
             <div className="hidden md:block">
-              <NotificationBell />
             </div>
             
             {/* User Dropdown - Desktop only */}
@@ -391,7 +403,6 @@ export default function Header() {
         <div className="flex-1 overflow-y-auto py-4">
           {/* Notification Bell - Mobile */}
           <div className="px-4 pb-4 border-b border-gray-100 mb-4">
-            <NotificationBell />
           </div>
 
           {/* Mobile Navigation */}
@@ -422,6 +433,14 @@ export default function Header() {
                 >
                   <ShoppingCart className="w-5 h-5" />
                   <span className="text-base font-medium">My Orders</span>
+                </Link>
+                <Link
+                  href="/vetted-sites"
+                  className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors min-h-[44px]"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Database className="w-5 h-5" />
+                  <span className="text-base font-medium">Vetted Sites</span>
                 </Link>
                 
                 <div className="border-t border-gray-100 my-4"></div>
@@ -485,6 +504,14 @@ export default function Header() {
                 >
                   <ShoppingCart className="w-5 h-5" />
                   <span className="text-base font-medium">Orders</span>
+                </Link>
+                <Link
+                  href="/vetted-sites"
+                  className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors min-h-[44px]"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Database className="w-5 h-5" />
+                  <span className="text-base font-medium">Vetted Sites</span>
                 </Link>
                 
                 {/* Admin Section - Mobile */}

@@ -11,33 +11,20 @@ Production-ready workflow system with PostgreSQL, multi-user auth, and AI agent 
 2. **Step components**: Use `*Clean.tsx` files, NOT original versions ([details](#step-component-warning))
 3. **VARCHAR limits**: AI content needs TEXT columns, not VARCHAR ([details](#varchar-critical))
 4. **Build verification**: Always use `timeout 600 npm run build` - default builds show false success ([details](#typescript-build-status))
-5. **NEW: Domain Normalization** - All domains must use normalized format ([details](#domain-normalization-critical))
-6. **NEW: Run Migrations** - Critical migrations pending before production
-
-### 🚨 PENDING MIGRATIONS (Run These First!)
-1. **Publisher System**: `migrations/0035_publisher_offerings_system_fixed.sql`
-2. **Domain Normalization**: `migrations/0037_normalize_existing_domains.sql`
-3. **Target URL Matching**: `migrations/0060_add_target_url_matching.sql` (✅ Tested locally)
-4. **Inclusion Status Fix**: `migrations/0061_fix_inclusion_status_defaults.sql` (✅ NEW - 2025-08-20)
-   - **IMPORTANT**: Run via `/admin/fix-inclusion-status` page for production
-   - Fixes NULL inclusion_status defaulting to 'included' for better UX
-5. **Use Admin Panel**: `/admin/domain-migration` for safe migration
+5. **Domain Normalization** - All domains must use normalized format ([details](#domain-normalization-critical))
+6. **SQL Migrations** - Now using standard SQL migration files (no admin pages needed)
 
 ### Recent Changes (Keep in Mind)
-- ✅ Inclusion Status Default Fix (2025-08-20)
-  - Fixed NULL inclusion_status causing UI/backend mismatch
-  - All line items now default to 'included' for better UX
-  - Fixes invoicing and metrics tracking
-  - Admin migration page: `/admin/fix-inclusion-status`
-  - Migration: `migrations/0061_fix_inclusion_status_defaults.sql`
-- ✅ Target URL Matching System (2025-08-19) - PHASES 1-3 COMPLETE
+- ✅ All Database Migrations Complete (2025-08-22)
+  - Publisher system, domain normalization, target URL matching, inclusion status - all done
+  - Now using SQL migration files directly (no admin pages)
+- ✅ Target URL Matching System - PHASES 1-3 COMPLETE
   - AI-powered domain to target URL matching (no more random assignments!)
   - Two-step process: qualification → target matching with O3 model
   - Database fields: `suggested_target_url`, `target_match_data`, `target_matched_at`
   - Standalone API: `/api/clients/[id]/bulk-analysis/target-match`
   - Integrated in master-qualify with `skipTargetMatching` option
   - Full evidence tracking with match quality scores
-  - Migration: `migrations/0060_add_target_url_matching.sql`
   - See: [TARGET_URL_MATCHING_IMPLEMENTATION.md](TARGET_URL_MATCHING_IMPLEMENTATION.md)
 - ✅ TypeScript Compilation Fixed (2025-02-14) - ALL ERRORS RESOLVED
   - Fixed Next.js 15 Promise-based searchParams compatibility
@@ -73,7 +60,6 @@ Production-ready workflow system with PostgreSQL, multi-user auth, and AI agent 
   - Multi-client order creation working
   - Bulk analysis projects auto-created on order confirmation
   - Notification system for internal users
-  - **MIGRATION REQUIRED**: Run `/admin/order-groups-migration`
 - 🆕 Publisher Portal System (2025-02-14)
   - Publishers can manage websites and offerings
   - Internal team can use same infrastructure
@@ -84,10 +70,9 @@ Production-ready workflow system with PostgreSQL, multi-user auth, and AI agent 
   - Publisher oversight tools
   - Bulk operations support
   - See: [docs/06-planning/internal-portal-plan.md](docs/06-planning/internal-portal-plan.md)
-- ⚠️ Domain Normalization System (2025-02-14)
-  - CRITICAL: Prevents duplicate websites
+- ✅ Domain Normalization System (2025-02-14)
+  - Prevents duplicate websites
   - Normalizes www, protocols, casing
-  - Migration tool at `/admin/domain-migration`
   - See: [docs/07-qa/domain-handling-qa-report.md](docs/07-qa/domain-handling-qa-report.md)
 
 ## 🔧 Quick Reference

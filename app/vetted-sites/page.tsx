@@ -64,10 +64,10 @@ async function getInitialData(session: any, searchParams: any) {
         console.error('🔴 Error fetching accounts:', accountError);
         availableAccounts = []; // Fallback to empty array
       }
-    } else if (session.userType === 'account' && session.clientId) {
-      // Account users see only their primary client
+    } else if (session.userType === 'account') {
+      // Account users see clients associated with their account
       availableClients = await db.query.clients.findMany({
-        where: eq(clients.id, session.clientId),
+        where: eq(clients.accountId, session.userId),
         columns: {
           id: true,
           name: true,
@@ -205,9 +205,19 @@ async function getInitialData(session: any, searchParams: any) {
     
     // Permission filters
     if (session.userType === 'account') {
-      // Account users can only see domains for their primary client
-      if (!session.clientId) {
-        console.log('Account user has no clientId assigned');
+      // Account users can only see domains for clients associated with their account
+      // Get all client IDs for this account
+      const accountClients = await db.query.clients.findMany({
+        where: eq(clients.accountId, session.userId),
+        columns: {
+          id: true,
+        },
+      });
+      
+      const accountClientIds = accountClients.map(c => c.id);
+      
+      if (accountClientIds.length === 0) {
+        console.log('Account user has no clients associated');
         return {
           domains: [],
           total: 0,
@@ -217,8 +227,9 @@ async function getInitialData(session: any, searchParams: any) {
           availableProjects,
         };
       }
-      conditions.push(eq(bulkAnalysisDomains.clientId, session.clientId));
-      console.log('Filtering domains for account clientId:', session.clientId);
+      
+      conditions.push(inArray(bulkAnalysisDomains.clientId, accountClientIds));
+      console.log('Filtering domains for account clientIds:', accountClientIds);
     }
 
     // Other filters
@@ -363,14 +374,7 @@ export default async function VettedSitesPage({ searchParams: searchParamsPromis
   const searchParams = await searchParamsPromise;
   console.log('VettedSites - searchParams:', searchParams);
 
-  // Redirect to appropriate default view for account users with a primary client
-  if (session.userType === 'account' && 
-      session.clientId && 
-      !searchParams.clientId) {
-    const params = new URLSearchParams(searchParams as any);
-    params.set('clientId', session.clientId);
-    redirect(`/vetted-sites?${params.toString()}`);
-  }
+  // Account users can now see all their associated clients, no need for redirect
 
   const initialData = await getInitialData(session, searchParams);
 

@@ -231,9 +231,11 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
     }
   };
 
-  const formatPrice = (price: number | null) => {
+  const formatPrice = (price: number | null, showRetail: boolean = false) => {
     if (!price) return 'N/A';
-    return `$${price.toLocaleString()}`;
+    // For external users, add $79 service fee to show retail price
+    const displayPrice = showRetail ? price + 79 : price;
+    return `$${displayPrice.toLocaleString()}`;
   };
 
   const formatTraffic = (traffic: number | null) => {
@@ -559,7 +561,7 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
                   <div className="space-y-1">
                     {domain.hasGuestPost && (
                       <div className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                        Guest Post ${domain.guestPostPrice || 'N/A'}
+                        Guest Post {formatPrice(domain.guestPostPrice, userType !== 'internal')}
                       </div>
                     )}
                     {domain.hasLinkInsert && (
