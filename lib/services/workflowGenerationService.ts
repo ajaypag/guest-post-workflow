@@ -21,6 +21,7 @@ export interface WorkflowGenerationResult {
 export interface WorkflowGenerationOptions {
   assignToUserId?: string; // Optionally assign all generated workflows to a specific user
   autoAssign?: boolean; // Auto-assign based on workload
+  assignedUserId?: string; // New: specific user to assign workflows to
 }
 
 export class WorkflowGenerationService {
@@ -101,7 +102,8 @@ export class WorkflowGenerationService {
             lineItem,
             domain,
             order,
-            assignedUserId
+            userId,
+            options.assignedUserId // Pass the assigned user ID from options
           );
 
           if (workflow) {
@@ -186,7 +188,8 @@ export class WorkflowGenerationService {
     lineItem: any,
     domain: any,
     order: any,
-    userId: string
+    userId: string,
+    assignedUserId?: string
   ): Promise<GuestPostWorkflow | null> {
     try {
       const client = lineItem.client;
@@ -213,13 +216,13 @@ export class WorkflowGenerationService {
       };
 
       // Create workflow using existing service
-      // Assign to order creator by default (can be changed later)
+      // Use provided assignedUserId or default to order creator
       const createdWorkflow = await WorkflowService.createGuestPostWorkflow(
         workflowData,
         userId,
         account?.contactName || 'System',
         account?.email,
-        order.userId || userId // Assign to order creator or current user
+        assignedUserId || order.userId || userId // Use provided assignee or default to order creator
       );
 
       return createdWorkflow;
@@ -395,7 +398,8 @@ export class WorkflowGenerationService {
           const workflow = await this.createWorkflowFromSiteSelection(
             siteSelection,
             orderGroup,
-            assignedUserId
+            userId,
+            options.assignedUserId // Pass the assigned user ID from options
           );
 
           if (workflow) {
@@ -462,7 +466,8 @@ export class WorkflowGenerationService {
   private static async createWorkflowFromSiteSelection(
     siteSelection: any,
     orderGroup: any,
-    userId: string
+    userId: string,
+    assignedUserId?: string
   ): Promise<GuestPostWorkflow | null> {
     try {
       const domain = siteSelection.domain;
@@ -492,13 +497,13 @@ export class WorkflowGenerationService {
       };
 
       // Create workflow using existing service
-      // Assign to order creator by default (can be changed later)
+      // Use provided assignedUserId or default to order creator
       const createdWorkflow = await WorkflowService.createGuestPostWorkflow(
         workflowData,
         userId,
         account?.contactName || 'System',
         account?.email,
-        orderGroup.userId || userId // Assign to order creator or current user
+        assignedUserId || orderGroup.userId || userId // Use provided assignee or default to order creator
       );
 
       // Link workflow to order
