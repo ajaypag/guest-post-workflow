@@ -16,7 +16,14 @@ export class WorkflowService {
     targetPages: any[];
     createdAt: Date;
     updatedAt: Date;
+    estimatedCompletionDate: Date;
+    assignedAt: Date | null;
   } {
+    const now = new Date();
+    // Calculate estimated completion date (14 days from now - 2 weeks)
+    const estimatedCompletion = new Date(now);
+    estimatedCompletion.setDate(estimatedCompletion.getDate() + 14);
+    
     return {
       id: crypto.randomUUID(),
       userId: userId,
@@ -26,8 +33,10 @@ export class WorkflowService {
       status: 'active',
       content: guestWorkflow, // Store entire workflow as JSON
       targetPages: [], // Empty for now
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: now,
+      updatedAt: now,
+      estimatedCompletionDate: estimatedCompletion,
+      assignedAt: assignedUserId ? now : null, // Set assigned_at if assigned to someone
     };
   }
 
@@ -40,6 +49,8 @@ export class WorkflowService {
         id: workflow.id, // Ensure we use the database ID
         userId: workflow.userId,
         assignedUserId: workflow.assignedUserId,
+        estimatedCompletionDate: workflow.estimatedCompletionDate,
+        assignedAt: workflow.assignedAt,
         createdAt: new Date(workflow.createdAt),
         updatedAt: new Date(workflow.updatedAt),
       };
@@ -50,6 +61,9 @@ export class WorkflowService {
       id: workflow.id,
       createdAt: new Date(workflow.createdAt),
       updatedAt: new Date(workflow.updatedAt),
+      estimatedCompletionDate: workflow.estimatedCompletionDate,
+      assignedAt: workflow.assignedAt,
+      assignedUserId: workflow.assignedUserId,
       clientName: workflow.title || 'Unknown Client',
       clientUrl: '',
       targetDomain: '',

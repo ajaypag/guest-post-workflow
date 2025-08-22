@@ -29,12 +29,19 @@ export async function PATCH(
       return NextResponse.json({ error: 'assignedUserId is required' }, { status: 400 });
     }
 
-    // Update the workflow's assigned user
+    // Calculate estimated completion date (14 days from now - 2 weeks)
+    const now = new Date();
+    const estimatedCompletionDate = new Date(now);
+    estimatedCompletionDate.setDate(estimatedCompletionDate.getDate() + 14);
+    
+    // Update the workflow's assigned user and estimated completion
     const result = await db
       .update(workflows)
       .set({
         assignedUserId,
-        updatedAt: new Date()
+        assignedAt: now,
+        estimatedCompletionDate,
+        updatedAt: now
       })
       .where(eq(workflows.id, id))
       .returning();
