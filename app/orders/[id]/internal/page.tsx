@@ -263,6 +263,7 @@ export default function InternalOrderManagementPage() {
   const [siteSubmissions, setSiteSubmissions] = useState<Record<string, SiteSubmission[]>>({});
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
+  const [showStatusActions, setShowStatusActions] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [targetPageStatuses, setTargetPageStatuses] = useState<TargetPageStatus[]>([]);
   const [selectedPages, setSelectedPages] = useState<Set<string>>(new Set());
@@ -1883,7 +1884,18 @@ export default function InternalOrderManagementPage() {
                   <div className="space-y-2">
                     {/* Unified Status & State Management */}
                     <div className="p-3 bg-gray-50 rounded-lg">
-                      {/* Show status + state breakdown */}
+                      {/* Toggle button for status actions */}
+                      <button
+                        onClick={() => setShowStatusActions(!showStatusActions)}
+                        className="flex items-center gap-2 text-xs text-gray-600 hover:text-gray-800 mb-2"
+                      >
+                        <ChevronRight className={`h-3 w-3 transition-transform ${showStatusActions ? 'rotate-90' : ''}`} />
+                        Status & Actions
+                      </button>
+                      
+                      {/* Show status + state breakdown - only when expanded */}
+                      {showStatusActions && (
+                        <>
                       {order.status === 'confirmed' && order.state ? (
                         <div className="mb-3 p-2 bg-white rounded text-xs">
                           <div className="flex justify-between items-center">
@@ -2111,6 +2123,8 @@ export default function InternalOrderManagementPage() {
                           </div>
                         )}
                       </div>
+                        </>
+                      )}
                     </div>
                     
                     {/* Order Confirmation with Target Page Status */}
