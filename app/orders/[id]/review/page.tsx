@@ -74,10 +74,25 @@ export default function ExternalOrderReviewPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update status');
+        let errorMessage = 'Failed to update status';
+        try {
+          const data = await response.json();
+          errorMessage = data.error || errorMessage;
+        } catch (parseError) {
+          // If response is not JSON, try to get text
+          try {
+            errorMessage = await response.text();
+          } catch {
+            // Use default error message
+          }
+        }
+        throw new Error(errorMessage);
       }
 
-      // Refresh the order data
+      // Parse the successful response
+      await response.json();
+      
+      // Refresh the order data to show updated status immediately
       await fetchOrder();
     } catch (error) {
       console.error('Error updating status:', error);
@@ -152,18 +167,49 @@ export default function ExternalOrderReviewPage() {
   };
 
 
-  // Check if invoice needs regeneration
+  // Check if invoice needs regeneration based on meaningful changes
   const needsInvoiceRegeneration = () => {
     if (!order?.invoicedAt) return false;
     
-    // Check if any line item was modified after invoice generation
+    // NEVER regenerate invoice after payment - that's final
+    if (order.status === 'paid' || order.status === 'completed') {
+      return false;
+    }
+    
+    // Check if any invoice-affecting changes happened after invoice generation
     const invoiceTime = new Date(order.invoicedAt).getTime();
-    const hasModificationsAfterInvoice = lineItems.some(item => {
+    const GRACE_PERIOD = 30 * 1000; // 30 seconds grace period
+    
+    // Check for changes that actually affect the invoice
+    const hasInvoiceAffectingChanges = lineItems.some(item => {
       if (!item.modifiedAt) return false;
-      return new Date(item.modifiedAt).getTime() > invoiceTime;
+      
+      const itemModifiedTime = new Date(item.modifiedAt).getTime();
+      const timeDiff = itemModifiedTime - invoiceTime;
+      
+      // Skip if within grace period
+      if (timeDiff <= GRACE_PERIOD) return false;
+      
+      // Check if this item has invoice-affecting metadata changes
+      // The invoice cares about:
+      // 1. Inclusion status (included/excluded/saved_for_later)
+      // 2. Price changes (estimatedPrice, approvedPrice, wholesalePrice)
+      // 3. Domain assignment (whether an item has a domain or not)
+      
+      // For now, we'll check if the item was modified after invoice
+      // In the future, we could store invoice snapshot and compare specific fields
+      // But the metadata.invoiceSnapshot approach would require API changes
+      
+      // Simple approach: Any modification after grace period triggers regeneration
+      // This is safer than missing important changes
+      return true;
     });
     
-    return hasModificationsAfterInvoice;
+    if (hasInvoiceAffectingChanges) {
+      console.log('[INVOICE] Invoice-affecting changes detected');
+    }
+    
+    return hasInvoiceAffectingChanges;
   };
 
   const handleProceed = async () => {

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { 
   Search, ChevronDown, ChevronRight, ChevronUp, Edit2, Trash2, 
   CheckCircle, XCircle, AlertCircle, Save, X, Plus, Filter,
-  Square, CheckSquare, MinusSquare
+  Square, CheckSquare, MinusSquare, Loader2
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils/formatting';
 import DomainCell from './DomainCell';
@@ -430,9 +430,17 @@ export default function LineItemsReviewTable({
   // State
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<string>('none'); // Default to no sorting
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [showFilters, setShowFilters] = useState(false);
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
+  const [showBulkConfirm, setShowBulkConfirm] = useState<{
+    isOpen: boolean;
+    action: string;
+    count: number;
+  }>({ isOpen: false, action: '', count: 0 });
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [feedbackModal, setFeedbackModal] = useState<{
     isOpen: boolean;
     itemId: string;
@@ -481,8 +489,76 @@ export default function LineItemsReviewTable({
     }
   };
 
+  // Sort line items based on selected sort option
+  const sortedLineItems = [...lineItems].sort((a, b) => {
+    // First always sort by client name to maintain grouping
+    const clientNameA = a.client?.name || 'Unknown';
+    const clientNameB = b.client?.name || 'Unknown';
+    const clientCompare = clientNameA.localeCompare(clientNameB);
+    if (clientCompare !== 0) return clientCompare;
+    
+    // Then apply secondary sorting within each client group
+    switch (sortBy) {
+      case 'none':
+        // Preserve the original order from database (displayOrder, then addedAt)
+        // Since items come pre-sorted from the API, just maintain stable order
+        return 0;
+      
+      case 'price_asc':
+        // Sort by price ascending
+        const priceA = a.estimatedPrice || 0;
+        const priceB = b.estimatedPrice || 0;
+        return priceA - priceB;
+      
+      case 'price_desc':
+        // Sort by price descending
+        const priceADesc = a.estimatedPrice || 0;
+        const priceBDesc = b.estimatedPrice || 0;
+        return priceBDesc - priceADesc;
+      
+      case 'dr_asc':
+        // Sort by domain rating ascending
+        const drA = a.assignedDomain?.evidence?.da || parseInt(a.assignedDomain?.authorityDirect) || 0;
+        const drB = b.assignedDomain?.evidence?.da || parseInt(b.assignedDomain?.authorityDirect) || 0;
+        return drA - drB;
+      
+      case 'dr_desc':
+        // Sort by domain rating descending
+        const drADesc = a.assignedDomain?.evidence?.da || parseInt(a.assignedDomain?.authorityDirect) || 0;
+        const drBDesc = b.assignedDomain?.evidence?.da || parseInt(b.assignedDomain?.authorityDirect) || 0;
+        return drBDesc - drADesc;
+      
+      case 'domain':
+        // Sort alphabetically by domain
+        const domainA = a.assignedDomain?.domain || '';
+        const domainB = b.assignedDomain?.domain || '';
+        return domainA.localeCompare(domainB);
+      
+      case 'target_page':
+        // Sort alphabetically by target page URL
+        const targetA = a.targetPageUrl || '';
+        const targetB = b.targetPageUrl || '';
+        return targetA.localeCompare(targetB);
+      
+      case 'status':
+        // Sort by inclusion status with logical order: included -> saved_for_later -> excluded
+        const statusOrder: Record<string, number> = {
+          'included': 1,
+          'saved_for_later': 2,
+          'excluded': 3
+        };
+        const statusA = a.metadata?.inclusionStatus || 'included';
+        const statusB = b.metadata?.inclusionStatus || 'included';
+        return (statusOrder[statusA] || 999) - (statusOrder[statusB] || 999);
+      
+      default:
+        // Default to client sorting
+        return 0;
+    }
+  });
+
   // Group line items by client
-  const groupedByClient = lineItems.reduce((acc, item) => {
+  const groupedByClient = sortedLineItems.reduce((acc, item) => {
     const clientId = item.clientId;
     if (!acc[clientId]) {
       acc[clientId] = {
@@ -595,14 +671,55 @@ export default function LineItemsReviewTable({
     }
   };
 
-  // Handle bulk status change
+  // Handle bulk status change with confirmation and batch processing
   const handleBulkStatusChange = async (newStatus: string) => {
     if (!onChangeStatus) return;
     
-    for (const itemId of selectedItems) {
-      await onChangeStatus(itemId, newStatus as any);
+    // Show confirmation for destructive actions
+    if (newStatus === 'excluded' && !showBulkConfirm.isOpen) {
+      setShowBulkConfirm({
+        isOpen: true,
+        action: newStatus,
+        count: selectedItems.size
+      });
+      return;
     }
-    setSelectedItems(new Set());
+    
+    // Close confirmation dialog if open
+    setShowBulkConfirm({ isOpen: false, action: '', count: 0 });
+    setBulkActionLoading(true);
+    
+    try {
+      // Process in batches of 5 for better performance
+      const itemIds = Array.from(selectedItems);
+      const batchSize = 5;
+      
+      for (let i = 0; i < itemIds.length; i += batchSize) {
+        const batch = itemIds.slice(i, i + batchSize);
+        await Promise.all(
+          batch.map(itemId => onChangeStatus(itemId, newStatus as any))
+        );
+      }
+      
+      // Show success message
+      const actionText = newStatus === 'included' ? 'included' : 
+                        newStatus === 'excluded' ? 'excluded' : 'saved for later';
+      setSuccessMessage(`Successfully ${actionText} ${selectedItems.size} items`);
+      setTimeout(() => setSuccessMessage(null), 3000);
+      
+      setSelectedItems(new Set());
+      
+      // Trigger a single refresh after all updates are complete
+      if (onRefresh) {
+        await onRefresh();
+      }
+    } catch (error) {
+      console.error('Bulk action failed:', error);
+      setSuccessMessage('Some items failed to update. Please try again.');
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } finally {
+      setBulkActionLoading(false);
+    }
   };
 
   // Toggle selection
@@ -653,6 +770,21 @@ export default function LineItemsReviewTable({
           </div>
           
           <div className="flex gap-2 items-center">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="none">Order Added</option>
+              <option value="domain">Sort by Domain</option>
+              <option value="target_page">Sort by Target Page</option>
+              <option value="dr_desc">Sort by DR (High to Low)</option>
+              <option value="dr_asc">Sort by DR (Low to High)</option>
+              <option value="price_desc">Sort by Price (High to Low)</option>
+              <option value="price_asc">Sort by Price (Low to High)</option>
+              <option value="status">Sort by Status</option>
+            </select>
+
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
@@ -748,34 +880,55 @@ export default function LineItemsReviewTable({
         )}
       </div>
 
+      {/* Success Message */}
+      {successMessage && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center justify-between">
+          <span className="text-sm text-green-700 flex items-center gap-2">
+            <CheckCircle className="h-4 w-4" />
+            {successMessage}
+          </span>
+        </div>
+      )}
+
       {/* Bulk Actions */}
       {selectedItems.size > 0 && permissions.canChangeStatus && (
         <div className="bg-blue-50 rounded-lg p-3 flex items-center justify-between">
           <span className="text-sm text-blue-700">
-            {selectedItems.size} items selected
+            {bulkActionLoading ? (
+              <span className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Processing {selectedItems.size} items...
+              </span>
+            ) : (
+              `${selectedItems.size} items selected`
+            )}
           </span>
           <div className="flex gap-2">
             <button
               onClick={() => handleBulkStatusChange('included')}
-              className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+              disabled={bulkActionLoading}
+              className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Include All
             </button>
             <button
               onClick={() => handleBulkStatusChange('saved_for_later')}
-              className="px-3 py-1 bg-yellow-600 text-white rounded text-sm hover:bg-yellow-700"
+              disabled={bulkActionLoading}
+              className="px-3 py-1 bg-yellow-600 text-white rounded text-sm hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Save for Later
             </button>
             <button
               onClick={() => handleBulkStatusChange('excluded')}
-              className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700"
+              disabled={bulkActionLoading}
+              className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Exclude All
             </button>
             <button
               onClick={() => setSelectedItems(new Set())}
-              className="px-3 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700"
+              disabled={bulkActionLoading}
+              className="px-3 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Clear Selection
             </button>
@@ -1255,6 +1408,35 @@ export default function LineItemsReviewTable({
         permissions={permissions}
         availableTargetPages={editModal.item?.clientId ? clientTargetPages[editModal.item.clientId] || [] : []}
       />
+
+      {/* Bulk Exclude Confirmation Dialog */}
+      {showBulkConfirm.isOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Confirm Bulk Exclude
+            </h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to exclude {showBulkConfirm.count} selected items? 
+              This will remove them from the order.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowBulkConfirm({ isOpen: false, action: '', count: 0 })}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleBulkStatusChange('excluded')}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+              >
+                Exclude {showBulkConfirm.count} Items
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

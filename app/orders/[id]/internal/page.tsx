@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import AuthWrapper from '@/components/AuthWrapper';
@@ -269,6 +269,7 @@ export default function InternalOrderManagementPage() {
   const [siteSubmissions, setSiteSubmissions] = useState<Record<string, SiteSubmission[]>>({});
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
+  const [showStatusActions, setShowStatusActions] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [targetPageStatuses, setTargetPageStatuses] = useState<TargetPageStatus[]>([]);
   const [selectedPages, setSelectedPages] = useState<Set<string>>(new Set());
@@ -1148,6 +1149,9 @@ export default function InternalOrderManagementPage() {
     }
   };
 
+  // Batch tracking for bulk operations
+  const isBulkOperationRef = useRef(false);
+  
   const handleChangeLineItemStatus = async (itemId: string, newStatus: string, reason?: string) => {
     try {
       const response = await fetch(`/api/orders/${orderId}/line-items/${itemId}`, {
@@ -1163,21 +1167,158 @@ export default function InternalOrderManagementPage() {
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to update status');
+        let errorMessage = 'Failed to update status';
+        try {
+          const data = await response.json();
+          errorMessage = data.error || errorMessage;
+        } catch (parseError) {
+          // If response is not JSON, try to get text
+          try {
+            errorMessage = await response.text();
+          } catch {
+            // Use default error message
+          }
+        }
+        throw new Error(errorMessage);
       }
 
-      setMessage({
-        type: 'success',
-        text: `Item ${newStatus === 'excluded' ? 'excluded' : newStatus === 'saved_for_later' ? 'saved for later' : 'included'}`
-      });
+      // Parse the successful response
+      const result = await response.json();
       
-      await loadOrder();
+      // Only show individual success messages if not part of bulk operation
+      // The LineItemsReviewTable component will handle bulk messages and refreshing
+      if (!isBulkOperationRef.current) {
+        setMessage({
+          type: 'success',
+          text: `Item ${newStatus === 'excluded' ? 'excluded' : newStatus === 'saved_for_later' ? 'saved for later' : 'included'}`
+        });
+        
+        // Refresh the order data to show updated status immediately
+        await loadOrder();
+      }
+      
+      return result;
     } catch (error) {
       console.error('Error updating line item status:', error);
+      if (!isBulkOperationRef.current) {
+        setMessage({
+          type: 'error',
+          text: error instanceof Error ? error.message : 'Failed to update status'
+        });
+      }
+      throw error;
+    }
+  };
+
+  const handleStatusRollback = async (targetStatus: string) => {
+    if (!confirm(`Are you sure you want to rollback the order status to "${targetStatus}"? This action may have consequences.`)) {
+      return;
+    }
+
+    try {
+      // First check what rollback would affect
+      const response = await fetch(`/api/orders/${orderId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ 
+          newStatus: targetStatus,
+          force: false 
+        })
+      });
+
+      const data = await response.json();
+
+      // If there are warnings, show them and ask for confirmation
+      if (data.requiresConfirmation && data.warnings) {
+        const warningMessage = data.warnings.join('\n');
+        if (!confirm(`Warning:\n${warningMessage}\n\nDo you still want to proceed?`)) {
+          return;
+        }
+
+        // Retry with force flag
+        const forceResponse = await fetch(`/api/orders/${orderId}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ 
+            newStatus: targetStatus,
+            force: true 
+          })
+        });
+
+        if (!forceResponse.ok) {
+          throw new Error('Failed to rollback status');
+        }
+
+        const forceData = await forceResponse.json();
+        setMessage({
+          type: 'success',
+          text: forceData.message || `Status rolled back to ${targetStatus}`
+        });
+      } else if (response.ok) {
+        setMessage({
+          type: 'success',
+          text: data.message || `Status rolled back to ${targetStatus}`
+        });
+      } else {
+        throw new Error(data.error || 'Failed to rollback status');
+      }
+
+      // Reload the order
+      await loadOrder();
+    } catch (error) {
+      console.error('Error rolling back status:', error);
       setMessage({
         type: 'error',
-        text: error instanceof Error ? error.message : 'Failed to update status'
+        text: error instanceof Error ? error.message : 'Failed to rollback status'
+      });
+    }
+  };
+
+  const handleStateRollback = async (targetState: string) => {
+    const stateLabels: Record<string, string> = {
+      'configuring': 'Configuring',
+      'analyzing': 'Finding Sites',
+      'sites_ready': 'Sites Ready',
+      'client_reviewing': 'Client Reviewing',
+      'payment_pending': 'Payment Pending'
+    };
+
+    const label = stateLabels[targetState] || targetState;
+    
+    if (!confirm(`Are you sure you want to change the order state to "${label}"? This will affect the order workflow.`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/orders/${orderId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ newState: targetState })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setMessage({
+          type: 'success',
+          text: data.message || `Order state changed to ${label}`
+        });
+        // Refresh order data
+        await loadOrder();
+      } else {
+        setMessage({
+          type: 'error',
+          text: data.error || 'Failed to change state'
+        });
+      }
+    } catch (error) {
+      console.error('Error changing state:', error);
+      setMessage({
+        type: 'error',
+        text: 'Failed to change order state'
       });
     }
   };
@@ -1751,6 +1892,251 @@ export default function InternalOrderManagementPage() {
                 <div className="mt-6 pt-6 border-t">
                   <h3 className="text-sm font-medium text-gray-900 mb-3">Internal Actions</h3>
                   <div className="space-y-2">
+                    {/* Unified Status & State Management */}
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      {/* Toggle button for status actions */}
+                      <button
+                        onClick={() => setShowStatusActions(!showStatusActions)}
+                        className="flex items-center gap-2 text-xs text-gray-600 hover:text-gray-800 mb-2"
+                      >
+                        <ChevronRight className={`h-3 w-3 transition-transform ${showStatusActions ? 'rotate-90' : ''}`} />
+                        Status & Actions
+                      </button>
+                      
+                      {/* Show status + state breakdown - only when expanded */}
+                      {showStatusActions && (
+                        <>
+                      {order.status === 'confirmed' && order.state ? (
+                        <div className="mb-3 p-2 bg-white rounded text-xs">
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-600">Order Status:</span>
+                            <span className="font-medium text-green-700">Confirmed ✓</span>
+                          </div>
+                          <div className="flex justify-between items-center mt-1">
+                            <span className="text-gray-600">Sub-Status:</span>
+                            <span className="font-medium text-blue-700">
+                              {(() => {
+                                const stateLabels: Record<string, string> = {
+                                  'analyzing': 'Finding Sites',
+                                  'sites_ready': 'Sites Ready for Review',
+                                  'client_reviewing': 'Client Reviewing Sites',
+                                  'payment_pending': 'Awaiting Payment'
+                                };
+                                return stateLabels[order.state] || order.state;
+                              })()}
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="mb-3 p-2 bg-white rounded text-xs">
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-600">Current Status:</span>
+                            <span className="font-medium text-blue-700">
+                              {(() => {
+                                if (order.status === 'pending_confirmation') return 'Pending Confirmation';
+                                if (order.status === 'draft') return 'Draft';
+                                if (order.status === 'cancelled') return 'Cancelled';
+                                if (order.status === 'completed') return 'Completed';
+                                if (order.status === 'paid') {
+                                  if (order.state === 'payment_received') return 'Paid - Processing';
+                                  if (order.state === 'workflows_generated') return 'Paid - Workflows Ready';
+                                  if (order.state === 'in_progress') return 'Paid - In Progress';
+                                  return 'Paid';
+                                }
+                                return order.status;
+                              })()}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Available transitions based on current status+state */}
+                      <div className="space-y-2">
+                        {/* Pending Confirmation → Can Confirm */}
+                        {order.status === 'pending_confirmation' && (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={handleConfirmOrder}
+                              disabled={actionLoading.confirm || targetPageStatuses.some(p => !p.hasKeywords)}
+                              className="flex-1 px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 disabled:opacity-50"
+                            >
+                              → Confirm Order (Start Finding Sites)
+                            </button>
+                          </div>
+                        )}
+                        
+                        {/* Confirmed + Various States */}
+                        {order.status === 'confirmed' && (
+                          <div className="space-y-2">
+                            {/* Analyzing State */}
+                            {order.state === 'analyzing' && (
+                              <div className="space-y-2">
+                                {/* Sub-status transitions within confirmed status */}
+                                <div className="space-y-1">
+                                  <div className="text-xs text-gray-600 font-medium">Sub-Status:</div>
+                                  <button
+                                    onClick={() => handleStateRollback('sites_ready')}
+                                    className="w-full px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 border border-green-700"
+                                    title="Change sub-status within confirmed status"
+                                  >
+                                    → Sites Ready for Review
+                                  </button>
+                                </div>
+                                {/* Order status rollback */}
+                                {!order.invoicedAt && (
+                                  <div className="space-y-1">
+                                    <div className="text-xs text-gray-600 font-medium">Order Status:</div>
+                                    <button
+                                      onClick={() => handleStatusRollback('pending_confirmation')}
+                                      className="px-2 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700 border-2 border-yellow-800"
+                                      title="⚠️ Major rollback - changes order status AND resets workflow state"
+                                    >
+                                      ⚠️ ← Unconfirm Order (Major Rollback)
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            
+                            {/* Sites Ready State */}
+                            {order.state === 'sites_ready' && (
+                              <div className="space-y-2">
+                                {/* Sub-status transitions within confirmed status */}
+                                <div className="space-y-1">
+                                  <div className="text-xs text-gray-600 font-medium">Sub-Status:</div>
+                                  <div className="flex gap-2 flex-wrap">
+                                    <button
+                                      onClick={() => handleStateRollback('analyzing')}
+                                      className="px-2 py-1 bg-orange-600 text-white text-xs rounded hover:bg-orange-700 border border-orange-700"
+                                      title="Change sub-status within confirmed status"
+                                    >
+                                      ← Back to Finding Sites
+                                    </button>
+                                    <button
+                                      onClick={() => handleStateRollback('client_reviewing')}
+                                      className="flex-1 px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 border border-blue-700"
+                                      title="Change sub-status within confirmed status"
+                                    >
+                                      → Send for Client Review
+                                    </button>
+                                    <button
+                                      onClick={() => handleStateRollback('payment_pending')}
+                                      className="flex-1 px-2 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 border border-purple-700"
+                                      title="Change sub-status within confirmed status"
+                                    >
+                                      → Ready for Payment
+                                    </button>
+                                  </div>
+                                </div>
+                                {/* Order status rollback */}
+                                {!order.invoicedAt && (
+                                  <div className="space-y-1">
+                                    <div className="text-xs text-gray-600 font-medium">Order Status:</div>
+                                    <button
+                                      onClick={() => handleStatusRollback('pending_confirmation')}
+                                      className="px-2 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700 border-2 border-yellow-800"
+                                      title="⚠️ Major rollback - changes order status AND resets workflow state"
+                                    >
+                                      ⚠️ ← Unconfirm Order (Major Rollback)
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            
+                            {/* Client Reviewing State */}
+                            {order.state === 'client_reviewing' && (
+                              <div className="space-y-2">
+                                {/* State transitions */}
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => handleStateRollback('sites_ready')}
+                                    className="px-2 py-1 bg-orange-600 text-white text-xs rounded hover:bg-orange-700"
+                                  >
+                                    ← Back to Sites Ready
+                                  </button>
+                                  <button
+                                    onClick={() => handleStateRollback('payment_pending')}
+                                    className="flex-1 px-2 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700"
+                                  >
+                                    → Proceed to Payment
+                                  </button>
+                                </div>
+                                {/* Status rollback (separate) */}
+                                {!order.invoicedAt && (
+                                  <button
+                                    onClick={() => handleStatusRollback('pending_confirmation')}
+                                    className="px-2 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700"
+                                    title="Rollback if order needs major changes"
+                                  >
+                                    ← Unconfirm Order
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                            
+                            {/* Payment Pending State */}
+                            {order.state === 'payment_pending' && (
+                              <div className="space-y-2">
+                                {/* State transitions */}
+                                {!order.paidAt && (
+                                  <button
+                                    onClick={() => handleStateRollback('sites_ready')}
+                                    className="px-2 py-1 bg-orange-600 text-white text-xs rounded hover:bg-orange-700"
+                                    title="Go back to adjust sites or pricing"
+                                  >
+                                    ← Back to Sites Ready
+                                  </button>
+                                )}
+                                {order.invoicedAt && (
+                                  <p className="text-xs text-gray-500 italic">
+                                    Invoice sent - awaiting payment
+                                  </p>
+                                )}
+                                {/* Status rollback (separate) */}
+                                {!order.invoicedAt && (
+                                  <button
+                                    onClick={() => handleStatusRollback('pending_confirmation')}
+                                    className="px-2 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700"
+                                    title="Rollback if order needs major changes"
+                                  >
+                                    ← Unconfirm Order
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                            
+                            {order.invoicedAt && (
+                              <p className="text-xs text-gray-500 italic mt-1">
+                                ⚠️ Invoice exists - limited rollback options
+                              </p>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Paid Status */}
+                        {order.status === 'paid' && (
+                          <div className="space-y-2">
+                            {!order.hasWorkflows && (
+                              <button
+                                onClick={() => handleStatusRollback('confirmed')}
+                                className="px-2 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700"
+                              >
+                                ← Rollback to Confirmed (Payment Pending)
+                              </button>
+                            )}
+                            {order.hasWorkflows && (
+                              <p className="text-xs text-gray-500 italic">
+                                Workflows exist - cannot rollback
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                        </>
+                      )}
+                    </div>
+                    
                     {/* Order Confirmation with Target Page Status */}
                     {order.status === 'pending_confirmation' ? (
                       <>

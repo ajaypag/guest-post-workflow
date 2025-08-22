@@ -432,6 +432,16 @@ export async function PATCH(
           updateData.assignedDomain = update.assignedDomain;
           updateData.assignedAt = new Date();
           updateData.assignedBy = session.userId;
+          
+          // Update status to pending_selection when domain is assigned (if currently draft)
+          if (current.status === 'draft') {
+            updateData.status = 'pending_selection';
+            changes.status = { 
+              from: current.status, 
+              to: 'pending_selection' 
+            };
+          }
+          
           changes.domain = { 
             from: current.assignedDomain, 
             to: update.assignedDomain 
