@@ -497,6 +497,9 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
                       DR {domain.domainRating || 'N/A'}
                     </div>
                   </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {formatTraffic(domain.traffic)} traffic
+                  </div>
                   {domain.overlapStatus && (
                     <div className="text-xs text-gray-600 mt-1 capitalize">
                       {domain.overlapStatus} • {domain.authorityDirect || 'Unknown'} Authority
@@ -561,23 +564,13 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
                 {/* Availability Column */}
                 <td className="px-3 xl:px-4 py-4">
                   {domain.activeLineItemsCount > 0 ? (
-                    <div>
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                        In Use ({domain.activeLineItemsCount})
-                      </span>
-                      <div className="text-xs text-gray-500 mt-1">
-                        {formatTraffic(domain.traffic)} traffic
-                      </div>
-                    </div>
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                      In Use ({domain.activeLineItemsCount})
+                    </span>
                   ) : (
-                    <div>
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        ✓ Available
-                      </span>
-                      <div className="text-xs text-gray-500 mt-1">
-                        {formatTraffic(domain.traffic)} traffic
-                      </div>
-                    </div>
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      ✓ Available
+                    </span>
                   )}
                 </td>
 
