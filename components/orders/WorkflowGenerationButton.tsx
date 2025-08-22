@@ -1,7 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Loader2, Zap, AlertCircle, CheckCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Loader2, Zap, AlertCircle, CheckCircle, User, X } from 'lucide-react';
+import { AuthService } from '@/lib/auth';
+import { userStorage } from '@/lib/userStorage';
+import { User as UserType } from '@/types/user';
 
 interface WorkflowGenerationResult {
   success: boolean;
@@ -39,8 +42,38 @@ export default function WorkflowGenerationButton({
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<WorkflowGenerationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showAssigneeModal, setShowAssigneeModal] = useState(false);
+  const [selectedAssignee, setSelectedAssignee] = useState<string>('');
+  const [users, setUsers] = useState<UserType[]>([]);
+  const [session, setSession] = useState<any>(null);
+
+  useEffect(() => {
+    const loadUsers = async () => {
+      const currentSession = AuthService.getSession();
+      setSession(currentSession);
+      
+      if (currentSession?.userType === 'internal' || currentSession?.role === 'admin') {
+        const allUsers = await userStorage.getAllUsers();
+        const internalUsers = allUsers.filter((u: any) => u.role === 'internal' || u.role === 'admin');
+        setUsers(internalUsers);
+        // Default to current user
+        setSelectedAssignee(currentSession.userId);
+      }
+    };
+    loadUsers();
+  }, []);
+
+  const handleGenerateClick = () => {
+    // Show assignee modal for internal users, otherwise generate directly
+    if ((session?.userType === 'internal' || session?.role === 'admin') && users.length > 0) {
+      setShowAssigneeModal(true);
+    } else {
+      generateWorkflows();
+    }
+  };
 
   const generateWorkflows = async () => {
+    setShowAssigneeModal(false);
     setLoading(true);
     setError(null);
     setResult(null);
@@ -57,7 +90,8 @@ export default function WorkflowGenerationButton({
         },
         body: JSON.stringify({
           skipPaymentCheck: skipPaymentCheck || false,
-          autoAssign: true
+          autoAssign: true,
+          assignedUserId: selectedAssignee || session?.userId
         })
       });
 
@@ -90,7 +124,7 @@ export default function WorkflowGenerationButton({
   return (
     <div className="relative">
       <button
-        onClick={generateWorkflows}
+        onClick={handleGenerateClick}
         disabled={loading || (!isPaid && !skipPaymentCheck)}
         className={`
           inline-flex items-center gap-2 px-4 py-2 
@@ -158,6 +192,69 @@ export default function WorkflowGenerationButton({
             <div className="flex-1">
               <p className="font-medium text-red-800">Error</p>
               <p className="text-sm text-red-600">{error}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Assignee Selection Modal */}
+      {showAssigneeModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Assign Workflows To</h3>
+              <button
+                onClick={() => setShowAssigneeModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <p className="text-sm text-gray-600 mb-4">
+              Select who should be assigned to work on the generated workflows:
+            </p>
+            
+            <div className="space-y-2 mb-6 max-h-64 overflow-y-auto">
+              {users.map(user => (
+                <label
+                  key={user.id}
+                  className="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
+                >
+                  <input
+                    type="radio"
+                    name="assignee"
+                    value={user.id}
+                    checked={selectedAssignee === user.id}
+                    onChange={(e) => setSelectedAssignee(e.target.value)}
+                    className="mr-3"
+                  />
+                  <User className="h-4 w-4 mr-2 text-gray-400" />
+                  <div className="flex-1">
+                    <div className="font-medium">{user.name}</div>
+                    <div className="text-sm text-gray-500">{user.email}</div>
+                  </div>
+                  {user.id === session?.userId && (
+                    <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">You</span>
+                  )}
+                </label>
+              ))}
+            </div>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowAssigneeModal(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={generateWorkflows}
+                disabled={!selectedAssignee}
+                className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Generate & Assign
+              </button>
             </div>
           </div>
         </div>

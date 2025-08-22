@@ -122,6 +122,29 @@ export const workflows = pgTable('workflows', {
   content: jsonb('content'), // Stores the complete GuestPostWorkflow as JSON
   targetPages: jsonb('target_pages'), // Stores target pages as JSON
   orderItemId: uuid('order_item_id'), // Link to order system
+  
+  // Completion tracking fields (added in migration 0062)
+  completionPercentage: decimal('completion_percentage', { precision: 5, scale: 2 }).default('0'),
+  isCompleted: boolean('is_completed').default(false),
+  completedAt: timestamp('completed_at'),
+  lastStepCompletedAt: timestamp('last_step_completed_at'),
+  
+  // Assignment tracking fields (added in migration 0063)
+  assignedUserId: uuid('assigned_user_id').references(() => users.id),
+  assignedAt: timestamp('assigned_at'),
+  lastActiveAt: timestamp('last_active_at'),
+  estimatedCompletionDate: timestamp('estimated_completion_date'),
+  
+  // Publisher coordination fields (added in migration 0064)
+  publisherEmail: varchar('publisher_email', { length: 255 }),
+  publisherPreApprovalSentAt: timestamp('publisher_pre_approval_sent_at'),
+  publisherPreApprovalStatus: varchar('publisher_pre_approval_status', { length: 50 }),
+  publisherFinalSentAt: timestamp('publisher_final_sent_at'),
+  publishedUrl: varchar('published_url', { length: 500 }),
+  publicationVerifiedAt: timestamp('publication_verified_at'),
+  qaChecklistCompleted: boolean('qa_checklist_completed').default(false),
+  paymentAuthorized: boolean('payment_authorized').default(false),
+  
   createdAt: timestamp('created_at').notNull(),
   updatedAt: timestamp('updated_at').notNull(),
 });

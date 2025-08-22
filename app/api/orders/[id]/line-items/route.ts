@@ -218,7 +218,12 @@ export async function POST(
           throw new Error('clientId is required for each line item');
         }
 
-        // Create the line item
+        // Create the line item with default inclusionStatus of 'included'
+        const metadata = {
+          ...item.metadata,
+          inclusionStatus: item.metadata?.inclusionStatus || 'included'
+        };
+        
         const [lineItem] = await tx.insert(orderLineItems)
           .values({
             orderId,
@@ -228,7 +233,9 @@ export async function POST(
             anchorText: item.anchorText,
             status: item.status || 'draft',
             estimatedPrice: item.estimatedPrice,
-            metadata: item.metadata,
+            wholesalePrice: item.wholesalePrice || metadata?.wholesalePrice,
+            serviceFee: 7900, // $79 service fee
+            metadata,
             addedBy: session.userId,
             displayOrder: nextDisplayOrder,
             version: 1
@@ -247,7 +254,7 @@ export async function POST(
             targetPageUrl: item.targetPageUrl,
             anchorText: item.anchorText
           },
-          changedBy: session.userId,
+          changedBy: session.userType === 'account' ? '00000000-0000-0000-0000-000000000000' : session.userId,
           changeReason: reason || 'Line items added to order',
           batchId
         });
@@ -425,6 +432,16 @@ export async function PATCH(
           updateData.assignedDomain = update.assignedDomain;
           updateData.assignedAt = new Date();
           updateData.assignedBy = session.userId;
+          
+          // Update status to pending_selection when domain is assigned (if currently draft)
+          if (current.status === 'draft') {
+            updateData.status = 'pending_selection';
+            changes.status = { 
+              from: current.status, 
+              to: 'pending_selection' 
+            };
+          }
+          
           changes.domain = { 
             from: current.assignedDomain, 
             to: update.assignedDomain 
@@ -470,7 +487,7 @@ export async function PATCH(
             changeType: Object.keys(changes).includes('status') ? 'status_changed' : 'modified',
             previousValue: changes,
             newValue: updateData,
-            changedBy: session.userId,
+            changedBy: session.userType === 'account' ? '00000000-0000-0000-0000-000000000000' : session.userId,
             changeReason: reason || update.reason || 'Line item updated',
             batchId
           });
@@ -605,7 +622,7 @@ export async function DELETE(
             changeType: 'cancelled',
             previousValue: { status: cancelledItem.status },
             newValue: { status: 'cancelled' },
-            changedBy: session.userId,
+            changedBy: session.userType === 'account' ? '00000000-0000-0000-0000-000000000000' : session.userId,
             changeReason: reason || 'Line item cancelled',
             batchId
           });

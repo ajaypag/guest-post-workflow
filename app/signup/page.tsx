@@ -127,7 +127,7 @@ export default function SignupPage() {
           email: formData.email.toLowerCase(),
           password: formData.password,
           contactName: formData.contactName,
-          companyName: formData.email.split('@')[1] || 'Company', // Default from email domain
+          companyName: null, // Let the API handle smart defaults
           phone: null,
           // Include honeypot fields
           website: formData.website,

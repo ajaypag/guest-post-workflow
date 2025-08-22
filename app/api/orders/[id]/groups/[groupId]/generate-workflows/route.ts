@@ -25,7 +25,8 @@ export async function POST(
     // Extract options
     const options = {
       assignToUserId: body.assignToUserId,
-      autoAssign: body.autoAssign || false
+      autoAssign: body.autoAssign || false,
+      assignedUserId: body.assignedUserId // New: who to assign workflows to
     };
 
     // Verify order group exists

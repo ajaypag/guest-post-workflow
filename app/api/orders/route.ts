@@ -200,14 +200,16 @@ export async function POST(request: NextRequest) {
       let retailPrice = 0;
       
       if (priceInfo.found && priceInfo.wholesalePrice > 0) {
-        // Use actual website data
+        // PricingService now correctly returns wholesale as publisher cost
+        // and retail as wholesale + $79
         wholesalePrice = Math.floor(priceInfo.wholesalePrice * 100); // Convert to cents
-        retailPrice = wholesalePrice + SERVICE_FEE_CENTS; // Add $79 service fee
+        retailPrice = Math.floor(priceInfo.retailPrice * 100); // Convert to cents
       } else {
-        // Fallback for domains not in website table (keep existing logic temporarily)
+        // Fallback for domains not in website table
         const dr = 50;
-        retailPrice = dr >= 70 ? 59900 : dr >= 50 ? 49900 : dr >= 30 ? 39900 : 29900;
-        wholesalePrice = Math.floor(retailPrice * 0.6);
+        // Set wholesale based on DR tier
+        wholesalePrice = dr >= 70 ? 52000 : dr >= 50 ? 42000 : dr >= 30 ? 32000 : 22000;
+        retailPrice = wholesalePrice + 7900; // Add $79 service fee
       }
       
       subtotalRetail += retailPrice;
@@ -273,26 +275,29 @@ export async function POST(request: NextRequest) {
         let retailPrice = 0;
         
         if (priceInfo.found && priceInfo.wholesalePrice > 0) {
-          // Use actual website data
+          // PricingService now correctly returns wholesale as publisher cost
+          // and retail as wholesale + $79
           wholesalePrice = Math.floor(priceInfo.wholesalePrice * 100); // Convert to cents
-          retailPrice = wholesalePrice + SERVICE_FEE_CENTS; // Add $79 service fee
+          retailPrice = Math.floor(priceInfo.retailPrice * 100); // Convert to cents
         } else {
           // Fallback for domains not in website table
           const dr = 50;
-          retailPrice = dr >= 70 ? 59900 : dr >= 50 ? 49900 : dr >= 30 ? 39900 : 29900;
-          wholesalePrice = Math.floor(retailPrice * 0.6);
+          // Set wholesale based on DR tier
+          wholesalePrice = dr >= 70 ? 52000 : dr >= 50 ? 42000 : dr >= 30 ? 32000 : 22000;
+          retailPrice = wholesalePrice + 7900; // Add $79 service fee
         }
         
         const targetPageId = domainTargetPageMap.get(domain.id) || null;
         const lineItemId = uuidv4();
         
-        // Create line item
+        // Create line item with both wholesale and retail prices
         const lineItemData = {
           orderId,
           clientId,
           addedBy: session.userId,
           status: 'draft' as const,
           estimatedPrice: retailPrice,
+          wholesalePrice: wholesalePrice,
           displayOrder: displayOrder,
           ...(targetPageId ? { targetPageId } : {}),
           ...(domain.id ? { assignedDomainId: domain.id } : {}),
@@ -324,8 +329,9 @@ export async function POST(request: NextRequest) {
       for (const domain of selectedDomains) {
       // For now, use a default DR of 50 since bulk analysis domains don't have DR
       const dr = 50;
-      const retailPrice = dr >= 70 ? 59900 : dr >= 50 ? 49900 : dr >= 30 ? 39900 : 29900;
-      const wholesalePrice = Math.floor(retailPrice * 0.6);
+      // Set wholesale based on DR tier
+      const wholesalePrice = dr >= 70 ? 52000 : dr >= 50 ? 42000 : dr >= 30 ? 32000 : 22000;
+      const retailPrice = wholesalePrice + 7900; // Add $79 service fee
 
       // Get the target page ID for this domain
       const targetPageId = domainTargetPageMap.get(domain.id) || null;

@@ -78,6 +78,10 @@ export const bulkAnalysisDomains = pgTable('bulk_analysis_domains', {
   duplicateResolvedAt: timestamp('duplicate_resolved_at'),
   originalProjectId: uuid('original_project_id').references(() => bulkAnalysisProjects.id),
   resolutionMetadata: jsonb('resolution_metadata'),
+  // Target URL matching fields
+  suggestedTargetUrl: text('suggested_target_url'), // AI's top target URL recommendation
+  targetMatchData: jsonb('target_match_data'), // Complete AI target URL analysis results
+  targetMatchedAt: timestamp('target_matched_at'), // When target URL matching was performed
   createdAt: timestamp('created_at').notNull(),
   updatedAt: timestamp('updated_at').notNull(),
 }, (table) => {
@@ -86,6 +90,9 @@ export const bulkAnalysisDomains = pgTable('bulk_analysis_domains', {
     // Note: There should be a unique constraint on (clientId, domain) for upsert operations
     // This is added via migration 0029_add_bulk_analysis_unique_constraint.sql
     clientDomainIdx: index('idx_bulk_domains_client_domain').on(table.clientId, table.domain),
+    // Target URL matching indexes (added in migration 0060_add_target_url_matching.sql)
+    suggestedTargetIdx: index('idx_bulk_domains_suggested_target').on(table.suggestedTargetUrl),
+    targetMatchedAtIdx: index('idx_bulk_domains_target_matched_at').on(table.targetMatchedAt),
   };
 });
 

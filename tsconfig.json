@@ -23,6 +23,7 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+<<<<<<< HEAD
   "exclude": [
     "node_modules",
     "analyze-*.ts",
@@ -31,4 +32,7 @@
     "test-*.ts",
     "reset-*.ts"
   ]
+=======
+  "exclude": ["node_modules", "__tests__/**/*", "tests/**/*", "**/*.test.ts", "**/*.spec.ts", "playwright.config.ts", "*.ts", "*.js", "scripts/**/*", "check-*.ts", "test-*.ts", "test-*.js", "analyze-*.ts", "analyze-*.js", "debug-*.ts", "debug-*.js", "reset-*.ts", "reset-*.js", "trace-*.ts", "trace-*.js", "update-*.ts", "update-*.js"]
+>>>>>>> origin/bug-fixing
 }

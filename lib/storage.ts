@@ -97,7 +97,8 @@ export const storage = {
           },
           body: JSON.stringify({
             ...workflow,
-            userId: session.userId // Add userId for API
+            userId: session.userId, // Add userId for API
+            assignedUserId: workflow.assignedUserId || session.userId // Default to creator if not specified
           }),
         });
         

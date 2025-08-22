@@ -69,13 +69,50 @@ export async function POST(
       }
       updatedInternalNotes += resubmissionInfo;
       
-      // Update order - keep status as pending_confirmation but update notes
+      // Calculate pricing from line items before resubmitting
+      const { orderLineItems } = await import('@/lib/db/orderLineItemSchema');
+      const lineItems = await tx.query.orderLineItems.findMany({
+        where: eq(orderLineItems.orderId, orderId)
+      });
+      
+      let subtotalRetail = 0;
+      let totalRetail = 0;
+      let totalWholesale = 0;
+      let totalLineItems = 0;
+      
+      lineItems.forEach(item => {
+        const itemPrice = item.estimatedPrice || 0;
+        if (itemPrice > 0) {
+          subtotalRetail += itemPrice;
+          totalRetail += itemPrice;
+          totalLineItems++;
+          // Calculate wholesale (subtract service fee)
+          const wholesalePrice = Math.max(itemPrice - 7900, 0);
+          totalWholesale += wholesalePrice;
+        }
+      });
+      
+      const estimatedPricePerLink = totalLineItems > 0 
+        ? Math.round(totalRetail / totalLineItems)
+        : null;
+      
+      const profitMargin = totalRetail > 0 
+        ? Math.round(((totalRetail - totalWholesale) / totalRetail) * 100)
+        : 0;
+      
+      // Update order - keep status as pending_confirmation but update notes and pricing
       const [updatedOrder] = await tx
         .update(orders)
         .set({
           status: 'pending_confirmation',
           state: 'awaiting_review',
           internalNotes: updatedInternalNotes,
+          subtotalRetail: subtotalRetail,
+          totalRetail: totalRetail,
+          totalWholesale: totalWholesale,
+          profitMargin: profitMargin,
+          estimatedPricePerLink: estimatedPricePerLink,
+          estimatedLinksCount: totalLineItems,
           updatedAt: new Date()
         })
         .where(eq(orders.id, orderId))

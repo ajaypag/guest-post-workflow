@@ -5,9 +5,10 @@ import { GuestPostWorkflow, WORKFLOW_STEPS } from '@/types/workflow';
 
 export class WorkflowService {
   // Transform GuestPostWorkflow to database format (simplified for JSON storage)
-  static guestPostWorkflowToDatabase(guestWorkflow: GuestPostWorkflow, userId: string): {
+  static guestPostWorkflowToDatabase(guestWorkflow: GuestPostWorkflow, userId: string, assignedUserId?: string): {
     id: string;
     userId: string;
+    assignedUserId: string | null;
     clientId: string | null;
     title: string;
     status: string;
@@ -15,17 +16,27 @@ export class WorkflowService {
     targetPages: any[];
     createdAt: Date;
     updatedAt: Date;
+    estimatedCompletionDate: Date;
+    assignedAt: Date | null;
   } {
+    const now = new Date();
+    // Calculate estimated completion date (14 days from now - 2 weeks)
+    const estimatedCompletion = new Date(now);
+    estimatedCompletion.setDate(estimatedCompletion.getDate() + 14);
+    
     return {
       id: crypto.randomUUID(),
       userId: userId,
+      assignedUserId: assignedUserId || userId, // Default to creator if not specified
       clientId: guestWorkflow.metadata?.clientId || null,
       title: guestWorkflow.clientName,
       status: 'active',
       content: guestWorkflow, // Store entire workflow as JSON
       targetPages: [], // Empty for now
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: now,
+      updatedAt: now,
+      estimatedCompletionDate: estimatedCompletion,
+      assignedAt: assignedUserId ? now : null, // Set assigned_at if assigned to someone
     };
   }
 
@@ -36,6 +47,10 @@ export class WorkflowService {
       return {
         ...workflow.content,
         id: workflow.id, // Ensure we use the database ID
+        userId: workflow.userId,
+        assignedUserId: workflow.assignedUserId,
+        estimatedCompletionDate: workflow.estimatedCompletionDate,
+        assignedAt: workflow.assignedAt,
         createdAt: new Date(workflow.createdAt),
         updatedAt: new Date(workflow.updatedAt),
       };
@@ -46,6 +61,9 @@ export class WorkflowService {
       id: workflow.id,
       createdAt: new Date(workflow.createdAt),
       updatedAt: new Date(workflow.updatedAt),
+      estimatedCompletionDate: workflow.estimatedCompletionDate,
+      assignedAt: workflow.assignedAt,
+      assignedUserId: workflow.assignedUserId,
       clientName: workflow.title || 'Unknown Client',
       clientUrl: '',
       targetDomain: '',
@@ -134,7 +152,8 @@ export class WorkflowService {
     guestWorkflow: GuestPostWorkflow, 
     userId: string, 
     userName: string, 
-    userEmail?: string
+    userEmail?: string,
+    assignedUserId?: string
   ): Promise<GuestPostWorkflow> {
     try {
       console.log('WorkflowService.createGuestPostWorkflow - Starting', {
@@ -145,7 +164,7 @@ export class WorkflowService {
       });
 
       // Transform to database format (simplified for JSON storage)
-      const workflowData = this.guestPostWorkflowToDatabase(guestWorkflow, userId);
+      const workflowData = this.guestPostWorkflowToDatabase(guestWorkflow, userId, assignedUserId);
       
       console.log('Final workflow data to insert:', JSON.stringify(workflowData, null, 2));
       

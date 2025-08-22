@@ -18,10 +18,29 @@ Production-ready workflow system with PostgreSQL, multi-user auth, and AI agent 
 1. **Publisher System**: `migrations/0035_publisher_offerings_system_fixed.sql`
 2. **Domain Normalization**: `migrations/0037_normalize_existing_domains.sql`
 3. **🆕 Email Qualification Tracking**: `migrations/0058_email_qualification_tracking.sql` - **CRITICAL before V2 parser updates**
-4. **Use Admin Panel**: `/admin/domain-migration` for safe migration
-5. **Use Admin Panel**: `/admin/email-qualification-migration` for email qualification migration
+4. **Target URL Matching**: `migrations/0060_add_target_url_matching.sql` (✅ Tested locally)
+5. **Inclusion Status Fix**: `migrations/0061_fix_inclusion_status_defaults.sql` (✅ NEW - 2025-08-20)
+   - **IMPORTANT**: Run via `/admin/fix-inclusion-status` page for production
+   - Fixes NULL inclusion_status defaulting to 'included' for better UX
+6. **Use Admin Panel**: `/admin/domain-migration` for safe migration
+7. **Use Admin Panel**: `/admin/email-qualification-migration` for email qualification migration
 
 ### Recent Changes (Keep in Mind)
+- ✅ Inclusion Status Default Fix (2025-08-20)
+  - Fixed NULL inclusion_status causing UI/backend mismatch
+  - All line items now default to 'included' for better UX
+  - Fixes invoicing and metrics tracking
+  - Admin migration page: `/admin/fix-inclusion-status`
+  - Migration: `migrations/0061_fix_inclusion_status_defaults.sql`
+- ✅ Target URL Matching System (2025-08-19) - PHASES 1-3 COMPLETE
+  - AI-powered domain to target URL matching (no more random assignments!)
+  - Two-step process: qualification → target matching with O3 model
+  - Database fields: `suggested_target_url`, `target_match_data`, `target_matched_at`
+  - Standalone API: `/api/clients/[id]/bulk-analysis/target-match`
+  - Integrated in master-qualify with `skipTargetMatching` option
+  - Full evidence tracking with match quality scores
+  - Migration: `migrations/0060_add_target_url_matching.sql`
+  - See: [TARGET_URL_MATCHING_IMPLEMENTATION.md](TARGET_URL_MATCHING_IMPLEMENTATION.md)
 - ✅ TypeScript Compilation Fixed (2025-02-14) - ALL ERRORS RESOLVED
   - Fixed Next.js 15 Promise-based searchParams compatibility
   - Aligned database schema with TypeScript interfaces

@@ -11,10 +11,12 @@ export async function POST(
     
     const {
       domainIds,
+      targetPageIds,
       locationCode = 2840,
       languageCode = 'en',
       skipDataForSeo = false,
-      skipAI = false
+      skipAI = false,
+      skipTargetMatching = false
     } = body;
 
     if (!domainIds || !Array.isArray(domainIds) || domainIds.length === 0) {
@@ -31,10 +33,12 @@ export async function POST(
       clientId,
       domainIds,
       {
+        targetPageIds,
         locationCode,
         languageCode,
         skipDataForSeo,
         skipAI,
+        skipTargetMatching,
         onProgress: (progress) => {
           // Log progress for debugging
           if (progress.stage === 'completed' || progress.stage === 'error') {
@@ -64,6 +68,12 @@ export async function POST(
         goodQuality: results.filter(r => r.qualificationStatus === 'good_quality').length,
         marginalQuality: results.filter(r => r.qualificationStatus === 'marginal_quality').length,
         disqualified: results.filter(r => r.qualificationStatus === 'disqualified').length
+      },
+      targetMatching: {
+        success: results.filter(r => r.targetMatchStatus === 'success').length,
+        error: results.filter(r => r.targetMatchStatus === 'error').length,
+        skipped: results.filter(r => r.targetMatchStatus === 'skipped').length,
+        withSuggestions: results.filter(r => r.suggestedTargetUrl).length
       }
     };
 

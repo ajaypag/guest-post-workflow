@@ -263,7 +263,8 @@ export default function ClaimOrderPage() {
                         canMarkSitesReady: false,
                         canAssignTargetPages: false,
                         canViewInternalTools: false,
-                        canViewPricing: true,
+                        canViewPricing: true,   // External users can see pricing column
+                        canEditPricing: false,  // External users cannot edit price overrides
                         canEditDomainAssignments: false,
                         canSetExclusionReason: false
                       }}

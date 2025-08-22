@@ -7,6 +7,7 @@ import Header from '@/components/Header';
 import AccountLayout from '@/components/AccountLayout';
 import { formatCurrency } from '@/lib/utils/formatting';
 import { getStateDisplay } from '@/components/orders/OrderProgressSteps';
+import { useNotifications } from '@/lib/contexts/NotificationContext';
 import {
   Package,
   FileText,
@@ -25,16 +26,20 @@ import {
   Plus,
   Sparkles,
   ArrowRight,
-  Zap
+  Zap,
+  Users,
+  ChevronRight
 } from 'lucide-react';
 
 interface Order {
   id: string;
   status: string;
+  state?: string;
   totalRetail: number;
   createdAt: string;
   itemCount: number;
   completedCount: number;
+  clientNames?: string[];
 }
 
 
@@ -64,12 +69,79 @@ export default function AccountDashboard() {
             title={`Welcome back, ${authUser?.name}`}
             subtitle="Manage your guest post orders and track your campaigns"
             showBreadcrumbs={false}
+            sidebarContent={<SidebarNotifications />}
           >
             <AccountDashboardContent user={authUser} />
           </AccountLayout>
         </>
       )}
     </AccountAuthWrapper>
+  );
+}
+
+function SidebarNotifications() {
+  const router = useRouter();
+  const { notifications } = useNotifications();
+
+  if (!notifications || notifications.actionRequiredCount === 0) {
+    return null;
+  }
+
+  return (
+    <div className="bg-gradient-to-br from-red-50 to-red-100 border border-red-200 rounded-lg p-3">
+      {/* Header */}
+      <div className="flex items-center gap-2 mb-3">
+        <div className="p-1 bg-red-500 rounded-full">
+          <AlertCircle className="h-3 w-3 text-white" />
+        </div>
+        <div>
+          <h3 className="text-sm font-bold text-red-900">Action Required</h3>
+          <p className="text-xs text-red-700">{notifications.actionRequiredCount} orders</p>
+        </div>
+      </div>
+      
+      {/* Order List with Rich Data */}
+      <div className="space-y-1.5 mb-3">
+        {notifications.urgentOrders.slice(0, 3).map((order) => (
+          <div
+            key={order.id}
+            onClick={() => router.push(`/orders/${order.id}`)}
+            className="bg-white/80 hover:bg-white border border-red-200/50 rounded-md p-2 cursor-pointer transition-all group"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-red-900 truncate">
+                  {order.accountName}
+                </p>
+                <p className="text-xs text-red-600 mb-1">
+                  {order.message}
+                </p>
+                {/* Rich data line */}
+                <div className="flex items-center gap-2 text-xs text-red-800/70">
+                  <span>{order.lineItemCount} link{order.lineItemCount !== 1 ? 's' : ''}</span>
+                  <span>•</span>
+                  <span>{formatCurrency(order.totalRetail)}</span>
+                </div>
+              </div>
+              <ChevronRight className="h-3 w-3 text-red-500 group-hover:translate-x-0.5 transition-transform flex-shrink-0 ml-1" />
+            </div>
+          </div>
+        ))}
+        {notifications.urgentOrders.length > 3 && (
+          <p className="text-xs text-red-600 text-center py-1">
+            +{notifications.urgentOrders.length - 3} more
+          </p>
+        )}
+      </div>
+      
+      {/* View All Button */}
+      <button
+        onClick={() => router.push('/orders')}
+        className="w-full px-2 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded transition-colors"
+      >
+        View All
+      </button>
+    </div>
   );
 }
 
@@ -82,9 +154,9 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
     totalOrders: 0,
     activeOrders: 0,
     completedOrders: 0,
-    totalSpent: 0,
     totalBrands: 0,
   });
+  const { notifications } = useNotifications();
 
   useEffect(() => {
     if (user) {
@@ -106,7 +178,6 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
         setOrders(orderData);
         
         // Calculate stats
-        const totalSpent = orderData.reduce((sum: number, order: any) => sum + (order.totalRetail || 0), 0);
         const activeOrders = orderData.filter((o: any) => ['draft', 'approved', 'in_progress'].includes(o.status)).length;
         const completedOrders = orderData.filter((o: any) => o.status === 'completed').length;
         
@@ -115,7 +186,6 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
           totalOrders: orderData.length,
           activeOrders,
           completedOrders,
-          totalSpent,
         }));
       }
       
@@ -321,13 +391,12 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
         </div>
 
         {/* Empty Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
             { icon: Building, label: 'Active Brands', value: 0, color: 'purple' },
             { icon: Package, label: 'Total Orders', value: 0, color: 'blue' },
             { icon: Clock, label: 'In Progress', value: 0, color: 'yellow' },
             { icon: CheckCircle, label: 'Completed', value: 0, color: 'green' },
-            { icon: DollarSign, label: 'Total Spent', value: '$0', color: 'indigo' }
           ].map((stat, index) => (
             <div key={index} className="bg-white rounded-lg shadow-md p-6 opacity-50">
               <div className="flex items-center justify-between mb-4">
@@ -344,61 +413,67 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
     );
   }
 
+
   return (
     <div className="space-y-8">
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <div className="bg-white rounded-lg shadow-md p-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <button 
+          onClick={() => router.push('/clients')}
+          className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg hover:scale-105 transition-all text-left group cursor-pointer border-2 border-transparent hover:border-purple-200"
+        >
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-purple-100 rounded-lg">
+            <div className="p-3 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors">
               <Building className="h-6 w-6 text-purple-600" />
             </div>
+            <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-purple-600 opacity-0 group-hover:opacity-100 transition-all" />
           </div>
-          <div className="text-2xl font-bold text-gray-900">{stats.totalBrands}</div>
-          <p className="text-sm text-gray-600">Active Brands</p>
-        </div>
+          <div className="text-2xl font-bold text-gray-900 group-hover:text-purple-600 transition-colors">{stats.totalBrands}</div>
+          <p className="text-sm text-gray-600 group-hover:text-purple-700 transition-colors">Active Brands</p>
+        </button>
 
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <button 
+          onClick={() => router.push('/orders')}
+          className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg hover:scale-105 transition-all text-left group cursor-pointer border-2 border-transparent hover:border-blue-200"
+        >
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-blue-100 rounded-lg">
+            <div className="p-3 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
               <Package className="h-6 w-6 text-blue-600" />
             </div>
+            <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-blue-600 opacity-0 group-hover:opacity-100 transition-all" />
           </div>
-          <div className="text-2xl font-bold text-gray-900">{stats.totalOrders}</div>
-          <p className="text-sm text-gray-600">Total Orders</p>
-        </div>
+          <div className="text-2xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{stats.totalOrders}</div>
+          <p className="text-sm text-gray-600 group-hover:text-blue-700 transition-colors">Total Orders</p>
+        </button>
 
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <button 
+          onClick={() => router.push('/orders?status=active')}
+          className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg hover:scale-105 transition-all text-left group cursor-pointer border-2 border-transparent hover:border-yellow-200"
+        >
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-yellow-100 rounded-lg">
+            <div className="p-3 bg-yellow-100 rounded-lg group-hover:bg-yellow-200 transition-colors">
               <Clock className="h-6 w-6 text-yellow-600" />
             </div>
+            <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-yellow-600 opacity-0 group-hover:opacity-100 transition-all" />
           </div>
-          <div className="text-2xl font-bold text-gray-900">{stats.activeOrders}</div>
-          <p className="text-sm text-gray-600">In Progress</p>
-        </div>
+          <div className="text-2xl font-bold text-gray-900 group-hover:text-yellow-600 transition-colors">{stats.activeOrders}</div>
+          <p className="text-sm text-gray-600 group-hover:text-yellow-700 transition-colors">In Progress</p>
+        </button>
 
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <button 
+          onClick={() => router.push('/orders?status=completed')}
+          className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg hover:scale-105 transition-all text-left group cursor-pointer border-2 border-transparent hover:border-green-200"
+        >
           <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-green-100 rounded-lg">
+            <div className="p-3 bg-green-100 rounded-lg group-hover:bg-green-200 transition-colors">
               <CheckCircle className="h-6 w-6 text-green-600" />
             </div>
+            <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-green-600 opacity-0 group-hover:opacity-100 transition-all" />
           </div>
-          <div className="text-2xl font-bold text-gray-900">{stats.completedOrders}</div>
-          <p className="text-sm text-gray-600">Completed</p>
-        </div>
+          <div className="text-2xl font-bold text-gray-900 group-hover:text-green-600 transition-colors">{stats.completedOrders}</div>
+          <p className="text-sm text-gray-600 group-hover:text-green-700 transition-colors">Completed</p>
+        </button>
 
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-indigo-100 rounded-lg">
-              <DollarSign className="h-6 w-6 text-indigo-600" />
-            </div>
-          </div>
-          <div className="text-2xl font-bold text-gray-900">
-            {formatCurrency(stats.totalSpent)}
-          </div>
-          <p className="text-sm text-gray-600">Total Spent</p>
-        </div>
       </div>
 
       {/* Brand Summary */}
@@ -547,26 +622,29 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
                       Date
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Brands
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Links/Status
+                      Links
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Progress
+                      Completion
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Total
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Action
+                      Actions
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   {orders.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                      <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
                         No orders found. Create your first order to get started.
                       </td>
                     </tr>
@@ -579,9 +657,29 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                           {new Date(order.createdAt).toLocaleDateString()}
                         </td>
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          {order.clientNames && order.clientNames.length > 0 ? (
+                            <div>
+                              <span className="font-medium">
+                                {order.clientNames.length === 1 ? (
+                                  order.clientNames[0]
+                                ) : order.clientNames.length === 2 ? (
+                                  `${order.clientNames[0]}, ${order.clientNames[1]}`
+                                ) : (
+                                  `${order.clientNames[0]}, ${order.clientNames[1]} +${order.clientNames.length - 2} ${order.clientNames.length - 2 === 1 ? 'brand' : 'brands'}`
+                                )}
+                              </span>
+                              <div className="text-xs text-gray-500">
+                                {order.clientNames.length} {order.clientNames.length === 1 ? 'brand' : 'brands'}
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-gray-400 italic">No brands</span>
+                          )}
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {(() => {
-                            const stateDisplay = getStateDisplay(order.status, (order as any).state);
+                            const stateDisplay = getStateDisplay(order.status, order.state);
                             return (
                               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${stateDisplay.color}`}>
                                 {getStatusIcon(order.status)}
@@ -592,7 +690,6 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                           {(() => {
-                            const stateDisplay = getStateDisplay(order.status, (order as any).state);
                             if (order.status === 'pending_confirmation' || order.status === 'draft') {
                               return <span className="text-gray-500 italic">Pending setup</span>;
                             }
@@ -603,15 +700,20 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
                           })()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="w-24 bg-gray-200 rounded-full h-2 mr-2">
-                              <div 
-                                className="bg-blue-600 h-2 rounded-full"
-                                style={{ width: `${(order.completedCount || 0) / (order.itemCount || 1) * 100}%` }}
-                              />
+                          <div className="flex flex-col">
+                            <div className="flex items-center mb-1">
+                              <div className="w-24 bg-gray-200 rounded-full h-2 mr-2">
+                                <div 
+                                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                                  style={{ width: `${(order.completedCount || 0) / (order.itemCount || 1) * 100}%` }}
+                                />
+                              </div>
+                              <span className="text-sm text-gray-600">
+                                {Math.round((order.completedCount || 0) / (order.itemCount || 1) * 100)}%
+                              </span>
                             </div>
-                            <span className="text-sm text-gray-600">
-                              {order.completedCount || 0}/{order.itemCount || 0}
+                            <span className="text-xs text-gray-500">
+                              {order.completedCount || 0} of {order.itemCount || 0} completed
                             </span>
                           </div>
                         </td>
@@ -619,42 +721,115 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
                           {formatCurrency(order.totalRetail)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <div className="flex items-center gap-3">
-                            <button
-                              onClick={() => router.push(`/orders/${order.id}`)}
-                              className="text-blue-600 hover:text-blue-800"
-                            >
-                              View Order
-                            </button>
-                            {order.status === 'draft' && (
-                              <button
-                                onClick={async () => {
-                                  if (confirm('Are you sure you want to delete this draft order? This action cannot be undone.')) {
-                                    try {
-                                      const response = await fetch(`/api/orders/${order.id}`, {
-                                        method: 'DELETE',
-                                        headers: { 'Content-Type': 'application/json' }
-                                      });
-                                      
-                                      if (response.ok) {
-                                        // Refresh the orders list
-                                        window.location.reload();
-                                      } else {
-                                        const data = await response.json();
-                                        alert(data.error || 'Failed to delete order');
-                                      }
-                                    } catch (error) {
-                                      console.error('Error deleting order:', error);
-                                      alert('Error deleting order');
-                                    }
-                                  }
-                                }}
-                                className="text-red-600 hover:text-red-800"
-                                title="Delete draft order"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                            )}
+                          <div className="flex items-center gap-2">
+                            {/* Smart primary action based on status */}
+                            {(() => {
+                              const stateDisplay = getStateDisplay(order.status, order.state);
+                              
+                              // Awaiting Payment - show Pay Now button
+                              if (order.state === 'payment_pending' || stateDisplay.label === 'Awaiting Payment') {
+                                return (
+                                  <>
+                                    <button
+                                      onClick={() => router.push(`/orders/${order.id}/invoice`)}
+                                      className="inline-flex items-center px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded transition-colors"
+                                    >
+                                      <DollarSign className="h-3 w-3 mr-1" />
+                                      Pay Now
+                                    </button>
+                                    <button
+                                      onClick={() => router.push(`/orders/${order.id}`)}
+                                      className="text-gray-600 hover:text-gray-800 text-xs"
+                                    >
+                                      View
+                                    </button>
+                                  </>
+                                );
+                              }
+                              
+                              // Ready for Review - show Review Sites button
+                              if (order.state === 'ready_for_review' || stateDisplay.label === 'Ready for Review') {
+                                return (
+                                  <>
+                                    <button
+                                      onClick={() => router.push(`/orders/${order.id}/review`)}
+                                      className="inline-flex items-center px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors"
+                                    >
+                                      <CheckCircle className="h-3 w-3 mr-1" />
+                                      Review Sites
+                                    </button>
+                                    <button
+                                      onClick={() => router.push(`/orders/${order.id}`)}
+                                      className="text-gray-600 hover:text-gray-800 text-xs"
+                                    >
+                                      View
+                                    </button>
+                                  </>
+                                );
+                              }
+                              
+                              // Has invoice - show View Invoice button
+                              if (order.state === 'payment_pending' || order.state === 'payment_received') {
+                                return (
+                                  <>
+                                    <button
+                                      onClick={() => router.push(`/orders/${order.id}/invoice`)}
+                                      className="inline-flex items-center px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium rounded transition-colors"
+                                    >
+                                      <FileText className="h-3 w-3 mr-1" />
+                                      View Invoice
+                                    </button>
+                                    <button
+                                      onClick={() => router.push(`/orders/${order.id}`)}
+                                      className="text-gray-600 hover:text-gray-800 text-xs"
+                                    >
+                                      Details
+                                    </button>
+                                  </>
+                                );
+                              }
+                              
+                              // Default - show View Order button
+                              return (
+                                <>
+                                  <button
+                                    onClick={() => router.push(`/orders/${order.id}`)}
+                                    className="text-blue-600 hover:text-blue-800 font-medium"
+                                  >
+                                    View Order
+                                  </button>
+                                  {order.status === 'draft' && (
+                                    <button
+                                      onClick={async () => {
+                                        if (confirm('Are you sure you want to delete this draft order? This action cannot be undone.')) {
+                                          try {
+                                            const response = await fetch(`/api/orders/${order.id}`, {
+                                              method: 'DELETE',
+                                              headers: { 'Content-Type': 'application/json' }
+                                            });
+                                            
+                                            if (response.ok) {
+                                              // Refresh the orders list
+                                              window.location.reload();
+                                            } else {
+                                              const data = await response.json();
+                                              alert(data.error || 'Failed to delete order');
+                                            }
+                                          } catch (error) {
+                                            console.error('Error deleting order:', error);
+                                            alert('Error deleting order');
+                                          }
+                                        }
+                                      }}
+                                      className="text-red-600 hover:text-red-800"
+                                      title="Delete draft order"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
+                                  )}
+                                </>
+                              );
+                            })()}
                           </div>
                         </td>
                       </tr>

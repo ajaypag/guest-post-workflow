@@ -12,6 +12,13 @@ interface NotificationSummary {
     status: string;
     state?: string;
     message: string;
+    // Rich details (accountName actually contains client display name like "AIApply" or "AIApply, Hoola")
+    accountName: string;
+    accountEmail?: string;
+    lineItemCount: number;
+    totalRetail: number;
+    updatedAt: string;
+    groupsNeedingSuggestions: number;
   }>;
   totalOrders: number;
   moreSuggestionsCount?: number; // NEW: Count of orders needing more suggestions

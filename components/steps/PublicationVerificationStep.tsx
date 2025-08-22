@@ -1,0 +1,427 @@
+'use client';
+
+import React from 'react';
+import { WorkflowStep, GuestPostWorkflow } from '@/types/workflow';
+import { SavedField } from '../SavedField';
+import { CheckCircle, AlertCircle, ExternalLink, Shield, TrendingUp, DollarSign, FileCheck } from 'lucide-react';
+
+interface PublicationVerificationStepProps {
+  step: WorkflowStep;
+  workflow: GuestPostWorkflow;
+  onChange: (data: any) => void;
+}
+
+export const PublicationVerificationStep = ({ step, workflow, onChange }: PublicationVerificationStepProps) => {
+  // Gather data from previous steps
+  const publicationOutreachStep = workflow.steps.find(s => s.id === 'publication-outreach');
+  const publisherPreApprovalStep = workflow.steps.find(s => s.id === 'publisher-pre-approval');
+  const domainSelectionStep = workflow.steps.find(s => s.id === 'domain-selection');
+
+  const publishedUrl = publicationOutreachStep?.outputs?.publishedUrl || '';
+  const guestPostSite = domainSelectionStep?.outputs?.domain || '[Guest Post Site]';
+  const agreedPrice = publisherPreApprovalStep?.outputs?.agreedPrice || '';
+
+  const handleQACheck = (checkName: string, value: boolean) => {
+    const updatedChecks = {
+      ...step.outputs.qaChecks,
+      [checkName]: value
+    };
+    
+    // Calculate if all checks pass
+    const allChecksPassed = Object.values(updatedChecks).every(check => check === true);
+    
+    onChange({ 
+      ...step.outputs, 
+      qaChecks: updatedChecks,
+      qaChecklistCompleted: allChecksPassed,
+      lastVerifiedAt: new Date().toISOString()
+    });
+  };
+
+  const handlePaymentAuthorization = () => {
+    onChange({ 
+      ...step.outputs, 
+      paymentAuthorized: true,
+      paymentAuthorizedAt: new Date().toISOString()
+    });
+  };
+
+  const handleWorkflowCompletion = () => {
+    onChange({ 
+      ...step.outputs, 
+      workflowCompleted: true,
+      completedAt: new Date().toISOString()
+    });
+  };
+
+  // Initialize QA checks if not present
+  const qaChecks = step.outputs.qaChecks || {
+    urlVerified: false,
+    contentIntact: false,
+    linksActive: false,
+    imagesDisplayed: false,
+    authorAttribution: false,
+    metaDataCorrect: false,
+    indexable: false,
+    socialShareable: false
+  };
+
+  const allChecksPassed = Object.values(qaChecks).every(check => check === true);
+
+  return (
+    <div className="space-y-6">
+      {/* Publication Status */}
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
+          <h3 className="font-medium text-gray-900">Publication Verification</h3>
+        </div>
+        <div className="p-6">
+          {publishedUrl ? (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Published Article URL:</p>
+                  <p className="font-medium">{publishedUrl}</p>
+                </div>
+                <a
+                  href={publishedUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Verify Live Article
+                </a>
+              </div>
+              
+              <SavedField
+                label="Actual Published URL (if different)"
+                value={step.outputs.verifiedUrl || publishedUrl}
+                placeholder="Confirm or update the live URL..."
+                onChange={(value) => onChange({ ...step.outputs, verifiedUrl: value })}
+              />
+            </div>
+          ) : (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <div className="flex items-center">
+                <AlertCircle className="w-5 h-5 text-yellow-500 mr-2" />
+                <p className="text-sm text-yellow-700">
+                  Article not yet published. Complete the Publication & Outreach step first.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* QA Checklist */}
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
+          <div className="flex items-center justify-between">
+            <h3 className="font-medium text-gray-900">Quality Assurance Checklist</h3>
+            {allChecksPassed && (
+              <span className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 text-sm rounded-full">
+                <CheckCircle className="w-4 h-4 mr-1" />
+                All Checks Passed
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="p-6">
+          <div className="space-y-4">
+            {/* Content Verification */}
+            <div className="border-b border-gray-100 pb-4">
+              <h4 className="text-sm font-medium text-gray-700 mb-3">Content Verification</h4>
+              <div className="space-y-2">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={qaChecks.urlVerified}
+                    onChange={(e) => handleQACheck('urlVerified', e.target.checked)}
+                    className="mr-3"
+                  />
+                  <span className="text-sm">URL matches suggested or is appropriate</span>
+                </label>
+                
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={qaChecks.contentIntact}
+                    onChange={(e) => handleQACheck('contentIntact', e.target.checked)}
+                    className="mr-3"
+                  />
+                  <span className="text-sm">Article content published without major changes</span>
+                </label>
+
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={qaChecks.authorAttribution}
+                    onChange={(e) => handleQACheck('authorAttribution', e.target.checked)}
+                    className="mr-3"
+                  />
+                  <span className="text-sm">Author attribution/bio included (if applicable)</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Technical Verification */}
+            <div className="border-b border-gray-100 pb-4">
+              <h4 className="text-sm font-medium text-gray-700 mb-3">Technical Verification</h4>
+              <div className="space-y-2">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={qaChecks.linksActive}
+                    onChange={(e) => handleQACheck('linksActive', e.target.checked)}
+                    className="mr-3"
+                  />
+                  <span className="text-sm">All internal and external links are active</span>
+                </label>
+
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={qaChecks.imagesDisplayed}
+                    onChange={(e) => handleQACheck('imagesDisplayed', e.target.checked)}
+                    className="mr-3"
+                  />
+                  <span className="text-sm">Images properly displayed (if applicable)</span>
+                </label>
+
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={qaChecks.metaDataCorrect}
+                    onChange={(e) => handleQACheck('metaDataCorrect', e.target.checked)}
+                    className="mr-3"
+                  />
+                  <span className="text-sm">Meta title and description implemented</span>
+                </label>
+              </div>
+            </div>
+
+            {/* SEO Verification */}
+            <div className="pb-4">
+              <h4 className="text-sm font-medium text-gray-700 mb-3">SEO & Visibility</h4>
+              <div className="space-y-2">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={qaChecks.indexable}
+                    onChange={(e) => handleQACheck('indexable', e.target.checked)}
+                    className="mr-3"
+                  />
+                  <span className="text-sm">Page is indexable (not noindex/nofollow)</span>
+                </label>
+
+              </div>
+            </div>
+          </div>
+
+          {/* QA Notes */}
+          <SavedField
+            label="QA Notes"
+            value={step.outputs.qaNotes || ''}
+            placeholder="Document any issues found or corrections needed..."
+            onChange={(value) => onChange({ ...step.outputs, qaNotes: value })}
+            isTextarea={true}
+            height="h-24"
+          />
+        </div>
+      </div>
+
+      {/* Performance Metrics */}
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
+          <div className="flex items-center">
+            <TrendingUp className="w-5 h-5 text-gray-600 mr-2" />
+            <h3 className="font-medium text-gray-900">Performance Tracking</h3>
+          </div>
+        </div>
+        <div className="p-6 space-y-4">
+          <SavedField
+            label="Link Type"
+            value={step.outputs.linkType || ''}
+            placeholder="dofollow/nofollow"
+            onChange={(value) => onChange({ ...step.outputs, linkType: value })}
+          />
+
+          <SavedField
+            label="Performance Notes"
+            value={step.outputs.performanceNotes || ''}
+            placeholder="Initial traffic, engagement metrics, etc..."
+            onChange={(value) => onChange({ ...step.outputs, performanceNotes: value })}
+            isTextarea={true}
+            height="h-20"
+          />
+        </div>
+      </div>
+
+      {/* Payment Authorization */}
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
+          <div className="flex items-center">
+            <DollarSign className="w-5 h-5 text-gray-600 mr-2" />
+            <h3 className="font-medium text-gray-900">Payment Authorization</h3>
+          </div>
+        </div>
+        <div className="p-6">
+          <div className="space-y-4">
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <p className="text-sm text-gray-600">Publisher Payment</p>
+                  <p className="font-medium text-lg">{agreedPrice || 'Not specified'}</p>
+                  <p className="text-sm text-gray-500">Site: {guestPostSite}</p>
+                </div>
+                {!step.outputs.paymentAuthorized ? (
+                  <button
+                    onClick={handlePaymentAuthorization}
+                    disabled={!allChecksPassed}
+                    className={`px-4 py-2 rounded-lg transition-colors ${
+                      allChecksPassed
+                        ? 'bg-green-600 text-white hover:bg-green-700'
+                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    }`}
+                  >
+                    <Shield className="w-4 h-4 inline mr-2" />
+                    Authorize Payment
+                  </button>
+                ) : (
+                  <div className="flex items-center text-green-600">
+                    <CheckCircle className="w-5 h-5 mr-2" />
+                    <span className="font-medium">Authorized</span>
+                  </div>
+                )}
+              </div>
+              
+              {!allChecksPassed && (
+                <p className="text-sm text-yellow-600 mt-2">
+                  ⚠️ Complete all QA checks before authorizing payment
+                </p>
+              )}
+              
+              {step.outputs.paymentAuthorizedAt && (
+                <p className="text-sm text-gray-500 mt-2">
+                  Authorized on: {new Date(step.outputs.paymentAuthorizedAt).toLocaleString()}
+                </p>
+              )}
+            </div>
+
+            <SavedField
+              label="Payment Notes"
+              value={step.outputs.paymentNotes || ''}
+              placeholder="Invoice number, payment method, transaction ID..."
+              onChange={(value) => onChange({ ...step.outputs, paymentNotes: value })}
+              isTextarea={true}
+              height="h-20"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Workflow Completion */}
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
+          <div className="flex items-center">
+            <FileCheck className="w-5 h-5 text-gray-600 mr-2" />
+            <h3 className="font-medium text-gray-900">Workflow Completion</h3>
+          </div>
+        </div>
+        <div className="p-6">
+          {!step.outputs.workflowCompleted ? (
+            <div>
+              <p className="text-sm text-gray-600 mb-4">
+                Once all verification steps are complete and payment is authorized, mark this workflow as complete.
+              </p>
+              <button
+                onClick={handleWorkflowCompletion}
+                disabled={!allChecksPassed || !step.outputs.paymentAuthorized}
+                className={`w-full py-3 rounded-lg font-medium transition-colors ${
+                  allChecksPassed && step.outputs.paymentAuthorized
+                    ? 'bg-green-600 text-white hover:bg-green-700'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
+              >
+                <CheckCircle className="w-5 h-5 inline mr-2" />
+                Mark Workflow Complete
+              </button>
+              
+              {(!allChecksPassed || !step.outputs.paymentAuthorized) && (
+                <div className="mt-3 space-y-1">
+                  {!allChecksPassed && (
+                    <p className="text-sm text-yellow-600">• Complete all QA checks</p>
+                  )}
+                  {!step.outputs.paymentAuthorized && (
+                    <p className="text-sm text-yellow-600">• Authorize payment to publisher</p>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <div className="flex items-center mb-2">
+                <CheckCircle className="w-6 h-6 text-green-600 mr-2" />
+                <h4 className="font-medium text-green-900">Workflow Complete!</h4>
+              </div>
+              <p className="text-sm text-green-800">
+                Completed on: {new Date(step.outputs.completedAt).toLocaleString()}
+              </p>
+              <div className="mt-3 space-y-1 text-sm text-green-700">
+                <p>✓ Article published and verified</p>
+                <p>✓ All quality checks passed</p>
+                <p>✓ Payment authorized to publisher</p>
+                <p>✓ Workflow successfully completed</p>
+              </div>
+            </div>
+          )}
+
+          {/* Final Notes */}
+          <div className="mt-4">
+            <SavedField
+              label="Completion Notes"
+              value={step.outputs.completionNotes || ''}
+              placeholder="Any final notes or observations about this workflow..."
+              onChange={(value) => onChange({ ...step.outputs, completionNotes: value })}
+              isTextarea={true}
+              height="h-20"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Summary Status */}
+      {step.outputs.workflowCompleted && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center mb-2">
+            <Shield className="w-5 h-5 text-blue-600 mr-2" />
+            <h3 className="font-medium text-blue-900">Workflow Summary</h3>
+          </div>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <p className="text-blue-700">Published URL:</p>
+              <p className="font-medium text-blue-900">{step.outputs.verifiedUrl || publishedUrl}</p>
+            </div>
+            <div>
+              <p className="text-blue-700">Payment Status:</p>
+              <p className="font-medium text-blue-900">Authorized - {agreedPrice}</p>
+            </div>
+            <div>
+              <p className="text-blue-700">Quality Score:</p>
+              <p className="font-medium text-blue-900">
+                {Object.values(qaChecks).filter(v => v).length}/{Object.keys(qaChecks).length} checks passed
+              </p>
+            </div>
+            <div>
+              <p className="text-blue-700">Completion Date:</p>
+              <p className="font-medium text-blue-900">
+                {new Date(step.outputs.completedAt).toLocaleDateString()}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};

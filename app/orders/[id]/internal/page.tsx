@@ -1,21 +1,21 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
-import OrderSiteReviewTableV2 from '@/components/orders/OrderSiteReviewTableV2';
+import LineItemsReviewTable from '@/components/orders/LineItemsReviewTable';
 import BenchmarkDisplay from '@/components/orders/BenchmarkDisplay';
 import OrderProgressSteps, { getStateDisplay, getProgressSteps } from '@/components/orders/OrderProgressSteps';
-import LineItemsTable from '@/components/orders/LineItemsTable';
 import TargetPageSelector from '@/components/orders/TargetPageSelector';
 import { isLineItemsSystemEnabled, enableLineItemsForOrder } from '@/lib/config/featureFlags';
 import ChangeBulkAnalysisProject from '@/components/orders/ChangeBulkAnalysisProject';
+import { UserAssignmentModal } from '@/components/UserAssignmentModal';
 import { AuthService, type AuthSession } from '@/lib/auth';
 import { formatCurrency } from '@/lib/utils/formatting';
 import { 
-  ArrowLeft, Loader2, CheckCircle, Clock, Users, FileText, 
+  ArrowLeft, Loader2, CheckCircle, CheckCircle2, Clock, Users, FileText, 
   RefreshCw, ExternalLink, Globe, LinkIcon, Eye, Package,
   Target, ChevronRight, ChevronUp, ChevronDown, AlertCircle, Activity, Building, User, DollarSign,
   Download, Share2, XCircle, CreditCard, Trash2, Zap, PlayCircle,
@@ -155,6 +155,7 @@ interface OrderDetail {
   createdAt: string;
   updatedAt: string;
   approvedAt?: string;
+  hasWorkflows?: boolean;
   invoicedAt?: string;
   paidAt?: string;
   completedAt?: string;
@@ -171,13 +172,23 @@ interface OrderDetail {
   estimatedPricePerLink?: number;
   estimatedBudgetMin?: number;
   estimatedBudgetMax?: number;
+  // Fulfillment tracking fields
+  fulfillmentStartedAt?: string;
+  fulfillmentCompletedAt?: string;
+  totalWorkflows?: number;
+  completedWorkflows?: number;
+  workflowCompletionPercentage?: string;
 }
 
 // Helper functions for dual-mode support (orderGroups vs lineItems)
+// IMPORTANT: Only count line items with assigned domains for accurate financial metrics
 const getTotalLinkCount = (order: OrderDetail): number => {
   if (order.lineItems && order.lineItems.length > 0) {
-    // Count line items
-    return order.lineItems.length;
+    // Count only active line items WITH assigned domains
+    return order.lineItems.filter(item => 
+      !['cancelled', 'refunded'].includes(item.status) && 
+      item.assignedDomainId // Only count if domain is assigned
+    ).length;
   }
   // Fallback to orderGroups
   return order.orderGroups?.reduce((sum, g) => sum + g.linkCount, 0) || 0;
@@ -188,24 +199,61 @@ const getTotalServiceFees = (order: OrderDetail): number => {
   return 7900 * linkCount; // $79 per link
 };
 
+const getTotalRevenue = (order: OrderDetail): number => {
+  if (order.lineItems && order.lineItems.length > 0) {
+    // Calculate from line items WITH assigned domains only
+    return order.lineItems
+      .filter(item => 
+        !['cancelled', 'refunded'].includes(item.status) && 
+        item.assignedDomainId // Only count if domain is assigned
+      )
+      .reduce((sum, item) => sum + (item.approvedPrice || item.estimatedPrice || 0), 0);
+  }
+  // Fallback to order total
+  return order.totalPrice || 0;
+};
+
 const getWholesaleTotal = (order: OrderDetail): number => {
   if (order.lineItems && order.lineItems.length > 0) {
-    // Calculate from line items
-    return order.lineItems.reduce((sum, item) => sum + (item.wholesalePrice || 0), 0);
+    // Calculate from line items WITH assigned domains only
+    return order.lineItems
+      .filter(item => 
+        !['cancelled', 'refunded'].includes(item.status) && 
+        item.assignedDomainId // Only count if domain is assigned
+      )
+      .reduce((sum, item) => sum + (item.wholesalePrice || 0), 0);
   }
   // Fallback to order total calculation
-  return order.totalWholesale || (order.totalPrice - getTotalServiceFees(order));
+  return order.totalWholesale || 0;
+};
+
+const getGrossProfit = (order: OrderDetail): number => {
+  return getTotalRevenue(order) - getWholesaleTotal(order);
 };
 
 const getAveragePricePerLink = (order: OrderDetail): number => {
   const linkCount = getTotalLinkCount(order);
-  return linkCount > 0 ? order.totalPrice / linkCount : 0;
+  const revenue = getTotalRevenue(order);
+  return linkCount > 0 ? revenue / linkCount : 0;
 };
 
 const getAverageWholesalePerLink = (order: OrderDetail): number => {
   const linkCount = getTotalLinkCount(order);
   const wholesale = getWholesaleTotal(order);
   return linkCount > 0 ? wholesale / linkCount : 0;
+};
+
+const getCurrentAveragePricePerLink = (order: OrderDetail): number => {
+  if (order.lineItems && order.lineItems.length > 0) {
+    // Only calculate average for items with assigned domains
+    const activeItemsWithDomains = order.lineItems.filter(item => 
+      !['cancelled', 'refunded'].includes(item.status) && 
+      item.assignedDomainId
+    );
+    const totalRevenue = activeItemsWithDomains.reduce((sum, item) => sum + (item.approvedPrice || item.estimatedPrice || 0), 0);
+    return activeItemsWithDomains.length > 0 ? totalRevenue / activeItemsWithDomains.length : 0;
+  }
+  return getAveragePricePerLink(order);
 };
 
 export default function InternalOrderManagementPage() {
@@ -222,7 +270,9 @@ export default function InternalOrderManagementPage() {
   const [siteSubmissions, setSiteSubmissions] = useState<Record<string, SiteSubmission[]>>({});
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
+  const [showStatusActions, setShowStatusActions] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [showUserAssignmentModal, setShowUserAssignmentModal] = useState(false);
   const [targetPageStatuses, setTargetPageStatuses] = useState<TargetPageStatus[]>([]);
   const [selectedPages, setSelectedPages] = useState<Set<string>>(new Set());
   const [generatingKeywords, setGeneratingKeywords] = useState(false);
@@ -305,8 +355,14 @@ export default function InternalOrderManagementPage() {
       }
       
       const data = await response.json();
-      console.log('Order data received:', data);
-      console.log('Order groups:', data.orderGroups);
+      console.log('[INTERNAL_PAGE] Order data received:', {
+        id: data.id,
+        status: data.status,
+        state: data.state,
+        lineItems: data.lineItems?.length,
+        orderGroups: data.orderGroups?.length,
+        firstLineItemMetadata: data.lineItems?.[0]?.metadata
+      });
       
       // Don't load site submissions here - they'll be loaded separately
       
@@ -362,34 +418,70 @@ export default function InternalOrderManagementPage() {
   };
 
   const checkTargetPageStatuses = async () => {
-    if (!order?.orderGroups) return;
-    
-    // Skip target page checking for line items mode
-    if (useLineItemsView || (order.lineItems && order.lineItems.length > 0 && (!order.orderGroups || order.orderGroups.length === 0))) {
-      return;
-    }
-    
     const statuses: TargetPageStatus[] = [];
     
-    for (const group of order.orderGroups) {
-      for (const targetPage of group.targetPages || []) {
-        if (targetPage.pageId) {
+    // Check line items first (new system) - exclude cancelled items
+    if (order?.lineItems && order.lineItems.length > 0) {
+      // Filter out cancelled and refunded line items
+      const activeLineItems = order.lineItems.filter(item => 
+        !['cancelled', 'refunded'].includes(item.status)
+      );
+      
+      for (const lineItem of activeLineItems) {
+        if (lineItem.targetPageId) {
           try {
-            const response = await fetch(`/api/target-pages/${targetPage.pageId}`);
+            const response = await fetch(`/api/target-pages/${lineItem.targetPageId}`);
             if (response.ok) {
               const pageData = await response.json();
               statuses.push({
                 id: pageData.id,
-                url: pageData.url,
+                url: pageData.url || lineItem.targetPageUrl,
                 hasKeywords: !!(pageData.keywords && pageData.keywords.trim() !== ''),
                 hasDescription: !!(pageData.description && pageData.description.trim() !== ''),
                 keywordCount: pageData.keywords ? pageData.keywords.split(',').filter((k: string) => k.trim()).length : 0,
-                clientName: group.client.name,
-                orderGroupId: group.id
+                clientName: lineItem.client?.name || 'Unknown Client',
+                orderGroupId: lineItem.id // Use line item ID as identifier
               });
             }
           } catch (error) {
-            console.error(`Failed to load target page ${targetPage.pageId}:`, error);
+            console.error(`Failed to load target page ${lineItem.targetPageId}:`, error);
+          }
+        } else if (lineItem.targetPageUrl) {
+          // If no pageId but has URL, still track it (may need to create target page)
+          statuses.push({
+            id: `temp-${lineItem.id}`,
+            url: lineItem.targetPageUrl,
+            hasKeywords: false,
+            hasDescription: false,
+            keywordCount: 0,
+            clientName: lineItem.client?.name || 'Unknown Client',
+            orderGroupId: lineItem.id
+          });
+        }
+      }
+    }
+    // Fallback to orderGroups (old system)
+    else if (order?.orderGroups) {
+      for (const group of order.orderGroups) {
+        for (const targetPage of group.targetPages || []) {
+          if (targetPage.pageId) {
+            try {
+              const response = await fetch(`/api/target-pages/${targetPage.pageId}`);
+              if (response.ok) {
+                const pageData = await response.json();
+                statuses.push({
+                  id: pageData.id,
+                  url: pageData.url,
+                  hasKeywords: !!(pageData.keywords && pageData.keywords.trim() !== ''),
+                  hasDescription: !!(pageData.description && pageData.description.trim() !== ''),
+                  keywordCount: pageData.keywords ? pageData.keywords.split(',').filter((k: string) => k.trim()).length : 0,
+                  clientName: group.client.name,
+                  orderGroupId: group.id
+                });
+              }
+            } catch (error) {
+              console.error(`Failed to load target page ${targetPage.pageId}:`, error);
+            }
           }
         }
       }
@@ -662,7 +754,12 @@ export default function InternalOrderManagementPage() {
         type: 'success',
         text: `Order confirmed successfully! Created ${data.projectsCreated} bulk analysis projects.`
       });
+      // Reload the order to get updated line items with project IDs
       await loadOrder();
+      // Also check target page statuses after confirmation
+      if (data.projectsCreated > 0) {
+        await checkTargetPageStatuses();
+      }
     } catch (err) {
       console.error('Error confirming order:', err);
       setMessage({
@@ -1021,11 +1118,21 @@ export default function InternalOrderManagementPage() {
       return;
     }
     
+    // Show user assignment modal instead of directly generating
+    setShowUserAssignmentModal(true);
+  };
+
+  const handleAssignAndGenerateWorkflows = async (assignedUserId: string) => {
     setActionLoading(prev => ({ ...prev, generate_workflows: true }));
     try {
       const response = await fetch(`/api/orders/${orderId}/generate-workflows`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          skipPaymentCheck: false,
+          autoAssign: false,
+          assignedUserId: assignedUserId // Pass the selected user ID
+        })
       });
       
       if (!response.ok) {
@@ -1036,8 +1143,9 @@ export default function InternalOrderManagementPage() {
       const data = await response.json();
       setMessage({
         type: 'success',
-        text: `Successfully generated ${data.workflowsCreated} workflows!`
+        text: `Successfully generated ${data.workflowsCreated} workflows and assigned to user!`
       });
+      setShowUserAssignmentModal(false);
       await loadOrder();
     } catch (err) {
       console.error('Error generating workflows:', err);
@@ -1047,6 +1155,210 @@ export default function InternalOrderManagementPage() {
       });
     } finally {
       setActionLoading(prev => ({ ...prev, generate_workflows: false }));
+    }
+  };
+
+  // Batch tracking for bulk operations
+  const isBulkOperationRef = useRef(false);
+  
+  const handleChangeLineItemStatus = async (itemId: string, newStatus: string, reason?: string) => {
+    try {
+      const response = await fetch(`/api/orders/${orderId}/line-items/${itemId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ 
+          metadata: {
+            inclusionStatus: newStatus,
+            exclusionReason: reason
+          }
+        })
+      });
+
+      if (!response.ok) {
+        let errorMessage = 'Failed to update status';
+        try {
+          const data = await response.json();
+          errorMessage = data.error || errorMessage;
+        } catch (parseError) {
+          // If response is not JSON, try to get text
+          try {
+            errorMessage = await response.text();
+          } catch {
+            // Use default error message
+          }
+        }
+        throw new Error(errorMessage);
+      }
+
+      // Parse the successful response
+      const result = await response.json();
+      
+      // Only show individual success messages if not part of bulk operation
+      // The LineItemsReviewTable component will handle bulk messages and refreshing
+      if (!isBulkOperationRef.current) {
+        setMessage({
+          type: 'success',
+          text: `Item ${newStatus === 'excluded' ? 'excluded' : newStatus === 'saved_for_later' ? 'saved for later' : 'included'}`
+        });
+        
+        // Refresh the order data to show updated status immediately
+        await loadOrder();
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Error updating line item status:', error);
+      if (!isBulkOperationRef.current) {
+        setMessage({
+          type: 'error',
+          text: error instanceof Error ? error.message : 'Failed to update status'
+        });
+      }
+      throw error;
+    }
+  };
+
+  const handleStatusRollback = async (targetStatus: string) => {
+    if (!confirm(`Are you sure you want to rollback the order status to "${targetStatus}"? This action may have consequences.`)) {
+      return;
+    }
+
+    try {
+      // First check what rollback would affect
+      const response = await fetch(`/api/orders/${orderId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ 
+          newStatus: targetStatus,
+          force: false 
+        })
+      });
+
+      const data = await response.json();
+
+      // If there are warnings, show them and ask for confirmation
+      if (data.requiresConfirmation && data.warnings) {
+        const warningMessage = data.warnings.join('\n');
+        if (!confirm(`Warning:\n${warningMessage}\n\nDo you still want to proceed?`)) {
+          return;
+        }
+
+        // Retry with force flag
+        const forceResponse = await fetch(`/api/orders/${orderId}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ 
+            newStatus: targetStatus,
+            force: true 
+          })
+        });
+
+        if (!forceResponse.ok) {
+          throw new Error('Failed to rollback status');
+        }
+
+        const forceData = await forceResponse.json();
+        setMessage({
+          type: 'success',
+          text: forceData.message || `Status rolled back to ${targetStatus}`
+        });
+      } else if (response.ok) {
+        setMessage({
+          type: 'success',
+          text: data.message || `Status rolled back to ${targetStatus}`
+        });
+      } else {
+        throw new Error(data.error || 'Failed to rollback status');
+      }
+
+      // Reload the order
+      await loadOrder();
+    } catch (error) {
+      console.error('Error rolling back status:', error);
+      setMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Failed to rollback status'
+      });
+    }
+  };
+
+  const handleStateRollback = async (targetState: string) => {
+    const stateLabels: Record<string, string> = {
+      'configuring': 'Configuring',
+      'analyzing': 'Finding Sites',
+      'sites_ready': 'Sites Ready',
+      'client_reviewing': 'Client Reviewing',
+      'payment_pending': 'Payment Pending'
+    };
+
+    const label = stateLabels[targetState] || targetState;
+    
+    if (!confirm(`Are you sure you want to change the order state to "${label}"? This will affect the order workflow.`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/orders/${orderId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ newState: targetState })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setMessage({
+          type: 'success',
+          text: data.message || `Order state changed to ${label}`
+        });
+        // Refresh order data
+        await loadOrder();
+      } else {
+        setMessage({
+          type: 'error',
+          text: data.error || 'Failed to change state'
+        });
+      }
+    } catch (error) {
+      console.error('Error changing state:', error);
+      setMessage({
+        type: 'error',
+        text: 'Failed to change order state'
+      });
+    }
+  };
+
+  const handleRefreshMetadata = async () => {
+    setActionLoading(prev => ({ ...prev, refresh_metadata: true }));
+    try {
+      const response = await fetch(`/api/orders/${orderId}/refresh-metadata`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to refresh metadata');
+      }
+      
+      const data = await response.json();
+      setMessage({
+        type: 'success',
+        text: `Updated ${data.updated} line items with latest website data (DR, traffic, and pricing)`
+      });
+      await loadOrder();
+    } catch (err) {
+      console.error('Error refreshing metadata:', err);
+      setMessage({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'Failed to refresh metadata'
+      });
+    } finally {
+      setActionLoading(prev => ({ ...prev, refresh_metadata: false }));
     }
   };
 
@@ -1589,8 +1901,253 @@ export default function InternalOrderManagementPage() {
                 <div className="mt-6 pt-6 border-t">
                   <h3 className="text-sm font-medium text-gray-900 mb-3">Internal Actions</h3>
                   <div className="space-y-2">
+                    {/* Unified Status & State Management */}
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      {/* Toggle button for status actions */}
+                      <button
+                        onClick={() => setShowStatusActions(!showStatusActions)}
+                        className="flex items-center gap-2 text-xs text-gray-600 hover:text-gray-800 mb-2"
+                      >
+                        <ChevronRight className={`h-3 w-3 transition-transform ${showStatusActions ? 'rotate-90' : ''}`} />
+                        Status & Actions
+                      </button>
+                      
+                      {/* Show status + state breakdown - only when expanded */}
+                      {showStatusActions && (
+                        <>
+                      {order.status === 'confirmed' && order.state ? (
+                        <div className="mb-3 p-2 bg-white rounded text-xs">
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-600">Order Status:</span>
+                            <span className="font-medium text-green-700">Confirmed ✓</span>
+                          </div>
+                          <div className="flex justify-between items-center mt-1">
+                            <span className="text-gray-600">Sub-Status:</span>
+                            <span className="font-medium text-blue-700">
+                              {(() => {
+                                const stateLabels: Record<string, string> = {
+                                  'analyzing': 'Finding Sites',
+                                  'sites_ready': 'Sites Ready for Review',
+                                  'client_reviewing': 'Client Reviewing Sites',
+                                  'payment_pending': 'Awaiting Payment'
+                                };
+                                return stateLabels[order.state] || order.state;
+                              })()}
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="mb-3 p-2 bg-white rounded text-xs">
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-600">Current Status:</span>
+                            <span className="font-medium text-blue-700">
+                              {(() => {
+                                if (order.status === 'pending_confirmation') return 'Pending Confirmation';
+                                if (order.status === 'draft') return 'Draft';
+                                if (order.status === 'cancelled') return 'Cancelled';
+                                if (order.status === 'completed') return 'Completed';
+                                if (order.status === 'paid') {
+                                  if (order.state === 'payment_received') return 'Paid - Processing';
+                                  if (order.state === 'workflows_generated') return 'Paid - Workflows Ready';
+                                  if (order.state === 'in_progress') return 'Paid - In Progress';
+                                  return 'Paid';
+                                }
+                                return order.status;
+                              })()}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Available transitions based on current status+state */}
+                      <div className="space-y-2">
+                        {/* Pending Confirmation → Can Confirm */}
+                        {order.status === 'pending_confirmation' && (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={handleConfirmOrder}
+                              disabled={actionLoading.confirm || targetPageStatuses.some(p => !p.hasKeywords)}
+                              className="flex-1 px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 disabled:opacity-50"
+                            >
+                              → Confirm Order (Start Finding Sites)
+                            </button>
+                          </div>
+                        )}
+                        
+                        {/* Confirmed + Various States */}
+                        {order.status === 'confirmed' && (
+                          <div className="space-y-2">
+                            {/* Analyzing State */}
+                            {order.state === 'analyzing' && (
+                              <div className="space-y-2">
+                                {/* Sub-status transitions within confirmed status */}
+                                <div className="space-y-1">
+                                  <div className="text-xs text-gray-600 font-medium">Sub-Status:</div>
+                                  <button
+                                    onClick={() => handleStateRollback('sites_ready')}
+                                    className="w-full px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 border border-green-700"
+                                    title="Change sub-status within confirmed status"
+                                  >
+                                    → Sites Ready for Review
+                                  </button>
+                                </div>
+                                {/* Order status rollback */}
+                                {!order.invoicedAt && (
+                                  <div className="space-y-1">
+                                    <div className="text-xs text-gray-600 font-medium">Order Status:</div>
+                                    <button
+                                      onClick={() => handleStatusRollback('pending_confirmation')}
+                                      className="px-2 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700 border-2 border-yellow-800"
+                                      title="⚠️ Major rollback - changes order status AND resets workflow state"
+                                    >
+                                      ⚠️ ← Unconfirm Order (Major Rollback)
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            
+                            {/* Sites Ready State */}
+                            {order.state === 'sites_ready' && (
+                              <div className="space-y-2">
+                                {/* Sub-status transitions within confirmed status */}
+                                <div className="space-y-1">
+                                  <div className="text-xs text-gray-600 font-medium">Sub-Status:</div>
+                                  <div className="flex gap-2 flex-wrap">
+                                    <button
+                                      onClick={() => handleStateRollback('analyzing')}
+                                      className="px-2 py-1 bg-orange-600 text-white text-xs rounded hover:bg-orange-700 border border-orange-700"
+                                      title="Change sub-status within confirmed status"
+                                    >
+                                      ← Back to Finding Sites
+                                    </button>
+                                    <button
+                                      onClick={() => handleStateRollback('client_reviewing')}
+                                      className="flex-1 px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 border border-blue-700"
+                                      title="Change sub-status within confirmed status"
+                                    >
+                                      → Send for Client Review
+                                    </button>
+                                    <button
+                                      onClick={() => handleStateRollback('payment_pending')}
+                                      className="flex-1 px-2 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 border border-purple-700"
+                                      title="Change sub-status within confirmed status"
+                                    >
+                                      → Ready for Payment
+                                    </button>
+                                  </div>
+                                </div>
+                                {/* Order status rollback */}
+                                {!order.invoicedAt && (
+                                  <div className="space-y-1">
+                                    <div className="text-xs text-gray-600 font-medium">Order Status:</div>
+                                    <button
+                                      onClick={() => handleStatusRollback('pending_confirmation')}
+                                      className="px-2 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700 border-2 border-yellow-800"
+                                      title="⚠️ Major rollback - changes order status AND resets workflow state"
+                                    >
+                                      ⚠️ ← Unconfirm Order (Major Rollback)
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            
+                            {/* Client Reviewing State */}
+                            {order.state === 'client_reviewing' && (
+                              <div className="space-y-2">
+                                {/* State transitions */}
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => handleStateRollback('sites_ready')}
+                                    className="px-2 py-1 bg-orange-600 text-white text-xs rounded hover:bg-orange-700"
+                                  >
+                                    ← Back to Sites Ready
+                                  </button>
+                                  <button
+                                    onClick={() => handleStateRollback('payment_pending')}
+                                    className="flex-1 px-2 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700"
+                                  >
+                                    → Proceed to Payment
+                                  </button>
+                                </div>
+                                {/* Status rollback (separate) */}
+                                {!order.invoicedAt && (
+                                  <button
+                                    onClick={() => handleStatusRollback('pending_confirmation')}
+                                    className="px-2 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700"
+                                    title="Rollback if order needs major changes"
+                                  >
+                                    ← Unconfirm Order
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                            
+                            {/* Payment Pending State */}
+                            {order.state === 'payment_pending' && (
+                              <div className="space-y-2">
+                                {/* State transitions */}
+                                {!order.paidAt && (
+                                  <button
+                                    onClick={() => handleStateRollback('sites_ready')}
+                                    className="px-2 py-1 bg-orange-600 text-white text-xs rounded hover:bg-orange-700"
+                                    title="Go back to adjust sites or pricing"
+                                  >
+                                    ← Back to Sites Ready
+                                  </button>
+                                )}
+                                {order.invoicedAt && (
+                                  <p className="text-xs text-gray-500 italic">
+                                    Invoice sent - awaiting payment
+                                  </p>
+                                )}
+                                {/* Status rollback (separate) */}
+                                {!order.invoicedAt && (
+                                  <button
+                                    onClick={() => handleStatusRollback('pending_confirmation')}
+                                    className="px-2 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700"
+                                    title="Rollback if order needs major changes"
+                                  >
+                                    ← Unconfirm Order
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                            
+                            {order.invoicedAt && (
+                              <p className="text-xs text-gray-500 italic mt-1">
+                                ⚠️ Invoice exists - limited rollback options
+                              </p>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Paid Status */}
+                        {order.status === 'paid' && (
+                          <div className="space-y-2">
+                            {!order.hasWorkflows && (
+                              <button
+                                onClick={() => handleStatusRollback('confirmed')}
+                                className="px-2 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700"
+                              >
+                                ← Rollback to Confirmed (Payment Pending)
+                              </button>
+                            )}
+                            {order.hasWorkflows && (
+                              <p className="text-xs text-gray-500 italic">
+                                Workflows exist - cannot rollback
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                        </>
+                      )}
+                    </div>
+                    
                     {/* Order Confirmation with Target Page Status */}
-                    {order.status === 'pending_confirmation' && (
+                    {order.status === 'pending_confirmation' ? (
                       <>
                         {/* Target Pages Status Section */}
                         {targetPageStatuses.length > 0 && (
@@ -1691,10 +2248,14 @@ export default function InternalOrderManagementPage() {
                           </p>
                         )}
                       </>
-                    )}
+                    ) : null}
                     
-                    {/* Bulk Analysis Links - Available during analysis and review phases (orderGroups mode only) */}
-                    {!useLineItemsView && (order.state === 'analyzing' || order.state === 'sites_ready' || order.state === 'client_reviewing') && order.orderGroups && (
+                    {/* Bulk Analysis Links - Available during analysis and review phases */}
+                    {(() => {
+                      console.log('[DEBUG] Order state:', order.state, 'Status:', order.status, 'Has lineItems:', order.lineItems?.length, 'Has orderGroups:', order.orderGroups?.length);
+                      return null;
+                    })()}
+                    {(order.state === 'analyzing' || order.state === 'sites_ready' || order.state === 'client_reviewing') && (
                       <div className="space-y-2">
                         <div className="text-xs text-gray-600 mb-1">
                           {(order.state === 'sites_ready' || order.state === 'client_reviewing') ? 
@@ -1702,7 +2263,63 @@ export default function InternalOrderManagementPage() {
                             'Find and analyze sites:'
                           }
                         </div>
-                        {order.orderGroups.map(group => (
+                        {/* For line items - group by client */}
+                        {order.lineItems && order.lineItems.length > 0 ? (
+                          (() => {
+                            // Filter out cancelled and refunded line items first
+                            const activeLineItems = order.lineItems.filter((item: any) => 
+                              !['cancelled', 'refunded'].includes(item.status)
+                            );
+                            
+                            // Group active line items by client
+                            const clientGroups = activeLineItems.reduce((acc: any, item: any) => {
+                              const clientId = item.clientId;
+                              if (!acc[clientId]) {
+                                acc[clientId] = {
+                                  clientId,
+                                  clientName: item.client?.name || 'Unknown Client',
+                                  projectId: item.metadata?.bulkAnalysisProjectId,
+                                  items: []
+                                };
+                              }
+                              acc[clientId].items.push(item);
+                              // Use the first project ID found for this client
+                              if (item.metadata?.bulkAnalysisProjectId && !acc[clientId].projectId) {
+                                acc[clientId].projectId = item.metadata.bulkAnalysisProjectId;
+                              }
+                              return acc;
+                            }, {});
+                            
+                            console.log('[BULK_ANALYSIS_UI] Client groups:', clientGroups);
+                            console.log('[BULK_ANALYSIS_UI] Order state:', order.state);
+                            
+                            return Object.values(clientGroups).map((group: any) => (
+                              <div key={group.clientId} className="space-y-1">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs font-medium text-gray-700">
+                                    {group.clientName} ({group.items.length} links)
+                                  </span>
+                                  <ChangeBulkAnalysisProject
+                                    orderGroupId={group.items[0].id} // Use first line item ID as identifier
+                                    orderId={order.id}
+                                    clientId={group.clientId}
+                                    clientName={group.clientName}
+                                    currentProjectId={group.projectId}
+                                    onProjectChanged={() => loadOrder()}
+                                  />
+                                </div>
+                                {group.projectId && (
+                                  <Link
+                                    href={`/clients/${group.clientId}/bulk-analysis/projects/${group.projectId}?orderId=${params.id}`}
+                                    className="block w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 text-center"
+                                  >
+                                    Analyze {group.clientName}
+                                  </Link>
+                                )}
+                              </div>
+                            ));
+                          })()
+                        ) : order.orderGroups?.map(group => (
                           <div key={group.id} className="space-y-1">
                             <div className="flex items-center justify-between">
                               <span className="text-xs font-medium text-gray-700">
@@ -1719,7 +2336,7 @@ export default function InternalOrderManagementPage() {
                             </div>
                             {group.bulkAnalysisProjectId && (
                               <Link
-                                href={`/clients/${group.clientId}/bulk-analysis/projects/${group.bulkAnalysisProjectId}`}
+                                href={`/clients/${group.clientId}/bulk-analysis/projects/${group.bulkAnalysisProjectId}?orderId=${params.id}`}
                                 className="block w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 text-center"
                               >
                                 Analyze {group.client.name}
@@ -1826,20 +2443,62 @@ export default function InternalOrderManagementPage() {
                       </button>
                     )}
 
-                    {/* Workflow Generation */}
+                    {/* Workflow Generation - Prominent for paid orders */}
                     {order.status === 'paid' && (
+                      <div className="relative">
+                        {/* Alert indicator if no workflows exist */}
+                        {!order.hasWorkflows && (
+                          <div className="absolute -top-2 -right-2 flex h-3 w-3">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                          </div>
+                        )}
+                        <button
+                          onClick={handleGenerateWorkflows}
+                          disabled={actionLoading.generate_workflows}
+                          className={`w-full px-3 py-3 text-white text-sm font-semibold rounded-md transition-all ${
+                            !order.hasWorkflows 
+                              ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg animate-pulse' 
+                              : 'bg-purple-600 hover:bg-purple-700'
+                          } disabled:opacity-50`}
+                        >
+                          {actionLoading.generate_workflows ? (
+                            <span className="flex items-center justify-center gap-2">
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Generating...
+                            </span>
+                          ) : (
+                            <span className="flex items-center justify-center gap-2">
+                              <Sparkles className="h-4 w-4" />
+                              {order.hasWorkflows ? 'Generate Missing Workflows' : 'Generate Workflows (Required)'}
+                            </span>
+                          )}
+                        </button>
+                        {!order.hasWorkflows && (
+                          <p className="text-xs text-red-600 mt-1 text-center font-medium">
+                            ⚠️ Workflows must be generated for content creation
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Refresh Metadata - Update DR, traffic, and pricing from websites table */}
+                    {(order.status !== 'paid' && order.status !== 'completed') && (
                       <button
-                        onClick={handleGenerateWorkflows}
-                        disabled={actionLoading.generate_workflows}
-                        className="w-full px-3 py-2 bg-purple-600 text-white text-sm rounded-md hover:bg-purple-700 disabled:opacity-50"
+                        onClick={handleRefreshMetadata}
+                        disabled={actionLoading.refresh_metadata}
+                        className="w-full px-3 py-2 bg-cyan-600 text-white text-sm rounded-md hover:bg-cyan-700 disabled:opacity-50"
                       >
-                        {actionLoading.generate_workflows ? (
+                        {actionLoading.refresh_metadata ? (
                           <span className="flex items-center justify-center gap-2">
                             <Loader2 className="h-4 w-4 animate-spin" />
-                            Generating...
+                            Refreshing...
                           </span>
                         ) : (
-                          'Generate Workflows'
+                          <span className="flex items-center justify-center gap-2">
+                            <RefreshCw className="h-4 w-4" />
+                            Refresh DR/Traffic/Pricing
+                          </span>
                         )}
                       </button>
                     )}
@@ -1882,7 +2541,7 @@ export default function InternalOrderManagementPage() {
                     <dl className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <dt className="text-gray-600">Total Revenue</dt>
-                        <dd className="font-medium text-gray-900">{formatCurrency(order.totalPrice)}</dd>
+                        <dd className="font-medium text-gray-900">{formatCurrency(getTotalRevenue(order))}</dd>
                       </div>
                       <div className="flex justify-between text-sm">
                         <dt className="text-gray-600">Wholesale Costs</dt>
@@ -1899,14 +2558,14 @@ export default function InternalOrderManagementPage() {
                       <div className="flex justify-between text-sm pt-2 border-t">
                         <dt className="font-medium text-gray-900">Gross Profit</dt>
                         <dd className="font-bold text-green-600">
-                          {formatCurrency(getTotalServiceFees(order))}
+                          {formatCurrency(getGrossProfit(order))}
                         </dd>
                       </div>
                       <div className="flex justify-between text-sm">
                         <dt className="text-gray-600">Margin</dt>
                         <dd className="font-medium text-gray-900">
-                          {order.totalPrice > 0 ? 
-                            `${Math.round((getTotalServiceFees(order) / order.totalPrice) * 100)}%` : 
+                          {getTotalRevenue(order) > 0 ? 
+                            `${Math.round((getGrossProfit(order) / getTotalRevenue(order)) * 100)}%` : 
                             'N/A'
                           }
                         </dd>
@@ -1920,13 +2579,13 @@ export default function InternalOrderManagementPage() {
                       <div className="flex justify-between text-sm">
                         <dt className="text-gray-600">Avg Client Price</dt>
                         <dd className="font-medium text-gray-900">
-                          {formatCurrency(getAveragePricePerLink(order))}
+                          {formatCurrency(Math.round(getAveragePricePerLink(order)))}
                         </dd>
                       </div>
                       <div className="flex justify-between text-sm">
                         <dt className="text-gray-600">Avg Wholesale</dt>
                         <dd className="font-medium text-gray-900">
-                          {formatCurrency(getAverageWholesalePerLink(order))}
+                          {formatCurrency(Math.round(getAverageWholesalePerLink(order)))}
                         </dd>
                       </div>
                       <div className="flex justify-between text-sm">
@@ -1944,13 +2603,13 @@ export default function InternalOrderManagementPage() {
                         <div className="flex justify-between text-sm mt-1">
                           <dt className="text-blue-900">Current avg per Link</dt>
                           <dd className="font-medium text-blue-700">
-                            {formatCurrency(order.totalPrice / (order.orderGroups?.reduce((sum, g) => sum + g.linkCount, 0) || 1))}
+                            {formatCurrency(Math.round(getCurrentAveragePricePerLink(order)))}
                           </dd>
                         </div>
                         <div className="text-xs text-blue-600 mt-1">
-                          {getAveragePricePerLink(order) <= order.estimatedPricePerLink ? 
+                          {getCurrentAveragePricePerLink(order) <= (order.estimatedPricePerLink || 0) ? 
                             '✓ Within target' : 
-                            `${formatCurrency(getAveragePricePerLink(order) - order.estimatedPricePerLink)} over target`
+                            `${formatCurrency(Math.round(getCurrentAveragePricePerLink(order) - (order.estimatedPricePerLink || 0)))} over target`
                           }
                         </div>
                       </div>
@@ -1967,90 +2626,6 @@ export default function InternalOrderManagementPage() {
                   </div>
                 )}
               </div>
-              
-              {/* Customer Preferences */}
-              {(order.preferencesDrMin || order.preferencesTrafficMin || order.estimatedPricePerLink) && (
-                <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 sm:p-6 mt-4 sm:mt-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                    <Target className="h-5 w-5 mr-2 text-blue-600" />
-                    Customer Preferences
-                  </h3>
-                  <dl className="space-y-3">
-                    {/* Target Budget */}
-                    {order.estimatedPricePerLink && (
-                      <div className="bg-blue-50 p-3 rounded-md">
-                        <dt className="text-sm font-medium text-blue-900">Target Price per Link</dt>
-                        <dd className="text-lg font-bold text-blue-700">{formatCurrency(order.estimatedPricePerLink)}</dd>
-                        <dd className="text-xs text-blue-600 mt-1">
-                          Wholesale: ~{formatCurrency((order.estimatedPricePerLink || 0) - 7900)}
-                        </dd>
-                      </div>
-                    )}
-                    
-                    {/* Total Order Target */}
-                    {order.estimatedLinksCount && order.estimatedPricePerLink && (
-                      <div>
-                        <dt className="text-sm text-gray-500">Target Order Size</dt>
-                        <dd className="text-sm font-medium text-gray-900">
-                          {order.estimatedLinksCount} links × {formatCurrency(order.estimatedPricePerLink)} = {formatCurrency((order.estimatedLinksCount || 0) * (order.estimatedPricePerLink || 0))}
-                        </dd>
-                      </div>
-                    )}
-                    
-                    {/* DR Range */}
-                    {(order.preferencesDrMin || order.preferencesDrMax) && (
-                      <div>
-                        <dt className="text-sm text-gray-500">Domain Rating</dt>
-                        <dd className="text-sm font-medium text-gray-900">
-                          DR {order.preferencesDrMin || 0} - {order.preferencesDrMax || 100}
-                        </dd>
-                      </div>
-                    )}
-                    
-                    {/* Traffic */}
-                    {order.preferencesTrafficMin && (
-                      <div>
-                        <dt className="text-sm text-gray-500">Minimum Traffic</dt>
-                        <dd className="text-sm font-medium text-gray-900">
-                          {order.preferencesTrafficMin.toLocaleString()}+ monthly visitors
-                        </dd>
-                      </div>
-                    )}
-                    
-                    {/* Categories */}
-                    {order.preferencesCategories && order.preferencesCategories.length > 0 && (
-                      <div>
-                        <dt className="text-sm text-gray-500">Categories</dt>
-                        <dd className="text-sm text-gray-900">
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {order.preferencesCategories.map((cat, idx) => (
-                              <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
-                                {cat}
-                              </span>
-                            ))}
-                          </div>
-                        </dd>
-                      </div>
-                    )}
-                    
-                    {/* Niches */}
-                    {order.preferencesNiches && order.preferencesNiches.length > 0 && (
-                      <div>
-                        <dt className="text-sm text-gray-500">Niches</dt>
-                        <dd className="text-sm text-gray-900">
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {order.preferencesNiches.map((niche, idx) => (
-                              <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
-                                {niche}
-                              </span>
-                            ))}
-                          </div>
-                        </dd>
-                      </div>
-                    )}
-                  </dl>
-                </div>
-              )}
             </div>
 
             {/* Middle/Right Columns - Order Details Table */}
@@ -2095,20 +2670,22 @@ export default function InternalOrderManagementPage() {
               
               {/* Benchmark Display - Shows order wishlist vs actual delivery */}
               {order.status === 'confirmed' && (
-                <BenchmarkDisplay
-                  orderId={orderId}
-                  benchmark={benchmarkData}
-                  comparison={comparisonData}
-                  showDetails={true}
-                  canCreateComparison={true}
-                  onCreateComparison={benchmarkData ? handleUpdateComparison : handleCreateBenchmark}
-                  onRefresh={loadBenchmarkData}
-                  userType="internal"
-                />
+                <div className="mb-6">
+                  <BenchmarkDisplay
+                    orderId={orderId}
+                    benchmark={benchmarkData}
+                    comparison={comparisonData}
+                    showDetails={true}
+                    canCreateComparison={true}
+                    onCreateComparison={benchmarkData ? handleUpdateComparison : handleCreateBenchmark}
+                    onRefresh={loadBenchmarkData}
+                    userType="internal"
+                  />
+                </div>
               )}
 
-              {/* View Toggle */}
-              {isLineItemsSystemEnabled() && (
+              {/* View Toggle - Only show when order has BOTH line items AND order groups (migration period) */}
+              {isLineItemsSystemEnabled() && order.orderGroups && order.orderGroups.length > 0 && order.lineItems && order.lineItems.length > 0 && (
                 <div className="mb-4 bg-white rounded-lg border border-gray-200 p-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
@@ -2143,54 +2720,26 @@ export default function InternalOrderManagementPage() {
                 </div>
               )}
 
-              {/* Order Details Table - Conditional Rendering */}
-              {useLineItemsView && isLineItemsSystemEnabled() ? (
-                <LineItemsTable
-                  orderId={orderId}
-                  lineItems={order.lineItems || []}
-                  userType="internal"
-                  canEdit={true}
-                  canAddItems={true}
-                  canDeleteItems={true}
-                  canAssignDomains={true}
-                  canApproveItems={true}
-                  onRefresh={() => {
-                    // Refresh handler for line items
-                    loadOrder();
-                  }}
-                />
-              ) : (
-                <>
-                  <OrderSiteReviewTableV2
-                    orderId={orderId}
-                    orderGroups={order.orderGroups || []}
-                    siteSubmissions={siteSubmissions}
-                  userType="internal"
-                  permissions={{
-                    canChangeStatus: true,
-                    canAssignTargetPages: true,
-                    canApproveReject: true,
-                    canGenerateWorkflows: true,
-                    canMarkSitesReady: true,
-                    canViewInternalTools: true,
-                    canViewPricing: true,
-                    canEditDomainAssignments: true,
-                    canSetExclusionReason: true
-                  }}
-                  workflowStage={workflowStage}
-                  onAssignTargetPage={handleAssignTargetPage}
-                  onChangeInclusionStatus={handleChangeInclusionStatus}
-                  onEditSubmission={handleEditSubmission}
-                  onRemoveSubmission={handleRemoveSubmission}
-                  onRefresh={handleRefresh}
-                  onAssignToLineItem={handleAssignToLineItem}
-                  lineItems={order.lineItems || []}
-                  useStatusSystem={true}
-                  useLineItems={isLineItemsSystemEnabled()}
-                  benchmarkData={benchmarkData}
-                />
-                </>
-              )}
+              {/* Order Details Table - Use LineItemsReviewTable for all views */}
+              <LineItemsReviewTable
+                orderId={orderId}
+                lineItems={order.lineItems || []}
+                userType="internal"
+                permissions={{
+                  canChangeStatus: true,
+                  canAssignTargetPages: true,
+                  canApproveReject: true,
+                  canGenerateWorkflows: true,
+                  canMarkSitesReady: true,
+                  canViewInternalTools: true,
+                  canViewPricing: true,
+                  canEditDomainAssignments: true,
+                  canSetExclusionReason: true
+                }}
+                onRefresh={handleRefresh || loadOrder}
+                onChangeStatus={handleChangeLineItemStatus}
+                benchmarkData={benchmarkData}
+              />
               
               {/* Additional Information Cards */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
@@ -2232,6 +2781,27 @@ export default function InternalOrderManagementPage() {
                         </div>
                       </div>
                     )}
+                    {order.fulfillmentStartedAt && (
+                      <div className="flex items-start gap-3">
+                        <Zap className="h-4 w-4 text-blue-500 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">Fulfillment Started</p>
+                          <p className="text-sm text-gray-600">
+                            {new Date(order.fulfillmentStartedAt).toLocaleDateString()}
+                            {order.totalWorkflows && ` • ${order.totalWorkflows} workflow${order.totalWorkflows > 1 ? 's' : ''}`}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    {order.fulfillmentCompletedAt && (
+                      <div className="flex items-start gap-3">
+                        <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">Fulfillment Complete</p>
+                          <p className="text-sm text-gray-600">{new Date(order.fulfillmentCompletedAt).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
                 
@@ -2261,6 +2831,31 @@ export default function InternalOrderManagementPage() {
                               sum + subs.filter(s => s.status === 'pending').length, 0
                             )} sites awaiting decision
                           </p>
+                        </div>
+                      </div>
+                    )}
+                    {order.totalWorkflows && order.totalWorkflows > 0 && (
+                      <div className="flex items-start gap-3">
+                        <div className={`w-2 h-2 rounded-full mt-1.5 ${
+                          Number(order.workflowCompletionPercentage || 0) === 100 ? 'bg-green-500' : 
+                          Number(order.workflowCompletionPercentage || 0) > 0 ? 'bg-blue-500 animate-pulse' : 
+                          'bg-gray-400'
+                        }`} />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">
+                            Workflow Progress: {order.completedWorkflows || 0}/{order.totalWorkflows}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <div className="flex-1 bg-gray-200 rounded-full h-2 max-w-[100px]">
+                              <div 
+                                className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                                style={{ width: `${Number(order.workflowCompletionPercentage || 0)}%` }}
+                              />
+                            </div>
+                            <span className="text-xs text-gray-500">
+                              {order.workflowCompletionPercentage || 0}%
+                            </span>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -2294,78 +2889,19 @@ export default function InternalOrderManagementPage() {
                 </div>
               )}
               
-              {/* Pricing Details for Internal Users */}
-              <div className="mt-6">
-                <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-                  <h3 className="text-lg font-semibold mb-4 flex items-center">
-                    <DollarSign className="h-5 w-5 mr-2 text-gray-400" />
-                    Pricing Analysis
-                  </h3>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-700 mb-3">Customer Pricing</h4>
-                      <dl className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <dt className="text-gray-600">Subtotal</dt>
-                          <dd className="font-medium">{formatCurrency(order.subtotal || order.totalPrice)}</dd>
-                        </div>
-                        {order.discountAmount && order.discountAmount > 0 && (
-                          <div className="flex justify-between text-sm">
-                            <dt className="text-gray-600">Discount ({order.discountPercent || '0'}%)</dt>
-                            <dd className="font-medium text-green-600">-{formatCurrency(order.discountAmount)}</dd>
-                          </div>
-                        )}
-                        {order.includesClientReview && (
-                          <div className="flex justify-between text-sm">
-                            <dt className="text-gray-600">Client Review</dt>
-                            <dd className="font-medium">{formatCurrency(order.clientReviewFee || 0)}</dd>
-                          </div>
-                        )}
-                        {order.rushDelivery && (
-                          <div className="flex justify-between text-sm">
-                            <dt className="text-gray-600">Rush Delivery</dt>
-                            <dd className="font-medium">{formatCurrency(order.rushFee || 0)}</dd>
-                          </div>
-                        )}
-                        <div className="flex justify-between text-sm pt-2 border-t">
-                          <dt className="font-medium">Total Revenue</dt>
-                          <dd className="font-bold">{formatCurrency(order.totalPrice)}</dd>
-                        </div>
-                      </dl>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-700 mb-3">Profit Analysis</h4>
-                      <dl className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <dt className="text-gray-600">Wholesale Cost</dt>
-                          <dd className="font-medium">{formatCurrency(order.totalWholesale || 0)}</dd>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <dt className="text-gray-600">Revenue</dt>
-                          <dd className="font-medium">{formatCurrency(order.totalPrice)}</dd>
-                        </div>
-                        <div className="flex justify-between text-sm pt-2 border-t">
-                          <dt className="font-medium">Gross Profit</dt>
-                          <dd className="font-bold text-green-600">{formatCurrency(order.profitMargin || (order.totalPrice - (order.totalWholesale || 0)))}</dd>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <dt className="text-gray-600">Margin</dt>
-                          <dd className="font-medium">
-                            {order.totalWholesale ? 
-                              `${Math.round(((order.totalPrice - order.totalWholesale) / order.totalPrice) * 100)}%` : 
-                              'N/A'
-                            }
-                          </dd>
-                        </div>
-                      </dl>
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>
       </div>
+      
+      {/* User Assignment Modal */}
+      <UserAssignmentModal
+        isOpen={showUserAssignmentModal}
+        onClose={() => setShowUserAssignmentModal(false)}
+        onAssign={handleAssignAndGenerateWorkflows}
+        title="Assign Workflows To User"
+        loading={actionLoading.generate_workflows}
+      />
     </AuthWrapper>
   );
 }

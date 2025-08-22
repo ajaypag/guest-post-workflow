@@ -1,13 +1,15 @@
 import { db } from '@/lib/db/connection';
 import { workflows, workflowSteps, users } from '@/lib/db/schema';
 import { orderSiteSelections, orderGroups } from '@/lib/db/orderGroupSchema';
-import { orderItems, orders } from '@/lib/db/orderSchema';
+import { orderItems, orders, orderStatusHistory } from '@/lib/db/orderSchema';
+import { orderLineItems } from '@/lib/db/orderLineItemSchema';
 import { bulkAnalysisDomains } from '@/lib/db/bulkAnalysisSchema';
 import { accounts } from '@/lib/db/accountSchema';
 import { eq, and, inArray, sql } from 'drizzle-orm';
 import { GuestPostWorkflow, WORKFLOW_STEPS } from '@/types/workflow';
 import { WorkflowService } from '@/lib/db/workflowService';
 import { v4 as uuidv4 } from 'uuid';
+import { WorkflowProgressService } from './workflowProgressService';
 
 export interface WorkflowGenerationResult {
   success: boolean;
@@ -19,9 +21,321 @@ export interface WorkflowGenerationResult {
 export interface WorkflowGenerationOptions {
   assignToUserId?: string; // Optionally assign all generated workflows to a specific user
   autoAssign?: boolean; // Auto-assign based on workload
+  assignedUserId?: string; // New: specific user to assign workflows to
 }
 
 export class WorkflowGenerationService {
+  /**
+   * Generate workflows for line items in an order
+   */
+  static async generateWorkflowsForLineItems(
+    orderId: string,
+    userId: string,
+    options: WorkflowGenerationOptions = {}
+  ): Promise<WorkflowGenerationResult> {
+    const errors: string[] = [];
+    let workflowsCreated = 0;
+    let orderItemsCreated = 0;
+
+    try {
+      // Import line items schema
+      const { orderLineItems } = await import('@/lib/db/orderLineItemSchema');
+      
+      // Get all line items with assigned domains for this order
+      const lineItems = await db.query.orderLineItems.findMany({
+        where: and(
+          eq(orderLineItems.orderId, orderId),
+          sql`assigned_domain_id IS NOT NULL`
+        ),
+        with: {
+          client: true
+        }
+      });
+
+      if (!lineItems || lineItems.length === 0) {
+        return {
+          success: true,
+          workflowsCreated: 0,
+          orderItemsCreated: 0,
+          errors: ['No line items with assigned domains found']
+        };
+      }
+
+      // Get the order and account info
+      const order = await db.query.orders.findFirst({
+        where: eq(orders.id, orderId),
+        with: {
+          account: true
+        }
+      });
+
+      if (!order) {
+        throw new Error('Order not found');
+      }
+
+      // Generate workflows for each line item with an assigned domain
+      for (const lineItem of lineItems) {
+        try {
+          // Skip if already has a workflow
+          if (lineItem.workflowId) {
+            console.log(`Line item ${lineItem.id} already has workflow`);
+            continue;
+          }
+
+          // Get domain details from bulk analysis
+          const domain = lineItem.assignedDomainId ? 
+            await db.query.bulkAnalysisDomains.findFirst({
+              where: eq(bulkAnalysisDomains.id, lineItem.assignedDomainId)
+            }) : null;
+
+          if (!domain) {
+            errors.push(`Domain not found for line item ${lineItem.id}`);
+            continue;
+          }
+
+          // Determine assigned user
+          const assignedUserId = options.assignToUserId || 
+            (options.autoAssign ? await this.getNextAvailableUser() : userId);
+
+          // Create workflow
+          const workflow = await this.createWorkflowFromLineItem(
+            lineItem,
+            domain,
+            order,
+            userId,
+            options.assignedUserId // Pass the assigned user ID from options
+          );
+
+          if (workflow) {
+            workflowsCreated++;
+
+            // Update line item with workflow reference
+            await db.update(orderLineItems)
+              .set({ 
+                workflowId: workflow.id,
+                modifiedAt: new Date()
+              })
+              .where(eq(orderLineItems.id, lineItem.id));
+
+            // Create order item for backward compatibility
+            const orderItem = await this.createOrderItemFromLineItem(
+              lineItem,
+              workflow.id,
+              domain
+            );
+
+            if (orderItem) {
+              orderItemsCreated++;
+            }
+          }
+        } catch (error) {
+          const errorMsg = `Failed to generate workflow for line item ${lineItem.id}: ${error}`;
+          console.error(errorMsg);
+          errors.push(errorMsg);
+        }
+      }
+
+      // Update order tracking and state if workflows were created
+      if (workflowsCreated > 0) {
+        // Update order state to in_progress
+        await db.update(orders)
+          .set({
+            state: 'in_progress',
+            totalWorkflows: workflowsCreated,
+            fulfillmentStartedAt: new Date(),
+            updatedAt: new Date()
+          })
+          .where(eq(orders.id, orderId));
+
+        // Add order status history entry for workflow generation
+        await db.insert(orderStatusHistory)
+          .values({
+            id: uuidv4(),
+            orderId,
+            oldStatus: order.status,
+            newStatus: order.status, // Status doesn't change, just tracking event
+            changedBy: userId,
+            changedAt: new Date(),
+            notes: `Generated ${workflowsCreated} workflow${workflowsCreated > 1 ? 's' : ''} for fulfillment`
+          });
+
+        // Trigger order completion check to initialize tracking
+        await WorkflowProgressService.checkOrderCompletion(orderId);
+      }
+
+      return {
+        success: errors.length === 0,
+        workflowsCreated,
+        orderItemsCreated,
+        errors
+      };
+
+    } catch (error) {
+      console.error('Error generating workflows from line items:', error);
+      return {
+        success: false,
+        workflowsCreated,
+        orderItemsCreated,
+        errors: [`System error: ${error}`]
+      };
+    }
+  }
+
+  /**
+   * Create a workflow from a line item
+   */
+  private static async createWorkflowFromLineItem(
+    lineItem: any,
+    domain: any,
+    order: any,
+    userId: string,
+    assignedUserId?: string
+  ): Promise<GuestPostWorkflow | null> {
+    try {
+      const client = lineItem.client;
+      const account = order.account;
+
+      // Build workflow metadata
+      const workflowData: GuestPostWorkflow = {
+        id: uuidv4(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        clientName: client.name,
+        clientUrl: client.website,
+        targetDomain: domain.domain,
+        currentStep: 2, // Start at Topic Generation since first 2 steps completed for order-based workflows
+        createdBy: account?.contactName || 'System',
+        createdByEmail: account?.email,
+        steps: this.generateWorkflowStepsForLineItem(lineItem, domain),
+        metadata: {
+          clientId: client.id,
+          orderId: order.id,
+          targetPageUrl: lineItem.targetPageUrl,
+          anchorText: lineItem.anchorText
+        }
+      };
+
+      // Create workflow using existing service
+      // Use provided assignedUserId or default to order creator
+      const createdWorkflow = await WorkflowService.createGuestPostWorkflow(
+        workflowData,
+        userId,
+        account?.contactName || 'System',
+        account?.email,
+        assignedUserId || order.userId || userId // Use provided assignee or default to order creator
+      );
+
+      return createdWorkflow;
+    } catch (error) {
+      console.error('Error creating workflow from line item:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate workflow steps for line item - FOR ORDER-BASED WORKFLOWS
+   * Marks first 2 steps as completed since site selection & qualification are done for paid orders
+   */
+  private static generateWorkflowStepsForLineItem(lineItem: any, domain: any): any[] {
+    return WORKFLOW_STEPS.map((step, index) => {
+      // For order-based workflows, mark first 2 steps as completed
+      const isFirstTwoSteps = index === 0 || index === 1;
+      
+      return {
+        ...step,  // Spread ALL properties from WORKFLOW_STEPS including id, title, description
+        status: isFirstTwoSteps ? 'completed' as const : 'pending' as const,
+        inputs: index === 0 ? {
+          domain: domain.domain,
+          targetPageUrl: lineItem.targetPageUrl,
+          anchorText: lineItem.anchorText,
+          dr: domain.dr || 70,
+          traffic: domain.totalTraffic || 10000,
+          niche: domain.primaryNiche || 'General'
+        } : {},
+        outputs: index === 0 ? {
+          domain: domain.domain
+        } : index === 2 && lineItem.targetPageUrl ? {
+          // Auto-populate Topic Generation (step 2) with target URL and anchor text
+          clientTargetUrl: lineItem.targetPageUrl,
+          desiredAnchorText: lineItem.anchorText || ''
+        } : {},
+        completedAt: isFirstTwoSteps ? new Date() : undefined
+      };
+    });
+  }
+
+  /**
+   * Get pre-filled inputs for a workflow step from line item
+   */
+  private static getStepInputsForLineItem(stepId: string, lineItem: any, domain: any): Record<string, any> {
+    switch (stepId) {
+      case 'domain-selection':
+        return {
+          domain: domain.domain,
+          targetPageUrl: lineItem.targetPageUrl,
+          anchorText: lineItem.anchorText,
+          dr: domain.dr || 70,
+          traffic: domain.totalTraffic || 10000,
+          niche: domain.primaryNiche || 'General'
+        };
+      
+      case 'keyword-research':
+        return {
+          targetDomain: domain.domain,
+          targetPage: lineItem.targetPageUrl,
+          clientNiche: domain.clientNiche || '',
+          competitorAnalysis: ''
+        };
+      
+      default:
+        return {};
+    }
+  }
+
+  /**
+   * Create an order item from line item for backward compatibility
+   */
+  private static async createOrderItemFromLineItem(
+    lineItem: any,
+    workflowId: string,
+    domain: any
+  ): Promise<any> {
+    try {
+      const orderItemData = {
+        id: uuidv4(),
+        orderId: lineItem.orderId,
+        domainId: lineItem.assignedDomainId,
+        domain: lineItem.assignedDomain || domain.domain,
+        targetPageId: lineItem.targetPageId,
+        lineItemId: lineItem.id, // Reference back to line item
+        
+        // Domain metrics snapshot
+        domainRating: domain.dr || 70,
+        traffic: domain.totalTraffic || 10000,
+        retailPrice: lineItem.approvedPrice || lineItem.estimatedPrice || 17900, // Default $179 if no price
+        wholesalePrice: lineItem.wholesalePrice || ((lineItem.estimatedPrice || 17900) - 7900), // Retail minus $79 service fee
+        
+        // Workflow tracking
+        workflowId: workflowId,
+        workflowStatus: 'pending',
+        workflowCreatedAt: new Date(),
+        
+        // Status
+        status: 'pending',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      const [orderItem] = await db.insert(orderItems)
+        .values(orderItemData)
+        .returning();
+
+      return orderItem;
+    } catch (error) {
+      console.error('Error creating order item from line item:', error);
+      throw error;
+    }
+  }
   /**
    * Generate workflows for all approved site selections in an order group
    */
@@ -84,7 +398,8 @@ export class WorkflowGenerationService {
           const workflow = await this.createWorkflowFromSiteSelection(
             siteSelection,
             orderGroup,
-            assignedUserId
+            userId,
+            options.assignedUserId // Pass the assigned user ID from options
           );
 
           if (workflow) {
@@ -151,7 +466,8 @@ export class WorkflowGenerationService {
   private static async createWorkflowFromSiteSelection(
     siteSelection: any,
     orderGroup: any,
-    userId: string
+    userId: string,
+    assignedUserId?: string
   ): Promise<GuestPostWorkflow | null> {
     try {
       const domain = siteSelection.domain;
@@ -181,11 +497,13 @@ export class WorkflowGenerationService {
       };
 
       // Create workflow using existing service
+      // Use provided assignedUserId or default to order creator
       const createdWorkflow = await WorkflowService.createGuestPostWorkflow(
         workflowData,
         userId,
         account?.contactName || 'System',
-        account?.email
+        account?.email,
+        assignedUserId || orderGroup.userId || userId // Use provided assignee or default to order creator
       );
 
       // Link workflow to order
@@ -206,20 +524,24 @@ export class WorkflowGenerationService {
   }
 
   /**
-   * Generate workflow steps with pre-filled data
+   * Generate workflow steps with pre-filled data - EXACTLY like the frontend does it
    */
   private static generateWorkflowSteps(siteSelection: any, domain: any): any[] {
-    return WORKFLOW_STEPS.map((stepTemplate, index) => ({
-      id: `step-${index + 1}`,
-      title: stepTemplate.title,
-      description: stepTemplate.description,
-      status: 'pending',
-      inputs: this.getStepInputs(stepTemplate.id, siteSelection, domain),
-      outputs: {},
-      fields: {
-        inputs: this.getStepInputFields(stepTemplate.id),
-        outputs: this.getStepOutputFields(stepTemplate.id)
-      }
+    return WORKFLOW_STEPS.map((step, index) => ({
+      ...step,  // Spread ALL properties from WORKFLOW_STEPS including id, title, description
+      status: 'pending' as const,
+      inputs: index === 0 ? {
+        domain: domain.domain,
+        targetPageUrl: siteSelection.targetPageUrl,
+        anchorText: siteSelection.anchorText,
+        dr: domain.dr || 70,
+        traffic: domain.totalTraffic || 10000,
+        niche: domain.primaryNiche || 'General'
+      } : {},
+      outputs: index === 0 ? {
+        domain: domain.domain
+      } : {},
+      completedAt: undefined
     }));
   }
 
@@ -309,9 +631,9 @@ export class WorkflowGenerationService {
     orderGroupId: string
   ): Promise<any> {
     try {
-      // Calculate prices (these would come from real pricing logic)
-      const retailPrice = siteSelection.domain?.price || 100;
-      const wholesalePrice = Math.floor(retailPrice * 0.7); // 30% margin
+      // Calculate prices - wholesale from domain, retail adds $79 service fee
+      const wholesalePrice = siteSelection.domain?.price || 10000; // Default $100 wholesale
+      const retailPrice = wholesalePrice + 7900; // Add $79 service fee
 
       const orderItemData = {
         id: uuidv4(),

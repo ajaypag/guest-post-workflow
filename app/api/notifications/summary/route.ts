@@ -3,7 +3,10 @@ import { AuthServiceServer } from '@/lib/auth-server';
 import { db } from '@/lib/db/connection';
 import { orders } from '@/lib/db/orderSchema';
 import { orderGroups } from '@/lib/db/orderGroupSchema';
-import { eq, and, sql, desc } from 'drizzle-orm';
+import { accounts } from '@/lib/db/accountSchema';
+import { orderLineItems } from '@/lib/db/orderLineItemSchema';
+import { clients } from '@/lib/db/schema';
+import { eq, and, sql, desc, count } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
   try {
@@ -21,7 +24,7 @@ export async function GET(request: NextRequest) {
       whereConditions.push(eq(orders.accountId, session.userId));
     }
 
-    // Get all orders with their groups to check for more suggestions needed
+    // Get all orders with their line items, clients, accounts, and line item counts
     const allOrders = await db
       .select({
         id: orders.id,
@@ -29,10 +32,25 @@ export async function GET(request: NextRequest) {
         state: orders.state,
         updatedAt: orders.updatedAt,
         accountId: orders.accountId,
-        orderGroups: orderGroups
+        totalRetail: orders.totalRetail,
+        orderGroups: orderGroups,
+        // Client details (this is what we want to show - the actual brands)
+        clientName: clients.name,
+        clientWebsite: clients.website,
+        // Account details (the company that placed the order)
+        accountName: accounts.companyName,
+        accountEmail: accounts.email,
+        // Line item count (we'll aggregate this manually)
+        lineItemCount: sql<number>`
+          (SELECT COUNT(*) 
+           FROM ${orderLineItems} 
+           WHERE ${orderLineItems.orderId} = ${orders.id})`.as('lineItemCount')
       })
       .from(orders)
+      .leftJoin(orderLineItems, eq(orders.id, orderLineItems.orderId))
+      .leftJoin(clients, eq(orderLineItems.clientId, clients.id))
       .leftJoin(orderGroups, eq(orders.id, orderGroups.orderId))
+      .leftJoin(accounts, eq(orders.accountId, accounts.id))
       .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
       .orderBy(desc(orders.updatedAt));
 
@@ -46,15 +64,36 @@ export async function GET(request: NextRequest) {
           state: row.state,
           updatedAt: row.updatedAt,
           accountId: row.accountId,
-          orderGroups: []
+          totalRetail: row.totalRetail,
+          accountName: row.accountName,
+          accountEmail: row.accountEmail,
+          lineItemCount: row.lineItemCount,
+          orderGroups: [],
+          clientNames: new Set<string>() // Track unique client names
         });
       }
       if (row.orderGroups) {
         orderMap.get(row.id).orderGroups.push(row.orderGroups);
       }
+      // Add client name if it exists
+      if (row.clientName) {
+        orderMap.get(row.id).clientNames.add(row.clientName);
+      }
     });
 
-    const uniqueOrders = Array.from(orderMap.values());
+    // Convert clientNames Set to a display string and finalize orders
+    const uniqueOrders = Array.from(orderMap.values()).map(order => ({
+      ...order,
+      // Create a display name: if multiple clients, show "ClientA, ClientB" or "ClientA + 2 more"
+      displayName: (() => {
+        const names = Array.from(order.clientNames);
+        if (names.length === 0) return order.accountName || 'Unknown Client';
+        if (names.length === 1) return names[0];
+        if (names.length === 2) return names.join(', ');
+        return `${names[0]} + ${names.length - 1} more`;
+      })(),
+      clientNames: undefined // Remove the Set from final object
+    }));
 
     // Count action-required orders and categorize them
     let actionRequiredCount = 0;
@@ -86,7 +125,7 @@ export async function GET(request: NextRequest) {
       new Date(order.updatedAt) > sevenDaysAgo
     ).length;
 
-    // Get most urgent orders for display
+    // Get most urgent orders for display with rich details
     const urgentOrders = uniqueOrders
       .filter(order => getOrderNeedsAction(order, isInternal))
       .slice(0, 5)
@@ -95,7 +134,19 @@ export async function GET(request: NextRequest) {
         shortId: order.id.slice(0, 8),
         status: order.status,
         state: order.state,
-        message: getActionMessage(order, isInternal)
+        message: getActionMessage(order, isInternal),
+        // Rich details - use displayName (client names) instead of accountName
+        accountName: order.displayName || 'Unknown Client',
+        accountEmail: order.accountEmail,
+        lineItemCount: order.lineItemCount || 0,
+        totalRetail: order.totalRetail || 0,
+        updatedAt: order.updatedAt,
+        // Group details for more suggestions
+        groupsNeedingSuggestions: isInternal && order.orderGroups ? 
+          order.orderGroups.filter((group: any) => {
+            const metadata = (group.requirementOverrides as any) || {};
+            return metadata.needsMoreSuggestions === true;
+          }).length : 0
       }));
 
     return NextResponse.json({

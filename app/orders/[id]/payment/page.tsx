@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import OrderPaymentPage from '@/components/orders/OrderPaymentPage';
-// Removed AuthService - external users don't need it for payment
+import AuthWrapper from '@/components/AuthWrapper';
+import Header from '@/components/Header';
 import { Loader2 } from 'lucide-react';
 
 export default function PaymentPage() {
@@ -79,73 +80,85 @@ export default function PaymentPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-center items-center min-h-[400px]">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      <AuthWrapper>
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex justify-center items-center min-h-[400px]">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          </div>
         </div>
-      </div>
+      </AuthWrapper>
     );
   }
 
   if (error) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-2xl mx-auto">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-            <h2 className="text-lg font-semibold text-red-800 mb-2">Error</h2>
-            <p className="text-red-700">{error}</p>
-            <a
-              href="/orders"
-              className="inline-block mt-4 bg-red-600 text-white px-4 py-3 rounded-lg hover:bg-red-700 transition-colors min-h-[44px] flex items-center justify-center"
-            >
-              Back to Orders
-            </a>
+      <AuthWrapper>
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-2xl mx-auto">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+              <h2 className="text-lg font-semibold text-red-800 mb-2">Error</h2>
+              <p className="text-red-700">{error}</p>
+              <a
+                href="/orders"
+                className="inline-block mt-4 bg-red-600 text-white px-4 py-3 rounded-lg hover:bg-red-700 transition-colors min-h-[44px] flex items-center justify-center"
+              >
+                Back to Orders
+              </a>
+            </div>
           </div>
         </div>
-      </div>
+      </AuthWrapper>
     );
   }
 
   if (!order) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-2xl mx-auto">
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-            <h2 className="text-lg font-semibold text-yellow-800 mb-2">Order Not Found</h2>
-            <p className="text-yellow-700">The order you're looking for could not be found.</p>
-            <a
-              href="/orders"
-              className="inline-block mt-4 bg-yellow-600 text-white px-4 py-3 rounded-lg hover:bg-yellow-700 transition-colors min-h-[44px] flex items-center justify-center"
-            >
-              Back to Orders
-            </a>
+      <AuthWrapper>
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-2xl mx-auto">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+              <h2 className="text-lg font-semibold text-yellow-800 mb-2">Order Not Found</h2>
+              <p className="text-yellow-700">The order you're looking for could not be found.</p>
+              <a
+                href="/orders"
+                className="inline-block mt-4 bg-yellow-600 text-white px-4 py-3 rounded-lg hover:bg-yellow-700 transition-colors min-h-[44px] flex items-center justify-center"
+              >
+                Back to Orders
+              </a>
+            </div>
           </div>
         </div>
-      </div>
+      </AuthWrapper>
     );
   }
 
   // Check if invoice has been generated
   if (!order.invoiceData || !order.totalRetail) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-2xl mx-auto">
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-            <h2 className="text-lg font-semibold text-yellow-800 mb-2">
-              Invoice Not Generated
-            </h2>
-            <p className="text-yellow-700">
-              An invoice needs to be generated before payment can be processed.
-            </p>
-            <a
-              href={`/orders/${order.id}`}
-              className="inline-block mt-4 bg-yellow-600 text-white px-4 py-3 rounded-lg hover:bg-yellow-700 transition-colors min-h-[44px] flex items-center justify-center"
-            >
-              Return to Order
-            </a>
+      <AuthWrapper>
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-2xl mx-auto">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+              <h2 className="text-lg font-semibold text-yellow-800 mb-2">
+                Invoice Not Generated
+              </h2>
+              <p className="text-yellow-700">
+                An invoice needs to be generated before payment can be processed.
+              </p>
+              <a
+                href={`/orders/${order.id}`}
+                className="inline-block mt-4 bg-yellow-600 text-white px-4 py-3 rounded-lg hover:bg-yellow-700 transition-colors min-h-[44px] flex items-center justify-center"
+              >
+                Return to Order
+              </a>
+            </div>
           </div>
         </div>
-      </div>
+      </AuthWrapper>
     );
   }
 
@@ -153,24 +166,27 @@ export default function PaymentPage() {
   const payableStates = ['payment_pending', 'reviewing', 'sites_ready'];
   if (!payableStates.includes(order.state) && !order.paidAt) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-2xl mx-auto">
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-            <h2 className="text-lg font-semibold text-yellow-800 mb-2">
-              Payment Not Available
-            </h2>
-            <p className="text-yellow-700">
-              This order is in "{order.state}" state and does not require payment at this time.
-            </p>
-            <a
-              href={`/orders/${order.id}`}
-              className="inline-block mt-4 bg-yellow-600 text-white px-4 py-3 rounded-lg hover:bg-yellow-700 transition-colors min-h-[44px] flex items-center justify-center"
-            >
-              View Order Details
-            </a>
+      <AuthWrapper>
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-2xl mx-auto">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+              <h2 className="text-lg font-semibold text-yellow-800 mb-2">
+                Payment Not Available
+              </h2>
+              <p className="text-yellow-700">
+                This order is in "{order.state}" state and does not require payment at this time.
+              </p>
+              <a
+                href={`/orders/${order.id}`}
+                className="inline-block mt-4 bg-yellow-600 text-white px-4 py-3 rounded-lg hover:bg-yellow-700 transition-colors min-h-[44px] flex items-center justify-center"
+              >
+                View Order Details
+              </a>
+            </div>
           </div>
         </div>
-      </div>
+      </AuthWrapper>
     );
   }
 
@@ -189,22 +205,25 @@ export default function PaymentPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-6">
-        <a
-          href={`/orders/${order.id}`}
-          className="text-blue-600 hover:text-blue-800 inline-flex items-center gap-2"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          Back to Order Details
-        </a>
-      </div>
+    <AuthWrapper>
+      <Header />
+      <div className="container mx-auto px-4 py-8">
+        <div className="mb-6">
+          <a
+            href={`/orders/${order.id}`}
+            className="text-blue-600 hover:text-blue-800 inline-flex items-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to Order Details
+          </a>
+        </div>
 
-      <h1 className="text-2xl font-bold mb-6">Complete Payment</h1>
-      
-      <OrderPaymentPage order={orderForPayment} />
-    </div>
+        <h1 className="text-2xl font-bold mb-6">Complete Payment</h1>
+        
+        <OrderPaymentPage order={orderForPayment} />
+      </div>
+    </AuthWrapper>
   );
 }

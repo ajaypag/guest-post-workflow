@@ -38,6 +38,29 @@ interface ClientContext {
   clientKeywords: string[]; // All keywords from narrow to broad
 }
 
+interface TargetMatchResult {
+  domainId: string;
+  domain: string;
+  target_analysis: Array<{
+    target_url: string;
+    overlap_status: 'direct' | 'related' | 'both' | 'none';
+    strength_direct: 'strong' | 'moderate' | 'weak' | 'n/a';
+    strength_related: 'strong' | 'moderate' | 'weak' | 'n/a';
+    match_quality: 'excellent' | 'good' | 'fair' | 'poor';
+    evidence: {
+      direct_count: number;
+      direct_median_position: number | null;
+      direct_keywords: string[];
+      related_count: number;
+      related_median_position: number | null;
+      related_keywords: string[];
+    };
+    reasoning: string;
+  }>;
+  best_target_url: string;
+  recommendation_summary: string;
+}
+
 /**
  * AI-powered site qualification service using O3 model
  * Evaluates guest post opportunities based on topical relevance and ranking potential
@@ -50,6 +73,47 @@ export class AIQualificationService {
     this.openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
+  }
+
+  /**
+   * Step 2: Match qualified domains to target URLs
+   */
+  async matchTargetUrls(
+    qualifiedDomains: Array<{domain: DomainData, qualification: QualificationResult}>,
+    clientContext: ClientContext,
+    onProgress?: (completed: number, total: number) => void
+  ): Promise<TargetMatchResult[]> {
+    console.log(`🎯 Starting target URL matching for ${qualifiedDomains.length} qualified domains`);
+    
+    const results: TargetMatchResult[] = [];
+    let completed = 0;
+    
+    // Process domains in chunks of MAX_CONCURRENT at a time
+    for (let i = 0; i < qualifiedDomains.length; i += this.MAX_CONCURRENT) {
+      const chunk = qualifiedDomains.slice(i, i + this.MAX_CONCURRENT);
+      
+      // Process each domain in the chunk concurrently
+      const chunkPromises = chunk.map(({ domain, qualification }) => 
+        this.processTargetMatching(domain, clientContext)
+          .catch(error => {
+            console.error(`Skipping target matching for ${domain.domain} due to error:`, error);
+            // Return null for errors - will be filtered out
+            return null;
+          })
+      );
+      
+      const chunkResults = await Promise.all(chunkPromises);
+      // Only add successful results - errors remain as pending
+      results.push(...chunkResults.filter((r): r is TargetMatchResult => r !== null));
+      
+      // Report progress
+      completed += chunk.length;
+      onProgress?.(completed, qualifiedDomains.length);
+      
+      console.log(`✅ Target matched ${completed}/${qualifiedDomains.length} domains`);
+    }
+    
+    return results;
   }
 
   /**
@@ -91,6 +155,67 @@ export class AIQualificationService {
     }
     
     return results;
+  }
+
+  /**
+   * Process target matching for a single domain
+   */
+  private async processTargetMatching(
+    domain: DomainData, 
+    context: ClientContext
+  ): Promise<TargetMatchResult> {
+    try {
+      const prompt = this.buildTargetMatchingPrompt(domain, context);
+      
+      const response = await this.openai.responses.create({
+        model: "o3",
+        input: prompt,
+        reasoning: { effort: "high" },
+        store: true
+      });
+
+      const content = response.output_text;
+      if (!content) throw new Error('No response from AI');
+
+      // Try to parse JSON from the response
+      let result;
+      try {
+        // If the response starts with text, try to extract JSON
+        if (!content.trim().startsWith('{')) {
+          // Look for JSON in the response
+          const jsonMatch = content.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            result = JSON.parse(jsonMatch[0]);
+          } else {
+            throw new Error('No JSON found in response');
+          }
+        } else {
+          result = JSON.parse(content);
+        }
+      } catch (parseError) {
+        console.error('Failed to parse AI target matching response as JSON:', parseError);
+        console.error('Full response:', content);
+        throw new Error('Invalid JSON in AI target matching response');
+      }
+      
+      // Validate the target matching result structure
+      if (result.target_analysis && result.best_target_url && result.recommendation_summary) {
+        return {
+          domainId: domain.domainId,
+          domain: domain.domain,
+          target_analysis: result.target_analysis || [],
+          best_target_url: result.best_target_url,
+          recommendation_summary: result.recommendation_summary
+        };
+      }
+      
+      throw new Error('Invalid target matching response format from AI');
+
+    } catch (error) {
+      console.error(`Target matching for domain ${domain.domain} failed:`, error);
+      // Re-throw to let caller handle - domain will remain pending
+      throw error;
+    }
   }
 
   /**
@@ -265,6 +390,95 @@ OUTPUT — RETURN EXACTLY THIS JSON
       "related_median_position": <integer or null>
   },
   "reasoning": "One–two short paragraphs explaining why the verdict makes sense, which keyword clusters prove authority, and how that benefits (or fails) the client. Include: (a) Why this tail level citing keywords/positions (b) Modifier guidance (e.g. 'add geo modifier', 'use buyer-type qualifier', 'no modifier needed')"
+}`;
+  }
+
+  private buildTargetMatchingPrompt(domain: DomainData, context: ClientContext): string {
+    // Format client data
+    const clientInfo = {
+      targetPages: context.targetPages.map(page => ({
+        url: page.url,
+        keywords: page.keywords.join(', '),
+        description: page.description || ''
+      })),
+      clientKeywords: context.clientKeywords
+    };
+
+    // Include ALL keyword rankings - no filtering or limiting
+    const domainInfo = {
+      domainId: domain.domainId,
+      domain: domain.domain,
+      totalKeywords: domain.keywordRankings.length,
+      keywordRankings: domain.keywordRankings
+        .sort((a, b) => {
+          // Sort by position then volume for better readability
+          if (a.position !== b.position) return a.position - b.position;
+          return b.searchVolume - a.searchVolume;
+        })
+        .map(r => ({
+          keyword: r.keyword,
+          position: r.position,
+          volume: r.searchVolume,
+          url: r.url
+        }))
+    };
+
+    return `You will match a qualified guest post site to the best target URLs.
+
+**Your Task:**
+For EACH target URL, analyze the topical overlap and ranking strength.
+
+**Analysis Framework:**
+
+1. **Overlap Assessment per Target URL:**
+   For each target URL, judge topical overlap between the site's rankings and that specific target URL's keywords:
+   - *Direct* → Site already ranks for highly specific keywords that match this target URL's niche  
+   - *Related* → Site ranks for obviously relevant sibling/broader industry topics to this target URL but not the highly specific ones
+   - *Both* → Site has both direct and related keyword coverage for this target URL
+   - *None* → No meaningful keyword alignment with this target URL
+
+2. **Strength Assessment per Overlap Type:**
+   *Strong* ≈ positions 1-30 (pages 1-3)  
+   *Moderate* ≈ positions 31-60 (pages 4-6)  
+   *Weak* ≈ positions 61-100 (pages 7-10)
+   
+3. **Match Quality Determination:**
+   • **excellent** → Direct overlap AND Strong/Moderate strength
+   • **good** → Direct overlap with Weak strength OR Related overlap with Strong/Moderate strength
+   • **fair** → Related overlap with Weak strength OR mixed signals
+   • **poor** → No meaningful overlap
+
+4. **Evidence Collection:**
+   Count matches and identify median positions for audit trail.
+
+Client Target URLs to Match:
+${JSON.stringify(clientInfo, null, 2)}
+
+Guest Post Site Rankings:
+${JSON.stringify(domainInfo, null, 2)}
+
+OUTPUT — RETURN EXACTLY THIS JSON:
+{
+  "target_analysis": [
+    {
+      "target_url": "<URL>",
+      "overlap_status": "direct" | "related" | "both" | "none",
+      "strength_direct": "strong" | "moderate" | "weak" | "n/a",
+      "strength_related": "strong" | "moderate" | "weak" | "n/a", 
+      "match_quality": "excellent" | "good" | "fair" | "poor",
+      "evidence": {
+        "direct_count": <integer>,
+        "direct_median_position": <integer or null>,
+        "direct_keywords": ["keyword1 (pos #X)", "keyword2 (pos #Y)"],
+        "related_count": <integer>,
+        "related_median_position": <integer or null>,
+        "related_keywords": ["keyword1 (pos #X)", "keyword2 (pos #Y)"]
+      },
+      "reasoning": "Brief explanation of match quality and evidence"
+    }
+  ],
+  "best_target_url": "<URL with highest match quality>",
+  "recommendation_summary": "Overall strategy recommendation based on strongest matches"
 }`;
   }
 
