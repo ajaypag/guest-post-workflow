@@ -171,16 +171,10 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
     }
   }, [showMobilePricing]);
 
-  const loadClients = useCallback(async (filterAccountId?: string | null) => {
+  const loadClients = useCallback(async () => {
     try {
       setLoadingClients(true);
-      let url = isAccountUser ? '/api/account/clients' : '/api/clients';
-      
-      // Add account filter for internal users
-      if (filterAccountId && !isAccountUser) {
-        url += `?accountId=${encodeURIComponent(filterAccountId)}`;
-      }
-      
+      const url = isAccountUser ? '/api/account/clients' : '/api/clients';
       const response = await fetch(url);
       
       if (response.ok) {
@@ -1319,8 +1313,6 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                     setSelectedAccountEmail(account.email);
                     setSelectedAccountName(account.contactName);
                     setSelectedAccountCompany(account.companyName || '');
-                    // Filter brands to only show those associated with the selected account
-                    loadClients(account.id);
                   }}
                   placeholder="Choose an account..."
                   required
@@ -1651,6 +1643,15 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                           <div className="flex-1 min-w-0">
                             <h3 className="font-medium text-sm text-gray-900 truncate">{client.name}</h3>
                             <p className="text-xs text-gray-500 truncate">{client.website}</p>
+                            {/* Show account company for admin users */}
+                            {session?.userType === 'internal' && (client as any).accountId && (
+                              <p className="text-xs text-blue-600 truncate mt-1">
+                                {(() => {
+                                  const account = accountsList.find(acc => acc.id === (client as any).accountId);
+                                  return account?.companyName || account?.email || 'Unknown Account';
+                                })()}
+                              </p>
+                            )}
                             <div className="flex items-center justify-between mt-2">
                               <span className="text-xs text-gray-400">
                                 {client.targetPages?.filter(p => p.status === 'active').length || 0} pages
