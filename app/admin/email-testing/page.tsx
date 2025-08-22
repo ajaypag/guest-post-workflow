@@ -31,6 +31,17 @@ interface TestResults {
     duration: number;
     error?: string;
   };
+  intelligent?: {
+    publisher: any;
+    websites: any[];
+    offerings: any[];
+    websiteRelations: any[];
+    pricingRules: any[];
+    extractionConfidence: number;
+    extractionNotes: string;
+    duration: number;
+    error?: string;
+  };
   qualification?: {
     isQualified: boolean;
     status: string;
@@ -47,7 +58,7 @@ export default function EmailTestingPage() {
   const [selectedEmail, setSelectedEmail] = useState<EmailSample | null>(null);
   const [testResults, setTestResults] = useState<TestResults | null>(null);
   const [loading, setLoading] = useState(false);
-  const [testType, setTestType] = useState<'parserV1' | 'parserV2' | 'both-parsers' | 'qualification' | 'all'>('all');
+  const [testType, setTestType] = useState<'parserV1' | 'parserV2' | 'both-parsers' | 'intelligent' | 'qualification' | 'all'>('all');
   const [showParserV1Prompt, setShowParserV1Prompt] = useState(false);
   const [showParserV2Prompt, setShowParserV2Prompt] = useState(false);
   const [showQualificationLogic, setShowQualificationLogic] = useState(false);
@@ -147,10 +158,11 @@ export default function EmailTestingPage() {
                 value={testType}
                 onChange={(e) => setTestType(e.target.value as any)}
               >
-                <option value="all">All Tests (V1 + V2 + Qualification)</option>
+                <option value="all">All Tests (V1 + V2 + Intelligent + Qualification)</option>
                 <option value="both-parsers">Both Parsers (V1 + V2)</option>
                 <option value="parserV1">Parser V1 Only (Original)</option>
                 <option value="parserV2">Parser V2 Only (New)</option>
+                <option value="intelligent">Intelligent Parser Only (OpenAI Schema-Aware)</option>
                 <option value="qualification">Qualification Only</option>
               </select>
             </div>
@@ -358,6 +370,69 @@ EXTRACTION EXAMPLES:
                     </details>
                   </div>
                 )}
+              </div>
+            )}
+
+            {(testType === 'intelligent' || testType === 'all') && (
+              <div className="border rounded-lg p-4 bg-orange-50">
+                <div className="flex items-center justify-between w-full text-left">
+                  <div>
+                    <h3 className="font-semibold text-orange-900">Intelligent Parser Details (Schema-Aware)</h3>
+                    <p className="text-sm text-orange-700 mt-1">
+                      Sends ACTUAL database schema to OpenAI o3-mini for intelligent extraction without hardcoded rules
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="mt-4 space-y-3">
+                  <div className="bg-white rounded p-3">
+                    <h4 className="font-semibold text-sm mb-2">Key Innovation:</h4>
+                    <ul className="text-xs space-y-1 list-disc list-inside">
+                      <li><strong>Schema-Aware:</strong> Sends complete database table structures to OpenAI</li>
+                      <li><strong>No Hardcoded Rules:</strong> OpenAI decides what to extract based on understanding the schema</li>
+                      <li><strong>Direct Database Format:</strong> Returns data ready for immediate database insertion</li>
+                      <li><strong>Intelligent Mapping:</strong> AI understands relationships between tables and data</li>
+                      <li><strong>o3-mini Model:</strong> High reasoning capability for complex data extraction</li>
+                    </ul>
+                  </div>
+                  
+                  <div className="bg-white rounded p-3">
+                    <h4 className="font-semibold text-sm mb-2">Tables Sent to OpenAI:</h4>
+                    <div className="text-xs space-y-1">
+                      <div><code className="bg-gray-100 px-1">publishers</code> - Publisher/company records</div>
+                      <div><code className="bg-gray-100 px-1">websites</code> - Websites offering guest posting</div>
+                      <div><code className="bg-gray-100 px-1">publisher_offerings</code> - Specific services and pricing</div>
+                      <div><code className="bg-gray-100 px-1">shadow_publisher_websites</code> - Publisher-website relationships</div>
+                      <div><code className="bg-gray-100 px-1">publisher_pricing_rules</code> - Complex pricing conditions</div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-white rounded p-3">
+                    <h4 className="font-semibold text-sm mb-2">Example Schema Fragment Sent:</h4>
+                    <pre className="text-xs bg-gray-100 p-2 rounded overflow-x-auto">
+{`publishers: {
+  email: "VARCHAR(255) UNIQUE NOT NULL - their email address",
+  contactName: "VARCHAR(255) DEFAULT 'Unknown' - person's name",
+  companyName: "VARCHAR(255) - company/business name",
+  accountStatus: "VARCHAR(50) DEFAULT 'shadow' - for email-extracted publishers",
+  source: "VARCHAR(50) DEFAULT 'manyreach' - how we got this publisher",
+  confidenceScore: "DECIMAL(3,2) - your confidence in the extraction (0-1)"
+}`}
+                    </pre>
+                  </div>
+                  
+                  <div className="bg-white rounded p-3">
+                    <h4 className="font-semibold text-sm mb-2">Advantages over V1/V2:</h4>
+                    <ul className="text-xs space-y-1 list-disc list-inside text-green-600">
+                      <li>Single API call (vs V1's 3 calls)</li>
+                      <li>No hardcoded extraction logic to maintain</li>
+                      <li>OpenAI understands data relationships automatically</li>
+                      <li>Adapts to schema changes without code updates</li>
+                      <li>Returns data in exact database format</li>
+                      <li>Built-in confidence scoring and extraction notes</li>
+                    </ul>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -612,6 +687,157 @@ if (checkForLinkSwap(email)) {
                       {testResults.parserV2.extractionNotes && (
                         <div className="mt-2 text-sm text-gray-600">
                           <strong>Notes:</strong> {testResults.parserV2.extractionNotes}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* Intelligent Parser Results */}
+            {testResults.intelligent && (
+              <div className="bg-white rounded-lg shadow p-6">
+                <h2 className="text-xl font-semibold mb-4 text-orange-600">
+                  Intelligent Parser Results (Schema-Aware)
+                  <span className="text-sm font-normal ml-2 text-gray-500">
+                    ({testResults.intelligent.duration}ms)
+                  </span>
+                </h2>
+                
+                {testResults.intelligent.error ? (
+                  <div className="text-red-600 p-3 bg-red-50 rounded">
+                    Error: {testResults.intelligent.error}
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* Publisher Info */}
+                    <div>
+                      <h3 className="font-semibold mb-2">Publisher Info</h3>
+                      <div className="bg-gray-50 p-3 rounded text-sm">
+                        <div><strong>Email:</strong> {testResults.intelligent.publisher?.email}</div>
+                        <div><strong>Contact Name:</strong> {testResults.intelligent.publisher?.contactName || 'N/A'}</div>
+                        <div><strong>Company:</strong> {testResults.intelligent.publisher?.companyName || 'N/A'}</div>
+                        <div><strong>Phone:</strong> {testResults.intelligent.publisher?.phone || 'N/A'}</div>
+                        <div><strong>Status:</strong> {testResults.intelligent.publisher?.status || 'pending'}</div>
+                        <div><strong>Account Status:</strong> {testResults.intelligent.publisher?.accountStatus || 'shadow'}</div>
+                        <div><strong>Source:</strong> {testResults.intelligent.publisher?.source || 'manyreach'}</div>
+                        <div><strong>Confidence Score:</strong> {testResults.intelligent.publisher?.confidenceScore || 'N/A'}</div>
+                        {testResults.intelligent.publisher?.attributes && Object.keys(testResults.intelligent.publisher.attributes).length > 0 && (
+                          <details className="mt-2">
+                            <summary className="cursor-pointer text-orange-600">Publisher Attributes</summary>
+                            <pre className="text-xs mt-1">{JSON.stringify(testResults.intelligent.publisher.attributes, null, 2)}</pre>
+                          </details>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Websites */}
+                    <div>
+                      <h3 className="font-semibold mb-2">
+                        Websites ({testResults.intelligent.websites?.length || 0})
+                      </h3>
+                      {testResults.intelligent.websites?.map((website, idx) => (
+                        <div key={`${website.id || idx}-${idx}`} className="bg-gray-50 p-3 rounded text-sm mb-2">
+                          <div className="grid grid-cols-2 gap-2">
+                            <div><strong>Domain:</strong> {website.domain}</div>
+                            <div><strong>DR:</strong> {website.domainRating || 'N/A'}</div>
+                            <div><strong>Traffic:</strong> {website.totalTraffic || 'N/A'}</div>
+                            <div><strong>Type:</strong> {website.websiteType?.join(', ') || 'N/A'}</div>
+                            <div><strong>Niche:</strong> {website.niche?.join(', ') || 'N/A'}</div>
+                            <div><strong>Source:</strong> {website.source || 'manyreach'}</div>
+                          </div>
+                          {website.attributes && Object.keys(website.attributes).length > 0 && (
+                            <details className="mt-2">
+                              <summary className="cursor-pointer text-orange-600">Website Attributes</summary>
+                              <pre className="text-xs mt-1">{JSON.stringify(website.attributes, null, 2)}</pre>
+                            </details>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Offerings */}
+                    <div>
+                      <h3 className="font-semibold mb-2">
+                        Offerings ({testResults.intelligent.offerings?.length || 0})
+                      </h3>
+                      {testResults.intelligent.offerings?.map((offer, idx) => (
+                        <div key={`${offer.id || idx}-${idx}`} className="bg-gray-50 p-3 rounded text-sm mb-2">
+                          <div className="grid grid-cols-2 gap-2">
+                            <div><strong>Type:</strong> {offer.offeringType}</div>
+                            <div><strong>Price:</strong> ${(offer.basePrice / 100).toFixed(2)} {offer.currency}</div>
+                            <div><strong>Turnaround:</strong> {offer.turnaroundDays || 'N/A'} days</div>
+                            <div><strong>Name:</strong> {offer.offeringName || 'N/A'}</div>
+                            <div><strong>Min Words:</strong> {offer.minWordCount || 'N/A'}</div>
+                            <div><strong>Max Words:</strong> {offer.maxWordCount || 'N/A'}</div>
+                            <div><strong>Niches:</strong> {offer.niches?.join(', ') || 'N/A'}</div>
+                          </div>
+                          {offer.pricingExtractedFrom && (
+                            <div className="mt-2 text-xs text-gray-600">
+                              <strong>Raw pricing:</strong> "{offer.pricingExtractedFrom}"
+                            </div>
+                          )}
+                          {offer.attributes && Object.keys(offer.attributes).length > 0 && (
+                            <details className="mt-2">
+                              <summary className="cursor-pointer text-orange-600">Offering Attributes</summary>
+                              <pre className="text-xs mt-1">{JSON.stringify(offer.attributes, null, 2)}</pre>
+                            </details>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Website Relations */}
+                    {testResults.intelligent.websiteRelations && testResults.intelligent.websiteRelations.length > 0 && (
+                      <div>
+                        <h3 className="font-semibold mb-2">
+                          Website Relations ({testResults.intelligent.websiteRelations.length})
+                        </h3>
+                        {testResults.intelligent.websiteRelations.map((relation, idx) => (
+                          <div key={idx} className="bg-gray-50 p-2 rounded text-sm mb-1">
+                            <div><strong>Publisher-Website Link:</strong> {relation.isPrimary ? 'Primary' : 'Secondary'}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Pricing Rules */}
+                    {testResults.intelligent.pricingRules && testResults.intelligent.pricingRules.length > 0 && (
+                      <div>
+                        <h3 className="font-semibold mb-2">
+                          Pricing Rules ({testResults.intelligent.pricingRules.length})
+                        </h3>
+                        {testResults.intelligent.pricingRules.map((rule, idx) => (
+                          <div key={idx} className="bg-gray-50 p-3 rounded text-sm mb-2">
+                            <div><strong>Type:</strong> {rule.ruleType}</div>
+                            <div><strong>Description:</strong> {rule.description}</div>
+                            {rule.condition && (
+                              <details className="mt-2">
+                                <summary className="cursor-pointer text-orange-600">Rule Details</summary>
+                                <pre className="text-xs mt-1">{JSON.stringify({condition: rule.condition, adjustment: rule.adjustmentType}, null, 2)}</pre>
+                              </details>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Confidence & Notes */}
+                    <div>
+                      <div className="flex justify-between items-center">
+                        <span className="font-semibold">Extraction Confidence:</span>
+                        <span className={`px-2 py-1 rounded text-sm ${
+                          testResults.intelligent.extractionConfidence > 0.8 ? 'bg-green-100 text-green-800' :
+                          testResults.intelligent.extractionConfidence > 0.5 ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {(testResults.intelligent.extractionConfidence * 100).toFixed(0)}%
+                        </span>
+                      </div>
+                      {testResults.intelligent.extractionNotes && (
+                        <div className="mt-2 text-sm text-gray-600">
+                          <strong>Extraction Notes:</strong> {testResults.intelligent.extractionNotes}
                         </div>
                       )}
                     </div>

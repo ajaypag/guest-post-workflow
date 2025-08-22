@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { EmailParserService } from '@/lib/services/emailParserService';
 import { EmailParserServiceV2 } from '@/lib/services/emailParserServiceV2';
+import { EmailParserIntelligent } from '@/lib/services/emailParserIntelligent';
 import { emailQualificationService } from '@/lib/services/emailQualificationService';
 
 export async function POST(request: Request) {
@@ -79,6 +80,35 @@ export async function POST(request: Request) {
       } catch (error) {
         results.parserV2 = {
           error: error instanceof Error ? error.message : 'Parser failed',
+          duration: Date.now() - startTime
+        };
+      }
+    }
+
+    // Run Intelligent Parser Test
+    if (testType === 'intelligent' || testType === 'all') {
+      const startTime = Date.now();
+      try {
+        const intelligentParser = new EmailParserIntelligent();
+        const intelligentResult = await intelligentParser.parseEmail(
+          emailContent,
+          emailFrom,
+          emailSubject
+        );
+        
+        results.intelligent = {
+          publisher: intelligentResult.publisher,
+          websites: intelligentResult.websites,
+          offerings: intelligentResult.offerings,
+          websiteRelations: intelligentResult.websiteRelations,
+          pricingRules: intelligentResult.pricingRules,
+          extractionConfidence: intelligentResult.extractionConfidence,
+          extractionNotes: intelligentResult.extractionNotes,
+          duration: Date.now() - startTime
+        };
+      } catch (error) {
+        results.intelligent = {
+          error: error instanceof Error ? error.message : 'Intelligent parser failed',
           duration: Date.now() - startTime
         };
       }
