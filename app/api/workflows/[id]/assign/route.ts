@@ -6,9 +6,12 @@ import { AuthService } from '@/lib/auth';
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Await params (Next.js 15 requirement)
+    const { id } = await params;
+    
     // Check authentication
     const session = AuthService.getSession();
     if (!session) {
@@ -33,7 +36,7 @@ export async function PATCH(
         assignedUserId,
         updatedAt: new Date()
       })
-      .where(eq(workflows.id, params.id))
+      .where(eq(workflows.id, id))
       .returning();
 
     if (result.length === 0) {
