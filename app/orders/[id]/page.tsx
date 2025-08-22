@@ -738,30 +738,39 @@ export default function OrderDetailPage() {
                       </span>
                     </Link>
                   ) : (
-                    <button
-                      onClick={() => setShowEditWarning(true)}
-                      className={`px-3 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors ${
-                        pathname.includes('/edit')
-                          ? order.status === 'pending_confirmation' || order.status === 'draft'
-                            ? 'bg-blue-100 text-blue-700' // Friendly blue for early stage
-                            : 'bg-amber-100 text-amber-700' // Warning amber for confirmed orders
-                          : order.status === 'pending_confirmation' || order.status === 'draft'
-                            ? 'text-gray-600 hover:text-gray-900 hover:bg-gray-100' // Neutral for early stage
-                            : 'text-amber-600 hover:text-amber-700 hover:bg-amber-50' // Warning for confirmed
-                      }`}
-                      title={order.status === 'pending_confirmation' || order.status === 'draft' 
-                        ? "Edit order details"
-                        : "Revise order (will reset for review)"}
-                    >
-                      <span className="flex items-center gap-1">
-                        {order.status === 'pending_confirmation' || order.status === 'draft' ? (
+                    // For early stage - direct link, no modal needed
+                    order.status === 'pending_confirmation' || order.status === 'draft' ? (
+                      <Link
+                        href={`/orders/${order.id}/edit`}
+                        className={`px-3 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors ${
+                          pathname.includes('/edit')
+                            ? 'bg-blue-100 text-blue-700'
+                            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                        }`}
+                        title="Edit order details"
+                      >
+                        <span className="flex items-center gap-1">
                           <Edit className="h-3 sm:h-4 w-3 sm:w-4" />
-                        ) : (
+                          1. Edit
+                        </span>
+                      </Link>
+                    ) : (
+                      // For confirmed orders - show warning modal
+                      <button
+                        onClick={() => setShowEditWarning(true)}
+                        className={`px-3 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors ${
+                          pathname.includes('/edit')
+                            ? 'bg-amber-100 text-amber-700'
+                            : 'text-amber-600 hover:text-amber-700 hover:bg-amber-50'
+                        }`}
+                        title="Revise order (will reset for review)"
+                      >
+                        <span className="flex items-center gap-1">
                           <RefreshCw className="h-3 sm:h-4 w-3 sm:w-4" />
-                        )}
-                        1. {order.status === 'pending_confirmation' || order.status === 'draft' ? 'Edit' : 'Revise'}
-                      </span>
-                    </button>
+                          1. Revise
+                        </span>
+                      </button>
+                    )
                   )
                 ) : (
                   <button
@@ -1507,51 +1516,28 @@ export default function OrderDetailPage() {
           <div className="bg-white rounded-lg max-w-md w-full p-6">
             <div className="flex items-start mb-4">
               <div className="flex-shrink-0">
-                {order.status === 'pending_confirmation' || order.status === 'draft' ? (
-                  <Edit className="h-6 w-6 text-blue-600" />
-                ) : (
-                  <AlertCircle className="h-6 w-6 text-amber-600" />
-                )}
+                <AlertCircle className="h-6 w-6 text-amber-600" />
               </div>
               <div className="ml-3">
                 <h3 className="text-lg font-medium text-gray-900">
-                  {order.status === 'pending_confirmation' || order.status === 'draft' 
-                    ? 'Edit Order Details'
-                    : 'Revise Order?'
-                  }
+                  Revise Order?
                 </h3>
                 <div className="mt-2 text-sm text-gray-600 space-y-2">
-                  {order.status === 'pending_confirmation' || order.status === 'draft' ? (
-                    <>
-                      <p>
-                        You can still make changes to your order. The team hasn't started working on it yet.
-                      </p>
-                      <p className="text-gray-500">
-                        Feel free to adjust your requirements, budget, or any other details.
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <p>
-                        Your order has already been confirmed and work has begun. Making changes now will:
-                      </p>
-                      <ul className="list-disc list-inside space-y-1 text-gray-500">
-                        <li>Reset the order to "pending confirmation"</li>
-                        <li>Require the team to review your changes</li>
-                        {(order.state === 'sites_ready' || order.state === 'client_reviewing') && (
-                          <li>May affect site recommendations (team will re-evaluate)</li>
-                        )}
-                        {order.state === 'analyzing' && (
-                          <li>Pause the current site analysis</li>
-                        )}
-                      </ul>
-                    </>
-                  )}
+                  <p>
+                    Your order has already been confirmed and work has begun. Making changes now will:
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 text-gray-500">
+                    <li>Reset the order to "pending confirmation"</li>
+                    <li>Require the team to review your changes</li>
+                    {(order.state === 'sites_ready' || order.state === 'client_reviewing') && (
+                      <li>May affect site recommendations (team will re-evaluate)</li>
+                    )}
+                    {order.state === 'analyzing' && (
+                      <li>Pause the current site analysis</li>
+                    )}
+                  </ul>
                   <p className="font-medium text-gray-700 mt-3">
-                    {order.status === 'pending_confirmation' || order.status === 'draft'
-                      ? 'Would you like to edit your order?'
-                      : 'Are you sure you want to proceed with revisions?'
-                    }
+                    Are you sure you want to proceed with revisions?
                   </p>
                 </div>
               </div>
@@ -1565,16 +1551,9 @@ export default function OrderDetailPage() {
               </button>
               <Link
                 href={`/orders/${order.id}/edit`}
-                className={`px-4 py-2 text-white rounded-md ${
-                  order.status === 'pending_confirmation' || order.status === 'draft'
-                    ? 'bg-blue-600 hover:bg-blue-700'
-                    : 'bg-amber-600 hover:bg-amber-700'
-                }`}
+                className="px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700"
               >
-                {order.status === 'pending_confirmation' || order.status === 'draft'
-                  ? 'Edit Order'
-                  : 'Continue to Revise'
-                }
+                Continue to Revise
               </Link>
             </div>
           </div>
