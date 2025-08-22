@@ -1219,6 +1219,55 @@ export default function InternalOrderManagementPage() {
     }
   };
 
+  const handleEditLineItem = async (itemId: string, updates: any) => {
+    try {
+      // Build the update object - handle both metadata and direct fields
+      const updatePayload: any = {};
+      
+      // These fields go directly on the line item
+      if (updates.targetPageUrl !== undefined) {
+        updatePayload.targetPageUrl = updates.targetPageUrl;
+      }
+      if (updates.targetPageId !== undefined) {
+        updatePayload.targetPageId = updates.targetPageId;
+      }
+      if (updates.anchorText !== undefined) {
+        updatePayload.anchorText = updates.anchorText;
+      }
+      if (updates.priceOverride !== undefined) {
+        // Convert price from dollars to cents
+        updatePayload.approvedPrice = Math.round(updates.priceOverride * 100);
+      }
+      if (updates.specialInstructions !== undefined) {
+        updatePayload.specialInstructions = updates.specialInstructions;
+      }
+
+      const response = await fetch(`/api/orders/${orderId}/line-items/${itemId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(updatePayload)
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update line item');
+      }
+      
+      await loadOrder();
+      setMessage({
+        type: 'success',
+        text: 'Line item updated successfully'
+      });
+    } catch (error: any) {
+      console.error('Error updating line item:', error);
+      setMessage({
+        type: 'error',
+        text: error.message || 'Failed to update line item'
+      });
+    }
+  };
+
   const handleStatusRollback = async (targetStatus: string) => {
     if (!confirm(`Are you sure you want to rollback the order status to "${targetStatus}"? This action may have consequences.`)) {
       return;
@@ -2738,6 +2787,7 @@ export default function InternalOrderManagementPage() {
                 }}
                 onRefresh={handleRefresh || loadOrder}
                 onChangeStatus={handleChangeLineItemStatus}
+                onEditItem={handleEditLineItem}
                 benchmarkData={benchmarkData}
               />
               
