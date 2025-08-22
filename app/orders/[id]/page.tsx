@@ -310,7 +310,7 @@ export default function OrderDetailPage() {
           draftUrl: '',
           publishedUrl: dbItem.publishedUrl || '',
           bulkAnalysisId: dbItem.metadata?.bulkAnalysisId,
-          workflowId: dbItem.metadata?.workflowId,
+          workflowId: dbItem.workflowId || dbItem.metadata?.workflowId, // Check both locations
           metadata: dbItem.metadata
         }));
         
