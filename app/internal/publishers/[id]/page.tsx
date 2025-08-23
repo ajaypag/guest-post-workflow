@@ -24,7 +24,7 @@ async function getPublisherDetails(publisherId: string) {
       return null;
     }
 
-    // Get publisher offerings
+    // Get publisher offerings with website information
     const offerings = await db
       .select({
         id: publisherOfferings.id,
@@ -35,8 +35,12 @@ async function getPublisherDetails(publisherId: string) {
         currentAvailability: publisherOfferings.currentAvailability,
         isActive: publisherOfferings.isActive,
         createdAt: publisherOfferings.createdAt,
+        websiteId: publisherOfferingRelationships.websiteId,
+        websiteDomain: websites.domain,
       })
       .from(publisherOfferings)
+      .leftJoin(publisherOfferingRelationships, eq(publisherOfferings.id, publisherOfferingRelationships.offeringId))
+      .leftJoin(websites, eq(publisherOfferingRelationships.websiteId, websites.id))
       .where(eq(publisherOfferings.publisherId, publisherId))
       .orderBy(desc(publisherOfferings.createdAt));
 
@@ -188,67 +192,72 @@ export default async function PublisherDetailPage({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Publisher Information */}
-          <div className="lg:col-span-1">
-            <div className="bg-white shadow rounded-lg p-6">
-              <h2 className="text-lg font-medium text-gray-900 mb-4">Publisher Information</h2>
+        {/* Publisher Information - Now as header cards */}
+        <div className="bg-white shadow rounded-lg mb-6">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h2 className="text-lg font-medium text-gray-900">Publisher Information</h2>
+          </div>
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="flex items-center space-x-3">
+                <div className="flex-shrink-0">
+                  <Building className="w-8 h-8 text-indigo-500" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-gray-500 truncate">Company</p>
+                  <p className="text-sm text-gray-900 truncate">{publisher.companyName || 'Not provided'}</p>
+                </div>
+              </div>
               
-              <dl className="space-y-4">
-                <div>
-                  <dt className="text-sm font-medium text-gray-500">Company Name</dt>
-                  <dd className="mt-1 text-sm text-gray-900">
-                    {publisher.companyName || 'Not provided'}
-                  </dd>
+              <div className="flex items-center space-x-3">
+                <div className="flex-shrink-0">
+                  <Users className="w-8 h-8 text-green-500" />
                 </div>
-
-                <div>
-                  <dt className="text-sm font-medium text-gray-500">Contact Name</dt>
-                  <dd className="mt-1 text-sm text-gray-900">
-                    {publisher.contactName || 'Not provided'}
-                  </dd>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-gray-500 truncate">Contact</p>
+                  <p className="text-sm text-gray-900 truncate">{publisher.contactName || 'Not provided'}</p>
                 </div>
-
-                <div>
-                  <dt className="text-sm font-medium text-gray-500">Email</dt>
-                  <dd className="mt-1 text-sm text-gray-900 flex items-center gap-2">
-                    <Mail className="w-4 h-4 text-gray-400" />
-                    <a href={`mailto:${publisher.email}`} className="text-indigo-600 hover:text-indigo-800">
-                      {publisher.email}
-                    </a>
-                  </dd>
+              </div>
+              
+              <div className="flex items-center space-x-3">
+                <div className="flex-shrink-0">
+                  <Mail className="w-8 h-8 text-blue-500" />
                 </div>
-
-                {publisher.phone && (
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">Phone</dt>
-                    <dd className="mt-1 text-sm text-gray-900 flex items-center gap-2">
-                      <Phone className="w-4 h-4 text-gray-400" />
-                      {publisher.phone}
-                    </dd>
-                  </div>
-                )}
-
-
-                <div>
-                  <dt className="text-sm font-medium text-gray-500">Joined</dt>
-                  <dd className="mt-1 text-sm text-gray-900 flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-gray-400" />
-                    {publisher.createdAt 
-                      ? new Date(publisher.createdAt).toLocaleDateString()
-                      : 'Unknown'}
-                  </dd>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-gray-500 truncate">Email</p>
+                  <a href={`mailto:${publisher.email}`} className="text-sm text-indigo-600 hover:text-indigo-800 truncate block">
+                    {publisher.email}
+                  </a>
                 </div>
-              </dl>
+              </div>
+              
+              <div className="flex items-center space-x-3">
+                <div className="flex-shrink-0">
+                  <Calendar className="w-8 h-8 text-purple-500" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-gray-500 truncate">Joined</p>
+                  <p className="text-sm text-gray-900 truncate">
+                    {publisher.createdAt ? new Date(publisher.createdAt).toLocaleDateString() : 'Unknown'}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
+        </div>
 
-          {/* Offerings and Websites */}
-          <div className="lg:col-span-2 space-y-6">
+        {/* Full-width Offerings and Websites */}
+        <div className="space-y-6">
             {/* Offerings */}
-            <div className="bg-white shadow rounded-lg">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-medium text-gray-900">Offerings</h2>
+            <div className="bg-white shadow-sm rounded-xl border border-gray-200">
+              <div className="px-6 py-5 border-b border-gray-200 bg-gray-50 rounded-t-xl">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-3">
+                    <DollarSign className="w-6 h-6 text-indigo-600" />
+                    Offerings ({stats.totalOfferings})
+                  </h2>
+                  <span className="text-sm text-gray-500">{stats.activeOfferings} active</span>
+                </div>
               </div>
               
               {offerings.length > 0 ? (
@@ -256,6 +265,9 @@ export default async function PublisherDetailPage({
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Website
+                        </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Type
                         </th>
@@ -279,6 +291,12 @@ export default async function PublisherDetailPage({
                     <tbody className="bg-white divide-y divide-gray-200">
                       {offerings.map((offering) => (
                         <tr key={offering.id}>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <div className="flex items-center gap-1">
+                              <Globe className="w-4 h-4 text-gray-400" />
+                              {offering.websiteDomain || 'No website assigned'}
+                            </div>
+                          </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                             {offering.offeringType}
                           </td>
@@ -327,9 +345,15 @@ export default async function PublisherDetailPage({
             </div>
 
             {/* Website Relationships */}
-            <div className="bg-white shadow rounded-lg">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-medium text-gray-900">Website Relationships</h2>
+            <div className="bg-white shadow-sm rounded-xl border border-gray-200">
+              <div className="px-6 py-5 border-b border-gray-200 bg-gray-50 rounded-t-xl">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-3">
+                    <Globe className="w-6 h-6 text-green-600" />
+                    Website Relationships ({stats.totalWebsites})
+                  </h2>
+                  <span className="text-sm text-gray-500">{stats.verifiedWebsites} verified</span>
+                </div>
               </div>
               
               {relationships.length > 0 ? (
@@ -400,7 +424,6 @@ export default async function PublisherDetailPage({
                 </div>
               )}
             </div>
-          </div>
         </div>
       </div>
     </div>

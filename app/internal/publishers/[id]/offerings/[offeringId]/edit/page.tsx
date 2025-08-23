@@ -12,7 +12,16 @@ import {
   CheckCircle,
   XCircle,
   Loader2,
-  Package
+  FileText,
+  Globe,
+  Settings,
+  Zap,
+  Info,
+  Package,
+  Target,
+  BookOpen,
+  X,
+  Plus
 } from 'lucide-react';
 
 interface Offering {
@@ -61,9 +70,17 @@ export default function InternalEditOfferingPage({
     expressPrice: '',
     expressDays: '',
     isActive: true,
-    niches: '',
-    languages: '',
-    attributes: '{}'
+    niches: [] as string[],
+    languages: [] as string[],
+    // Proper attribute fields instead of JSON
+    allowsAiContent: false,
+    allowsPromotional: true,
+    includesImages: true,
+    contentApprovalRequired: false,
+    allowsRevisions: true,
+    maxRevisionsCount: 2,
+    prohibitedNiches: [] as string[],
+    anchorTextRules: ''
   });
 
   const offeringTypes = [
@@ -85,6 +102,27 @@ export default function InternalEditOfferingPage({
 
   const currencies = ['USD', 'EUR', 'GBP', 'CAD', 'AUD'];
 
+  // Common niches from the database
+  const availableNiches = [
+    'Technology', 'Health', 'Finance', 'Business', 'Marketing', 'Travel', 'Food',
+    'Fashion', 'Fitness', 'Education', 'Real Estate', 'Automotive', 'Entertainment',
+    'Sports', 'Gaming', 'Lifestyle', 'DIY', 'Parenting', 'Pets', 'Home & Garden'
+  ];
+
+  // Language options with codes
+  const availableLanguages = [
+    { code: 'en', name: 'English' },
+    { code: 'es', name: 'Spanish' },
+    { code: 'fr', name: 'French' },
+    { code: 'de', name: 'German' },
+    { code: 'it', name: 'Italian' },
+    { code: 'pt', name: 'Portuguese' },
+    { code: 'ru', name: 'Russian' },
+    { code: 'ja', name: 'Japanese' },
+    { code: 'zh', name: 'Chinese' },
+    { code: 'ar', name: 'Arabic' }
+  ];
+
   useEffect(() => {
     loadOffering();
   }, [offeringId]);
@@ -101,16 +139,16 @@ export default function InternalEditOfferingPage({
       
       setOffering(offering);
       
-      // Set form data from offering - NO DEFAULTS!
-      const nichesStr = Array.isArray(offering.niches) 
-        ? offering.niches.join(', ') 
-        : (offering.niches || '');
-      const languagesStr = Array.isArray(offering.languages) 
-        ? offering.languages.join(', ') 
-        : (offering.languages || '');
-      const attributesStr = offering.attributes 
-        ? JSON.stringify(offering.attributes, null, 2) 
-        : '{}';
+      // Set form data from offering with proper array/attribute handling
+      const nichesArray = Array.isArray(offering.niches) 
+        ? offering.niches 
+        : [];
+      const languagesArray = Array.isArray(offering.languages) 
+        ? offering.languages 
+        : ['en'];
+      
+      // Parse attributes from JSONB
+      const attrs = offering.attributes || {};
       
       setFormData({
         offeringName: offering.offeringName || '',
@@ -125,9 +163,17 @@ export default function InternalEditOfferingPage({
         expressPrice: offering.expressPrice ? (offering.expressPrice / 100).toString() : '',
         expressDays: offering.expressDays?.toString() || '',
         isActive: offering.isActive ?? true,
-        niches: nichesStr,
-        languages: languagesStr,
-        attributes: attributesStr
+        niches: nichesArray,
+        languages: languagesArray,
+        // Parse attributes properly
+        allowsAiContent: attrs.allows_ai_content ?? false,
+        allowsPromotional: attrs.allows_promotional ?? true,
+        includesImages: attrs.includes_images ?? true,
+        contentApprovalRequired: attrs.content_approval_required ?? false,
+        allowsRevisions: attrs.allows_revisions ?? true,
+        maxRevisionsCount: attrs.max_revisions_count ?? 2,
+        prohibitedNiches: Array.isArray(attrs.prohibited_niches) ? attrs.prohibited_niches : [],
+        anchorTextRules: attrs.anchor_text_rules || ''
       });
       
     } catch (err) {
@@ -144,25 +190,17 @@ export default function InternalEditOfferingPage({
     setSuccess('');
 
     try {
-      // Parse niches and languages from comma-separated strings
-      const nichesArray = formData.niches 
-        ? formData.niches.split(',').map(n => n.trim()).filter(Boolean)
-        : [];
-      const languagesArray = formData.languages 
-        ? formData.languages.split(',').map(l => l.trim()).filter(Boolean)
-        : [];
-      
-      // Parse attributes JSON
-      let parsedAttributes = {};
-      try {
-        if (formData.attributes && formData.attributes.trim()) {
-          parsedAttributes = JSON.parse(formData.attributes);
-        }
-      } catch (e) {
-        setError('Invalid JSON in attributes field');
-        setSaving(false);
-        return;
-      }
+      // Build attributes object from form fields
+      const attributes = {
+        allows_ai_content: formData.allowsAiContent,
+        allows_promotional: formData.allowsPromotional,
+        includes_images: formData.includesImages,
+        content_approval_required: formData.contentApprovalRequired,
+        allows_revisions: formData.allowsRevisions,
+        max_revisions_count: formData.maxRevisionsCount,
+        prohibited_niches: formData.prohibitedNiches,
+        anchor_text_rules: formData.anchorTextRules
+      };
       
       const updateData = {
         offeringName: formData.offeringName,
@@ -177,9 +215,9 @@ export default function InternalEditOfferingPage({
         expressPrice: formData.expressPrice ? Math.round(parseFloat(formData.expressPrice) * 100) : null,
         expressDays: formData.expressAvailable && formData.expressDays ? parseInt(formData.expressDays) : null,
         isActive: formData.isActive,
-        niches: nichesArray,
-        languages: languagesArray,
-        attributes: parsedAttributes
+        niches: formData.niches,
+        languages: formData.languages,
+        attributes: attributes
       };
 
       const response = await fetch(`/api/internal/offerings/${offeringId}`, {
@@ -218,318 +256,456 @@ export default function InternalEditOfferingPage({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8">
-          <Link
-            href={`/internal/publishers/${publisherId}`}
-            className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 mb-4"
-          >
-            <ArrowLeft className="mr-1 h-4 w-4" />
-            Back to Publisher
-          </Link>
-          
-          <h1 className="text-2xl font-bold text-gray-900">
-            Edit Offering (Internal Admin)
-          </h1>
-          <p className="mt-1 text-sm text-gray-600">
-            Modify publisher offering details and pricing
-          </p>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      {/* Modern Header with gradient */}
+      <div className="bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-6xl mx-auto px-6 py-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <Link
+                href={`/internal/publishers/${publisherId}`}
+                className="inline-flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Publisher
+              </Link>
+              <div className="h-8 w-px bg-gray-300"></div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                  <Package className="h-7 w-7 text-indigo-600" />
+                  Edit Offering
+                </h1>
+                <p className="text-sm text-gray-500 mt-1">
+                  Configure offering details, pricing, and delivery options
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center text-sm text-gray-500">
+                <Globe className="h-4 w-4 mr-1" />
+                Internal Management
+              </div>
+            </div>
+          </div>
         </div>
+      </div>
 
-        {/* Alert Messages */}
+      <div className="max-w-6xl mx-auto px-6 py-8">
+
+        {/* Modern Alert Messages */}
         {error && (
-          <div className="mb-4 rounded-md bg-red-50 p-4">
-            <div className="flex">
-              <AlertCircle className="h-5 w-5 text-red-400" />
-              <div className="ml-3">
-                <p className="text-sm font-medium text-red-800">{error}</p>
+          <div className="mb-6 rounded-xl bg-red-50 border border-red-100 p-4 shadow-sm">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                  <AlertCircle className="h-5 w-5 text-red-600" />
+                </div>
+              </div>
+              <div className="ml-3 flex-1">
+                <h3 className="text-sm font-semibold text-red-800">Error</h3>
+                <p className="text-sm text-red-700 mt-1">{error}</p>
               </div>
             </div>
           </div>
         )}
 
         {success && (
-          <div className="mb-4 rounded-md bg-green-50 p-4">
-            <div className="flex">
-              <CheckCircle className="h-5 w-5 text-green-400" />
-              <div className="ml-3">
-                <p className="text-sm font-medium text-green-800">{success}</p>
+          <div className="mb-6 rounded-xl bg-green-50 border border-green-100 p-4 shadow-sm">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                </div>
+              </div>
+              <div className="ml-3 flex-1">
+                <h3 className="text-sm font-semibold text-green-800">Success</h3>
+                <p className="text-sm text-green-700 mt-1">{success}</p>
               </div>
             </div>
           </div>
         )}
 
-        {/* Form */}
+        {/* Form Layout */}
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Basic Information */}
-          <div className="bg-white shadow rounded-lg p-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Basic Information</h2>
-            
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Offering Name
-                </label>
-                <input
-                  type="text"
-                  value={formData.offeringName}
-                  onChange={(e) => setFormData({ ...formData, offeringName: e.target.value })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                  placeholder="e.g., Premium Guest Post"
-                />
-              </div>
+          {/* Basic Information Section */}
+          <div className="bg-white shadow rounded-lg border border-gray-200">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-lg font-medium text-gray-900">Basic Information</h2>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Offering Name */}
+                <div className="lg:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Offering Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.offeringName}
+                    onChange={(e) => setFormData({ ...formData, offeringName: e.target.value })}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="e.g., Premium Guest Post - High Authority Website"
+                  />
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Offering Type
-                </label>
-                <select
-                  value={formData.offeringType}
-                  onChange={(e) => setFormData({ ...formData, offeringType: e.target.value })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                >
-                  {offeringTypes.map(type => (
-                    <option key={type.value} value={type.value}>
-                      {type.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                {/* Offering Type */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Offering Type *
+                  </label>
+                  <select
+                    value={formData.offeringType}
+                    onChange={(e) => setFormData({ ...formData, offeringType: e.target.value })}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    {offeringTypes.map(type => (
+                      <option key={type.value} value={type.value}>
+                        {type.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Status
-                </label>
-                <select
-                  value={formData.isActive ? 'active' : 'inactive'}
-                  onChange={(e) => setFormData({ ...formData, isActive: e.target.value === 'active' })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                >
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                </select>
-              </div>
+                {/* Status */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Status
+                  </label>
+                  <select
+                    value={formData.isActive ? 'active' : 'inactive'}
+                    onChange={(e) => setFormData({ ...formData, isActive: e.target.value === 'active' })}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Availability
-                </label>
-                <select
-                  value={formData.currentAvailability}
-                  onChange={(e) => setFormData({ ...formData, currentAvailability: e.target.value })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                >
-                  {availabilityOptions.map(option => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+                {/* Availability */}
+                <div className="lg:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Current Availability
+                  </label>
+                  <select
+                    value={formData.currentAvailability}
+                    onChange={(e) => setFormData({ ...formData, currentAvailability: e.target.value })}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    {availabilityOptions.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Pricing */}
-          <div className="bg-white shadow rounded-lg p-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Pricing</h2>
-            
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Base Price
-                </label>
-                <div className="mt-1 relative rounded-md shadow-sm">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <DollarSign className="h-4 w-4 text-gray-400" />
+          {/* Pricing & Delivery */}
+          <div className="bg-white shadow rounded-lg border border-gray-200">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-lg font-medium text-gray-900">Pricing & Delivery</h2>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Base Price
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={formData.basePrice}
+                      onChange={(e) => setFormData({ ...formData, basePrice: e.target.value })}
+                      className="pl-8 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      required
+                    />
                   </div>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData.basePrice}
-                    onChange={(e) => setFormData({ ...formData, basePrice: e.target.value })}
-                    className="pl-8 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                    required
-                  />
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Currency
-                </label>
-                <select
-                  value={formData.currency}
-                  onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                >
-                  {currencies.map(currency => (
-                    <option key={currency} value={currency}>
-                      {currency}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Turnaround (days)
-                </label>
-                <div className="mt-1 relative rounded-md shadow-sm">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Clock className="h-4 w-4 text-gray-400" />
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Currency
+                  </label>
+                  <select
+                    value={formData.currency}
+                    onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    required
+                  >
+                    {currencies.map(currency => (
+                      <option key={currency} value={currency}>
+                        {currency}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Turnaround (days)
+                  </label>
                   <input
                     type="number"
                     min="1"
                     value={formData.turnaroundDays}
                     onChange={(e) => setFormData({ ...formData, turnaroundDays: e.target.value })}
-                    className="pl-8 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                     required
                   />
                 </div>
               </div>
-            </div>
-
-            {/* Express Delivery */}
-            <div className="mt-6 border-t pt-6">
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="expressAvailable"
-                  checked={formData.expressAvailable}
-                  onChange={(e) => setFormData({ ...formData, expressAvailable: e.target.checked })}
-                  className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                />
-                <label htmlFor="expressAvailable" className="ml-2 block text-sm text-gray-900">
-                  Offer Express Delivery
-                </label>
-              </div>
-
-              {formData.expressAvailable && (
-                <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Express Price
-                    </label>
-                    <div className="mt-1 relative rounded-md shadow-sm">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <DollarSign className="h-4 w-4 text-gray-400" />
+              
+              {/* Express Delivery */}
+              <div className="mt-6">
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="expressAvailable"
+                    checked={formData.expressAvailable}
+                    onChange={(e) => setFormData({ ...formData, expressAvailable: e.target.checked })}
+                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="expressAvailable" className="ml-2 block text-sm text-gray-900">
+                    Offer Express Delivery
+                  </label>
+                </div>
+                
+                {formData.expressAvailable && (
+                  <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Express Price
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={formData.expressPrice}
+                          onChange={(e) => setFormData({ ...formData, expressPrice: e.target.value })}
+                          className="pl-8 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        />
                       </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Express Turnaround (days)
+                      </label>
                       <input
                         type="number"
-                        step="0.01"
-                        value={formData.expressPrice}
-                        onChange={(e) => setFormData({ ...formData, expressPrice: e.target.value })}
-                        className="pl-8 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        min="1"
+                        value={formData.expressDays}
+                        onChange={(e) => setFormData({ ...formData, expressDays: e.target.value })}
+                        className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                       />
                     </div>
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Express Turnaround (days)
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      value={formData.expressDays}
-                      onChange={(e) => setFormData({ ...formData, expressDays: e.target.value })}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                    />
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
 
           {/* Content Requirements */}
-          <div className="bg-white shadow rounded-lg p-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Content Requirements</h2>
-            
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Minimum Word Count
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  value={formData.minWordCount}
-                  onChange={(e) => setFormData({ ...formData, minWordCount: e.target.value })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                  placeholder="No minimum"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Maximum Word Count
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  value={formData.maxWordCount}
-                  onChange={(e) => setFormData({ ...formData, maxWordCount: e.target.value })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                  placeholder="No maximum"
-                />
+          <div className="bg-white shadow rounded-lg border border-gray-200">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-lg font-medium text-gray-900">Content Requirements</h2>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Minimum Word Count
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={formData.minWordCount}
+                    onChange={(e) => setFormData({ ...formData, minWordCount: e.target.value })}
+                    placeholder="No minimum"
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Maximum Word Count
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={formData.maxWordCount}
+                    onChange={(e) => setFormData({ ...formData, maxWordCount: e.target.value })}
+                    placeholder="No maximum"
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
               </div>
             </div>
           </div>
 
           {/* Advanced Settings */}
-          <div className="bg-white shadow rounded-lg p-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Advanced Settings</h2>
-            
-            <div className="space-y-6">
-              {/* Niches */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Accepted Niches/Categories
-                </label>
-                <input
-                  type="text"
-                  value={formData.niches}
-                  onChange={(e) => setFormData({ ...formData, niches: e.target.value })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                  placeholder="e.g., technology, health, finance (comma-separated)"
-                />
-                <p className="mt-1 text-sm text-gray-500">Comma-separated list of accepted content niches</p>
-              </div>
+          <div className="bg-white shadow rounded-lg border border-gray-200">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-lg font-medium text-gray-900">Advanced Settings</h2>
+            </div>
+            <div className="p-6">
+              <div className="space-y-6">
+                {/* Niches Multi-Select */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Accepted Niches/Categories
+                  </label>
+                  <div className="border border-gray-300 rounded-md p-3 max-h-40 overflow-y-auto">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      {availableNiches.map(niche => (
+                        <label key={niche} className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={formData.niches.includes(niche)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setFormData({ ...formData, niches: [...formData.niches, niche] });
+                              } else {
+                                setFormData({ ...formData, niches: formData.niches.filter(n => n !== niche) });
+                              }
+                            }}
+                            className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                          />
+                          <span className="text-sm text-gray-700">{niche}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Select which content categories this offering accepts. Selected: {formData.niches.length}
+                  </p>
+                </div>
 
-              {/* Languages */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Supported Languages
-                </label>
-                <input
-                  type="text"
-                  value={formData.languages}
-                  onChange={(e) => setFormData({ ...formData, languages: e.target.value })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                  placeholder="e.g., en, es, fr (comma-separated language codes)"
-                />
-                <p className="mt-1 text-sm text-gray-500">Comma-separated list of language codes</p>
-              </div>
+                {/* Languages Multi-Select */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Supported Languages
+                  </label>
+                  <div className="border border-gray-300 rounded-md p-3 max-h-32 overflow-y-auto">
+                    <div className="grid grid-cols-2 gap-2">
+                      {availableLanguages.map(lang => (
+                        <label key={lang.code} className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={formData.languages.includes(lang.code)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setFormData({ ...formData, languages: [...formData.languages, lang.code] });
+                              } else {
+                                setFormData({ ...formData, languages: formData.languages.filter(l => l !== lang.code) });
+                              }
+                            }}
+                            className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                          />
+                          <span className="text-sm text-gray-700">{lang.name} ({lang.code})</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Select supported content languages. Selected: {formData.languages.length}
+                  </p>
+                </div>
 
-              {/* Custom Attributes */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Custom Attributes (JSON)
-                </label>
-                <textarea
-                  value={formData.attributes}
-                  onChange={(e) => setFormData({ ...formData, attributes: e.target.value })}
-                  rows={8}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 font-mono text-sm"
-                  placeholder={'\n  "allows_ai_content": false,\n  "allows_promotional": true,\n  "includes_images": true,\n  "content_approval_required": true,\n  "allows_revisions": 2,\n  "prohibited_niches": ["adult", "gambling"],\n  "anchor_text_rules": "branded only"\n}'}
-                />
-                <p className="mt-1 text-sm text-gray-500">
-                  Advanced configuration in JSON format. Common attributes: allows_ai_content, allows_promotional, 
-                  includes_images, content_approval_required, allows_revisions, prohibited_niches, anchor_text_rules
-                </p>
+                {/* Content Policy Settings */}
+                <div className="border-t pt-6">
+                  <h3 className="text-md font-medium text-gray-900 mb-4">Content Policy</h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={formData.allowsAiContent}
+                          onChange={(e) => setFormData({ ...formData, allowsAiContent: e.target.checked })}
+                          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">Allow AI-generated content</span>
+                      </label>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={formData.allowsPromotional}
+                          onChange={(e) => setFormData({ ...formData, allowsPromotional: e.target.checked })}
+                          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">Accept promotional content</span>
+                      </label>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={formData.includesImages}
+                          onChange={(e) => setFormData({ ...formData, includesImages: e.target.checked })}
+                          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">Include images with content</span>
+                      </label>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={formData.contentApprovalRequired}
+                          onChange={(e) => setFormData({ ...formData, contentApprovalRequired: e.target.checked })}
+                          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">Require content approval before publishing</span>
+                      </label>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={formData.allowsRevisions}
+                          onChange={(e) => setFormData({ ...formData, allowsRevisions: e.target.checked })}
+                          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">Allow content revisions</span>
+                      </label>
+                      {formData.allowsRevisions && (
+                        <div className="ml-6">
+                          <label className="block text-xs text-gray-500">Max revisions</label>
+                          <input
+                            type="number"
+                            min="1"
+                            max="10"
+                            value={formData.maxRevisionsCount}
+                            onChange={(e) => setFormData({ ...formData, maxRevisionsCount: parseInt(e.target.value) || 2 })}
+                            className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Anchor Text Rules */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Anchor Text Rules
+                  </label>
+                  <textarea
+                    value={formData.anchorTextRules}
+                    onChange={(e) => setFormData({ ...formData, anchorTextRules: e.target.value })}
+                    rows={3}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="e.g., No exact match anchors, max 2 branded keywords per article..."
+                  />
+                  <p className="mt-1 text-sm text-gray-500">Specific rules for anchor text usage in content</p>
+                </div>
               </div>
             </div>
           </div>

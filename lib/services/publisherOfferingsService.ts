@@ -201,27 +201,41 @@ export class PublisherOfferingsService {
   // ============================================================================
 
   /**
-   * Create a new offering for a publisher
+   * Create a new offering for a publisher (DEPRECATED - creates orphaned offerings!)
+   * @deprecated Use createOfferingWithRelationship instead
    */
   async createOffering(
     publisherId: string,
     offeringData: Omit<NewPublisherOffering, 'publisherId'>
   ): Promise<PublisherOffering> {
+    throw new Error('DEPRECATED: Use createOfferingWithRelationship to ensure offerings are properly linked to websites');
+  }
+
+  /**
+   * Create a new offering with proper website relationship
+   */
+  async createOfferingWithRelationship(
+    relationshipId: string,
+    offeringData: Omit<NewPublisherOffering, 'publisherId'>
+  ): Promise<{ offering: PublisherOffering; relationship: PublisherOfferingRelationship }> {
+    // Validate relationship exists
+    const relationship = await db
+      .select()
+      .from(publisherOfferingRelationships)
+      .where(eq(publisherOfferingRelationships.id, relationshipId))
+      .limit(1);
+      
+    if (relationship.length === 0) {
+      throw new Error('Publisher-website relationship not found');
+    }
+
+    const publisherId = relationship[0].publisherId;
+    
     // Validate inputs
     this.validatePublisherId(publisherId);
     this.validateOfferingData(offeringData);
     
-    // Verify publisher exists
-    const publisherExists = await db
-      .select({ id: publishers.id })
-      .from(publishers)
-      .where(eq(publishers.id, publisherId))
-      .limit(1);
-      
-    if (publisherExists.length === 0) {
-      throw new Error('Publisher not found');
-    }
-
+    // Create the offering
     const [offering] = await db
       .insert(publisherOfferings)
       .values({
@@ -230,7 +244,20 @@ export class PublisherOfferingsService {
       })
       .returning();
 
-    return offering;
+    // Update the relationship to link to this offering
+    const [updatedRelationship] = await db
+      .update(publisherOfferingRelationships)
+      .set({
+        offeringId: offering.id,
+        updatedAt: new Date()
+      })
+      .where(eq(publisherOfferingRelationships.id, relationshipId))
+      .returning();
+
+    return {
+      offering,
+      relationship: updatedRelationship
+    };
   }
 
   /**
