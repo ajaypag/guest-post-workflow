@@ -270,7 +270,7 @@ export async function GET(request: NextRequest) {
     const stats = statsQuery[0] || { totalQualified: 0, available: 0, bookmarked: 0, hidden: 0 };
 
     return NextResponse.json({
-      domains: domains.map(domain => {
+      domains: Array.isArray(domains) ? domains.map(domain => {
         if (!domain) {
           console.error('Null domain in results');
           return null;
@@ -278,7 +278,7 @@ export async function GET(request: NextRequest) {
         return {
           ...domain,
           // Calculate availability status
-          availabilityStatus: domain.activeLineItemsCount > 0 ? 'used' : 'available',
+          availabilityStatus: (domain.activeLineItemsCount || 0) > 0 ? 'used' : 'available',
           // Format evidence data if it exists
           evidence: domain.evidence ? {
             directCount: (domain.evidence as any)?.direct_count || 0,
@@ -287,17 +287,17 @@ export async function GET(request: NextRequest) {
             relatedMedianPosition: (domain.evidence as any)?.related_median_position || null,
           } : null,
         };
-      }).filter(Boolean),
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
+      }).filter(Boolean) : [],
+      total: total || 0,
+      page: page || 1,
+      limit: limit || 50,
+      totalPages: Math.ceil((total || 0) / (limit || 50)),
       stats: {
-        totalQualified: stats.totalQualified,
-        available: stats.available,
-        used: stats.totalQualified - stats.available,
-        bookmarked: stats.bookmarked,
-        hidden: stats.hidden,
+        totalQualified: stats?.totalQualified || 0,
+        available: stats?.available || 0,
+        used: (stats?.totalQualified || 0) - (stats?.available || 0),
+        bookmarked: stats?.bookmarked || 0,
+        hidden: stats?.hidden || 0,
       },
     });
 

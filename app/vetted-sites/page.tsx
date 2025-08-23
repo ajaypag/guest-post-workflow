@@ -321,48 +321,54 @@ async function getInitialData(session: any, searchParams: any) {
 
     // Fetch target pages for all domains
     const domainTargetPages = new Map();
-    for (const domain of domains) {
-      if (domain.targetPageIds && Array.isArray(domain.targetPageIds) && domain.targetPageIds.length > 0) {
-        const pages = await db.query.targetPages.findMany({
-          where: inArray(targetPages.id, domain.targetPageIds as string[]),
-          columns: {
-            id: true,
-            url: true,
-            keywords: true,
-            description: true,
+    if (Array.isArray(domains)) {
+      for (const domain of domains) {
+        if (domain?.targetPageIds && Array.isArray(domain.targetPageIds) && domain.targetPageIds.length > 0) {
+          try {
+            const pages = await db.query.targetPages.findMany({
+              where: inArray(targetPages.id, domain.targetPageIds as string[]),
+              columns: {
+                id: true,
+                url: true,
+                keywords: true,
+                description: true,
+              }
+            });
+            domainTargetPages.set(domain.id, pages);
+          } catch (pageError) {
+            console.error(`Error fetching target pages for domain ${domain.id}:`, pageError);
           }
-        });
-        domainTargetPages.set(domain.id, pages);
+        }
       }
     }
 
     return {
-      domains: domains.map(domain => ({
+      domains: Array.isArray(domains) ? domains.map(domain => ({
         ...domain,
         linkInsertionPrice: null, // Not available in current schema
-        availabilityStatus: domain.activeLineItemsCount > 0 ? 'used' : 'available',
-        evidence: domain.evidence ? {
+        availabilityStatus: (domain?.activeLineItemsCount || 0) > 0 ? 'used' : 'available',
+        evidence: domain?.evidence ? {
           directCount: (domain.evidence as any)?.direct_count || 0,
           directMedianPosition: (domain.evidence as any)?.direct_median_position || null,
           relatedCount: (domain.evidence as any)?.related_count || 0,
           relatedMedianPosition: (domain.evidence as any)?.related_median_position || null,
         } : null,
-        targetPages: domainTargetPages.get(domain.id) || [],
-      })),
-      total,
-      page: filters.page,
-      limit: filters.limit,
-      totalPages: Math.ceil(total / filters.limit),
+        targetPages: domainTargetPages.get(domain?.id) || [],
+      })) : [],
+      total: total || 0,
+      page: filters.page || 1,
+      limit: filters.limit || 50,
+      totalPages: Math.ceil((total || 0) / (filters.limit || 50)),
       stats: {
-        totalQualified: stats.totalQualified,
-        available: stats.available,
-        used: stats.totalQualified - stats.available,
-        bookmarked: stats.bookmarked,
-        hidden: stats.hidden,
+        totalQualified: stats?.totalQualified || 0,
+        available: stats?.available || 0,
+        used: (stats?.totalQualified || 0) - (stats?.available || 0),
+        bookmarked: stats?.bookmarked || 0,
+        hidden: stats?.hidden || 0,
       },
-      availableClients,
-      availableAccounts,
-      availableProjects,
+      availableClients: Array.isArray(availableClients) ? availableClients : [],
+      availableAccounts: Array.isArray(availableAccounts) ? availableAccounts : [],
+      availableProjects: Array.isArray(availableProjects) ? availableProjects : [],
     };
   } catch (error) {
     console.error('Error fetching initial data:', error);
@@ -371,9 +377,9 @@ async function getInitialData(session: any, searchParams: any) {
       domains: [],
       total: 0,
       stats: { totalQualified: 0, available: 0, used: 0, bookmarked: 0, hidden: 0 },
-      availableClients,
-      availableAccounts,
-      availableProjects,
+      availableClients: Array.isArray(availableClients) ? availableClients : [],
+      availableAccounts: Array.isArray(availableAccounts) ? availableAccounts : [],
+      availableProjects: Array.isArray(availableProjects) ? availableProjects : [],
     };
   }
 }

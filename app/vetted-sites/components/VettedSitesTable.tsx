@@ -460,7 +460,9 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
             {selectedCount} domain{selectedCount !== 1 ? 's' : ''} selected • Total: ${totalPrice.toFixed(0)}
           </div>
           <div className="flex items-center space-x-2">
-            <button className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">
+            <button 
+              onClick={() => setShowAddToOrderModal(true)}
+              className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">
               Add to Order
             </button>
             <button className="text-sm bg-white border border-gray-200 shadow-sm text-gray-700 px-3 py-1 rounded-lg hover:bg-gray-50 hover:shadow transition-all">
@@ -823,10 +825,10 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
               throw new Error(data.error || 'Failed to add domains to order');
             }
 
-            // Success - clear selection and navigate to order
+            // Success - clear selection and navigate to order edit page
             clearSelection();
             setShowAddToOrderModal(false);
-            router.push(`/orders/${orderId}`);
+            router.push(`/orders/${orderId}/edit`);
           } catch (error: any) {
             console.error('Error adding to order:', error);
             // Error is handled by the modal component

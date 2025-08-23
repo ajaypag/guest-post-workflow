@@ -4,6 +4,7 @@ import { db } from '@/lib/db/connection';
 import { orders } from '@/lib/db/orderSchema';
 import { orderLineItems } from '@/lib/db/orderLineItemSchema';
 import { bulkAnalysisDomains } from '@/lib/db/bulkAnalysisSchema';
+import { clients } from '@/lib/db/schema';
 import { eq, and, inArray, count, desc } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
@@ -83,30 +84,71 @@ export async function GET(request: NextRequest) {
       .where(and(...whereConditions))
       .orderBy(desc(orders.updatedAt));
 
-    // Get line item counts for each order
+    // Get line item details for each order
     const orderIds = availableOrders.map(o => o.id);
-    const itemCounts = orderIds.length > 0 ? await db
+    const orderDetails = orderIds.length > 0 ? await db
       .select({
         orderId: orderLineItems.orderId,
-        itemCount: count(orderLineItems.id),
+        clientId: orderLineItems.clientId,
+        clientName: clients.name,
+        assignedDomain: orderLineItems.assignedDomain,
+        targetPageUrl: orderLineItems.targetPageUrl,
+        status: orderLineItems.status,
       })
       .from(orderLineItems)
-      .where(inArray(orderLineItems.orderId, orderIds))
-      .groupBy(orderLineItems.orderId) : [];
+      .leftJoin(clients, eq(orderLineItems.clientId, clients.id))
+      .where(inArray(orderLineItems.orderId, orderIds)) : [];
 
-    // Create lookup map for item counts
-    const itemCountMap = new Map(
-      itemCounts.map(ic => [ic.orderId, ic.itemCount])
-    );
+    // Group by order ID and calculate stats
+    const orderStatsMap = new Map();
+    for (const detail of orderDetails) {
+      if (!detail?.orderId) continue; // Skip invalid details
+      
+      if (!orderStatsMap.has(detail.orderId)) {
+        orderStatsMap.set(detail.orderId, {
+          itemCount: 0,
+          clients: new Set(),
+          domains: [],
+          targetUrls: new Set(),
+        });
+      }
+      
+      const stats = orderStatsMap.get(detail.orderId);
+      if (stats) {
+        stats.itemCount++;
+        if (detail.clientName) stats.clients.add(detail.clientName);
+        if (detail.assignedDomain) stats.domains.push(detail.assignedDomain);
+        if (detail.targetPageUrl) stats.targetUrls.add(detail.targetPageUrl);
+      }
+    }
 
-    // Combine orders with item counts
-    const ordersWithCounts = availableOrders.map(order => ({
-      ...order,
-      itemCount: itemCountMap.get(order.id) || 0,
-      displayName: `Order ${order.id.slice(-8)} (${itemCountMap.get(order.id) || 0} items)`,
-      formattedTotal: `$${(order.totalRetail / 100).toFixed(2)}`,
-      createdAtFormatted: new Date(order.createdAt).toLocaleDateString(),
-    }));
+    // Combine orders with enhanced details
+    const ordersWithCounts = availableOrders.map(order => {
+      const stats = orderStatsMap.get(order.id) || { itemCount: 0, clients: new Set(), domains: [], targetUrls: new Set() };
+      const clientsSet = stats.clients || new Set();
+      const clientNames = Array.from(clientsSet).filter(Boolean);
+      const domains = Array.isArray(stats.domains) ? stats.domains.filter(Boolean) : [];
+      const sampleDomains = domains.slice(0, 3); // Show first 3 domains
+      const targetUrls = stats.targetUrls || new Set();
+      
+      return {
+        ...order,
+        itemCount: stats.itemCount || 0,
+        clientNames: clientNames,
+        clientsText: clientNames.length > 0 ? clientNames.join(', ') : 'No clients',
+        sampleDomains: sampleDomains,
+        domainsText: sampleDomains.length > 0 
+          ? sampleDomains.join(', ') + (domains.length > 3 ? ` +${domains.length - 3} more` : '')
+          : 'No domains assigned',
+        targetCount: targetUrls.size || 0,
+        displayName: `Order ${order.id?.slice(-8) || 'Unknown'} (${stats.itemCount || 0} items)`,
+        formattedTotal: `$${((order.totalRetail || 0) / 100).toFixed(2)}`,
+        createdAtFormatted: order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'Unknown',
+        purpose: clientNames.length > 0 
+          ? `${clientNames[0]}${clientNames.length > 1 ? ` +${clientNames.length - 1} more` : ''} campaign`
+          : 'Mixed campaign',
+      };
+    });
 
     return NextResponse.json({
       orders: ordersWithCounts,

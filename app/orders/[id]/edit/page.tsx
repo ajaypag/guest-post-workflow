@@ -27,6 +27,7 @@ interface OrderLineItem {
   targetPageId?: string;
   targetPageUrl?: string;
   anchorText?: string;
+  assignedDomain?: string; // Domain from vetted sites
   price: number; // Total price (wholesale + service fee)
   wholesalePrice?: number; // Wholesale cost from database
 }
@@ -348,6 +349,9 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
               targetPageId: dbItem.targetPageId,
               targetPageUrl: dbItem.targetPageUrl,
               anchorText: dbItem.anchorText,
+              assignedDomain: typeof dbItem.assignedDomain === 'string' 
+                ? dbItem.assignedDomain 
+                : dbItem.assignedDomain?.domain || undefined,
               wholesalePrice: dbItem.metadata?.wholesalePrice || (dbItem.estimatedPrice - SERVICE_FEE_CENTS),
               price: dbItem.approvedPrice || dbItem.estimatedPrice || (getCurrentWholesaleEstimate() + SERVICE_FEE_CENTS)
             });
@@ -391,6 +395,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                   targetPageId: targetPage.pageId || targetPage.id,
                   targetPageUrl: targetPage.url,
                   anchorText: group.anchorTexts?.[index] || '',
+                  assignedDomain: undefined,
                   wholesalePrice: getCurrentWholesaleEstimate(), // Dynamic wholesale from pricing estimator
                   price: getCurrentWholesaleEstimate() + SERVICE_FEE_CENTS
                 });
@@ -405,6 +410,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                   targetPageId: undefined,
                   targetPageUrl: undefined,
                   anchorText: undefined,
+                  assignedDomain: undefined,
                   wholesalePrice: getCurrentWholesaleEstimate(), // Dynamic wholesale from pricing estimator
                   price: getCurrentWholesaleEstimate() + SERVICE_FEE_CENTS
                 });
@@ -983,6 +989,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
             targetPageId: undefined,
             targetPageUrl: undefined,
             anchorText: undefined,
+            assignedDomain: undefined,
             wholesalePrice: getCurrentWholesaleEstimate(), // Dynamic wholesale from pricing estimator
             price: getCurrentWholesaleEstimate() + SERVICE_FEE_CENTS,
           });
@@ -1034,6 +1041,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
           targetPageId: target.id,
           targetPageUrl: target.url,
           anchorText: generateAnchorText(target.clientName), // New items get generated anchor text
+          assignedDomain: undefined, // Will be set when domains are assigned from vetted sites
           wholesalePrice: getCurrentWholesaleEstimate(), // Dynamic wholesale from pricing estimator
           price: getCurrentWholesaleEstimate() + SERVICE_FEE_CENTS
         };
@@ -1904,6 +1912,12 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                           <div>
                             <span className="text-xs text-gray-500">#{index + 1}</span>
                             <h3 className="font-medium text-gray-900">{item.clientName}</h3>
+                            {item.assignedDomain && (
+                              <div className="flex items-center mt-1 text-sm text-blue-600">
+                                <Globe className="h-3 w-3 mr-1" />
+                                <span className="font-medium">{item.assignedDomain || 'No domain'}</span>
+                              </div>
+                            )}
                           </div>
                           <button
                             onClick={() => removeLineItem(item.id)}
@@ -1974,10 +1988,10 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                       <thead className="bg-gray-50 border-b border-gray-200 sticky top-0">
                         <tr>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">Brand</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[160px]">Domain</th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">Target Page</th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">Anchor Text</th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[180px]">Investment Details</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px]">Price</th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[60px]"></th>
                         </tr>
                       </thead>
@@ -1986,6 +2000,18 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                         <tr key={item.id} className="hover:bg-gray-50 transition-colors">
                           <td className="px-4 py-3">
                             <p className="text-sm font-medium text-gray-900">{item.clientName}</p>
+                          </td>
+                          <td className="px-4 py-3">
+                            {item.assignedDomain ? (
+                              <div className="flex items-center space-x-1">
+                                <p className="text-sm font-medium text-blue-600 truncate max-w-xs" title={item.assignedDomain}>
+                                  {item.assignedDomain}
+                                </p>
+                                <Globe className="h-3 w-3 text-blue-400" />
+                              </div>
+                            ) : (
+                              <p className="text-sm text-gray-400 italic">No domain assigned</p>
+                            )}
                           </td>
                           <td className="px-4 py-3">
                             {item.targetPageUrl ? (
@@ -2021,9 +2047,6 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                                 2000-word article, semantic SEO, images, internal links
                               </div>
                             </div>
-                          </td>
-                          <td className="px-4 py-3">
-                            <p className="text-sm font-medium text-gray-900">${item.price}</p>
                           </td>
                           <td className="px-4 py-3">
                             <button
@@ -2097,6 +2120,12 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                                     <div>
                                       <span className="text-xs text-gray-500">#{index + 1}</span>
                                       <h3 className="font-medium text-gray-900">{item.clientName}</h3>
+                                      {item.assignedDomain && (
+                                        <div className="flex items-center mt-1 text-sm text-blue-600">
+                                          <Globe className="h-3 w-3 mr-1" />
+                                          <span className="font-medium">{item.assignedDomain || 'No domain'}</span>
+                                        </div>
+                                      )}
                                     </div>
                                     <button
                                       onClick={() => removeLineItem(item.id)}
@@ -2164,11 +2193,33 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                             {/* Desktop Table for Grouped View - Large Screens Only */}
                             <div className="hidden xl:block">
                               <table className="w-full">
+                                <thead className="border-b border-gray-200">
+                                  <tr>
+                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">#</th>
+                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Domain</th>
+                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Target Page</th>
+                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Anchor Text</th>
+                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Investment</th>
+                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12"></th>
+                                  </tr>
+                                </thead>
                               <tbody className="divide-y divide-gray-100">
                                 {items.map((item, index) => (
                                   <tr key={item.id} className="hover:bg-gray-50">
                                     <td className="px-4 py-3 text-sm text-gray-900">
                                       <span className="text-gray-500 mr-2">{index + 1}.</span>
+                                    </td>
+                                    <td className="px-4 py-3">
+                                      {item.assignedDomain ? (
+                                        <div className="flex items-center space-x-1">
+                                          <span className="text-sm font-medium text-blue-600" title={item.assignedDomain}>
+                                            {item.assignedDomain}
+                                          </span>
+                                          <Globe className="h-3 w-3 text-blue-400" />
+                                        </div>
+                                      ) : (
+                                        <span className="text-sm text-gray-400 italic">No domain</span>
+                                      )}
                                     </td>
                                     <td className="px-4 py-3">
                                       <select
@@ -2205,9 +2256,6 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                                           ${((item.wholesalePrice || (item.price - SERVICE_FEE_CENTS)) / 100).toFixed(0)} + $79
                                         </div>
                                       </div>
-                                    </td>
-                                    <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                                      ${(item.price / 100).toFixed(0)}
                                     </td>
                                     <td className="px-4 py-3">
                                       <button

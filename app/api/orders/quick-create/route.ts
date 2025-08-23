@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await request.json();
-    const { domainIds, accountId: requestAccountId, rushDelivery = false, includesClientReview = false } = data;
+    const { domainIds, accountId: requestAccountId } = data;
 
     // Validate domain IDs
     if (!domainIds || !Array.isArray(domainIds) || domainIds.length === 0) {
@@ -137,11 +137,7 @@ export async function POST(request: NextRequest) {
     const discountAmount = Math.floor(subtotalRetail * (discountPercent / 100));
     let totalRetail = subtotalRetail - discountAmount;
 
-    // Add optional services
-    const clientReviewFee = includesClientReview ? 5000 : 0; // $50
-    const rushFee = rushDelivery ? Math.floor(totalRetail * 0.25) : 0; // 25% rush fee
-
-    totalRetail += clientReviewFee + rushFee;
+    // No optional services for now
     const totalWholesale = subtotalWholesale;
     const profitMargin = totalRetail - totalWholesale;
 
@@ -161,10 +157,10 @@ export async function POST(request: NextRequest) {
       totalRetail,
       totalWholesale,
       profitMargin,
-      includesClientReview: includesClientReview || false,
-      clientReviewFee,
-      rushDelivery: rushDelivery || false,
-      rushFee,
+      includesClientReview: false,
+      clientReviewFee: 0,
+      rushDelivery: false,
+      rushFee: 0,
       createdBy: session.userType === 'account' ? '00000000-0000-0000-0000-000000000000' : session.userId,
       createdAt: now,
       updatedAt: now,

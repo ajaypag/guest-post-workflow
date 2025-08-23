@@ -33,7 +33,15 @@ export default function DynamicStats({ initialStats, total }: DynamicStatsProps)
         const response = await fetch(url.toString());
         if (response.ok) {
           const data = await response.json();
-          setStats(data.stats);
+          if (data?.stats) {
+            setStats({
+              totalQualified: data.stats.totalQualified || 0,
+              available: data.stats.available || 0,
+              used: data.stats.used || 0,
+              bookmarked: data.stats.bookmarked || 0,
+              hidden: data.stats.hidden || 0,
+            });
+          }
         }
       } catch (error) {
         console.error('Error fetching stats:', error);

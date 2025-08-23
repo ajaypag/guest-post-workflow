@@ -24,7 +24,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const orderId = params.id;
+    // Await params in Next.js 15
+    const awaitedParams = await params;
+    const orderId = awaitedParams.id;
     const data = await request.json();
     const { domainIds } = data;
 
@@ -213,20 +215,36 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       }).returning();
 
       // Create change log entry
-      await db.insert(lineItemChanges).values({
-        lineItemId: createdLineItem.id,
-        orderId,
-        changeType: 'created',
-        newValue: {
-          domain: domain.domain,
-          estimatedPrice: pricing.retail,
-          wholesalePrice: pricing.wholesale,
-          source: 'vetted_sites_add_to_order',
-        },
-        changedBy: session.userId,
-        changeReason: 'Domain added to existing order from vetted sites',
-        batchId,
-      });
+      try {
+        // For account users, use system user ID for change log
+        // For internal users, use their actual user ID
+        let changeLogUserId = session.userId;
+        
+        if (session.userType === 'account') {
+          // Use system user for account actions
+          changeLogUserId = '00000000-0000-0000-0000-000000000000'; // System User ID
+        }
+
+        await db.insert(lineItemChanges).values({
+          lineItemId: createdLineItem.id,
+          orderId,
+          changeType: 'created',
+          newValue: {
+            domain: domain.domain,
+            estimatedPrice: pricing.retail,
+            wholesalePrice: pricing.wholesale,
+            source: 'vetted_sites_add_to_order',
+            actualUser: session.userType === 'account' ? session.userId : undefined,
+            actualUserEmail: session.userType === 'account' ? session.email : undefined,
+          },
+          changedBy: changeLogUserId,
+          changeReason: `Domain added to existing order from vetted sites${session.userType === 'account' ? ` by ${session.email}` : ''}`,
+          batchId,
+        });
+      } catch (changeLogError) {
+        console.error('Failed to create change log entry:', changeLogError);
+        // Continue without failing the main operation
+      }
 
       nextDisplayOrder++;
     }

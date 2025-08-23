@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Package, Zap, UserCheck, AlertCircle, Loader2 } from 'lucide-react';
+import { X, Package, AlertCircle, Loader2 } from 'lucide-react';
 
 interface QuickOrderModalProps {
   isOpen: boolean;
@@ -22,15 +22,11 @@ export default function QuickOrderModal({
   const [error, setError] = useState<string | null>(null);
   const [accounts, setAccounts] = useState<any[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string>('');
-  const [rushDelivery, setRushDelivery] = useState(false);
-  const [includesClientReview, setIncludesClientReview] = useState(false);
   const [userType, setUserType] = useState<string>('');
   
   // Calculate pricing
   const basePrice = totalPrice;
-  const rushFee = rushDelivery ? Math.floor(basePrice * 0.25) : 0;
-  const reviewFee = includesClientReview ? 5000 : 0; // $50 in cents
-  const finalPrice = basePrice + rushFee + reviewFee;
+  const finalPrice = basePrice;
   
   // Calculate discount based on quantity
   const quantity = selectedDomains.length;
@@ -76,8 +72,6 @@ export default function QuickOrderModal({
       // Prepare request data
       const requestData: any = {
         domainIds: selectedDomains.map(d => d.id),
-        rushDelivery,
-        includesClientReview,
       };
 
       // Add account ID for internal users
@@ -173,48 +167,6 @@ export default function QuickOrderModal({
             </div>
           )}
 
-          {/* Options */}
-          <div className="space-y-4 mb-6">
-            <label className="flex items-start gap-3 cursor-pointer group">
-              <input
-                type="checkbox"
-                checked={rushDelivery}
-                onChange={(e) => setRushDelivery(e.target.checked)}
-                disabled={loading}
-                className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-              />
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-orange-500" />
-                  <span className="font-medium text-gray-900">Rush Delivery</span>
-                  <span className="text-sm text-gray-500">(+25%)</span>
-                </div>
-                <p className="text-sm text-gray-600 mt-0.5">
-                  Expedite your order for faster completion
-                </p>
-              </div>
-            </label>
-
-            <label className="flex items-start gap-3 cursor-pointer group">
-              <input
-                type="checkbox"
-                checked={includesClientReview}
-                onChange={(e) => setIncludesClientReview(e.target.checked)}
-                disabled={loading}
-                className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-              />
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <UserCheck className="w-4 h-4 text-blue-500" />
-                  <span className="font-medium text-gray-900">Client Review</span>
-                  <span className="text-sm text-gray-500">(+$50)</span>
-                </div>
-                <p className="text-sm text-gray-600 mt-0.5">
-                  Add review and approval step before publishing
-                </p>
-              </div>
-            </label>
-          </div>
 
           {/* Pricing Summary */}
           <div className="bg-gray-50 rounded-lg p-4 mb-6">
@@ -231,19 +183,6 @@ export default function QuickOrderModal({
                 </div>
               )}
               
-              {rushDelivery && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Rush Delivery (25%)</span>
-                  <span className="font-medium">+${(rushFee / 100).toFixed(2)}</span>
-                </div>
-              )}
-              
-              {includesClientReview && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Client Review</span>
-                  <span className="font-medium">+${(reviewFee / 100).toFixed(2)}</span>
-                </div>
-              )}
               
               <div className="pt-2 border-t border-gray-200">
                 <div className="flex justify-between">

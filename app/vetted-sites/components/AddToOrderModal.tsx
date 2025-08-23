@@ -13,6 +13,12 @@ interface Order {
   createdAtFormatted: string;
   totalRetail: number;
   discountPercent: string;
+  clientNames: string[];
+  clientsText: string;
+  sampleDomains: string[];
+  domainsText: string;
+  targetCount: number;
+  purpose: string;
 }
 
 interface AddToOrderModalProps {
@@ -190,9 +196,24 @@ export default function AddToOrderModal({
                               </span>
                               {getStatusBadge(order.status, order.state)}
                             </div>
-                            <div className="text-sm text-gray-500">
-                              Created {order.createdAtFormatted} • {order.formattedTotal}
+                            
+                            <div className="text-sm text-gray-600 mb-2">
+                              <div className="font-medium text-gray-700">{order.purpose}</div>
+                              <div>Created {order.createdAtFormatted} • {order.formattedTotal}</div>
                             </div>
+
+                            {order.domainsText !== 'No domains assigned' && (
+                              <div className="text-xs text-gray-500 bg-gray-50 rounded px-2 py-1 mb-2">
+                                <strong>Current domains:</strong> {order.domainsText}
+                              </div>
+                            )}
+
+                            {order.clientNames.length > 0 && (
+                              <div className="text-xs text-blue-600">
+                                <strong>Client{order.clientNames.length > 1 ? 's' : ''}:</strong> {order.clientsText}
+                              </div>
+                            )}
+
                             {parseInt(order.discountPercent) > 0 && (
                               <div className="text-xs text-green-600 mt-1">
                                 {order.discountPercent}% volume discount applied
