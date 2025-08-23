@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { db } from '@/lib/db/connection';
 import { orders } from '@/lib/db/orderSchema';
-import { orderLineItems, lineItemChanges } from '@/lib/db/orderLineItemSchema';
+import { orderLineItems, lineItemChanges, type NewOrderLineItem } from '@/lib/db/orderLineItemSchema';
 import { bulkAnalysisDomains } from '@/lib/db/bulkAnalysisSchema';
 import { eq, inArray, and, count } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const awaitedParams = await params;
     const orderId = awaitedParams.id;
     const data = await request.json();
-    const { domainIds } = data;
+    const { domainIds, domainTargets } = data;
 
     // Validate input
     if (!domainIds || !Array.isArray(domainIds) || domainIds.length === 0) {
@@ -190,29 +190,47 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const now = new Date();
     const batchId = uuidv4();
 
+    // Create a map of domain targets for easy lookup
+    const targetMap = new Map<string, { targetUrl: string; anchorText: string }>();
+    if (domainTargets && Array.isArray(domainTargets)) {
+      domainTargets.forEach((target: any) => {
+        targetMap.set(target.domainId, {
+          targetUrl: target.targetUrl || '',
+          anchorText: target.anchorText || ''
+        });
+      });
+    }
+
     // Add new line items
     for (const domain of selectedDomains) {
       const pricing = domainPricing.get(domain.id)!;
       const lineItemId = uuidv4();
+      
+      // Get target configuration for this domain
+      const targetConfig = targetMap.get(domain.id);
+      const targetUrl = targetConfig?.targetUrl || domain.suggestedTargetUrl || '';
+      const anchorText = targetConfig?.anchorText || '';
 
       // Create line item
-      const [createdLineItem] = await db.insert(orderLineItems).values({
+      const lineItemData: NewOrderLineItem = {
         orderId,
-        clientId: domain.clientId || existingLineItems[0]?.clientId || '',
+        clientId: (domain.clientId || existingLineItems[0]?.clientId || existingOrder.accountId) as string,
         addedBy: session.userId,
         status: 'draft' as const,
         estimatedPrice: pricing.retail,
         wholesalePrice: pricing.wholesale,
         displayOrder: nextDisplayOrder,
-        assignedDomainId: domain.id,
-        assignedDomain: domain.domain,
-        targetPageUrl: domain.suggestedTargetUrl,
+        assignedDomainId: domain.id as string,
+        assignedDomain: domain.domain as string,
+        targetPageUrl: targetUrl as string,
+        anchorText: anchorText as string,
         metadata: {
-          bulkAnalysisProjectId: domain.projectId,
-          targetMatchData: domain.targetMatchData,
+          bulkAnalysisProjectId: domain.projectId || undefined,
           internalNotes: `Added from vetted sites to existing order`,
         },
-      }).returning();
+      };
+
+      const [createdLineItem] = await db.insert(orderLineItems).values(lineItemData).returning();
 
       // Create change log entry
       try {
@@ -233,12 +251,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
             domain: domain.domain,
             estimatedPrice: pricing.retail,
             wholesalePrice: pricing.wholesale,
+            targetPageUrl: targetUrl,
+            anchorText: anchorText,
             source: 'vetted_sites_add_to_order',
             actualUser: session.userType === 'account' ? session.userId : undefined,
             actualUserEmail: session.userType === 'account' ? session.email : undefined,
           },
           changedBy: changeLogUserId,
-          changeReason: `Domain added to existing order from vetted sites${session.userType === 'account' ? ` by ${session.email}` : ''}`,
+          changeReason: `Domain added to existing order from vetted sites with pre-selected targets${session.userType === 'account' ? ` by ${session.email}` : ''}`,
           batchId,
         });
       } catch (changeLogError) {

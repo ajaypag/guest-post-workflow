@@ -8,7 +8,7 @@ import { orderLineItems } from '@/lib/db/orderLineItemSchema';
 import { websites } from '@/lib/db/websiteSchema';
 import { eq, inArray, and, or, ilike, desc, asc, isNull, sql } from 'drizzle-orm';
 import VettedSitesTable from './components/VettedSitesTable';
-import VettedSitesFilters from './components/VettedSitesFilters';
+import VettedSitesFiltersCompact from './components/VettedSitesFiltersCompact';
 import VettedSitesWrapper from './VettedSitesWrapper';
 import DynamicStats from './components/DynamicStats';
 
@@ -46,6 +46,7 @@ async function getInitialData(session: any, searchParams: any) {
         columns: {
           id: true,
           name: true,
+          accountId: true,
         },
         orderBy: (clients, { asc }) => [asc(clients.name)],
       });
@@ -72,6 +73,7 @@ async function getInitialData(session: any, searchParams: any) {
         columns: {
           id: true,
           name: true,
+          accountId: true,
         },
         orderBy: (clients, { asc }) => [asc(clients.name)],
       });
@@ -82,20 +84,37 @@ async function getInitialData(session: any, searchParams: any) {
     console.error('Error fetching clients/accounts:', err);
   }
 
-  // Get available projects for filter (if client is selected)
+  // Get available projects for filter
   let availableProjects: any[] = [];
-  const selectedClientIds = params.clientId ? params.clientId.split(',') : [];
   
-  if (selectedClientIds.length > 0) {
-    availableProjects = await db.query.bulkAnalysisProjects.findMany({
-      where: inArray(bulkAnalysisProjects.clientId, selectedClientIds),
-      columns: {
-        id: true,
-        name: true,
-        clientId: true,
-      },
-      orderBy: (projects, { asc }) => [asc(projects.name)],
-    });
+  try {
+    // Get all projects the user has access to
+    if (session.userType === 'internal') {
+      // Internal users see all projects
+      availableProjects = await db.query.bulkAnalysisProjects.findMany({
+        columns: {
+          id: true,
+          name: true,
+          clientId: true,
+        },
+        orderBy: (projects, { asc }) => [asc(projects.name)],
+      });
+    } else if (session.userType === 'account' && availableClients.length > 0) {
+      // Account users see projects for their clients
+      const clientIds = availableClients.map(c => c.id);
+      availableProjects = await db.query.bulkAnalysisProjects.findMany({
+        where: inArray(bulkAnalysisProjects.clientId, clientIds),
+        columns: {
+          id: true,
+          name: true,
+          clientId: true,
+        },
+        orderBy: (projects, { asc }) => [asc(projects.name)],
+      });
+    }
+    console.log('Available projects:', availableProjects.length, 'for userType:', session.userType);
+  } catch (err) {
+    console.error('Error fetching projects:', err);
   }
 
   // Parse filters with defaults (handle undefined searchParams)
@@ -218,7 +237,22 @@ async function getInitialData(session: any, searchParams: any) {
         return {
           domains: [],
           total: 0,
-          stats: { totalQualified: 0, available: 0, used: 0, bookmarked: 0, hidden: 0 },
+          page: 1,
+          limit: 50,
+          totalPages: 0,
+          stats: { 
+        totalQualified: 0, 
+        available: 0, 
+        used: 0, 
+        bookmarked: 0, 
+        hidden: 0,
+        breakdown: {
+          highQuality: 0,
+          goodQuality: 0,
+          marginal: 0,
+          disqualified: 0,
+        },
+      },
           availableClients,
           availableAccounts,
           availableProjects,
@@ -293,21 +327,42 @@ async function getInitialData(session: any, searchParams: any) {
     // Execute query
     const domains = await query;
 
-    // Calculate stats
+    // Calculate stats - dynamic based on current filters
     const statsQuery = await db
       .select({
-        totalQualified: sql<number>`COUNT(*)::int`,
-        // Temporarily comment out to debug
-        // available: sql<number>`
-        //   COUNT(*) FILTER (
-        //     WHERE NOT EXISTS (
-        //       SELECT 1 FROM ${guestPostItems}
-        //       WHERE ${guestPostItems.domain} = ${bulkAnalysisDomains.domain}
-        //       AND ${guestPostItems.status} != 'cancelled'
-        //     )
-        //   )::int
-        // `,
-        available: sql<number>`COUNT(*)::int`,
+        // Total in current view (respects all filters)
+        totalInView: sql<number>`COUNT(*)::int`,
+        
+        // Available in current view (not hidden, not in use)
+        availableInView: sql<number>`
+          COUNT(*) FILTER (
+            WHERE ${bulkAnalysisDomains.userHidden} != true
+            AND NOT EXISTS (
+              SELECT 1 FROM ${orderLineItems}
+              WHERE ${orderLineItems.assignedDomain} = ${bulkAnalysisDomains.domain}
+              AND ${orderLineItems.status} != 'cancelled'
+            )
+          )::int
+        `,
+        
+        // In use from current view
+        inUseFromView: sql<number>`
+          COUNT(*) FILTER (
+            WHERE EXISTS (
+              SELECT 1 FROM ${orderLineItems}
+              WHERE ${orderLineItems.assignedDomain} = ${bulkAnalysisDomains.domain}
+              AND ${orderLineItems.status} != 'cancelled'
+            )
+          )::int
+        `,
+        
+        // Quality breakdown of current view
+        highQuality: sql<number>`COUNT(*) FILTER (WHERE ${bulkAnalysisDomains.qualificationStatus} = 'high_quality')::int`,
+        goodQuality: sql<number>`COUNT(*) FILTER (WHERE ${bulkAnalysisDomains.qualificationStatus} = 'good_quality')::int`,
+        marginal: sql<number>`COUNT(*) FILTER (WHERE ${bulkAnalysisDomains.qualificationStatus} = 'marginal')::int`,
+        disqualified: sql<number>`COUNT(*) FILTER (WHERE ${bulkAnalysisDomains.qualificationStatus} = 'disqualified')::int`,
+        
+        // User curation stats
         bookmarked: sql<number>`COUNT(*) FILTER (WHERE ${bulkAnalysisDomains.userBookmarked} = true)::int`,
         hidden: sql<number>`COUNT(*) FILTER (WHERE ${bulkAnalysisDomains.userHidden} = true)::int`,
       })
@@ -317,7 +372,7 @@ async function getInitialData(session: any, searchParams: any) {
       .leftJoin(websites, eq(bulkAnalysisDomains.domain, websites.domain))
       .where(conditions.length > 0 ? and(...conditions) : undefined);
 
-    const stats = statsQuery[0] || { totalQualified: 0, available: 0, bookmarked: 0, hidden: 0 };
+    const stats = statsQuery[0] || {};
 
     // Fetch target pages for all domains
     const domainTargetPages = new Map();
@@ -345,8 +400,18 @@ async function getInitialData(session: any, searchParams: any) {
     return {
       domains: Array.isArray(domains) ? domains.map(domain => ({
         ...domain,
+        qualifiedAt: domain.qualifiedAt ? domain.qualifiedAt.toISOString() : null,
+        updatedAt: domain.updatedAt ? domain.updatedAt.toISOString() : new Date().toISOString(),
+        userBookmarked: domain.userBookmarked || false,
+        userHidden: domain.userHidden || false,
+        userBookmarkedAt: domain.userBookmarkedAt ? domain.userBookmarkedAt.toISOString() : null,
+        userHiddenAt: domain.userHiddenAt ? domain.userHiddenAt.toISOString() : null,
+        targetMatchedAt: domain.targetMatchedAt ? domain.targetMatchedAt.toISOString() : null,
+        clientName: domain.clientName || 'Unknown Client',
+        successRatePercentage: domain.successRatePercentage ? parseFloat(domain.successRatePercentage) : null,
+        lastCampaignDate: domain.lastCampaignDate ? domain.lastCampaignDate.toISOString() : null,
         linkInsertionPrice: null, // Not available in current schema
-        availabilityStatus: (domain?.activeLineItemsCount || 0) > 0 ? 'used' : 'available',
+        availabilityStatus: (domain?.activeLineItemsCount || 0) > 0 ? 'used' as const : 'available' as const,
         evidence: domain?.evidence ? {
           directCount: (domain.evidence as any)?.direct_count || 0,
           directMedianPosition: (domain.evidence as any)?.direct_median_position || null,
@@ -360,11 +425,17 @@ async function getInitialData(session: any, searchParams: any) {
       limit: filters.limit || 50,
       totalPages: Math.ceil((total || 0) / (filters.limit || 50)),
       stats: {
-        totalQualified: stats?.totalQualified || 0,
-        available: stats?.available || 0,
-        used: (stats?.totalQualified || 0) - (stats?.available || 0),
+        totalQualified: stats?.totalInView || 0,
+        available: stats?.availableInView || 0,
+        used: stats?.inUseFromView || 0,
         bookmarked: stats?.bookmarked || 0,
         hidden: stats?.hidden || 0,
+        breakdown: {
+          highQuality: stats?.highQuality || 0,
+          goodQuality: stats?.goodQuality || 0,
+          marginal: stats?.marginal || 0,
+          disqualified: stats?.disqualified || 0,
+        },
       },
       availableClients: Array.isArray(availableClients) ? availableClients : [],
       availableAccounts: Array.isArray(availableAccounts) ? availableAccounts : [],
@@ -376,7 +447,22 @@ async function getInitialData(session: any, searchParams: any) {
     return {
       domains: [],
       total: 0,
-      stats: { totalQualified: 0, available: 0, used: 0, bookmarked: 0, hidden: 0 },
+      page: 1,
+      limit: 50,
+      totalPages: 0,
+      stats: { 
+        totalQualified: 0, 
+        available: 0, 
+        used: 0, 
+        bookmarked: 0, 
+        hidden: 0,
+        breakdown: {
+          highQuality: 0,
+          goodQuality: 0,
+          marginal: 0,
+          disqualified: 0,
+        },
+      },
       availableClients: Array.isArray(availableClients) ? availableClients : [],
       availableAccounts: Array.isArray(availableAccounts) ? availableAccounts : [],
       availableProjects: Array.isArray(availableProjects) ? availableProjects : [],
@@ -401,7 +487,7 @@ export default async function VettedSitesPage({ searchParams: searchParamsPromis
 
   // Wrap content in appropriate layout based on user type
   const content = (
-    <div className="container mx-auto px-4 py-6 max-w-none xl:max-w-[1600px] 2xl:max-w-[1920px]">
+    <div className="container mx-auto px-4 py-6 pb-32 max-w-none xl:max-w-[1600px] 2xl:max-w-[1920px]">
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center justify-between">
@@ -418,24 +504,26 @@ export default async function VettedSitesPage({ searchParams: searchParamsPromis
       <div className="grid grid-cols-12 gap-6">
         {/* Filters Sidebar */}
         <div className="col-span-12 lg:col-span-3 xl:col-span-2">
-          <Suspense fallback={
-            <div className="bg-white rounded-lg border p-4">
-              <div className="animate-pulse space-y-4">
-                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                <div className="h-8 bg-gray-200 rounded"></div>
-                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                <div className="h-6 bg-gray-200 rounded"></div>
+          <div className="sticky top-4">
+            <Suspense fallback={
+              <div className="bg-white rounded-lg border p-4">
+                <div className="animate-pulse space-y-4">
+                  <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                  <div className="h-8 bg-gray-200 rounded"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                  <div className="h-6 bg-gray-200 rounded"></div>
+                </div>
               </div>
-            </div>
-          }>
-            <VettedSitesFilters 
-              availableClients={initialData.availableClients}
-              availableAccounts={initialData.availableAccounts}
-              availableProjects={initialData.availableProjects}
-              currentFilters={searchParams}
-              userType={session.userType}
-            />
-          </Suspense>
+            }>
+              <VettedSitesFiltersCompact 
+                availableClients={initialData.availableClients}
+                availableAccounts={initialData.availableAccounts}
+                availableProjects={initialData.availableProjects}
+                currentFilters={searchParams}
+                userType={session.userType}
+              />
+            </Suspense>
+          </div>
         </div>
 
         {/* Main Content */}

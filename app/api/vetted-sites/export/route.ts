@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { AuthServiceServer } from '@/lib/auth-server';
 import { db } from '@/lib/db/connection';
 import { bulkAnalysisDomains, bulkAnalysisProjects, clients, websites } from '@/lib/db/schema';
 import { eq, and, inArray, desc } from 'drizzle-orm';
@@ -8,7 +7,7 @@ import { eq, and, inArray, desc } from 'drizzle-orm';
 export async function POST(request: NextRequest) {
   try {
     // Check authentication
-    const session = await getServerSession(authOptions);
+    const session = await AuthServiceServer.getSession(request);
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -55,7 +54,7 @@ export async function POST(request: NextRequest) {
       .leftJoin(clients, eq(bulkAnalysisDomains.clientId, clients.id))
       .leftJoin(bulkAnalysisProjects, eq(bulkAnalysisDomains.projectId, bulkAnalysisProjects.id))
       .where(inArray(bulkAnalysisDomains.id, domainIds))
-      .orderBy(desc(bulkAnalysisDomains.qualifiedAt));
+      .orderBy(desc(bulkAnalysisDomains.aiQualifiedAt));
 
     // Check permissions for non-internal users
     if (session.userType !== 'internal') {

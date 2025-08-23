@@ -70,13 +70,13 @@ export function useSelection(userType: 'internal' | 'account' | 'publisher' = 'i
     }
   }, [selection]);
 
-  // Calculate price for a domain
+  // Calculate price for a domain - unified pricing for all users
   const calculatePrice = useCallback((guestPostCost: string | null): number => {
     if (!guestPostCost) return 0;
     const wholesalePrice = parseFloat(guestPostCost);
-    // For external users, add $79 markup
-    return userType === 'internal' ? wholesalePrice : wholesalePrice + 79;
-  }, [userType]);
+    // Unified pricing: guest post cost + $79 for everyone
+    return wholesalePrice + 79;
+  }, []);
 
   // Add domain to selection
   const addDomain = useCallback((domain: {
@@ -88,11 +88,28 @@ export function useSelection(userType: 'internal' | 'account' | 'publisher' = 'i
     targetPages?: Array<{ id: string; url: string; keywords: string | null; }>;
     qualificationStatus: string;
     suggestedTargetUrl?: string | null;
-  }) => {
+  }): { success: boolean; error?: string } => {
+    let result = { success: false, error: undefined as string | undefined };
+    
     setSelection(prev => {
       const newDomains = new Map(prev.domains);
       
       if (!newDomains.has(domain.id)) {
+        // Check if we already have domains from a different client
+        const existingClientIds = Array.from(prev.domains.values()).map(d => d.clientId);
+        const uniqueClients = new Set(existingClientIds);
+        
+        if (uniqueClients.size > 0 && !uniqueClients.has(domain.clientId)) {
+          result = { 
+            success: false, 
+            error: `Cannot mix domains from different clients. You have selected domains from ${Array.from(uniqueClients).map(id => {
+              const existing = Array.from(prev.domains.values()).find(d => d.clientId === id);
+              return existing?.clientName || 'Unknown Client';
+            }).join(', ')}. Please clear selection or only select domains from ${domain.clientName}.`
+          };
+          return prev; // Don't add the domain
+        }
+        
         const price = calculatePrice(domain.guestPostCost);
         const selectedDomain: SelectedDomain = {
           id: domain.id,
@@ -118,6 +135,8 @@ export function useSelection(userType: 'internal' | 'account' | 'publisher' = 'i
           totalPrice += d.price;
         });
         
+        result = { success: true, error: undefined };
+        
         return {
           domains: newDomains,
           totalPrice,
@@ -125,8 +144,11 @@ export function useSelection(userType: 'internal' | 'account' | 'publisher' = 'i
         };
       }
       
+      result = { success: true, error: undefined }; // Domain already selected
       return prev;
     });
+    
+    return result;
   }, [calculatePrice]);
 
   // Remove domain from selection
@@ -159,11 +181,16 @@ export function useSelection(userType: 'internal' | 'account' | 'publisher' = 'i
     targetPages?: Array<{ id: string; url: string; keywords: string | null; }>;
     qualificationStatus: string;
     suggestedTargetUrl?: string | null;
-  }) => {
+  }, onError?: (error: string) => void): { success: boolean; error?: string } => {
     if (selection.domains.has(domain.id)) {
       removeDomain(domain.id);
+      return { success: true };
     } else {
-      addDomain(domain);
+      const result = addDomain(domain);
+      if (!result.success && result.error && onError) {
+        onError(result.error);
+      }
+      return result;
     }
   }, [selection.domains, addDomain, removeDomain]);
 

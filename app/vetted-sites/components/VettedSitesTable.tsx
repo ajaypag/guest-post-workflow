@@ -2,13 +2,22 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { StarIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import { StarIcon, EyeSlashIcon, EyeIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import { useSelection } from '../hooks/useSelection';
 import SelectionSummary from './SelectionSummary';
-import QuickOrderModal from './QuickOrderModal';
-import AddToOrderModal from './AddToOrderModal';
+import QuickOrderModal from './QuickOrderModalV2';
+import AddToOrderModalV2 from './AddToOrderModalV2';
 import ExpandedDomainDetails from './ExpandedDomainDetails';
+import ExpandedDomainDetailsImproved from './ExpandedDomainDetailsImproved';
+import VettingContext from './VettingContext';
+
+interface TargetPage {
+  id: string;
+  url: string;
+  keywords: string | null;
+  description: string | null;
+}
 
 interface Domain {
   // Basic domain info
@@ -47,12 +56,7 @@ interface Domain {
   targetMatchedAt: string | null;
   
   // Vetting context
-  targetPages?: Array<{
-    id: string;
-    url: string;
-    keywords: string | null;
-    description: string | null;
-  }>;
+  targetPages?: TargetPage[];
   
   // Data quality indicators
   hasDataForSeoResults: boolean | null;
@@ -128,6 +132,7 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState<Set<string>>(new Set());
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [expandedSections, setExpandedSections] = useState<Map<string, string>>(new Map());
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [showAddToOrderModal, setShowAddToOrderModal] = useState(false);
   
@@ -183,6 +188,37 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
   }, [searchParams.toString()]); // Use toString() to get a stable dependency
 
   const handleUserAction = async (domainId: string, action: 'bookmark' | 'unbookmark' | 'hide' | 'unhide') => {
+    // Optimistic update - update UI immediately
+    setData(prevData => ({
+      ...prevData,
+      domains: prevData.domains.map(domain => {
+        if (domain.id === domainId) {
+          if (action === 'bookmark' || action === 'unbookmark') {
+            return { ...domain, userBookmarked: action === 'bookmark' };
+          } else if (action === 'hide' || action === 'unhide') {
+            return { ...domain, userHidden: action === 'hide' };
+          }
+        }
+        return domain;
+      }).filter(domain => {
+        // If hiding, remove from view immediately
+        if (domain.id === domainId && action === 'hide') {
+          return false;
+        }
+        return true;
+      }),
+      stats: prevData.stats ? {
+        ...prevData.stats,
+        // Update stats if hiding/unhiding
+        hidden: action === 'hide' ? prevData.stats.hidden + 1 : 
+                action === 'unhide' ? prevData.stats.hidden - 1 : 
+                prevData.stats.hidden,
+        bookmarked: action === 'bookmark' ? prevData.stats.bookmarked + 1 :
+                    action === 'unbookmark' ? prevData.stats.bookmarked - 1 :
+                    prevData.stats.bookmarked,
+      } : prevData.stats
+    }));
+    
     setActionLoading(prev => new Set([...prev, domainId]));
     
     try {
@@ -194,15 +230,19 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
         body: JSON.stringify({ action }),
       });
 
-      if (response.ok) {
-        const result = await response.json();
-        
-        // Update local data
-        setData(prevData => ({
-          ...prevData,
-          domains: prevData.domains.map(domain => 
-            domain.id === domainId 
-              ? {
+      if (!response.ok) {
+        // Revert optimistic update on error
+        throw new Error('Failed to update');
+      }
+
+      const result = await response.json();
+      
+      // Server confirmed - update with server data if needed
+      setData(prevData => ({
+        ...prevData,
+        domains: prevData.domains.map(domain => 
+          domain.id === domainId && result.domain
+            ? {
                   ...domain,
                   userBookmarked: result.domain.userBookmarked,
                   userHidden: result.domain.userHidden,
@@ -212,34 +252,28 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
               : domain
           ),
         }));
-
-        // Update stats
-        if (action === 'bookmark' || action === 'unbookmark') {
-          setData(prevData => ({
-            ...prevData,
-            stats: {
-              ...prevData.stats,
-              bookmarked: action === 'bookmark' 
-                ? prevData.stats.bookmarked + 1
-                : Math.max(0, prevData.stats.bookmarked - 1),
-            },
-          }));
-        }
-        
-        if (action === 'hide' || action === 'unhide') {
-          setData(prevData => ({
-            ...prevData,
-            stats: {
-              ...prevData.stats,
-              hidden: action === 'hide' 
-                ? prevData.stats.hidden + 1
-                : Math.max(0, prevData.stats.hidden - 1),
-            },
-          }));
-        }
-      }
     } catch (error) {
       console.error('Error performing action:', error);
+      
+      // Revert the optimistic update on error
+      const response = await fetch(`/api/vetted-sites/${domainId}`, {
+        method: 'GET',
+      });
+      
+      if (response.ok) {
+        const { domain: revertedDomain } = await response.json();
+        setData(prevData => ({
+          ...prevData,
+          domains: prevData.domains.map(domain => 
+            domain.id === domainId ? revertedDomain : domain
+          ),
+          // Recalculate stats based on actual data
+          stats: prevData.stats
+        }));
+      }
+      
+      // Show error message to user
+      alert('Failed to update. Please try again.');
     } finally {
       setActionLoading(prev => {
         const newSet = new Set(prev);
@@ -261,18 +295,19 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
 
   const getQualificationBadge = (status: string) => {
     const statusConfig = {
-      high_quality: { label: 'High Quality', className: 'bg-green-100 text-green-800' },
-      good_quality: { label: 'Qualified', className: 'bg-blue-100 text-blue-800' },
-      marginal_quality: { label: 'Marginal', className: 'bg-yellow-100 text-yellow-800' },
-      disqualified: { label: 'Disqualified', className: 'bg-red-100 text-red-800' },
-      pending: { label: 'Pending', className: 'bg-gray-100 text-gray-800' },
+      high_quality: { label: 'High Quality', className: 'text-green-700', dotClass: 'bg-green-500' },
+      good_quality: { label: 'Qualified', className: 'text-blue-700', dotClass: 'bg-blue-500' },
+      marginal_quality: { label: 'Marginal', className: 'text-yellow-700', dotClass: 'bg-yellow-500' },
+      disqualified: { label: 'Disqualified', className: 'text-red-700', dotClass: 'bg-red-500' },
+      pending: { label: 'Pending', className: 'text-gray-700', dotClass: 'bg-gray-500' },
     };
 
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
     return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.className}`}>
+      <div className={`inline-flex items-center gap-1.5 text-xs font-medium ${config.className}`}>
+        <span className={`w-2 h-2 rounded-full ${config.dotClass}`}></span>
         {config.label}
-      </span>
+      </div>
     );
   };
 
@@ -333,12 +368,26 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
     updateURL({ page: page.toString() });
   };
 
-  const toggleRowExpansion = (domainId: string) => {
+  const toggleRowExpansion = (domainId: string, section?: string) => {
     const newExpanded = new Set(expandedRows);
     if (newExpanded.has(domainId)) {
       newExpanded.delete(domainId);
+      // Clear any section tracking when collapsing
+      setExpandedSections(prev => {
+        const next = new Map(prev);
+        next.delete(domainId);
+        return next;
+      });
     } else {
       newExpanded.add(domainId);
+      // If a specific section is requested, track it
+      if (section) {
+        setExpandedSections(prev => {
+          const next = new Map(prev);
+          next.set(domainId, section);
+          return next;
+        });
+      }
     }
     setExpandedRows(newExpanded);
   };
@@ -506,17 +555,14 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
                 Domain
               </th>
               {userType === 'internal' && (
-                <th scope="col" className="px-3 xl:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-3 xl:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32 xl:w-auto">
                   Client
                 </th>
               )}
-              <th scope="col" className="px-3 xl:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40 xl:w-auto">
-                Qualification Score
+              <th scope="col" className="px-3 xl:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48 xl:w-auto">
+                Qualification & Evidence
               </th>
-              <th scope="col" className="px-3 xl:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32 xl:w-auto">
-                Evidence
-              </th>
-              <th scope="col" className="px-3 xl:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-36 xl:w-auto">
+              <th scope="col" className="px-3 xl:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48 xl:w-auto">
                 Target Match
               </th>
               <th scope="col" className="px-3 xl:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24 xl:w-auto">
@@ -542,7 +588,11 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
                     type="checkbox"
                     className="h-4 w-4 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 border-gray-300 rounded transition-all"
                     checked={isSelected(domain.id)}
-                    onChange={() => toggleDomain(domain)}
+                    onChange={() => {
+                      const result = toggleDomain(domain, (error) => {
+                        alert(error); // Simple error display for now
+                      });
+                    }}
                     disabled={domain.activeLineItemsCount > 0}
                   />
                 </td>
@@ -569,9 +619,19 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
                     )}
                     <div>
                       <div className="text-sm font-medium text-gray-900">{domain.domain}</div>
+                      {(domain.domainRating || domain.traffic) && (
+                        <div className="text-xs text-gray-500 mt-1">
+                          DR {domain.domainRating || 'N/A'} • {formatTraffic(domain.traffic)}
+                        </div>
+                      )}
                       {domain.suggestedTargetUrl && (
                         <div className="text-xs text-gray-500 mt-1">
-                          Target: {new URL(domain.suggestedTargetUrl).pathname}
+                          AI Target: {new URL(domain.suggestedTargetUrl).pathname}
+                        </div>
+                      )}
+                      {domain.targetPages && domain.targetPages.length > 0 && (
+                        <div className="mt-1">
+                          <VettingContext targetPages={domain.targetPages} />
                         </div>
                       )}
                     </div>
@@ -580,67 +640,124 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
 
                 {userType === 'internal' && (
                   <td className="px-3 xl:px-4 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{domain.clientName}</div>
+                    <div className="text-sm text-gray-900 truncate" title={domain.clientName}>
+                      {domain.clientName}
+                    </div>
                     {domain.projectName && (
-                      <div className="text-xs text-gray-500">{domain.projectName}</div>
+                      <div className="text-xs text-gray-500 truncate" title={domain.projectName}>
+                        {domain.projectName}
+                      </div>
                     )}
                   </td>
                 )}
 
-                {/* Qualification Score Column */}
+                {/* Qualification & Evidence Column */}
                 <td className="px-3 xl:px-4 py-4">
-                  <div className="flex items-center space-x-2">
-                    {getQualificationBadge(domain.qualificationStatus)}
-                    <div className="text-xs text-gray-500">
-                      DR {domain.domainRating || 'N/A'}
+                  <div className="space-y-1.5">
+                    {/* Qualification badge */}
+                    <div className="mb-2">
+                      {getQualificationBadge(domain.qualificationStatus)}
                     </div>
-                  </div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    {formatTraffic(domain.traffic)} traffic
-                  </div>
-                  {domain.overlapStatus && (
-                    <div className="text-xs text-gray-600 mt-1 capitalize">
-                      {domain.overlapStatus} • {domain.authorityDirect || 'Unknown'} Authority
-                    </div>
-                  )}
-                </td>
-
-                {/* Evidence Column */}
-                <td className="px-3 xl:px-4 py-4">
-                  {domain.evidence ? (
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">
-                        {domain.evidence.directCount + domain.evidence.relatedCount} keywords
+                    
+                    {/* Evidence data */}
+                    {domain.evidence ? (
+                      <div className="text-xs text-gray-600 space-y-0.5">
+                        {/* Your exact keywords */}
+                        {domain.evidence.directCount > 0 && (
+                          <div>
+                            Ranks for {domain.evidence.directCount} of your keywords
+                            {domain.evidence.directMedianPosition && (
+                              <span> avg #{domain.evidence.directMedianPosition.toFixed(0)}</span>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Related industry keywords */}
+                        {domain.evidence.relatedCount > 0 && (
+                          <div>
+                            Ranks for {domain.evidence.relatedCount} industry keywords
+                            {domain.evidence.relatedMedianPosition && (
+                              <span> avg #{domain.evidence.relatedMedianPosition.toFixed(0)}</span>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Show message if no evidence */}
+                        {domain.evidence.directCount === 0 && domain.evidence.relatedCount === 0 && (
+                          <div>No keyword overlap found</div>
+                        )}
                       </div>
-                      <div className="text-xs text-gray-500">
-                        {domain.evidence.directCount} direct • {domain.evidence.relatedCount} related
-                      </div>
-                      {domain.evidence.directMedianPosition && (
-                        <div className="text-xs text-gray-500">
-                          Pos: #{domain.evidence.directMedianPosition}
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <span className="text-sm text-gray-400">No evidence</span>
-                  )}
+                    ) : (
+                      <div className="text-xs text-gray-400">No analysis available</div>
+                    )}
+                  </div>
                 </td>
 
                 {/* Target Match Column */}
                 <td className="px-3 xl:px-4 py-4">
-                  {domain.suggestedTargetUrl ? (
-                    <div>
-                      <div className="text-sm text-gray-900 truncate max-w-32" title={domain.suggestedTargetUrl}>
-                        {domain.suggestedTargetUrl.split('/').pop() || 'Target Page'}
-                      </div>
-                      {domain.targetMatchedAt && (
-                        <div className="text-xs text-green-600">
-                          ✓ AI Matched
-                        </div>
+                  {domain.targetMatchData?.target_analysis && domain.targetMatchData.target_analysis.length > 0 ? (
+                    <div className="space-y-1.5">
+                      {/* AI Suggested Target - Simple and Clean */}
+                      {domain.suggestedTargetUrl && (
+                        (() => {
+                          const topMatch = domain.targetMatchData.target_analysis.find((a: any) => 
+                            a.target_url === domain.suggestedTargetUrl
+                          );
+                          const directCount = topMatch?.evidence?.direct_count || 0;
+                          const relatedCount = topMatch?.evidence?.related_count || 0;
+                          const quality = topMatch?.match_quality || 'unknown';
+                          
+                          // Simple quality indicator
+                          const qualityColors = {
+                            'excellent': 'text-green-600',
+                            'good': 'text-blue-600',
+                            'fair': 'text-yellow-600',
+                            'poor': 'text-gray-400'
+                          } as const;
+                          const qualityColor = qualityColors[quality as keyof typeof qualityColors] || 'text-gray-400';
+                          
+                          return (
+                            <div>
+                              <div className="text-sm text-gray-900 truncate" title={domain.suggestedTargetUrl}>
+                                {new URL(domain.suggestedTargetUrl).pathname || '/'}
+                              </div>
+                              <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
+                                <span className={qualityColor}>● {quality}</span>
+                                {(directCount > 0 || relatedCount > 0) && (
+                                  <span>{directCount + relatedCount} matches</span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })()
+                      )}
+                      
+                      {/* Link to see all targets */}
+                      {domain.targetMatchData.target_analysis.length > 1 && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleRowExpansion(domain.id, 'targetMatch');
+                          }}
+                          className="text-xs text-blue-600 hover:text-blue-800"
+                        >
+                          +{domain.targetMatchData.target_analysis.length - 1} more targets
+                        </button>
                       )}
                     </div>
                   ) : (
-                    <span className="text-sm text-gray-400">No target</span>
+                    <div className="space-y-1">
+                      {domain.suggestedTargetUrl ? (
+                        <div className="text-sm text-gray-900 flex items-center gap-1">
+                          🎯 
+                          <span className="truncate" title={domain.suggestedTargetUrl}>
+                            {new URL(domain.suggestedTargetUrl).pathname || '/'}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-gray-400">No targets</span>
+                      )}
+                    </div>
                   )}
                 </td>
 
@@ -651,9 +768,8 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
                       const wholesalePrice = domain.guestPostCost ? parseFloat(domain.guestPostCost) : null;
                       if (!wholesalePrice) return <span className="text-gray-400">N/A</span>;
                       
-                      // For external users, show retail price (wholesale + $79)
-                      // For internal users, show wholesale price
-                      const displayPrice = userType === 'internal' ? wholesalePrice : wholesalePrice + 79;
+                      // Unified pricing: guest post cost + $79 for everyone
+                      const displayPrice = wholesalePrice + 79;
                       return `$${displayPrice.toFixed(0)}`;
                     })()}
                   </div>
@@ -662,13 +778,15 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
                 {/* Availability Column */}
                 <td className="px-3 xl:px-4 py-4">
                   {domain.activeLineItemsCount > 0 ? (
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                    <div className="inline-flex items-center gap-1.5 text-xs font-medium text-yellow-700">
+                      <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
                       In Use ({domain.activeLineItemsCount})
-                    </span>
+                    </div>
                   ) : (
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      ✓ Available
-                    </span>
+                    <div className="inline-flex items-center gap-1.5 text-xs font-medium text-green-700">
+                      <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                      Available
+                    </div>
                   )}
                 </td>
 
@@ -680,7 +798,11 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
                         domain.userBookmarked ? 'unbookmark' : 'bookmark'
                       )}
                       disabled={actionLoading.has(domain.id)}
-                      className="text-gray-400 hover:text-yellow-500 disabled:opacity-50"
+                      className={`transition-all duration-200 transform hover:scale-110 ${
+                        domain.userBookmarked 
+                          ? 'text-yellow-500' 
+                          : 'text-gray-400 hover:text-yellow-500'
+                      } disabled:opacity-50`}
                       title={domain.userBookmarked ? 'Remove bookmark' : 'Bookmark'}
                     >
                       {domain.userBookmarked ? (
@@ -696,10 +818,18 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
                         domain.userHidden ? 'unhide' : 'hide'
                       )}
                       disabled={actionLoading.has(domain.id)}
-                      className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                      className={`transition-all duration-200 transform hover:scale-110 ${
+                        domain.userHidden 
+                          ? 'text-red-400 hover:text-gray-600' 
+                          : 'text-gray-400 hover:text-red-400'
+                      } disabled:opacity-50`}
                       title={domain.userHidden ? 'Show' : 'Hide'}
                     >
-                      <EyeSlashIcon className="h-4 w-4" />
+                      {domain.userHidden ? (
+                        <EyeSlashIcon className="h-4 w-4" />
+                      ) : (
+                        <EyeIcon className="h-4 w-4" />
+                      )}
                     </button>
                   </div>
                 </td>
@@ -708,8 +838,11 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
               {/* Expandable Row Details */}
               {expandedRows.has(domain.id) && (
                 <tr>
-                  <td colSpan={userType === 'internal' ? 8 : 7} className="p-0">
-                    <ExpandedDomainDetails domain={domain} />
+                  <td colSpan={userType === 'internal' ? 7 : 6} className="p-0">
+                    <ExpandedDomainDetailsImproved 
+                      domain={domain} 
+                      initialExpandedSection={expandedSections.get(domain.id)}
+                    />
                   </td>
                 </tr>
               )}
@@ -803,11 +936,11 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
       />
 
       {/* Add to Order Modal */}
-      <AddToOrderModal
+      <AddToOrderModalV2
         isOpen={showAddToOrderModal}
         onClose={() => setShowAddToOrderModal(false)}
         selectedDomains={getSelectedDomains()}
-        onOrderSelected={async (orderId) => {
+        onOrderSelected={async (orderId, domainTargets) => {
           try {
             const response = await fetch(`/api/orders/${orderId}/add-domains`, {
               method: 'POST',
@@ -816,6 +949,7 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
               },
               body: JSON.stringify({
                 domainIds: getSelectedDomains().map(d => d.id),
+                domainTargets: domainTargets || [],
               }),
             });
 

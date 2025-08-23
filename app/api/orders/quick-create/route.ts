@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { db } from '@/lib/db/connection';
 import { orders } from '@/lib/db/orderSchema';
-import { orderLineItems, lineItemChanges } from '@/lib/db/orderLineItemSchema';
+import { orderLineItems, lineItemChanges, type NewOrderLineItem } from '@/lib/db/orderLineItemSchema';
 import { bulkAnalysisDomains } from '@/lib/db/bulkAnalysisSchema';
 import { accounts, clients } from '@/lib/db/schema';
 import { eq, inArray } from 'drizzle-orm';
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await request.json();
-    const { domainIds, accountId: requestAccountId } = data;
+    const { domainIds, accountId: requestAccountId, domainTargets } = data;
 
     // Validate domain IDs
     if (!domainIds || !Array.isArray(domainIds) || domainIds.length === 0) {
@@ -83,8 +83,8 @@ export async function POST(request: NextRequest) {
       // For accounts, we'll need to determine the client differently
       // since accounts table doesn't have clientId directly
       if (account) {
-        // Get the first client ID from the domains or create a default
-        clientId = clientIds[0] || '';
+        // Get the first client ID from the domains 
+        clientId = clientIds[0];
       }
       
       if (!clientId) {
@@ -170,44 +170,80 @@ export async function POST(request: NextRequest) {
     const batchId = uuidv4();
     let displayOrder = 0;
 
+    // Create a map of domain targets for easy lookup
+    const targetMap = new Map<string, { targetUrl: string; anchorText: string }>();
+    if (domainTargets && Array.isArray(domainTargets)) {
+      domainTargets.forEach((target: any) => {
+        targetMap.set(target.domainId, {
+          targetUrl: target.targetUrl || '',
+          anchorText: target.anchorText || ''
+        });
+      });
+    }
+
     for (const domain of selectedDomains) {
       const pricing = domainPricing.get(domain.id)!;
       const lineItemId = uuidv4();
+      
+      // Get target configuration for this domain
+      const targetConfig = targetMap.get(domain.id);
+      const targetUrl = targetConfig?.targetUrl || domain.suggestedTargetUrl || '';
+      const anchorText = targetConfig?.anchorText || '';
 
       // Create line item
-      const [createdLineItem] = await db.insert(orderLineItems).values({
+      const lineItemData: NewOrderLineItem = {
         orderId,
-        clientId,
+        clientId: clientId as string,
         addedBy: session.userId,
         status: 'draft' as const,
         estimatedPrice: pricing.retail,
         wholesalePrice: pricing.wholesale,
         displayOrder,
-        assignedDomainId: domain.id,
-        assignedDomain: domain.domain,
-        targetPageUrl: domain.suggestedTargetUrl,
+        assignedDomainId: domain.id as string,
+        assignedDomain: domain.domain as string,
+        targetPageUrl: targetUrl as string,
+        anchorText: anchorText as string,
         metadata: {
-          bulkAnalysisProjectId: domain.projectId,
-          targetMatchData: domain.targetMatchData,
+          bulkAnalysisProjectId: domain.projectId || undefined,
           internalNotes: `Quick order from vetted sites`,
         },
-      }).returning();
+      };
+
+      const [createdLineItem] = await db.insert(orderLineItems).values(lineItemData).returning();
 
       // Create change log entry
-      await db.insert(lineItemChanges).values({
-        lineItemId: createdLineItem.id,
-        orderId,
-        changeType: 'created',
-        newValue: {
-          domain: domain.domain,
-          estimatedPrice: pricing.retail,
-          wholesalePrice: pricing.wholesale,
-          source: 'vetted_sites_quick_order',
-        },
-        changedBy: session.userId,
-        changeReason: 'Line item created from vetted sites quick order',
-        batchId,
-      });
+      try {
+        // For account users, use system user ID for change log
+        // For internal users, use their actual user ID
+        let changeLogUserId = session.userId;
+        
+        if (session.userType === 'account') {
+          // Use system user for account actions
+          changeLogUserId = '00000000-0000-0000-0000-000000000000'; // System User ID
+        }
+
+        await db.insert(lineItemChanges).values({
+          lineItemId: createdLineItem.id,
+          orderId,
+          changeType: 'created',
+          newValue: {
+            domain: domain.domain,
+            estimatedPrice: pricing.retail,
+            wholesalePrice: pricing.wholesale,
+            targetPageUrl: targetUrl,
+            anchorText: anchorText,
+            source: 'vetted_sites_quick_order',
+            actualUser: session.userType === 'account' ? session.userId : undefined,
+            actualUserEmail: session.userType === 'account' ? session.email : undefined,
+          },
+          changedBy: changeLogUserId,
+          changeReason: `Line item created from vetted sites quick order with pre-selected targets${session.userType === 'account' ? ` by ${session.email}` : ''}`,
+          batchId,
+        });
+      } catch (changeLogError) {
+        console.error('Failed to create change log entry:', changeLogError);
+        // Continue without failing the main operation
+      }
 
       displayOrder++;
     }
