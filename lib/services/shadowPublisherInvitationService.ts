@@ -1,14 +1,21 @@
 import { db } from '@/lib/db/connection';
 import { publishers } from '@/lib/db/accountSchema';
 import { emailFollowUps } from '@/lib/db/emailProcessingSchema';
-import { eq, and, isNull, or, lte } from 'drizzle-orm';
+import { eq, and, isNull, or, lte, sql } from 'drizzle-orm';
 import { Resend } from 'resend';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 import { shadowPublisherConfig } from '@/lib/config/shadowPublisherConfig';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 export class ShadowPublisherInvitationService {
+  private resend: Resend | null = null;
+  
+  private getResend(): Resend {
+    if (!this.resend) {
+      const apiKey = process.env.RESEND_API_KEY || 're_test_key_here';
+      this.resend = new Resend(apiKey);
+    }
+    return this.resend;
+  }
   
   /**
    * Send invitation email to a shadow publisher
@@ -68,7 +75,7 @@ export class ShadowPublisherInvitationService {
         publisher.source === 'manyreach'
       );
       
-      const result = await resend.emails.send({
+      const result = await this.getResend().emails.send({
         from: process.env.EMAIL_FROM || 'info@linkio.com',
         to: publisher.email,
         subject: 'Complete Your Publisher Account Setup',
@@ -100,39 +107,91 @@ export class ShadowPublisherInvitationService {
   /**
    * Send invitations to all eligible shadow publishers
    */
-  async sendBulkInvitations(): Promise<{ sent: number; failed: number }> {
-    const results = { sent: 0, failed: 0 };
+  async sendBulkInvitations(
+    publisherIds?: string[], 
+    source: string = 'migration',
+    batchSize: number = 50  // Default batch size
+  ): Promise<{ sent: number; failed: number; errors?: string[]; totalEligible?: number }> {
+    const results = { sent: 0, failed: 0, errors: [] as string[], totalEligible: 0 };
     
     try {
-      // Find shadow publishers who haven't been invited or need re-invitation
-      const eligiblePublishers = await db
-        .select()
-        .from(publishers)
-        .where(
-          and(
-            eq(publishers.accountStatus, 'shadow'),
-            or(
-              isNull(publishers.invitationSentAt),
-              lte(publishers.invitationSentAt, new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)) // Older than 7 days
+      let publishersToInvite;
+      
+      if (publisherIds && publisherIds.length > 0) {
+        // Use provided publisher IDs (limit to batchSize)
+        const limitedIds = publisherIds.slice(0, batchSize);
+        publishersToInvite = await db
+          .select()
+          .from(publishers)
+          .where(
+            and(
+              eq(publishers.accountStatus, 'shadow'),
+              or(
+                ...limitedIds.map(id => eq(publishers.id, id))
+              )
+            )
+          );
+        results.totalEligible = publisherIds.length;
+      } else {
+        // Find shadow publishers who haven't been invited or need re-invitation
+        // First count total eligible
+        const [countResult] = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(publishers)
+          .where(
+            and(
+              eq(publishers.accountStatus, 'shadow'),
+              or(
+                isNull(publishers.invitationSentAt),
+                lte(publishers.invitationSentAt, new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)) // Older than 7 days
+              )
+            )
+          );
+        results.totalEligible = Number(countResult?.count || 0);
+        
+        // Then get batch
+        publishersToInvite = await db
+          .select()
+          .from(publishers)
+          .where(
+            and(
+              eq(publishers.accountStatus, 'shadow'),
+              or(
+                isNull(publishers.invitationSentAt),
+                lte(publishers.invitationSentAt, new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)) // Older than 7 days
+              )
             )
           )
-        )
-        .limit(50); // Process in batches
+          .limit(batchSize);
+      }
       
-      for (const publisher of eligiblePublishers) {
-        const success = await this.sendInvitation(publisher.id);
-        if (success) {
-          results.sent++;
-        } else {
+      console.log(`📧 Processing ${publishersToInvite.length} publishers for invitations...`);
+      
+      for (const publisher of publishersToInvite) {
+        try {
+          const success = await this.sendInvitation(publisher.id);
+          if (success) {
+            results.sent++;
+            console.log(`✅ Sent invitation to ${publisher.email}`);
+          } else {
+            results.failed++;
+            results.errors?.push(`Failed to send to ${publisher.email}`);
+          }
+        } catch (error) {
           results.failed++;
+          const errorMsg = `Error sending to ${publisher.email}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+          results.errors?.push(errorMsg);
+          console.error(errorMsg);
         }
         
-        // Add delay to avoid rate limiting
-        await this.delay(1000);
+        // Small delay to avoid overwhelming the API (100ms instead of 1000ms)
+        // This allows ~10 emails per second vs 1 per second
+        await this.delay(100);
       }
       
     } catch (error) {
       console.error('Failed to send bulk invitations:', error);
+      results.errors?.push(`Bulk send error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
     
     return results;
@@ -166,7 +225,7 @@ export class ShadowPublisherInvitationService {
         claimUrl
       );
       
-      const result = await resend.emails.send({
+      const result = await this.getResend().emails.send({
         from: process.env.EMAIL_FROM || 'info@linkio.com',
         to: publisher.email,
         subject: 'Reminder: Complete Your Publisher Account Setup',

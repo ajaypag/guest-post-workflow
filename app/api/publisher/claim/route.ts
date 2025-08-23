@@ -4,9 +4,10 @@ import { publishers } from '@/lib/db/accountSchema';
 import { publisherClaimHistory } from '@/lib/db/emailProcessingSchema';
 import { shadowPublisherConfig } from '@/lib/config/shadowPublisherConfig';
 import { eq, and, gte } from 'drizzle-orm';
-import bcrypt from 'bcryptjs';
-import crypto from 'crypto';
+import * as bcrypt from 'bcryptjs';
+import * as crypto from 'crypto';
 import { z } from 'zod';
+import { Resend } from 'resend';
 
 // Validation schemas
 const initiateClaimSchema = z.object({
@@ -203,8 +204,13 @@ export async function POST(request: NextRequest) {
       // Log successful claim
       await logClaimAttempt(publisher.id, 'complete_claim', true, null, ipAddress, userAgent);
       
-      // TODO: Send welcome email
-      // await sendWelcomeEmail(publisher.email, contactName);
+      // Send welcome email
+      try {
+        await sendWelcomeEmail(publisher.email, contactName);
+      } catch (emailError) {
+        console.error('Failed to send welcome email:', emailError);
+        // Don't fail the claim if email fails
+      }
       
       return NextResponse.json({
         success: true,
@@ -271,4 +277,85 @@ async function logClaimAttempt(
   } catch (error) {
     console.error('Failed to log claim attempt:', error);
   }
+}
+
+// Helper function to send welcome email
+async function sendWelcomeEmail(email: string, contactName: string) {
+  const resend = new Resend(process.env.RESEND_API_KEY || 're_test_key_here');
+  
+  const dashboardUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/publisher/dashboard`;
+  
+  const emailHtml = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Welcome to Our Publisher Network!</title>
+      </head>
+      <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+          <h1 style="color: white; margin: 0; font-size: 28px;">Welcome Aboard! 🎉</h1>
+        </div>
+        
+        <div style="background: white; padding: 30px; border: 1px solid #e5e7eb; border-radius: 0 0 10px 10px; margin-top: -1px;">
+          <p style="font-size: 16px; margin-top: 0;">Hi ${contactName},</p>
+          
+          <p style="font-size: 16px;">
+            <strong>Congratulations!</strong> Your publisher account has been successfully activated.
+          </p>
+          
+          <p>You now have full access to:</p>
+          <ul style="color: #4b5563; margin: 15px 0; padding-left: 20px;">
+            <li>Manage your website listings and pricing</li>
+            <li>Receive and manage guest post orders</li>
+            <li>Track your earnings and performance</li>
+            <li>Update your offerings and availability</li>
+            <li>Access detailed analytics and reports</li>
+          </ul>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${dashboardUrl}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 14px 30px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 16px;">
+              Go to Your Dashboard
+            </a>
+          </div>
+          
+          <div style="background: #f9fafb; padding: 20px; border-radius: 6px; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #111827; font-size: 16px;">🚀 Quick Start Guide</h3>
+            <ol style="color: #4b5563; margin: 10px 0; padding-left: 20px;">
+              <li><strong>Complete Your Profile:</strong> Add your payment details and preferences</li>
+              <li><strong>Review Your Websites:</strong> Verify your domain listings are correct</li>
+              <li><strong>Set Your Pricing:</strong> Update your guest post rates and requirements</li>
+              <li><strong>Configure Availability:</strong> Set your turnaround times and capacity</li>
+            </ol>
+          </div>
+          
+          <div style="background: #fef3c7; padding: 15px; border-left: 4px solid #f59e0b; margin: 20px 0;">
+            <p style="margin: 0; color: #92400e;">
+              <strong>💡 Pro Tip:</strong> Publishers with complete profiles receive 3x more orders. 
+              Take a few minutes to fill out all your information!
+            </p>
+          </div>
+          
+          <p style="color: #6b7280; font-size: 14px;">
+            If you have any questions or need assistance, our support team is here to help. 
+            Simply reply to this email or contact us through your dashboard.
+          </p>
+          
+          <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+          
+          <p style="color: #6b7280; font-size: 12px; text-align: center; margin: 0;">
+            Guest Post Workflow System<br>
+            © ${new Date().getFullYear()} All rights reserved.
+          </p>
+        </div>
+      </body>
+    </html>
+  `;
+  
+  await resend.emails.send({
+    from: process.env.EMAIL_FROM || 'info@linkio.com',
+    to: email,
+    subject: 'Welcome to Our Publisher Network! 🎉',
+    html: emailHtml,
+  });
 }

@@ -412,9 +412,9 @@ export class ShadowPublisherServiceV2 {
           attributes: offering.attributes,
           isActive: offering.isActive,
           // ✅ NEW: Source email tracking for audit trail
-          sourceEmailId: emailLogId,
-          sourceEmailContent: this.extractRelevantEmailContent(emailContent, offering),
-          pricingExtractedFrom: this.extractPricingQuote(emailContent, offering),
+          // sourceEmailId: emailLogId, // Field doesn't exist
+          // sourceEmailContent: this.extractRelevantEmailContent(emailContent, offering), // Field doesn't exist
+          // pricingExtractedFrom: this.extractPricingQuote(emailContent, offering), // Field doesn't exist
           createdAt: new Date(),
           updatedAt: new Date(),
         }).returning();
@@ -481,9 +481,9 @@ export class ShadowPublisherServiceV2 {
             languages: offering.languages,
             attributes: Object.assign({}, existing[0].attributes || {}, offering.attributes || {}),
             // ✅ NEW: Update source email tracking for audit trail
-            sourceEmailId: emailLogId,
-            sourceEmailContent: this.extractRelevantEmailContent(emailContent, offering),
-            pricingExtractedFrom: this.extractPricingQuote(emailContent, offering),
+            // sourceEmailId: emailLogId, // Field doesn't exist
+            // sourceEmailContent: this.extractRelevantEmailContent(emailContent, offering), // Field doesn't exist
+            // pricingExtractedFrom: this.extractPricingQuote(emailContent, offering), // Field doesn't exist
             updatedAt: new Date(),
           })
           .where(eq(publisherOfferings.id, existing[0].id));
@@ -509,9 +509,9 @@ export class ShadowPublisherServiceV2 {
           attributes: offering.attributes,
           isActive: true, // Activate for existing publishers
           // ✅ NEW: Source email tracking for audit trail
-          sourceEmailId: emailLogId,
-          sourceEmailContent: this.extractRelevantEmailContent(emailContent, offering),
-          pricingExtractedFrom: this.extractPricingQuote(emailContent, offering),
+          // sourceEmailId: emailLogId, // Field doesn't exist
+          // sourceEmailContent: this.extractRelevantEmailContent(emailContent, offering), // Field doesn't exist
+          // pricingExtractedFrom: this.extractPricingQuote(emailContent, offering), // Field doesn't exist
           createdAt: new Date(),
           updatedAt: new Date(),
         }).returning();

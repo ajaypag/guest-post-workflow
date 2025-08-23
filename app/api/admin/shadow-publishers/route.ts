@@ -11,8 +11,20 @@ export async function GET(request: NextRequest) {
   try {
     // Check admin authentication
     const session = await AuthServiceServer.getSession(request);
-    if (!session || session.userType !== 'internal') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    console.log('🔍 Shadow Publishers API - Session:', session ? {
+      email: session.email,
+      role: session.role,
+      userType: session.userType
+    } : 'No session');
+    
+    if (!session) {
+      console.log('🚫 Admin API access denied - No token: /api/admin/shadow-publishers');
+      return NextResponse.json({ error: 'Unauthorized - No authentication token provided' }, { status: 401 });
+    }
+    
+    if (session.userType !== 'internal' && session.role !== 'admin') {
+      console.log('🚫 Admin API access denied - Invalid role/userType:', session.role, session.userType);
+      return NextResponse.json({ error: 'Unauthorized - Admin access required' }, { status: 401 });
     }
 
     // Fetch shadow publishers with their relationships
