@@ -58,7 +58,7 @@ export async function GET(
       .leftJoin(orderLineItems, eq(orders.id, orderLineItems.orderId))
       .leftJoin(targetPages, eq(orderLineItems.targetPageId, targetPages.id))
       .leftJoin(clients, eq(orderLineItems.clientId, clients.id))
-      .where(sql`${orders.id} = ANY(${orderIds})`);
+      .where(sql`${orders.id} = ANY(ARRAY[${sql.raw(orderIds.map(id => `'${id}'`).join(','))}])`);
     
     // Group data by order and collect unique target pages
     const orderMap = new Map();
