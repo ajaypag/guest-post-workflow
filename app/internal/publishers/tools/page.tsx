@@ -100,6 +100,13 @@ export default function PublisherToolsPage() {
           href: '/admin/email-sending',
           icon: Mail,
           status: 'active'
+        },
+        {
+          name: 'Publisher Invitations',
+          description: 'Manage shadow publisher invitations to claim accounts',
+          href: '/internal/publishers/invitations',
+          icon: UserPlus,
+          status: 'active'
         }
       ]
     },
