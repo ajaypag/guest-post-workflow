@@ -104,9 +104,9 @@ Format your response as JSON with the following structure:
   ]
 }`;
 
-      // Use o3-deep-research model with responses API (matching outline service EXACTLY)
+      // Use o4-mini-deep-research model with responses API
       const response = await this.openai.responses.create({
-        model: 'o3-deep-research',
+        model: 'o4-mini-deep-research',
         input: researchPrompt,
         background: true, // Run in background like outline service
         store: true,
@@ -215,8 +215,8 @@ Format your response as JSON with the following structure:
       // Calculate metadata
       const metadata = {
         researchDuration: attempts * 30, // seconds
-        tokensUsed: 0, // o3-deep-research doesn't provide token usage
-        modelUsed: 'o3-deep-research',
+        tokensUsed: 0, // o4-mini-deep-research doesn't provide token usage
+        modelUsed: 'o4-mini-deep-research',
         completionReason: 'completed'
       };
 
@@ -283,7 +283,7 @@ Format your response as JSON with the following structure:
       const metadata = {
         researchDuration: 0, // Unknown for abandoned sessions
         tokensUsed: 0,
-        modelUsed: 'o3-deep-research',
+        modelUsed: 'o4-mini-deep-research',
         completionReason: 'recovered_abandoned'
       };
 

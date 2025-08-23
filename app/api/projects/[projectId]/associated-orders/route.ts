@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
-import { projectOrderAssociations } from '@/lib/db/projectOrderAssociationsSchema';
+import { bulkAnalysisProjects } from '@/lib/db/bulkAnalysisSchema';
 import { orders } from '@/lib/db/orderSchema';
-import { orderGroups } from '@/lib/db/orderGroupSchema';
-import { eq } from 'drizzle-orm';
+import { orderLineItems } from '@/lib/db/orderLineItemSchema';
+import { targetPages } from '@/lib/db/schema';
+import { clients } from '@/lib/db/schema';
+import { eq, and, like, sql } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
 
 export async function GET(
@@ -18,42 +20,87 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    // Fetch all order associations for this project
-    const associations = await db
+    // First fetch the project to get its tags
+    const project = await db
+      .select()
+      .from(bulkAnalysisProjects)
+      .where(eq(bulkAnalysisProjects.id, params.projectId))
+      .limit(1);
+    
+    if (!project[0]) {
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+    }
+    
+    // Extract order IDs from project tags (tags like "order:orderId")
+    const tags = (project[0].tags as string[]) || [];
+    const orderTags = tags.filter((tag: string) => tag.startsWith('order:'));
+    const orderIds = orderTags.map((tag: string) => tag.replace('order:', ''));
+    
+    if (orderIds.length === 0) {
+      return NextResponse.json({ orders: [], count: 0 });
+    }
+    
+    // Fetch orders with their line items and target pages
+    const ordersData = await db
       .select({
-        associationId: projectOrderAssociations.id,
-        orderId: projectOrderAssociations.orderId,
-        orderGroupId: projectOrderAssociations.orderGroupId,
-        associationType: projectOrderAssociations.associationType,
-        createdAt: projectOrderAssociations.createdAt,
-        orderType: orders.orderType,
+        orderId: orders.id,
         orderState: orders.state,
         orderStatus: orders.status,
         orderTotalRetail: orders.totalRetail,
         orderCreatedAt: orders.createdAt,
-        orderGroupLinkCount: orderGroups.linkCount,
-        clientId: orderGroups.clientId
+        lineItemId: orderLineItems.id,
+        clientId: orderLineItems.clientId,
+        targetPageId: orderLineItems.targetPageId,
+        targetPageUrl: targetPages.url,
+        clientName: clients.name
       })
-      .from(projectOrderAssociations)
-      .leftJoin(orders, eq(projectOrderAssociations.orderId, orders.id))
-      .leftJoin(orderGroups, eq(projectOrderAssociations.orderGroupId, orderGroups.id))
-      .where(eq(projectOrderAssociations.projectId, params.projectId));
+      .from(orders)
+      .leftJoin(orderLineItems, eq(orders.id, orderLineItems.orderId))
+      .leftJoin(targetPages, eq(orderLineItems.targetPageId, targetPages.id))
+      .leftJoin(clients, eq(orderLineItems.clientId, clients.id))
+      .where(sql`${orders.id} = ANY(${orderIds})`);
     
-    // Format the response with generated names based on order ID and date
-    const formattedOrders = associations.map(assoc => ({
-      orderId: assoc.orderId,
-      // Generate a name from order ID and date
-      orderName: `Order #${assoc.orderId.substring(0, 8)}`,
-      orderGroupId: assoc.orderGroupId,
-      // Generate group name from group ID and link count
-      orderGroupName: `Group ${assoc.orderGroupId.substring(0, 4)} (${assoc.orderGroupLinkCount || 0} links)`,
-      createdAt: assoc.createdAt || assoc.orderCreatedAt,
-      state: assoc.orderState,
-      status: assoc.orderStatus,
-      totalPrice: assoc.orderTotalRetail,
-      linkCount: assoc.orderGroupLinkCount,
-      associationType: assoc.associationType,
-      clientId: assoc.clientId
+    // Group data by order and collect unique target pages
+    const orderMap = new Map();
+    
+    ordersData.forEach(row => {
+      if (!orderMap.has(row.orderId)) {
+        orderMap.set(row.orderId, {
+          orderId: row.orderId,
+          orderName: `Order #${row.orderId.substring(0, 8)}`,
+          clientName: row.clientName,
+          createdAt: row.orderCreatedAt,
+          state: row.orderState,
+          status: row.orderStatus,
+          totalPrice: row.orderTotalRetail,
+          linkCount: 0,
+          targetPages: new Set(),
+          clientId: row.clientId
+        });
+      }
+      
+      const order = orderMap.get(row.orderId);
+      if (row.lineItemId) {
+        order.linkCount++;
+      }
+      if (row.targetPageUrl) {
+        order.targetPages.add(row.targetPageUrl);
+      }
+    });
+    
+    // Convert to array and format
+    const formattedOrders = Array.from(orderMap.values()).map(order => ({
+      orderId: order.orderId,
+      orderName: order.orderName,
+      orderGroupId: order.orderId, // For backward compatibility
+      orderGroupName: `${order.clientName || 'Unknown Client'} - ${order.linkCount} links`,
+      createdAt: order.createdAt,
+      state: order.state,
+      status: order.status,
+      totalPrice: order.totalPrice,
+      linkCount: order.linkCount,
+      targetPages: Array.from(order.targetPages),
+      clientId: order.clientId
     }));
     
     return NextResponse.json({ 
