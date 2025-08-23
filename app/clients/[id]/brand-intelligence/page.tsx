@@ -67,10 +67,10 @@ export default function BrandIntelligencePage() {
 
           {/* Page Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Brand Intelligence</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-3">Brand Intelligence Generator</h1>
             <p className="text-gray-600">
-              <strong>Critical for SEO Strategy:</strong> Gathers accurate brand information for article creation, 
-              then publishes this data so search engines and AI models learn what your business actually does.
+              Create a comprehensive brand brief that helps AI understand your business deeply. This becomes the foundation 
+              for all content creation and ensures consistent, accurate representation across all articles.
             </p>
           </div>
           

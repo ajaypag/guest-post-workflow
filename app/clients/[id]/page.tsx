@@ -16,7 +16,7 @@ import {
   Activity, ShoppingCart, Brain, Mail, Phone, MapPin
 } from 'lucide-react';
 import { KeywordPreferencesSelector } from '@/components/ui/KeywordPreferencesSelector';
-import { getClientKeywordPreferences, setClientKeywordPreferences, KeywordPreferences } from '@/types/keywordPreferences';
+import { getClientKeywordPreferences, setClientKeywordPreferences, KeywordPreferences, KEYWORD_DESCRIPTIONS } from '@/types/keywordPreferences';
 import { KeywordGenerationButton } from '@/components/ui/KeywordGenerationButton';
 import { KeywordDisplay } from '@/components/ui/KeywordDisplay';
 import { DescriptionGenerationButton } from '@/components/ui/DescriptionGenerationButton';
@@ -1336,14 +1336,34 @@ export default function ClientDetailPage() {
                     </>
                   ) : (
                     <div className="text-sm text-gray-600">
-                      {getClientKeywordPreferences(client) ? (
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                          <p className="font-medium mb-2">Current Preferences:</p>
-                          <p className="text-xs">{JSON.stringify(getClientKeywordPreferences(client), null, 2)}</p>
-                        </div>
-                      ) : (
-                        <p>No topic preferences set. Click Edit to configure.</p>
-                      )}
+                      {(() => {
+                        const prefs = getClientKeywordPreferences(client);
+                        if (!prefs || !prefs.primaryFocus) {
+                          return <p>No topic preferences set. Click Edit to configure.</p>;
+                        }
+                        
+                        // Get the human-readable description
+                        const focusInfo = KEYWORD_DESCRIPTIONS.primaryFocus[prefs.primaryFocus];
+                        
+                        return (
+                          <div className="bg-gray-50 p-4 rounded-lg">
+                            <p className="font-medium mb-2">Current Preference:</p>
+                            <div className="space-y-2">
+                              <div>
+                                <span className="font-medium text-purple-700">{focusInfo?.title || prefs.primaryFocus}</span>
+                                {focusInfo?.description && (
+                                  <p className="text-xs text-gray-600 mt-1">{focusInfo.description}</p>
+                                )}
+                              </div>
+                              {prefs.customInstructions && (
+                                <div className="pt-2 border-t border-gray-200">
+                                  <p className="text-xs"><span className="font-medium">Instructions:</span> {prefs.customInstructions}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   )}
                 </div>

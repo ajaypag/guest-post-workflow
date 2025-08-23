@@ -333,14 +333,54 @@ Format your response as JSON with the following structure:
         })
         .where(eq(clientBrandIntelligence.clientId, clientId));
 
+      // Extract metadata
+      const metadata = existing.metadata as any || {};
+      console.log('📋 Preparing brief with metadata:', {
+        hasEditedResearch: !!metadata.editedResearch,
+        hasClientAnswers: !!metadata.clientAnswers,
+        hasAdditionalInfo: !!metadata.additionalInfo,
+        answersCount: metadata.clientAnswers ? Object.keys(metadata.clientAnswers).length : 0,
+        usingEditedResearch: !!metadata.editedResearch
+      });
+
+      // Use edited research if available, otherwise use original
+      const researchToUse = metadata.editedResearch || 
+        (existing.researchOutput ? JSON.stringify(existing.researchOutput, null, 2) : '');
+      
+      // Build clean client input without redundant research
+      let cleanClientInput = '';
+      
+      // Add individual question answers if available
+      if (metadata.clientAnswers && existing.researchOutput) {
+        const researchOutput = existing.researchOutput as any;
+        if (researchOutput.gaps && Array.isArray(researchOutput.gaps)) {
+          cleanClientInput += `ANSWERS TO SPECIFIC QUESTIONS:\n\n`;
+          researchOutput.gaps.forEach((gap: any, index: number) => {
+            const answer = metadata.clientAnswers[index.toString()] || metadata.clientAnswers[index] || 'No answer provided';
+            cleanClientInput += `Q${index + 1} [${gap.importance?.toUpperCase() || 'MEDIUM'}]: ${gap.question}\n`;
+            cleanClientInput += `A: ${answer}\n\n`;
+          });
+        }
+      }
+      
+      // Add additional business information if available
+      if (metadata.additionalInfo) {
+        cleanClientInput += `ADDITIONAL BUSINESS INFORMATION:\n${metadata.additionalInfo}\n\n`;
+      }
+      
+      // Fall back to original client input if no structured data
+      if (!cleanClientInput && !metadata.clientAnswers) {
+        cleanClientInput = existing.clientInput || '';
+      }
+
       const briefPrompt = `
 You are tasked with creating a comprehensive brand brief based on deep research and client input.
 
-DEEP RESEARCH FINDINGS:
-${JSON.stringify(existing.researchOutput, null, 2)}
+RESEARCH ANALYSIS:
+${researchToUse}
 
 CLIENT INPUT:
-${existing.clientInput}
+${cleanClientInput}
 
 Your task is to synthesize this information into a concise brief about this company that can be used to feed our content creation process. The brief should include:
 
@@ -350,7 +390,6 @@ Your task is to synthesize this information into a concise brief about this comp
 4. Unique Value Propositions
 5. Notable Achievements or Case Studies
 6. Brand Voice and Messaging Guidelines
-7. Content Opportunities and Angles
 
 Create a concise, well-structured brief that is approximately 1000 words. Focus on the most important information that content writers need. Use markdown formatting with clear headers and bullet points for easy scanning. Be specific and actionable.`;
 
@@ -366,8 +405,8 @@ Create a concise, well-structured brief that is approximately 1000 words. Focus 
             content: briefPrompt
           }
         ],
-        temperature: 0.7,
-        max_completion_tokens: 1500
+        // o3 model only supports temperature=1 (default)
+        max_completion_tokens: 20000  // Set to 20000 tokens for comprehensive brief
       });
 
       const finalBrief = completion.choices[0].message.content || '';

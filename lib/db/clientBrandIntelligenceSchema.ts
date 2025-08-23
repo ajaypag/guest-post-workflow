@@ -54,6 +54,14 @@ export const clientBrandIntelligence = pgTable('client_brand_intelligence', {
   briefGeneratedAt: timestamp('brief_generated_at'),
   finalBrief: text('final_brief'), // AI-generated comprehensive brand brief
   
+  // Session metadata (for email tokens, etc.)
+  metadata: jsonb('metadata').$type<{
+    answerToken?: string;
+    questionsSentAt?: string;
+    answersSubmittedAt?: string;
+    clientAnswers?: any;
+  }>(),
+  
   // Metadata and Tracking
   createdBy: uuid('created_by').notNull().references(() => users.id),
   createdAt: timestamp('created_at').notNull().defaultNow(),

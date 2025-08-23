@@ -120,12 +120,26 @@ export async function POST(
       })
       .where(eq(clientBrandIntelligence.id, brandIntelligenceSession.id));
 
-    // Start brief generation asynchronously
+    // Start brief generation asynchronously with better error handling
     brandIntelligenceService.generateBrief(
       clientId,
       newBriefSessionId
-    ).catch(error => {
-      console.error('Background brief generation failed:', error);
+    ).then(() => {
+      console.log('✅ Brief generation completed successfully for client:', clientId);
+    }).catch(async (error) => {
+      console.error('❌ Background brief generation failed:', error);
+      // Update the database to reflect the error
+      try {
+        await db
+          .update(clientBrandIntelligence)
+          .set({
+            briefStatus: 'error',
+            updatedAt: new Date()
+          })
+          .where(eq(clientBrandIntelligence.id, brandIntelligenceSession.id));
+      } catch (dbError) {
+        console.error('Failed to update error status:', dbError);
+      }
     });
 
     return NextResponse.json({

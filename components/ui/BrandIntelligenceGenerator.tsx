@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Bot, CheckCircle, AlertCircle, Clock, Loader2, Copy, XCircle, Sparkles, MessageSquare, FileText, Edit3 } from 'lucide-react';
+import { Bot, CheckCircle, AlertCircle, Clock, Loader2, Copy, XCircle, Sparkles, MessageSquare, FileText, Edit3, Mail, Send } from 'lucide-react';
 import { MarkdownPreview } from './MarkdownPreview';
 
 interface BrandIntelligenceGeneratorProps {
@@ -60,6 +60,18 @@ export function BrandIntelligenceGenerator({ clientId, onComplete, userType = 'i
   const [isEditingResearch, setIsEditingResearch] = useState(false);
   const [editedAnalysis, setEditedAnalysis] = useState('');
   
+  // Email state
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+  const [answerUrl, setAnswerUrl] = useState<string | null>(null);
+  
+  // External user question answers
+  const [questionAnswers, setQuestionAnswers] = useState<{ [key: number]: string }>({});
+  const [isSubmittingAnswers, setIsSubmittingAnswers] = useState(false);
+  
+  // Full session data with metadata
+  const [sessionData, setSessionData] = useState<any>(null);
+  
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Load existing session on mount
@@ -77,8 +89,15 @@ export function BrandIntelligenceGenerator({ clientId, onComplete, userType = 'i
         
         if (data.success && data.session) {
           const session = data.session;
-          console.log('Loading existing brand intelligence session:', session.id);
+          console.log('Loading existing brand intelligence session:', session.id, {
+            researchStatus: session.researchStatus,
+            briefStatus: session.briefStatus,
+            hasClientInput: !!session.clientInput,
+            hasClientAnswers: !!(session.metadata?.clientAnswers),
+            hasFinalBrief: !!session.finalBrief
+          });
           
+          setSessionData(session); // Store full session data
           setSessionId(session.id);
           setResearchSessionId(session.researchSessionId);
           setBriefSessionId(session.briefSessionId);
@@ -96,11 +115,19 @@ export function BrandIntelligenceGenerator({ clientId, onComplete, userType = 'i
             setFinalBrief(session.finalBrief);
           }
           
+          // Load existing question answers for external users
+          if (session.metadata?.clientAnswers && userType === 'account') {
+            setQuestionAnswers(session.metadata.clientAnswers);
+          }
+          
           // Determine current phase and start polling if needed
           if (['queued', 'in_progress'].includes(session.researchStatus)) {
             setCurrentPhase('research');
             startPolling(session.researchSessionId || session.id);
           } else if (session.researchStatus === 'completed' && !session.clientInput) {
+            setCurrentPhase('input');
+          } else if (session.researchStatus === 'completed' && session.clientInput && ['idle', 'error'].includes(session.briefStatus)) {
+            // Research completed + client input exists + brief not started/failed = ready for brief generation
             setCurrentPhase('input');
           } else if (['queued', 'in_progress'].includes(session.briefStatus)) {
             setCurrentPhase('brief');
@@ -109,6 +136,22 @@ export function BrandIntelligenceGenerator({ clientId, onComplete, userType = 'i
             setCurrentPhase('completed');
             if (onComplete) {
               onComplete(session.finalBrief);
+            }
+          } else {
+            // Fallback: if no conditions match, determine based on available data
+            console.warn('Phase detection fallback triggered', { 
+              researchStatus: session.researchStatus, 
+              briefStatus: session.briefStatus, 
+              hasClientInput: !!session.clientInput, 
+              hasFinalBrief: !!session.finalBrief 
+            });
+            
+            if (session.researchStatus === 'completed' && session.clientInput) {
+              setCurrentPhase('input'); // Default to input phase if research is done and input exists
+            } else if (session.researchStatus === 'completed') {
+              setCurrentPhase('input'); // Default to input phase if research is done
+            } else {
+              setCurrentPhase('research'); // Default to research phase
             }
           }
         }
@@ -186,6 +229,15 @@ export function BrandIntelligenceGenerator({ clientId, onComplete, userType = 'i
 
         const data = await response.json();
         setPollingCount(prev => prev + 1);
+        
+        // Debug logging for polling
+        console.log('Polling update:', {
+          briefStatus: data.briefStatus,
+          hasFinalBrief: !!data.finalBrief,
+          briefLength: data.finalBrief?.length || 0,
+          currentPhase,
+          pollCount: pollingCount
+        });
 
         // Update statuses
         setResearchStatus(data.researchStatus);
@@ -207,18 +259,42 @@ export function BrandIntelligenceGenerator({ clientId, onComplete, userType = 'i
         }
 
         // Handle brief completion
-        if (data.briefStatus === 'completed' && data.finalBrief) {
-          setFinalBrief(data.finalBrief);
+        if (data.briefStatus === 'completed') {
+          // Brief is marked as completed
+          if (data.finalBrief) {
+            setFinalBrief(data.finalBrief);
+          }
           setCurrentPhase('completed');
           setProgress('Brand intelligence completed successfully!');
           
-          if (onComplete) {
+          if (onComplete && data.finalBrief) {
             onComplete(data.finalBrief);
           }
           
           // Stop polling
           clearInterval(pollInterval);
           pollingIntervalRef.current = null;
+          
+          // If we don't have the brief content yet, try to reload it
+          if (!data.finalBrief) {
+            console.log('Brief marked complete but content not in response, reloading...');
+            setTimeout(async () => {
+              try {
+                const reloadResponse = await fetch(`/api/clients/${clientId}/brand-intelligence/latest`);
+                if (reloadResponse.ok) {
+                  const reloadData = await reloadResponse.json();
+                  if (reloadData.session?.finalBrief) {
+                    setFinalBrief(reloadData.session.finalBrief);
+                    if (onComplete) {
+                      onComplete(reloadData.session.finalBrief);
+                    }
+                  }
+                }
+              } catch (error) {
+                console.error('Error reloading brief:', error);
+              }
+            }, 1000);
+          }
         }
 
         // Handle errors
@@ -337,6 +413,86 @@ export function BrandIntelligenceGenerator({ clientId, onComplete, userType = 'i
     }
   };
 
+  const sendQuestionsToClient = async () => {
+    try {
+      setIsSendingEmail(true);
+      setError('');
+
+      const response = await fetch(`/api/clients/${clientId}/brand-intelligence/send-questions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId })
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to send questions to client');
+      }
+
+      const result = await response.json();
+      if (result.answerUrl) {
+        setAnswerUrl(result.answerUrl);
+      }
+
+      setEmailSent(true);
+      setTimeout(() => {
+        setEmailSent(false);
+        setAnswerUrl(null);
+      }, 30000); // Show URL for 30 seconds
+
+    } catch (err: any) {
+      console.error('Error sending questions:', err);
+      setError(err.message);
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
+
+  const handleQuestionAnswerChange = (index: number, value: string) => {
+    setQuestionAnswers(prev => ({
+      ...prev,
+      [index]: value
+    }));
+  };
+
+  const submitQuestionAnswers = async () => {
+    try {
+      setIsSubmittingAnswers(true);
+      setError('');
+
+      // Validate that all questions are answered
+      const unansweredQuestions = researchOutput!.gaps.filter((_: any, index: number) => !questionAnswers[index]?.trim());
+      if (unansweredQuestions.length > 0) {
+        throw new Error('Please answer all questions before submitting');
+      }
+
+      const response = await fetch(`/api/clients/${clientId}/brand-intelligence/submit-direct-answers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          answers: questionAnswers,
+          sessionId 
+        })
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to submit answers');
+      }
+
+      // Update client input state to move to next phase
+      const answersText = Object.values(questionAnswers).join('\n\n');
+      setClientInput(answersText);
+      setProgress('Answers submitted successfully! Ready to generate brand brief.');
+
+    } catch (err: any) {
+      console.error('Error submitting answers:', err);
+      setError(err.message);
+    } finally {
+      setIsSubmittingAnswers(false);
+    }
+  };
+
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -353,30 +509,98 @@ export function BrandIntelligenceGenerator({ clientId, onComplete, userType = 'i
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg p-6">
-        <div className="flex items-center space-x-3 mb-2">
-          <Bot className="w-6 h-6 text-purple-600" />
-          <h3 className="text-lg font-semibold text-gray-900">Brand Intelligence System</h3>
+      {/* Phase Progress Indicator */}
+      <div className="bg-white border border-gray-200 rounded-lg p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex-1">
+            <div className="flex items-center justify-between mb-2">
+              <div className={`flex items-center space-x-2 ${
+                currentPhase === 'research' || researchStatus === 'completed' ? 'text-purple-600' : 'text-gray-400'
+              }`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  researchStatus === 'completed' ? 'bg-green-100 text-green-600' : 
+                  currentPhase === 'research' ? 'bg-purple-100' : 'bg-gray-100'
+                }`}>
+                  {researchStatus === 'completed' ? <CheckCircle className="w-5 h-5" /> : '1'}
+                </div>
+                <span className="text-sm font-medium">Deep Research</span>
+              </div>
+              
+              <div className={`flex items-center space-x-2 ${
+                currentPhase === 'input' || clientInput ? 'text-purple-600' : 'text-gray-400'
+              }`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  clientInput ? 'bg-green-100 text-green-600' : 
+                  currentPhase === 'input' ? 'bg-purple-100' : 'bg-gray-100'
+                }`}>
+                  {clientInput ? <CheckCircle className="w-5 h-5" /> : '2'}
+                </div>
+                <span className="text-sm font-medium">Questionnaire</span>
+              </div>
+              
+              <div className={`flex items-center space-x-2 ${
+                currentPhase === 'brief' || currentPhase === 'completed' ? 'text-purple-600' : 'text-gray-400'
+              }`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  currentPhase === 'completed' ? 'bg-green-100 text-green-600' : 
+                  currentPhase === 'brief' ? 'bg-purple-100' : 'bg-gray-100'
+                }`}>
+                  {currentPhase === 'completed' ? <CheckCircle className="w-5 h-5" /> : '3'}
+                </div>
+                <span className="text-sm font-medium">Brief Creation</span>
+              </div>
+            </div>
+            
+            {/* Progress Bar */}
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div 
+                className="bg-purple-600 h-2 rounded-full transition-all duration-500"
+                style={{ 
+                  width: currentPhase === 'research' ? '33%' : 
+                         currentPhase === 'input' ? '66%' : 
+                         currentPhase === 'brief' ? '85%' : 
+                         currentPhase === 'completed' ? '100%' : '0%' 
+                }}
+              />
+            </div>
+          </div>
         </div>
+        
         <p className="text-sm text-gray-600">
-          <strong className="text-gray-700">Critical for SEO Strategy:</strong> Gathers accurate brand information for article creation, 
-          then publishes this data so search engines and AI models learn what your business actually does. 
-          This intelligence becomes the foundation that language models use to recommend your services to others.
+          <strong className="text-gray-700">Why this matters:</strong> This comprehensive brand brief helps us understand your business deeply 
+          and ensures all content accurately represents your company. It becomes the foundation for consistent messaging across all publications.
         </p>
       </div>
 
-      {/* Phase 1: Research */}
+      {/* Phase 1: Deep Research */}
       {currentPhase === 'research' && (
         <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <h4 className="font-medium text-gray-900 mb-4">Phase 1: Deep Business Research</h4>
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+              <span className="text-purple-600 font-semibold">1</span>
+            </div>
+            <div>
+              <h4 className="font-medium text-gray-900">Phase 1: Deep Research</h4>
+              <p className="text-xs text-gray-500">15-20 minutes</p>
+            </div>
+          </div>
           
           {researchStatus === 'idle' && (
             <div className="space-y-4">
-              <p className="text-sm text-gray-600">
-                AI will analyze your business website, search for third-party mentions, and create a comprehensive 
-                overview. This process takes 15-20 minutes.
-              </p>
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm text-amber-800 font-medium mb-1">What happens in this phase:</p>
+                    <ul className="text-sm text-amber-700 space-y-1 list-disc list-inside">
+                      <li>Deep analysis of your website to understand your services</li>
+                      <li>Research third-party mentions and reviews</li>
+                      <li>Analyze competitor positioning</li>
+                      <li>Identify information gaps that need clarification</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
               {userType === 'internal' ? (
                 <button
                   onClick={startResearch}
@@ -430,8 +654,44 @@ export function BrandIntelligenceGenerator({ clientId, onComplete, userType = 'i
           )}
         </div>
       )}
+      
+      {/* Phase 2: Questionnaire Placeholder */}
+      {currentPhase !== 'input' && !researchOutput && currentPhase !== 'brief' && currentPhase !== 'completed' && (
+        <div className="bg-white border border-gray-200 rounded-lg p-6 opacity-50">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+              <span className="text-gray-400 font-semibold">2</span>
+            </div>
+            <div>
+              <h4 className="font-medium text-gray-500">Phase 2: Questionnaire</h4>
+              <p className="text-xs text-gray-400">5-10 minutes</p>
+            </div>
+          </div>
+          <p className="text-sm text-gray-400">
+            After research completes, you'll answer specific questions about your business to fill any information gaps.
+          </p>
+        </div>
+      )}
+      
+      {/* Phase 3: Brief Creation Placeholder */}
+      {currentPhase !== 'brief' && currentPhase !== 'completed' && !finalBrief && (
+        <div className="bg-white border border-gray-200 rounded-lg p-6 opacity-50">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+              <span className="text-gray-400 font-semibold">3</span>
+            </div>
+            <div>
+              <h4 className="font-medium text-gray-500">Phase 3: Brief Creation</h4>
+              <p className="text-xs text-gray-400">10-15 minutes</p>
+            </div>
+          </div>
+          <p className="text-sm text-gray-400">
+            We'll combine research findings with your input to create a comprehensive brand brief that guides all content creation.
+          </p>
+        </div>
+      )}
 
-      {/* Phase 2: Client Input */}
+      {/* Phase 2: Questionnaire (Active) */}
       {currentPhase === 'input' && researchOutput && (
         <div className="space-y-6">
           {/* Research Results */}
@@ -496,64 +756,300 @@ export function BrandIntelligenceGenerator({ clientId, onComplete, userType = 'i
                 )}
               </div>
 
-              {researchOutput.gaps.length > 0 && (
-                <div>
-                  <h5 className="font-medium text-gray-900 mb-2">Information Gaps Identified</h5>
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <h5 className="font-medium text-gray-900">Information Gaps Identified</h5>
+                  {researchOutput.gaps && researchOutput.gaps.length > 0 && userType === 'internal' && (
+                    <button
+                      onClick={sendQuestionsToClient}
+                      disabled={isSendingEmail || emailSent}
+                      className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
+                    >
+                      {isSendingEmail ? (
+                        <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                      ) : emailSent ? (
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                      ) : (
+                        <Mail className="w-3 h-3 mr-1" />
+                      )}
+                      {isSendingEmail ? 'Sending...' : emailSent ? 'Email Sent!' : 'Send to Client'}
+                    </button>
+                  )}
+                  
+                  {/* Answer URL Display */}
+                  {answerUrl && (
+                    <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <CheckCircle className="w-4 h-4 text-green-600" />
+                        <span className="text-sm font-medium text-green-800">Questions Sent!</span>
+                      </div>
+                      <p className="text-xs text-green-700 mb-2">
+                        Share this URL with the client so they can answer the questions:
+                      </p>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="text"
+                          value={answerUrl}
+                          readOnly
+                          className="flex-1 text-xs font-mono bg-white border border-green-300 rounded px-2 py-1 text-green-800"
+                        />
+                        <button
+                          onClick={() => navigator.clipboard.writeText(answerUrl)}
+                          className="px-2 py-1 text-xs font-medium bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                        >
+                          Copy
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                {researchOutput.gaps && researchOutput.gaps.length > 0 ? (
                   <div className="space-y-2">
                     {researchOutput.gaps.map((gap, idx) => (
                       <div key={idx} className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
                         <div className="flex items-center space-x-2 mb-1">
                           <span className="text-xs font-medium px-2 py-1 bg-yellow-200 text-yellow-800 rounded">
-                            {gap.importance.toUpperCase()}
+                            {gap.importance ? gap.importance.toUpperCase() : 'MEDIUM'}
                           </span>
-                          <span className="text-sm font-medium text-gray-900">{gap.category}</span>
+                          <span className="text-sm font-medium text-gray-900">{gap.category || 'General'}</span>
                         </div>
-                        <p className="text-sm text-gray-700">{gap.question}</p>
+                        <p className="text-sm text-gray-700">{gap.question || 'Question not available'}</p>
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
+                ) : (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="flex items-start space-x-3">
+                      <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm text-green-800 font-medium mb-1">Research Complete</p>
+                        <p className="text-sm text-green-700">
+                          The research found comprehensive information about your business. No additional clarification is needed to proceed with the questionnaire.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
           {/* Client Input Form */}
           <div className="bg-white border border-gray-200 rounded-lg p-6">
             <div className="flex items-center space-x-3 mb-4">
-              <MessageSquare className="w-5 h-5 text-blue-500" />
-              <h4 className="font-medium text-gray-900">Your Input Needed</h4>
+              <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                <span className="text-purple-600 font-semibold">2</span>
+              </div>
+              <div>
+                <h4 className="font-medium text-gray-900">Phase 2: Questionnaire</h4>
+                <p className="text-xs text-gray-500">Fill information gaps</p>
+              </div>
             </div>
             
-            <div className="space-y-4">
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                <p className="text-sm text-amber-800">
-                  <strong>Important:</strong> This is a one-time input. Please provide all relevant information 
-                  about the gaps identified above, plus any additional context about your business.
-                </p>
-              </div>
+            {userType === 'internal' ? (
+              // Internal user sees rich structured data from external submissions
+              <div className="space-y-4">
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <p className="text-sm text-amber-800">
+                    <strong>Internal Note:</strong> {sessionData?.metadata?.clientAnswers ? 'Client has submitted answers via external form.' : 'Client input will be collected here. You can send questions to the client via email using the button above.'}
+                  </p>
+                </div>
 
-              <textarea
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                placeholder="Please provide information about the gaps identified above, plus any additional context about your business, products, services, target audience, unique value propositions, achievements, or other relevant details..."
-                className="w-full h-40 p-3 border border-gray-300 rounded-lg resize-none"
-                maxLength={100000}
-              />
-              
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500">
-                  {inputText.length}/100,000 characters
-                </span>
-                <button
-                  onClick={submitClientInput}
-                  disabled={!inputText.trim() || isSubmittingInput}
-                  className="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors flex items-center space-x-2"
-                >
-                  {isSubmittingInput && <Loader2 className="w-4 h-4 animate-spin" />}
-                  <span>Submit Input</span>
-                </button>
+                {/* Show structured client answers if available */}
+                {sessionData?.metadata?.clientAnswers && Object.keys(sessionData.metadata.clientAnswers).length > 0 ? (
+                  <div className="space-y-4">
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <p className="text-sm text-green-800 font-medium">
+                        ✅ Client Answers Received
+                      </p>
+                      <p className="text-xs text-green-700">
+                        Answers submitted on {sessionData.metadata.answersSubmittedAt ? new Date(sessionData.metadata.answersSubmittedAt).toLocaleString() : 'recently'}
+                      </p>
+                    </div>
+
+                    {/* Display individual question answers */}
+                    <div className="space-y-4">
+                      {researchOutput?.gaps?.map((gap: any, index: number) => {
+                        const answer = sessionData.metadata.clientAnswers[index.toString()] || sessionData.metadata.clientAnswers[index];
+                        return (
+                          <div key={index} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                            <div className="flex items-center space-x-2 mb-2">
+                              <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                                gap.importance === 'high' ? 'bg-red-100 text-red-800' :
+                                gap.importance === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-green-100 text-green-800'
+                              }`}>
+                                {gap.importance ? gap.importance.toUpperCase() : 'MEDIUM'}
+                              </span>
+                              <span className="text-sm font-medium text-gray-600">{gap.category || 'General'}</span>
+                            </div>
+                            
+                            <h4 className="font-medium text-gray-900 mb-3">
+                              {gap.question || 'Question not available'}
+                            </h4>
+                            
+                            <div className="bg-white rounded-lg p-3 border border-gray-200">
+                              <p className="text-sm text-gray-800">
+                                {answer || <span className="italic text-gray-500">No answer provided</span>}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Show edited research if available */}
+                    {sessionData.metadata.editedResearch && (
+                      <div className="space-y-2">
+                        <h5 className="font-medium text-gray-900">Client-Edited Research Analysis</h5>
+                        <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                          <div className="text-sm text-gray-800 whitespace-pre-wrap">
+                            {sessionData.metadata.editedResearch}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Show additional business info if available */}
+                    {sessionData.metadata.additionalInfo && (
+                      <div className="space-y-2">
+                        <h5 className="font-medium text-gray-900">Additional Business Information</h5>
+                        <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
+                          <div className="text-sm text-gray-800 whitespace-pre-wrap">
+                            {sessionData.metadata.additionalInfo}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  // Fallback to manual input if no structured data
+                  <div className="space-y-4">
+                    <textarea
+                      value={inputText}
+                      onChange={(e) => setInputText(e.target.value)}
+                      placeholder="Client input will appear here, or you can manually enter information about the gaps identified above..."
+                      className="w-full h-40 p-3 border border-gray-300 rounded-lg resize-none"
+                      maxLength={100000}
+                    />
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-500">
+                        {inputText.length}/100,000 characters
+                      </span>
+                      <button
+                        onClick={submitClientInput}
+                        disabled={!inputText.trim() || isSubmittingInput}
+                        className="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors flex items-center space-x-2"
+                      >
+                        {isSubmittingInput && <Loader2 className="w-4 h-4 animate-spin" />}
+                        <span>Submit Input</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
+            ) : (
+              // External user sees individual questions
+              <div className="space-y-6">
+                {clientInput ? (
+                  // Show submitted answers with edit option
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-green-800 font-medium">
+                          ✅ Your answers have been submitted successfully!
+                        </p>
+                        <p className="text-xs text-green-700">
+                          You can review and edit your answers below if needed.
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          // Initialize question answers from existing client input if not already done
+                          if (Object.keys(questionAnswers).length === 0 && researchOutput?.gaps) {
+                            const existingAnswers: { [key: number]: string } = {};
+                            const answerTexts = clientInput.split('\n\n');
+                            researchOutput.gaps.forEach((_: any, index: number) => {
+                              existingAnswers[index] = answerTexts[index] || '';
+                            });
+                            setQuestionAnswers(existingAnswers);
+                          }
+                        }}
+                        className="text-xs text-green-700 hover:text-green-900 font-medium"
+                      >
+                        Edit Answers
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <p className="text-sm text-blue-800">
+                      <strong>Your Input Needed:</strong> Please answer each question below to help us create an accurate brand brief for your business.
+                    </p>
+                  </div>
+                )}
+
+                <div className="space-y-4">
+                  {researchOutput?.gaps?.map((gap: any, index: number) => (
+                    <div key={index} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                          gap.importance === 'high' ? 'bg-red-100 text-red-800' :
+                          gap.importance === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-green-100 text-green-800'
+                        }`}>
+                          {gap.importance ? gap.importance.toUpperCase() : 'MEDIUM'}
+                        </span>
+                        <span className="text-sm font-medium text-gray-600">{gap.category || 'General'}</span>
+                      </div>
+                      
+                      <h4 className="font-medium text-gray-900 mb-3">
+                        {gap.question || 'Question not available'}
+                      </h4>
+                      
+                      <textarea
+                        value={questionAnswers[index] || ''}
+                        onChange={(e) => handleQuestionAnswerChange(index, e.target.value)}
+                        placeholder="Please provide your answer here..."
+                        className="w-full h-24 p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        maxLength={2000}
+                      />
+                      
+                      <div className="flex justify-between items-center mt-2">
+                        <span className="text-xs text-gray-500">
+                          {(questionAnswers[index] || '').length}/2,000 characters
+                        </span>
+                        {questionAnswers[index]?.trim() && (
+                          <CheckCircle className="w-4 h-4 text-green-500" />
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex justify-center">
+                  <button
+                    onClick={submitQuestionAnswers}
+                    disabled={isSubmittingAnswers || researchOutput?.gaps?.some((_: any, index: number) => !questionAnswers[index]?.trim())}
+                    className="bg-purple-600 text-white py-3 px-6 rounded-lg hover:bg-purple-700 disabled:bg-gray-400 transition-colors flex items-center space-x-2"
+                  >
+                    {isSubmittingAnswers ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <Send className="w-5 h-5" />
+                    )}
+                    <span>
+                      {isSubmittingAnswers ? 'Submitting...' : clientInput ? 'Update All Answers' : 'Submit All Answers'}
+                    </span>
+                  </button>
+                </div>
+
+                <div className="text-center text-xs text-gray-500">
+                  All questions must be answered to proceed to the next phase
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Ready for Brief Generation */}
@@ -578,11 +1074,37 @@ export function BrandIntelligenceGenerator({ clientId, onComplete, userType = 'i
           )}
         </div>
       )}
+      
+      {/* Phase 3 Placeholder when in Phase 2 */}
+      {currentPhase === 'input' && !briefStatus && (
+        <div className="bg-white border border-gray-200 rounded-lg p-6 opacity-50">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+              <span className="text-gray-400 font-semibold">3</span>
+            </div>
+            <div>
+              <h4 className="font-medium text-gray-500">Phase 3: Brief Creation</h4>
+              <p className="text-xs text-gray-400">10-15 minutes</p>
+            </div>
+          </div>
+          <p className="text-sm text-gray-400">
+            After you submit your input, we'll create a comprehensive brand brief combining all research and your answers.
+          </p>
+        </div>
+      )}
 
-      {/* Phase 3: Brief Generation */}
+      {/* Phase 3: AI Brief Creation */}
       {currentPhase === 'brief' && (
         <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <h4 className="font-medium text-gray-900 mb-4">Phase 3: Brand Brief Generation</h4>
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+              <span className="text-purple-600 font-semibold">3</span>
+            </div>
+            <div>
+              <h4 className="font-medium text-gray-900">Phase 3: Brief Creation</h4>
+              <p className="text-xs text-gray-500">Generating comprehensive brief</p>
+            </div>
+          </div>
           
           {['queued', 'in_progress'].includes(briefStatus) && (
             <div className="space-y-4">
@@ -617,7 +1139,7 @@ export function BrandIntelligenceGenerator({ clientId, onComplete, userType = 'i
         </div>
       )}
 
-      {/* Phase 4: Completed */}
+      {/* Completed Brief */}
       {currentPhase === 'completed' && finalBrief && (
         <div className="space-y-4">
           <div className="bg-white border border-gray-200 rounded-lg">
