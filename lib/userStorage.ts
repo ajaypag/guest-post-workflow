@@ -275,7 +275,7 @@ export const clientStorage = {
   },
 
   // Add target pages to client
-  async addTargetPages(clientId: string, urls: string[]): Promise<boolean> {
+  async addTargetPages(clientId: string, urls: string[]): Promise<{success: boolean, added: number, duplicates: number}> {
     try {
       console.log(`Adding target pages to client ${clientId}:`, urls);
       
@@ -290,15 +290,19 @@ export const clientStorage = {
       if (!response.ok) {
         const errorData = await response.json();
         console.error('API Error adding target pages:', errorData);
-        return false;
+        return { success: false, added: 0, duplicates: 0 };
       }
 
       const result = await response.json();
       console.log('Target pages added successfully:', result);
-      return result.success;
+      return { 
+        success: result.success, 
+        added: result.addedUrls?.length || 0, 
+        duplicates: result.duplicatesSkipped || 0 
+      };
     } catch (error) {
       console.error('Error adding target pages:', error);
-      return false;
+      return { success: false, added: 0, duplicates: 0 };
     }
   },
 

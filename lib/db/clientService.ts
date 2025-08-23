@@ -1,11 +1,13 @@
-import { eq, and, isNull } from 'drizzle-orm';
+import { eq, and, isNull, desc, count, sum, sql, like, or } from 'drizzle-orm';
 import * as crypto from 'crypto';
 import { db } from './connection';
 import { clients, clientAssignments, targetPages, type Client, type NewClient, type TargetPage, type NewTargetPage } from './schema';
+import { orders } from './orderSchema';
+import { orderGroups } from './orderGroupSchema';
 import { normalizeUrl, extractNormalizedDomain } from '@/lib/utils/urlUtils';
 
 export class ClientService {
-  // Get all clients (excluding archived)
+  // Get all clients (excluding archived) with order data
   static async getAllClients(includeArchived: boolean = false): Promise<Client[]> {
     try {
       const query = db.select().from(clients);
@@ -15,15 +17,22 @@ export class ClientService {
         ? await query
         : await query.where(isNull(clients.archivedAt));
       
-      // Add target pages to each client
-      const clientsWithPages = await Promise.all(
+      // Add target pages and order data to each client
+      const clientsWithData = await Promise.all(
         clientList.map(async (client) => {
-          const pages = await this.getTargetPages(client.id);
-          return { ...client, targetPages: pages } as any;
+          const [pages, orderStats] = await Promise.all([
+            this.getTargetPages(client.id),
+            this.getClientOrderStats(client.id)
+          ]);
+          return { 
+            ...client, 
+            targetPages: pages,
+            orderStats
+          } as any;
         })
       );
       
-      return clientsWithPages;
+      return clientsWithData;
     } catch (error) {
       console.error('Error loading clients:', error);
       return [];
@@ -450,15 +459,22 @@ export class ClientService {
               isNull(clients.archivedAt)
             ));
       
-      // Add target pages to each client
-      const clientsWithPages = await Promise.all(
+      // Add target pages and order data to each client
+      const clientsWithData = await Promise.all(
         clientList.map(async (client) => {
-          const pages = await this.getTargetPages(client.id);
-          return { ...client, targetPages: pages } as any;
+          const [pages, orderStats] = await Promise.all([
+            this.getTargetPages(client.id),
+            this.getClientOrderStats(client.id)
+          ]);
+          return { 
+            ...client, 
+            targetPages: pages,
+            orderStats
+          } as any;
         })
       );
       
-      return clientsWithPages;
+      return clientsWithData;
     } catch (error) {
       console.error('Error loading account clients:', error);
       return [];
@@ -482,6 +498,151 @@ export class ClientService {
     } catch (error) {
       console.error('Error loading client by share token:', error);
       return null;
+    }
+  }
+
+  // Get order statistics for a client
+  static async getClientOrderStats(clientId: string) {
+    try {
+      const orderStatsQuery = await db
+        .select({
+          orderCount: count(orders.id),
+          totalRevenue: sum(orders.totalRetail),
+          recentOrderDate: sql<string>`MAX(${orders.createdAt})`,
+          activeOrders: sql<number>`COUNT(CASE WHEN ${orders.status} NOT IN ('completed', 'cancelled', 'refunded') THEN 1 END)`,
+          completedOrders: sql<number>`COUNT(CASE WHEN ${orders.status} = 'completed' THEN 1 END)`
+        })
+        .from(orderGroups)
+        .leftJoin(orders, eq(orderGroups.orderId, orders.id))
+        .where(eq(orderGroups.clientId, clientId));
+
+      const stats = orderStatsQuery[0];
+      
+      return {
+        orderCount: Number(stats.orderCount) || 0,
+        totalRevenue: Number(stats.totalRevenue) || 0,
+        recentOrderDate: stats.recentOrderDate,
+        activeOrders: Number(stats.activeOrders) || 0,
+        completedOrders: Number(stats.completedOrders) || 0
+      };
+    } catch (error) {
+      console.error('Error getting client order stats:', error);
+      return {
+        orderCount: 0,
+        totalRevenue: 0,
+        recentOrderDate: null,
+        activeOrders: 0,
+        completedOrders: 0
+      };
+    }
+  }
+
+  // Get paginated clients with search and filter
+  static async getPaginatedClients(options: {
+    page: number;
+    limit: number;
+    search?: string;
+    filterType?: string;
+    includeArchived?: boolean;
+    accountId?: string; // For account users
+  }) {
+    try {
+      const { page, limit, search = '', filterType = 'all', includeArchived = false, accountId } = options;
+      const offset = (page - 1) * limit;
+      
+      // Build where conditions
+      let whereConditions = [];
+      
+      // Archive filter
+      if (!includeArchived) {
+        whereConditions.push(isNull(clients.archivedAt));
+      }
+      
+      // Account filter (for account users)
+      if (accountId) {
+        whereConditions.push(eq(clients.accountId as any, accountId));
+      }
+      
+      // Search filter
+      if (search) {
+        whereConditions.push(
+          or(
+            like(clients.name, `%${search}%`),
+            like(clients.website, `%${search}%`)
+          )
+        );
+      }
+      
+      // Type filter (internal users only)
+      if (filterType !== 'all') {
+        if (filterType === 'prospect') {
+          whereConditions.push(eq(clients.clientType as any, 'prospect'));
+        } else if (filterType === 'client') {
+          whereConditions.push(or(
+            eq(clients.clientType as any, 'client'),
+            isNull(clients.clientType as any)
+          ));
+        }
+      }
+      
+      const whereClause = whereConditions.length > 0 ? and(...whereConditions) : undefined;
+      
+      // Get total count
+      const totalQuery = await db
+        .select({ count: count() })
+        .from(clients)
+        .where(whereClause);
+      
+      const total = totalQuery[0]?.count || 0;
+      
+      // Get paginated results
+      const clientList = await db
+        .select()
+        .from(clients)
+        .where(whereClause)
+        .orderBy(desc(clients.createdAt))
+        .limit(limit)
+        .offset(offset);
+      
+      // Add target pages and order data
+      const clientsWithData = await Promise.all(
+        clientList.map(async (client) => {
+          const [pages, orderStats] = await Promise.all([
+            this.getTargetPages(client.id),
+            this.getClientOrderStats(client.id)
+          ]);
+          return { 
+            ...client, 
+            targetPages: pages,
+            orderStats
+          } as any;
+        })
+      );
+      
+      return {
+        clients: clientsWithData,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+          hasNext: page < Math.ceil(total / limit),
+          hasPrev: page > 1
+        }
+      };
+    } catch (error) {
+      console.error('Error getting paginated clients:', error);
+      return {
+        clients: [],
+        pagination: {
+          page: 1,
+          limit: 12,
+          total: 0,
+          totalPages: 0,
+          hasNext: false,
+          hasPrev: false
+        }
+      };
     }
   }
 }

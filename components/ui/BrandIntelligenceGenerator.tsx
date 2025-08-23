@@ -7,6 +7,7 @@ import { MarkdownPreview } from './MarkdownPreview';
 interface BrandIntelligenceGeneratorProps {
   clientId: string;
   onComplete?: (brief: string) => void;
+  userType?: string; // 'internal' or 'account' 
 }
 
 // Multi-phase status types
@@ -28,7 +29,7 @@ interface ResearchOutput {
   }>;
 }
 
-export function BrandIntelligenceGenerator({ clientId, onComplete }: BrandIntelligenceGeneratorProps) {
+export function BrandIntelligenceGenerator({ clientId, onComplete, userType = 'internal' }: BrandIntelligenceGeneratorProps) {
   // Status tracking
   const [currentPhase, setCurrentPhase] = useState<CurrentPhase>('research');
   const [researchStatus, setResearchStatus] = useState<ResearchStatus>('idle');
@@ -359,8 +360,9 @@ export function BrandIntelligenceGenerator({ clientId, onComplete }: BrandIntell
           <h3 className="text-lg font-semibold text-gray-900">Brand Intelligence System</h3>
         </div>
         <p className="text-sm text-gray-600">
-          AI-powered deep research and brand brief generation. Creates comprehensive business intelligence 
-          to improve content creation quality and authority.
+          <strong className="text-gray-700">Critical for SEO Strategy:</strong> Gathers accurate brand information for article creation, 
+          then publishes this data so search engines and AI models learn what your business actually does. 
+          This intelligence becomes the foundation that language models use to recommend your services to others.
         </p>
       </div>
 
@@ -375,13 +377,22 @@ export function BrandIntelligenceGenerator({ clientId, onComplete }: BrandIntell
                 AI will analyze your business website, search for third-party mentions, and create a comprehensive 
                 overview. This process takes 15-20 minutes.
               </p>
-              <button
-                onClick={startResearch}
-                className="w-full bg-purple-600 text-white py-3 px-4 rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center space-x-2"
-              >
-                <Bot className="w-5 h-5" />
-                <span>Start Deep Research</span>
-              </button>
+              {userType === 'internal' ? (
+                <button
+                  onClick={startResearch}
+                  className="w-full bg-purple-600 text-white py-3 px-4 rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center space-x-2"
+                >
+                  <Bot className="w-5 h-5" />
+                  <span>Start Deep Research</span>
+                </button>
+              ) : (
+                <div className="text-center p-4 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-600">
+                    Brand intelligence research needs to be initiated by your account manager. 
+                    Once started, you'll be able to participate by providing additional context.
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
@@ -407,12 +418,14 @@ export function BrandIntelligenceGenerator({ clientId, onComplete }: BrandIntell
               <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
                 <p className="text-sm text-red-800">{error}</p>
               </div>
-              <button
-                onClick={startResearch}
-                className="bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors"
-              >
-                Retry Research
-              </button>
+              {userType === 'internal' && (
+                <button
+                  onClick={startResearch}
+                  className="bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                  Retry Research
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -674,16 +687,18 @@ export function BrandIntelligenceGenerator({ clientId, onComplete }: BrandIntell
             </div>
           </div>
 
-          {/* Regenerate Button */}
-          <div className="flex justify-center">
-            <button
-              onClick={startResearch}
-              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md flex items-center"
-            >
-              <Sparkles className="w-4 h-4 mr-2" />
-              Generate New Brand Intelligence
-            </button>
-          </div>
+          {/* Regenerate Button - Internal Only */}
+          {userType === 'internal' && (
+            <div className="flex justify-center">
+              <button
+                onClick={startResearch}
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md flex items-center"
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                Generate New Brand Intelligence
+              </button>
+            </div>
+          )}
         </div>
       )}
 

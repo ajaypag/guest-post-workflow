@@ -5,12 +5,15 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
+import { ClientDetailTabs } from '@/components/ClientDetailTabs';
+import { ActivityTimeline } from '@/components/ActivityTimeline';
 import { clientStorage, sessionStorage } from '@/lib/userStorage';
 import { Client, TargetPage } from '@/types/user';
 import { 
   ArrowLeft, Plus, Trash2, CheckCircle, XCircle, Clock, 
   Edit, Globe, ExternalLink, Check, Settings, ChevronDown, ChevronUp,
-  FileText, Target, AlertCircle, BarChart2, Users
+  FileText, Target, AlertCircle, BarChart2, Users, Package,
+  Activity, ShoppingCart, Brain, Mail, Phone, MapPin
 } from 'lucide-react';
 import { KeywordPreferencesSelector } from '@/components/ui/KeywordPreferencesSelector';
 import { getClientKeywordPreferences, setClientKeywordPreferences, KeywordPreferences } from '@/types/keywordPreferences';
@@ -18,6 +21,7 @@ import { KeywordGenerationButton } from '@/components/ui/KeywordGenerationButton
 import { KeywordDisplay } from '@/components/ui/KeywordDisplay';
 import { DescriptionGenerationButton } from '@/components/ui/DescriptionGenerationButton';
 import { DescriptionDisplay } from '@/components/ui/DescriptionDisplay';
+import { SmartNotifications } from '@/components/ui/SmartNotifications';
 import { parseUrlsFromText, matchUrlsToPages, getMatchingStats, UrlMatchResult } from '@/lib/utils/urlMatcher';
 
 export default function ClientDetailPage() {
@@ -44,12 +48,42 @@ export default function ClientDetailPage() {
     canUseAiContentGeneration: false
   });
   
+  // Tab state with URL parameter support
+  const currentTab = (searchParams.get('tab') as 'overview' | 'pages' | 'orders' | 'brand' | 'settings') || 'overview';
+  const [activeTab, setActiveTab] = useState<'overview' | 'pages' | 'orders' | 'brand' | 'settings'>(currentTab);
+  
+  // Update tab and URL when tab changes
+  const handleTabChange = (tab: 'overview' | 'pages' | 'orders' | 'brand' | 'settings') => {
+    setActiveTab(tab);
+    const newSearchParams = new URLSearchParams(searchParams.toString());
+    if (tab === 'overview') {
+      newSearchParams.delete('tab'); // Keep overview clean without ?tab=overview
+    } else {
+      newSearchParams.set('tab', tab);
+    }
+    const newUrl = `${window.location.pathname}${newSearchParams.toString() ? '?' + newSearchParams.toString() : ''}`;
+    router.replace(newUrl, { scroll: false });
+  };
+  
+  // Sync state with URL on mount and URL changes
+  useEffect(() => {
+    setActiveTab(currentTab);
+  }, [currentTab]);
+  
   // Bulk URL Update states
   const [showBulkUrlUpdate, setShowBulkUrlUpdate] = useState(false);
   const [bulkUrlText, setBulkUrlText] = useState('');
   const [bulkUrlStatus, setBulkUrlStatus] = useState<'active' | 'inactive' | 'completed'>('inactive');
   const [urlMatchResults, setUrlMatchResults] = useState<UrlMatchResult[]>([]);
   const [isBulkUrlProcessing, setIsBulkUrlProcessing] = useState(false);
+  
+  // Settings edit states
+  const [isEditingSettings, setIsEditingSettings] = useState(false);
+  const [editedClient, setEditedClient] = useState({
+    name: '',
+    website: '',
+    description: ''
+  });
 
   useEffect(() => {
     // Get user type from session
@@ -140,14 +174,25 @@ export default function ClientDetailPage() {
     if (urls.length === 0) return;
 
     try {
-      await clientStorage.addTargetPages(client.id, urls);
+      const result = await clientStorage.addTargetPages(client.id, urls);
       setNewPages('');
       setShowAddForm(false);
       await loadClient();
       
+      // Show feedback to user
+      if (result.added > 0 && result.duplicates > 0) {
+        alert(`✅ Successfully added ${result.added} new pages. ${result.duplicates} duplicates were skipped.`);
+      } else if (result.added > 0) {
+        alert(`✅ Successfully added ${result.added} new pages!`);
+      } else if (result.duplicates > 0) {
+        alert(`ℹ️ All ${result.duplicates} pages already exist. No new pages added.`);
+      }
+      
       // Prompt user to generate keywords AND descriptions for newly added pages
-      setNewlyAddedPages(urls.map(url => ({ url })));
-      setShowKeywordPrompt(true);
+      if (result.added > 0) {
+        setNewlyAddedPages(urls.slice(0, result.added).map(url => ({ url })));
+        setShowKeywordPrompt(true);
+      }
     } catch (error: any) {
       alert('Error adding pages: ' + error.message);
     }
@@ -555,6 +600,54 @@ export default function ClientDetailPage() {
   };
 
   // Bulk URL Update Functions
+  // Settings edit functions
+  const startEditingSettings = () => {
+    if (!client) return;
+    setEditedClient({
+      name: client.name,
+      website: client.website,
+      description: (client as any).description || ''
+    });
+    setIsEditingSettings(true);
+  };
+
+  const cancelEditingSettings = () => {
+    setIsEditingSettings(false);
+    setEditedClient({ name: '', website: '', description: '' });
+  };
+
+  const saveSettingsChanges = async () => {
+    if (!client) return;
+
+    try {
+      const response = await fetch(`/api/clients/${client.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          name: editedClient.name,
+          website: editedClient.website,
+          description: editedClient.description
+        })
+      });
+      
+      if (response.ok) {
+        setClient({
+          ...client,
+          name: editedClient.name,
+          website: editedClient.website,
+          ...(editedClient.description && { description: editedClient.description })
+        });
+        setIsEditingSettings(false);
+      } else {
+        const error = await response.json();
+        alert(error.error || 'Failed to update client');
+      }
+    } catch (error: any) {
+      alert('Error updating client: ' + error.message);
+    }
+  };
+
   const handleBulkUrlTextChange = (text: string) => {
     setBulkUrlText(text);
     
@@ -645,60 +738,51 @@ export default function ClientDetailPage() {
                   <ExternalLink className="w-3 h-3 ml-1 flex-shrink-0" />
                 </a>
                 <div className="mt-2">
-                  {(client as any).accountId ? (
-                    accountInfo ? (
-                      <span className="inline-flex items-center px-2 py-1 sm:px-3 text-xs sm:text-sm font-medium text-blue-700 bg-blue-50 rounded-full">
-                        <Users className="w-4 h-4 mr-1 flex-shrink-0" />
-                        <span className="truncate">Owned by: {accountInfo.name || accountInfo.email}</span>
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center px-2 py-1 sm:px-3 text-xs sm:text-sm font-medium text-gray-600 bg-gray-100 rounded-full">
-                        <Users className="w-4 h-4 mr-1 flex-shrink-0" />
-                        Loading account...
-                      </span>
-                    )
-                  ) : (
-                    <span className="inline-flex items-center px-2 py-1 sm:px-3 text-xs sm:text-sm font-medium text-orange-700 bg-orange-50 rounded-full">
-                      <AlertCircle className="w-4 h-4 mr-1 flex-shrink-0" />
-                      <span className="hidden sm:inline">No Account - This client needs to be assigned</span>
-                      <span className="sm:hidden">No Account</span>
-                    </span>
+                  {userType === 'internal' && (
+                    <>
+                      {(client as any).accountId ? (
+                        accountInfo ? (
+                          <span className="inline-flex items-center px-2 py-1 sm:px-3 text-xs sm:text-sm font-medium text-blue-700 bg-blue-50 rounded-full">
+                            <Users className="w-4 h-4 mr-1 flex-shrink-0" />
+                            <span className="truncate">Owned by: {accountInfo.name || accountInfo.email}</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-1 sm:px-3 text-xs sm:text-sm font-medium text-gray-600 bg-gray-100 rounded-full">
+                            <Users className="w-4 h-4 mr-1 flex-shrink-0" />
+                            Loading account...
+                          </span>
+                        )
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-1 sm:px-3 text-xs sm:text-sm font-medium text-orange-700 bg-orange-50 rounded-full">
+                          <AlertCircle className="w-4 h-4 mr-1 flex-shrink-0" />
+                          <span className="hidden sm:inline">No Account - This client needs to be assigned</span>
+                          <span className="sm:hidden">No Account</span>
+                        </span>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
               
-              <div className="flex flex-wrap gap-2 sm:gap-3">
+              <div className="flex flex-wrap gap-3">
                 {userType === 'internal' && (
                   <>
                     <Link
                       href={`/workflow/new?clientId=${client.id}`}
-                      className="inline-flex items-center px-3 py-2 sm:px-4 bg-green-600 text-white text-xs sm:text-sm font-medium rounded-md hover:bg-green-700"
+                      className="group inline-flex items-center px-5 py-2.5 border border-gray-200 bg-white text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 hover:border-gray-300 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-sm transition-all duration-200"
                     >
+                      <FileText className="w-4 h-4 mr-2.5 text-gray-500 group-hover:text-gray-700" />
                       Create Workflow
                     </Link>
                     <Link
                       href={`/clients/${client.id}/bulk-analysis`}
-                      className="inline-flex items-center px-3 py-2 sm:px-4 bg-indigo-600 text-white text-xs sm:text-sm font-medium rounded-md hover:bg-indigo-700"
+                      className="group inline-flex items-center px-5 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-sm transition-all duration-200"
                     >
-                      <BarChart2 className="w-4 h-4 mr-1 sm:mr-2" />
+                      <BarChart2 className="w-4 h-4 mr-2.5" />
                       Bulk Analysis
                     </Link>
                   </>
                 )}
-                <button
-                  onClick={() => setShowKeywordPrefs(true)}
-                  className="inline-flex items-center px-3 py-2 sm:px-4 bg-purple-600 text-white text-xs sm:text-sm font-medium rounded-md hover:bg-purple-700"
-                >
-                  <Settings className="w-4 h-4 mr-1 sm:mr-2" />
-                  Topic Preferences
-                </button>
-                <button
-                  onClick={() => setShowAddForm(true)}
-                  className="inline-flex items-center px-3 py-2 sm:px-4 bg-blue-600 text-white text-xs sm:text-sm font-medium rounded-md hover:bg-blue-700"
-                >
-                  <Plus className="w-4 h-4 mr-1 sm:mr-2" />
-                  Add Pages
-                </button>
               </div>
             </div>
           </div>
@@ -725,82 +809,123 @@ export default function ClientDetailPage() {
             </div>
           )}
 
-          {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 mb-6">
-            <div className="bg-white p-3 sm:p-4 rounded-lg shadow">
-              <div className="text-xl sm:text-2xl font-bold text-gray-900">{stats.total}</div>
-              <div className="text-xs sm:text-sm text-gray-600">Total Pages</div>
-            </div>
-            <div className="bg-white p-3 sm:p-4 rounded-lg shadow">
-              <div className="text-xl sm:text-2xl font-bold text-green-600">{stats.active}</div>
-              <div className="text-xs sm:text-sm text-gray-600">Active</div>
-            </div>
-            <div className="bg-white p-3 sm:p-4 rounded-lg shadow">
-              <div className="text-xl sm:text-2xl font-bold text-orange-600">{stats.inactive}</div>
-              <div className="text-xs sm:text-sm text-gray-600">Inactive</div>
-            </div>
-            <div className="bg-white p-3 sm:p-4 rounded-lg shadow">
-              <div className="text-xl sm:text-2xl font-bold text-blue-600">{stats.completed}</div>
-              <div className="text-xs sm:text-sm text-gray-600">Completed</div>
-            </div>
-          </div>
+          {/* Tab Navigation */}
+          <ClientDetailTabs 
+            activeTab={activeTab}
+            onTabChange={handleTabChange}
+            stats={stats}
+            userType={userType}
+          />
 
-          {/* Brand Intelligence System */}
-          {userType === 'internal' && (
-            <div className="mb-6">
-              <div className="bg-white rounded-lg shadow p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Brand Intelligence</h3>
-                    <p className="text-gray-600 text-sm">AI-powered deep research and brand brief generation</p>
-                  </div>
-                  <Link
-                    href={`/clients/${client.id}/brand-intelligence`}
-                    className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                  >
-                    <BarChart2 className="w-4 h-4 mr-2" />
-                    Open Brand Intelligence
-                  </Link>
+          {/* Tab Content */}
+          {activeTab === 'overview' && (
+            <div className="space-y-6">
+              {/* Key Metrics */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-white p-4 rounded-lg shadow">
+                  <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
+                  <div className="text-sm text-gray-600">Total Pages</div>
+                </div>
+                <div className="bg-white p-4 rounded-lg shadow">
+                  <div className="text-2xl font-bold text-green-600">{stats.active}</div>
+                  <div className="text-sm text-gray-600">Active Pages</div>
+                </div>
+                <div className="bg-white p-4 rounded-lg shadow">
+                  <div className="text-2xl font-bold text-blue-600">0</div>
+                  <div className="text-sm text-gray-600">Active Orders</div>
+                </div>
+                <div className="bg-white p-4 rounded-lg shadow">
+                  <div className="text-2xl font-bold text-purple-600">0</div>
+                  <div className="text-sm text-gray-600">Workflows</div>
                 </div>
               </div>
-            </div>
-          )}
-
-          {/* Client Keyword Preferences Form */}
-          {showKeywordPrefs && (
-            <div className="bg-white rounded-lg shadow p-6 mb-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium">Default Guest Post Topic Preferences for {client.name}</h3>
-                <button
-                  onClick={() => setShowKeywordPrefs(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <Check className="w-5 h-5" />
-                </button>
-              </div>
-              <p className="text-sm text-gray-600 mb-6">
-                Set default guest post topic preferences for this client. These will be automatically applied to all new workflows, but can be overridden at the workflow level when needed.
-              </p>
               
-              <KeywordPreferencesSelector
-                preferences={getClientKeywordPreferences(client) || undefined}
-                onChange={handleClientKeywordPreferencesUpdate}
+              {/* Smart Notifications */}
+              <SmartNotifications
+                client={client}
+                onGenerateKeywords={() => {
+                  handleTabChange('pages');
+                  // TODO: Trigger bulk keyword generation for missing pages
+                }}
+                onGenerateDescriptions={() => {
+                  handleTabChange('pages');
+                  // TODO: Trigger bulk description generation for missing pages
+                }}
+                onGenerateBrandIntelligence={() => {
+                  handleTabChange('brand');
+                  // TODO: Trigger brand intelligence generation
+                }}
+                onGoToPages={() => handleTabChange('pages')}
+                canUseAI={{
+                  keywords: aiPermissions.canUseAiKeywords,
+                  descriptions: aiPermissions.canUseAiDescriptions,
+                  brandIntelligence: aiPermissions.canUseAiContentGeneration
+                }}
               />
               
-              <div className="mt-6 pt-4 border-t flex justify-end">
-                <button
-                  onClick={() => setShowKeywordPrefs(false)}
-                  className="px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700"
-                >
-                  Done
-                </button>
+              {/* Quick Actions */}
+              <div className="bg-white rounded-lg shadow">
+                <div className="p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {userType === 'internal' && (
+                      <>
+                        <Link
+                          href={`/workflow/new?clientId=${client.id}`}
+                          className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200 hover:bg-green-100 transition-colors group"
+                        >
+                          <div className="flex items-center">
+                            <FileText className="w-5 h-5 text-green-600 mr-3" />
+                            <div className="text-left">
+                              <div className="font-medium text-gray-900">Create Workflow</div>
+                              <div className="text-xs text-gray-500">Start new content</div>
+                            </div>
+                          </div>
+                          <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-gray-600" />
+                        </Link>
+                        <Link
+                          href={`/clients/${client.id}/bulk-analysis`}
+                          className="flex items-center justify-between p-4 bg-indigo-50 rounded-lg border border-indigo-200 hover:bg-indigo-100 transition-colors group"
+                        >
+                          <div className="flex items-center">
+                            <BarChart2 className="w-5 h-5 text-indigo-600 mr-3" />
+                            <div className="text-left">
+                              <div className="font-medium text-gray-900">Bulk Analysis</div>
+                              <div className="text-xs text-gray-500">Analyze domains</div>
+                            </div>
+                          </div>
+                          <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-gray-600" />
+                        </Link>
+                      </>
+                    )}
+                    <button
+                      onClick={() => { handleTabChange('pages'); setShowAddForm(true); }}
+                      className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors group"
+                    >
+                      <div className="flex items-center">
+                        <Plus className="w-5 h-5 text-blue-600 mr-3" />
+                        <div className="text-left">
+                          <div className="font-medium text-gray-900">Add Pages</div>
+                          <div className="text-xs text-gray-500">Target URLs</div>
+                        </div>
+                      </div>
+                      <ChevronDown className="w-4 h-4 text-gray-400 group-hover:text-gray-600" />
+                    </button>
+                  </div>
+                </div>
               </div>
+
+              {/* Recent Activity */}
+              <ActivityTimeline clientId={client.id} limit={7} />
             </div>
           )}
 
-          {/* Add Pages Form */}
-          {showAddForm && (
-            <div className="bg-white rounded-lg shadow p-6 mb-6">
+          {/* Target Pages Tab */}
+          {activeTab === 'pages' && (
+            <div className="space-y-6">
+              {/* Add Pages Form */}
+              {showAddForm && (
+                <div className="bg-white rounded-lg shadow p-6 mb-6">
               <h3 className="text-lg font-medium mb-4">Add Target Pages</h3>
               <p className="text-sm text-gray-600 mb-4">
                 Add URLs from {client.name}'s website that you want to get links TO from guest posts
@@ -835,12 +960,12 @@ export default function ClientDetailPage() {
                   </button>
                 </div>
               </form>
-            </div>
-          )}
+                </div>
+              )}
 
-          {/* Keyword Generation Prompt */}
-          {showKeywordPrompt && (aiPermissions.canUseAiKeywords || aiPermissions.canUseAiDescriptions) && (
-            <div className="bg-white rounded-lg shadow p-6 mb-6 border-l-4 border-purple-500">
+              {/* Keyword Generation Prompt */}
+              {showKeywordPrompt && (aiPermissions.canUseAiKeywords || aiPermissions.canUseAiDescriptions) && (
+                <div className="bg-white rounded-lg shadow p-6 mb-6 border-l-4 border-purple-500">
               <h3 className="text-lg font-medium mb-4 text-purple-800">Generate Keywords & Descriptions for Target Pages?</h3>
               <p className="text-sm text-gray-600 mb-4">
                 {searchParams.get('promptKeywords') === 'true' 
@@ -868,12 +993,12 @@ export default function ClientDetailPage() {
                   Skip for Now
                 </button>
               </div>
-            </div>
-          )}
+                </div>
+              )}
 
-          {/* Bulk Keyword Generation Progress */}
-          {bulkKeywordProgress.total > 0 && (
-            <div className="bg-white rounded-lg shadow p-6 mb-6 border-l-4 border-blue-500">
+              {/* Bulk Keyword Generation Progress */}
+              {bulkKeywordProgress.total > 0 && (
+                <div className="bg-white rounded-lg shadow p-6 mb-6 border-l-4 border-blue-500">
               <h3 className="text-lg font-medium mb-4 text-blue-800">Generating Keywords & Descriptions...</h3>
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
@@ -890,26 +1015,35 @@ export default function ClientDetailPage() {
                   Please wait while AI generates keywords & descriptions for your target pages...
                 </p>
               </div>
-            </div>
-          )}
+                </div>
+              )}
 
-          {/* Filter and Bulk Actions */}
-          <div className="bg-white rounded-lg shadow mb-6">
-            <div className="p-4 border-b">
+              {/* Filter and Bulk Actions */}
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm mb-6">
+            <div className="p-5 border-b border-gray-100">
               <div className="flex flex-wrap items-center justify-between gap-4">
-                {/* Filters */}
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-x-2">
-                  <span className="text-xs sm:text-sm font-medium text-gray-700">Filter:</span>
-                  <select
-                    value={filter}
-                    onChange={(e) => setFilter(e.target.value as any)}
-                    className="text-xs sm:text-sm border border-gray-300 rounded-md px-2 sm:px-3 py-1"
+                {/* Left side: Filters and Add Button */}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-x-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs sm:text-sm font-medium text-gray-700">Filter:</span>
+                    <select
+                      value={filter}
+                      onChange={(e) => setFilter(e.target.value as any)}
+                      className="text-xs sm:text-sm border border-gray-300 rounded-md px-2 sm:px-3 py-1"
+                    >
+                      <option value="all">All Pages ({stats.total})</option>
+                      <option value="active">Active ({stats.active})</option>
+                      <option value="inactive">Inactive ({stats.inactive})</option>
+                      <option value="completed">Completed ({stats.completed})</option>
+                    </select>
+                  </div>
+                  <button
+                    onClick={() => setShowAddForm(true)}
+                    className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-xs sm:text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
                   >
-                    <option value="all">All Pages ({stats.total})</option>
-                    <option value="active">Active ({stats.active})</option>
-                    <option value="inactive">Inactive ({stats.inactive})</option>
-                    <option value="completed">Completed ({stats.completed})</option>
-                  </select>
+                    <Plus className="w-4 h-4 mr-1.5" />
+                    Add Pages
+                  </button>
                 </div>
 
                 {/* Bulk Actions */}
@@ -949,95 +1083,136 @@ export default function ClientDetailPage() {
               {filteredPages.length > 0 ? (
                 <>
                   {/* Header */}
-                  <div className="bg-gray-50 px-4 py-3 border-b flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={selectedPages.length === filteredPages.length && filteredPages.length > 0}
-                      onChange={toggleSelectAll}
-                      className="mr-3"
-                    />
-                    <div className="text-sm font-medium text-gray-700">
-                      Select All ({filteredPages.length})
+                  <div className="bg-gray-50/50 px-5 py-4 border-b border-gray-100 flex items-center">
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedPages.length === filteredPages.length && filteredPages.length > 0}
+                        onChange={toggleSelectAll}
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mr-3"
+                      />
+                      <div className="text-sm font-medium text-gray-700">
+                        Select All ({filteredPages.length})
+                      </div>
                     </div>
                   </div>
 
                   {/* Pages */}
-                  <div className="divide-y divide-gray-200">
+                  <div className="divide-y divide-gray-100">
                     {filteredPages.map((page: any) => (
-                      <div key={page.id} className="px-4 py-4 flex items-center hover:bg-gray-50">
-                        <input
-                          type="checkbox"
-                          checked={selectedPages.includes(page.id)}
-                          onChange={() => togglePageSelection(page.id)}
-                          className="mr-3"
-                        />
-                        
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center">
-                            <a
-                              href={page.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:text-blue-800 text-sm sm:font-medium truncate mr-2"
-                            >
-                              {page.url}
-                            </a>
-                            <ExternalLink className="w-3 h-3 text-gray-400 flex-shrink-0" />
-                          </div>
-                          <div className="text-xs sm:text-sm text-gray-500 mt-1">
-                            <span className="hidden sm:inline">Domain: {page.domain} • </span>
-                            <span className="sm:hidden">{page.domain} • </span>
-                            Added: {new Date(page.addedAt).toLocaleDateString()}
-                            {page.completedAt && (
-                              <span className="hidden sm:inline"> • Completed: {new Date(page.completedAt).toLocaleDateString()}</span>
-                            )}
+                      <div key={page.id} className="px-5 py-5 hover:bg-gray-50/50 transition-colors duration-150">
+                        <div className="flex items-start space-x-4">
+                          {/* Checkbox */}
+                          <div className="flex-shrink-0 pt-1">
+                            <input
+                              type="checkbox"
+                              checked={selectedPages.includes(page.id)}
+                              onChange={() => togglePageSelection(page.id)}
+                              className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            />
                           </div>
                           
-                          {/* Keywords Section */}
-                          <div className="mt-2 space-y-2">
-                            <KeywordDisplay 
-                              keywords={page.keywords} 
-                              className="text-xs"
-                              maxDisplay={3}
-                              targetPageId={page.id}
-                              onKeywordsUpdate={handleKeywordsUpdate}
-                            />
-                            {aiPermissions.canUseAiKeywords && (
-                              <KeywordGenerationButton
-                                targetPageId={page.id}
-                                targetUrl={page.url}
-                                onSuccess={handleKeywordSuccess}
-                                onError={handleKeywordError}
-                                size="sm"
-                              />
-                            )}
-                          </div>
+                          {/* Main Content */}
+                          <div className="flex-1 min-w-0">
+                            {/* URL Header */}
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center min-w-0">
+                                <a
+                                  href={page.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 hover:text-blue-800 font-medium text-sm truncate mr-2"
+                                >
+                                  {page.url}
+                                </a>
+                                <ExternalLink className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                              </div>
+                              
+                              {/* Status Badge */}
+                              <div className="flex-shrink-0 ml-4">
+                                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(page.status)}`}>
+                                  {getStatusIcon(page.status)}
+                                  <span className="ml-1 capitalize">{page.status}</span>
+                                </span>
+                              </div>
+                            </div>
+                            
+                            {/* Metadata */}
+                            <div className="text-xs text-gray-500 mb-3 flex items-center space-x-3">
+                              <span className="flex items-center">
+                                <span className="font-medium">Domain:</span>
+                                <span className="ml-1">{page.domain}</span>
+                              </span>
+                              <span className="text-gray-300">•</span>
+                              <span className="flex items-center">
+                                <span className="font-medium">Added:</span>
+                                <span className="ml-1">{new Date(page.addedAt).toLocaleDateString()}</span>
+                              </span>
+                              {page.completedAt && (
+                                <>
+                                  <span className="text-gray-300">•</span>
+                                  <span className="flex items-center">
+                                    <span className="font-medium">Completed:</span>
+                                    <span className="ml-1">{new Date(page.completedAt).toLocaleDateString()}</span>
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                            
+                            {/* Content Sections Grid */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                              {/* Keywords Section */}
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <h4 className="text-xs font-medium text-gray-700 uppercase tracking-wide">Keywords</h4>
+                                </div>
+                                <KeywordDisplay 
+                                  keywords={page.keywords} 
+                                  className="text-xs"
+                                  maxDisplay={24}
+                                  targetPageId={page.id}
+                                  onKeywordsUpdate={handleKeywordsUpdate}
+                                  canGenerate={aiPermissions.canUseAiKeywords}
+                                  onGenerate={() => {
+                                    // TODO: Implement direct keyword generation
+                                    console.log('Generate keywords for:', page.id);
+                                  }}
+                                />
+                              </div>
 
-                          {/* Description Section */}
-                          <div className="mt-2 space-y-2">
-                            <DescriptionDisplay 
-                              description={page.description} 
-                              className="text-xs"
-                              targetPageId={page.id}
-                              onDescriptionUpdate={handleDescriptionUpdate}
-                            />
-                            {aiPermissions.canUseAiDescriptions && (
-                              <DescriptionGenerationButton
-                                targetPageId={page.id}
-                                targetUrl={page.url}
-                                onSuccess={handleDescriptionSuccess}
-                                onError={handleDescriptionError}
-                                size="sm"
-                              />
-                            )}
+                              {/* Description Section */}
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <h4 className="text-xs font-medium text-gray-700 uppercase tracking-wide">Description</h4>
+                                </div>
+                                <DescriptionDisplay 
+                                  description={page.description} 
+                                  className="text-xs"
+                                  targetPageId={page.id}
+                                  onDescriptionUpdate={handleDescriptionUpdate}
+                                  canGenerate={aiPermissions.canUseAiDescriptions}
+                                  onGenerate={async () => {
+                                    try {
+                                      const response = await fetch(`/api/target-pages/${page.id}/description`, {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ targetUrl: page.url })
+                                      });
+                                      if (response.ok) {
+                                        const data = await response.json();
+                                        handleDescriptionSuccess(data.description);
+                                      } else {
+                                        const error = await response.json();
+                                        handleDescriptionError(error.error || 'Failed to generate description');
+                                      }
+                                    } catch (error) {
+                                      handleDescriptionError(error instanceof Error ? error.message : 'Unknown error');
+                                    }
+                                  }}
+                                />
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                        
-                        <div className="flex items-center space-x-2">
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(page.status)}`}>
-                            {getStatusIcon(page.status)}
-                            <span className="ml-1 capitalize">{page.status}</span>
-                          </span>
                         </div>
                       </div>
                     ))}
@@ -1054,38 +1229,272 @@ export default function ClientDetailPage() {
                   </p>
                 </div>
               )}
+              </div>
             </div>
+            </div>
+          )}
 
-            {/* Advanced Bulk Operations Section */}
-            <div className="mt-8 border-t border-gray-200 pt-6">
+          {/* Orders & Projects Tab */}
+          {activeTab === 'orders' && userType === 'internal' && (
+            <div className="space-y-6">
+              <div className="bg-white rounded-lg shadow">
+                <div className="p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Orders & Projects</h3>
+                  <div className="space-y-4">
+                    <Link
+                      href={`/orders?client=${client.id}`}
+                      className="block p-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <ShoppingCart className="w-5 h-5 text-gray-600 mr-3" />
+                          <div>
+                            <div className="font-medium text-gray-900">View Orders</div>
+                            <div className="text-xs text-gray-500">See all orders for this client</div>
+                          </div>
+                        </div>
+                        <ExternalLink className="w-4 h-4 text-gray-400" />
+                      </div>
+                    </Link>
+                    <Link
+                      href={`/clients/${client.id}/bulk-analysis`}
+                      className="block p-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <BarChart2 className="w-5 h-5 text-indigo-600 mr-3" />
+                          <div>
+                            <div className="font-medium text-gray-900">Bulk Analysis Projects</div>
+                            <div className="text-xs text-gray-500">View and manage bulk analysis</div>
+                          </div>
+                        </div>
+                        <ExternalLink className="w-4 h-4 text-gray-400" />
+                      </div>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Brand & Content Tab */}
+          {activeTab === 'brand' && (
+            <div className="space-y-6">
+              {/* Brand Intelligence - Available to both internal and external users */}
+              <div className="bg-white rounded-lg shadow">
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">Brand Intelligence</h3>
+                      <p className="text-gray-600 text-sm">
+                        {userType === 'internal' 
+                          ? 'AI-powered deep research and brand brief generation'
+                          : 'Collaborate on brand research and brief creation'
+                        }
+                      </p>
+                    </div>
+                    <Link
+                      href={`/clients/${client.id}/brand-intelligence`}
+                      className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                    >
+                      <Brain className="w-4 h-4 mr-2" />
+                      {userType === 'internal' ? 'Open Brand Intelligence' : 'View Brand Intelligence'}
+                    </Link>
+                  </div>
+                </div>
+              </div>
+
+              {/* Topic Preferences */}
+              <div className="bg-white rounded-lg shadow">
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Topic Preferences</h3>
+                    <button
+                      onClick={() => setShowKeywordPrefs(!showKeywordPrefs)}
+                      className="text-blue-600 hover:text-blue-700"
+                    >
+                      {showKeywordPrefs ? 'Hide' : 'Edit'}
+                    </button>
+                  </div>
+                  {showKeywordPrefs ? (
+                    <>
+                      <p className="text-sm text-gray-600 mb-6">
+                        Set default guest post topic preferences for this client. These will be automatically applied to all new workflows.
+                      </p>
+                      <KeywordPreferencesSelector
+                        preferences={getClientKeywordPreferences(client) || undefined}
+                        onChange={handleClientKeywordPreferencesUpdate}
+                      />
+                      <div className="mt-6 pt-4 border-t flex justify-end">
+                        <button
+                          onClick={() => setShowKeywordPrefs(false)}
+                          className="px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700"
+                        >
+                          Save Preferences
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-sm text-gray-600">
+                      {getClientKeywordPreferences(client) ? (
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                          <p className="font-medium mb-2">Current Preferences:</p>
+                          <p className="text-xs">{JSON.stringify(getClientKeywordPreferences(client), null, 2)}</p>
+                        </div>
+                      ) : (
+                        <p>No topic preferences set. Click Edit to configure.</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Settings Tab */}
+          {activeTab === 'settings' && (
+            <div className="space-y-6">
+              {/* Account Information */}
+              <div className="bg-white rounded-lg shadow">
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {userType === 'account' ? 'Brand Information' : 'Account Information'}
+                    </h3>
+                    {!isEditingSettings ? (
+                      <button
+                        onClick={startEditingSettings}
+                        className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+                      >
+                        <Edit className="w-4 h-4 mr-1.5" />
+                        Edit
+                      </button>
+                    ) : (
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={saveSettingsChanges}
+                          className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors"
+                        >
+                          <Check className="w-4 h-4 mr-1.5" />
+                          Save
+                        </button>
+                        <button
+                          onClick={cancelEditingSettings}
+                          className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {isEditingSettings ? (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          {userType === 'account' ? 'Brand Name' : 'Client Name'}
+                        </label>
+                        <input
+                          type="text"
+                          value={editedClient.name}
+                          onChange={(e) => setEditedClient({ ...editedClient, name: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Website</label>
+                        <input
+                          type="url"
+                          value={editedClient.website}
+                          onChange={(e) => setEditedClient({ ...editedClient, website: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <textarea
+                          value={editedClient.description}
+                          onChange={(e) => setEditedClient({ ...editedClient, description: e.target.value })}
+                          rows={3}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Brief description of the client/brand..."
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                          {userType === 'account' ? 'Brand Name' : 'Client Name'}
+                        </label>
+                        <p className="mt-1 text-sm text-gray-900">{client.name}</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Website</label>
+                        <a
+                          href={client.website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-1 text-sm text-blue-600 hover:text-blue-800 inline-flex items-center"
+                        >
+                          {client.website}
+                          <ExternalLink className="w-3 h-3 ml-1" />
+                        </a>
+                      </div>
+                      {(client as any).description && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Description</label>
+                          <p className="mt-1 text-sm text-gray-900">{(client as any).description}</p>
+                        </div>
+                      )}
+                      {accountInfo && userType === 'internal' && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Account Owner</label>
+                          <p className="mt-1 text-sm text-gray-900">{accountInfo.name || accountInfo.email}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Advanced Tools */}
               <div className="bg-gray-50 border border-gray-200 rounded-lg">
                 <button
                   onClick={() => setShowBulkUrlUpdate(!showBulkUrlUpdate)}
-                  className="w-full px-4 py-3 text-left flex items-center justify-between hover:bg-gray-100 transition-colors"
-                >
-                  <div className="flex items-center space-x-2">
-                    <Target className="w-5 h-5 text-gray-600" />
-                    <span className="font-medium text-gray-900">Advanced: Bulk URL Status Update</span>
-                    <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded">Rarely Used</span>
-                  </div>
-                  {showBulkUrlUpdate ? (
-                    <ChevronUp className="w-5 h-5 text-gray-600" />
-                  ) : (
-                    <ChevronDown className="w-5 h-5 text-gray-600" />
-                  )}
-                </button>
+                  className="w-full px-4 py-3 text-left flex items-center justify-between hover:bg-gray-100 transition-colors rounded-lg"
+              >
+                <div className="flex items-center space-x-2">
+                  <Settings className="w-5 h-5 text-gray-500" />
+                  <span className="font-medium text-gray-700">Advanced Settings</span>
+                  <span className="text-xs text-gray-500 bg-white px-2 py-0.5 rounded border border-gray-300">Power User Tools</span>
+                </div>
+                {showBulkUrlUpdate ? (
+                  <ChevronUp className="w-5 h-5 text-gray-500" />
+                ) : (
+                  <ChevronDown className="w-5 h-5 text-gray-500" />
+                )}
+              </button>
 
-                {showBulkUrlUpdate && (
-                  <div className="border-t border-gray-200 p-4 space-y-4">
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                      <div className="flex items-start space-x-2">
-                        <AlertCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                        <div className="text-xs text-blue-700">
-                          <p className="font-medium mb-1">How this works:</p>
-                          <p>1. Paste a list of URLs (one per line) in the textarea below</p>
-                          <p>2. Select the target status you want to apply</p>
-                          <p>3. Preview which pages will be updated</p>
-                          <p>4. Apply the changes to all matched pages at once</p>
+              {showBulkUrlUpdate && (
+                <div className="border-t border-gray-200 bg-white rounded-b-lg">
+                  <div className="p-6 space-y-6">
+                    {/* Bulk URL Status Update Tool */}
+                    <div>
+                      <h4 className="text-base font-medium text-gray-900 mb-3 flex items-center">
+                        <Target className="w-4 h-4 mr-2 text-gray-600" />
+                        Bulk URL Status Update
+                      </h4>
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                        <div className="flex items-start space-x-2">
+                          <AlertCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                          <div className="text-xs text-blue-700">
+                            <p className="font-medium mb-1">How this works:</p>
+                            <p>1. Paste a list of URLs (one per line) in the textarea below</p>
+                            <p>2. Select the target status you want to apply</p>
+                            <p>3. Preview which pages will be updated</p>
+                            <p>4. Apply the changes to all matched pages at once</p>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1197,11 +1606,11 @@ export default function ClientDetailPage() {
                       </div>
                     </div>
                   </div>
-                )}
+                </div>
+              )}
               </div>
             </div>
-
-          </div>
+          )}
         </div>
       </div>
     </AuthWrapper>

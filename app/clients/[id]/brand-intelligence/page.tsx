@@ -7,15 +7,22 @@ import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
 import { BrandIntelligenceGenerator } from '@/components/ui/BrandIntelligenceGenerator';
 import { ArrowLeft } from 'lucide-react';
-import { clientStorage } from '@/lib/userStorage';
+import { clientStorage, sessionStorage } from '@/lib/userStorage';
 import { Client } from '@/types/user';
 
 export default function BrandIntelligencePage() {
   const params = useParams();
   const clientId = params.id as string;
   const [client, setClient] = useState<Client | null>(null);
+  const [userType, setUserType] = useState<string>('');
 
   useEffect(() => {
+    // Get user type from session
+    const session = sessionStorage.getSession();
+    if (session) {
+      setUserType(session.userType || 'internal');
+    }
+
     if (clientId) {
       loadClient();
     }
@@ -62,11 +69,12 @@ export default function BrandIntelligencePage() {
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Brand Intelligence</h1>
             <p className="text-gray-600">
-              AI-powered deep research and brand brief generation for comprehensive client understanding.
+              <strong>Critical for SEO Strategy:</strong> Gathers accurate brand information for article creation, 
+              then publishes this data so search engines and AI models learn what your business actually does.
             </p>
           </div>
           
-          <BrandIntelligenceGenerator clientId={clientId} />
+          <BrandIntelligenceGenerator clientId={clientId} userType={userType} />
         </div>
       </div>
     </AuthWrapper>
