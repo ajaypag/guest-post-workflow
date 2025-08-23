@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
-import { publishers, websites, publisherWebsiteRelationships } from '@/lib/db/schema';
+import { db } from '@/lib/db/connection';
+import { publishers, websites } from '@/lib/db/schema';
+import { publisherWebsites } from '@/lib/db/accountSchema';
 import { eq, and, inArray } from 'drizzle-orm';
-import { getServerSession } from '@/lib/auth';
+import { AuthServiceServer } from '@/lib/auth-server';
 import { Resend } from 'resend';
 import crypto from 'crypto';
 
@@ -10,7 +11,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession();
+    const session = await AuthServiceServer.getSession(request);
     if (!session || session.userType !== 'internal') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -60,14 +61,13 @@ export async function POST(request: NextRequest) {
         }
 
         // Get publisher's websites for the email
-        const publisherWebsites = await db
+        const publisherWebsitesList = await db
           .select({
-            domain: websites.domain,
-            url: websites.url
+            domain: websites.domain
           })
-          .from(publisherWebsiteRelationships)
-          .innerJoin(websites, eq(websites.id, publisherWebsiteRelationships.websiteId))
-          .where(eq(publisherWebsiteRelationships.publisherId, publisher.id))
+          .from(publisherWebsites)
+          .innerJoin(websites, eq(websites.id, publisherWebsites.websiteId))
+          .where(eq(publisherWebsites.publisherId, publisher.id))
           .limit(5);
 
         // Generate secure invitation token
@@ -108,13 +108,13 @@ export async function POST(request: NextRequest) {
       
       <p>We've been successfully working with ${publisher.companyName ? `<strong>${publisher.companyName}</strong>` : 'your websites'} and are excited to invite you to join our exclusive publisher platform.</p>
       
-      ${publisherWebsites.length > 0 ? `
+      ${publisherWebsitesList.length > 0 ? `
       <div class="websites">
         <strong style="color: #1f2937; font-size: 16px;">Your Registered Websites:</strong>
-        ${publisherWebsites.map(w => `
+        ${publisherWebsitesList.map((w: any) => `
         <div class="website-item">🌐 ${w.domain}</div>
         `).join('')}
-        ${publisherWebsites.length === 5 ? '<div class="website-item" style="font-style: italic;">...and more websites in your portfolio</div>' : ''}
+        ${publisherWebsitesList.length === 5 ? '<div class="website-item" style="font-style: italic;">...and more websites in your portfolio</div>' : ''}
       </div>
       ` : ''}
       
@@ -176,9 +176,9 @@ Hello ${publisher.contactName || 'Publisher'},
 
 We've been successfully working with ${publisher.companyName || 'your websites'} and are excited to invite you to join our exclusive publisher platform.
 
-${publisherWebsites.length > 0 ? `Your Registered Websites:
-${publisherWebsites.map(w => `- ${w.domain}`).join('\n')}
-${publisherWebsites.length === 5 ? '...and more websites in your portfolio' : ''}
+${publisherWebsitesList.length > 0 ? `Your Registered Websites:
+${publisherWebsitesList.map((w: any) => `- ${w.domain}`).join('\n')}
+${publisherWebsitesList.length === 5 ? '...and more websites in your portfolio' : ''}
 ` : ''}
 
 By claiming your account, you'll unlock:

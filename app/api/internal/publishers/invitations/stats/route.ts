@@ -1,12 +1,12 @@
-import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/db/connection';
 import { publishers } from '@/lib/db/schema';
 import { eq, and, isNull, sql } from 'drizzle-orm';
-import { getServerSession } from '@/lib/auth';
+import { AuthServiceServer } from '@/lib/auth-server';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession();
+    const session = await AuthServiceServer.getSession(request);
     if (!session || session.userType !== 'internal') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

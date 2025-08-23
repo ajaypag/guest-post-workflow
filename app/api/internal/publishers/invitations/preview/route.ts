@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
-import { publishers, websites, publisherWebsiteRelationships } from '@/lib/db/schema';
+import { db } from '@/lib/db/connection';
+import { publishers, websites } from '@/lib/db/schema';
+import { publisherWebsites } from '@/lib/db/accountSchema';
 import { eq, and } from 'drizzle-orm';
-import { getServerSession } from '@/lib/auth';
+import { AuthServiceServer } from '@/lib/auth-server';
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession();
+    const session = await AuthServiceServer.getSession(request);
     if (!session || session.userType !== 'internal') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -29,14 +30,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Get publisher's websites
-    const publisherWebsites = await db
+    const publisherWebsitesList = await db
       .select({
-        domain: websites.domain,
-        url: websites.url
+        domain: websites.domain
       })
-      .from(publisherWebsiteRelationships)
-      .innerJoin(websites, eq(websites.id, publisherWebsiteRelationships.websiteId))
-      .where(eq(publisherWebsiteRelationships.publisherId, publisherId))
+      .from(publisherWebsites)
+      .innerJoin(websites, eq(websites.id, publisherWebsites.websiteId))
+      .where(eq(publisherWebsites.publisherId, publisherId))
       .limit(5); // Show first 5 websites in preview
 
     // Generate invitation token (would be real in production)
@@ -72,13 +72,13 @@ export async function POST(request: NextRequest) {
       
       <p>We've been working with your ${publisher.companyName ? `company ${publisher.companyName}` : 'websites'} and would love to invite you to join our publisher platform.</p>
       
-      ${publisherWebsites.length > 0 ? `
+      ${publisherWebsitesList.length > 0 ? `
       <div class="websites">
         <strong>Your Websites:</strong>
-        ${publisherWebsites.map(w => `
+        ${publisherWebsitesList.map((w: any) => `
         <div class="website-item">${w.domain}</div>
         `).join('')}
-        ${publisherWebsites.length === 5 ? '<div class="website-item">...and more</div>' : ''}
+        ${publisherWebsitesList.length === 5 ? '<div class="website-item">...and more</div>' : ''}
       </div>
       ` : ''}
       
@@ -119,9 +119,9 @@ Hello ${publisher.contactName || 'Publisher'},
 
 We've been working with your ${publisher.companyName ? `company ${publisher.companyName}` : 'websites'} and would love to invite you to join our publisher platform.
 
-${publisherWebsites.length > 0 ? `Your Websites:
-${publisherWebsites.map(w => `- ${w.domain}`).join('\n')}
-${publisherWebsites.length === 5 ? '...and more' : ''}
+${publisherWebsitesList.length > 0 ? `Your Websites:
+${publisherWebsitesList.map((w: any) => `- ${w.domain}`).join('\n')}
+${publisherWebsitesList.length === 5 ? '...and more' : ''}
 ` : ''}
 
 By claiming your account, you'll be able to:
@@ -149,7 +149,7 @@ If you didn't expect this email, you can safely ignore it.
       previewData: {
         publisherName: publisher.contactName || publisher.companyName || 'Publisher',
         email: publisher.email,
-        websiteCount: publisherWebsites.length,
+        websiteCount: publisherWebsitesList.length,
         claimUrl
       }
     });

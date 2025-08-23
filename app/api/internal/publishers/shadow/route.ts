@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
-import { publishers, websites, publisherWebsiteRelationships } from '@/lib/db/schema';
+import { db } from '@/lib/db/connection';
+import { publishers, websites } from '@/lib/db/schema';
+import { publisherWebsites } from '@/lib/db/accountSchema';
 import { eq, and, isNull, desc, like, or, sql } from 'drizzle-orm';
-import { getServerSession } from '@/lib/auth';
+import { AuthServiceServer } from '@/lib/auth-server';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession();
+    const session = await AuthServiceServer.getSession(request);
     if (!session || session.userType !== 'internal') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -34,20 +35,21 @@ export async function GET(request: NextRequest) {
 
     // Add search filter
     if (search) {
-      conditions.push(
-        or(
-          like(publishers.email, `%${search}%`),
-          like(publishers.companyName, `%${search}%`),
-          like(publishers.contactName, `%${search}%`)
-        )
+      const searchCondition = or(
+        like(publishers.email, `%${search}%`),
+        like(publishers.companyName, `%${search}%`),
+        like(publishers.contactName, `%${search}%`)
       );
+      if (searchCondition) {
+        conditions.push(searchCondition);
+      }
     }
 
     // Get total count
     const [countResult] = await db
       .select({ count: sql<number>`count(*)::int` })
       .from(publishers)
-      .where(and(...conditions));
+      .where(conditions.length > 0 ? and(...conditions) : undefined);
 
     // Get publishers with website counts
     const shadowPublishers = await db
@@ -62,13 +64,13 @@ export async function GET(request: NextRequest) {
         createdAt: publishers.createdAt,
         websiteCount: sql<number>`(
           SELECT COUNT(DISTINCT w.id)::int
-          FROM ${publisherWebsiteRelationships} pwr
-          JOIN ${websites} w ON w.id = pwr.website_id
-          WHERE pwr.publisher_id = ${publishers}.id
+          FROM ${publisherWebsites} pw
+          JOIN ${websites} w ON w.id = pw.website_id
+          WHERE pw.publisher_id = ${publishers}.id
         )`
       })
       .from(publishers)
-      .where(and(...conditions))
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
       .orderBy(desc(publishers.createdAt))
       .limit(limit)
       .offset(offset);
