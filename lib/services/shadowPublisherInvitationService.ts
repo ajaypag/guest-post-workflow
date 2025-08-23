@@ -20,7 +20,13 @@ export class ShadowPublisherInvitationService {
   /**
    * Send invitation email to a shadow publisher
    */
-  async sendInvitation(publisherId: string): Promise<boolean> {
+  async sendInvitation(
+    publisherId: string, 
+    recipientEmail?: string,
+    contactName?: string,
+    invitationToken?: string,
+    source?: string
+  ): Promise<{ success: boolean; data?: { id: string }; error?: string }> {
     try {
       // Get publisher details
       const [publisher] = await db
@@ -36,27 +42,27 @@ export class ShadowPublisherInvitationService {
       
       if (!publisher) {
         console.error('Publisher not found or not a shadow publisher:', publisherId);
-        return false;
+        return { success: false, error: 'Publisher not found' };
       }
       
-      // Check if invitation was already sent recently
-      if (publisher.invitationSentAt) {
+      // Check if invitation was already sent recently (only if not overriding)
+      if (!recipientEmail && publisher.invitationSentAt) {
         const hoursSinceSent = (Date.now() - publisher.invitationSentAt.getTime()) / (1000 * 60 * 60);
         if (hoursSinceSent < 24) {
           console.log('Invitation already sent recently:', publisherId);
-          return false;
+          return { success: false, error: 'Invitation already sent recently' };
         }
       }
       
-      // Generate or use existing invitation token
-      let invitationToken = publisher.invitationToken;
-      if (!invitationToken) {
-        invitationToken = this.generateInvitationToken();
+      // Use provided token or generate/use existing invitation token
+      let finalInvitationToken = invitationToken || publisher.invitationToken;
+      if (!finalInvitationToken) {
+        finalInvitationToken = this.generateInvitationToken();
         
         // Update publisher with token
         await db.update(publishers)
           .set({
-            invitationToken,
+            invitationToken: finalInvitationToken,
             invitationExpiresAt: new Date(Date.now() + shadowPublisherConfig.invitation.expiryDays * 24 * 60 * 60 * 1000),
             updatedAt: new Date(),
           })
@@ -65,42 +71,48 @@ export class ShadowPublisherInvitationService {
       
       // Build claim URL
       const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-      const claimUrl = `${baseUrl}/publisher/claim?token=${invitationToken}`;
+      const claimUrl = `${baseUrl}/publisher/claim?token=${finalInvitationToken}`;
+      
+      // Use provided email or publisher email
+      const emailTo = recipientEmail || publisher.email;
+      const publisherName = contactName || publisher.contactName || 'Publisher';
       
       // Send email
       const emailHtml = this.buildInvitationEmail(
-        publisher.contactName || 'Publisher',
-        publisher.email,
+        publisherName,
+        emailTo,
         claimUrl,
         publisher.source === 'manyreach'
       );
       
       const result = await this.getResend().emails.send({
         from: process.env.EMAIL_FROM || 'info@linkio.com',
-        to: publisher.email,
+        to: emailTo,
         subject: 'Complete Your Publisher Account Setup',
         html: emailHtml,
       });
       
       if (result.error) {
         console.error('Failed to send invitation email:', result.error);
-        return false;
+        return { success: false, error: result.error.message || 'Failed to send email' };
       }
       
-      // Update invitation sent timestamp
-      await db.update(publishers)
-        .set({
-          invitationSentAt: new Date(),
-          updatedAt: new Date(),
-        })
-        .where(eq(publishers.id, publisherId));
+      // Update invitation sent timestamp (only if not using override email)
+      if (!recipientEmail) {
+        await db.update(publishers)
+          .set({
+            invitationSentAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .where(eq(publishers.id, publisherId));
+      }
       
-      console.log('Invitation sent successfully to:', publisher.email);
-      return true;
+      console.log('Invitation sent successfully to:', emailTo);
+      return { success: true, data: { id: result.data?.id || '' } };
       
     } catch (error) {
       console.error('Failed to send invitation:', error);
-      return false;
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
   
@@ -169,13 +181,13 @@ export class ShadowPublisherInvitationService {
       
       for (const publisher of publishersToInvite) {
         try {
-          const success = await this.sendInvitation(publisher.id);
-          if (success) {
+          const result = await this.sendInvitation(publisher.id);
+          if (result.success) {
             results.sent++;
             console.log(`✅ Sent invitation to ${publisher.email}`);
           } else {
             results.failed++;
-            results.errors?.push(`Failed to send to ${publisher.email}`);
+            results.errors?.push(`Failed to send to ${publisher.email}: ${result.error}`);
           }
         } catch (error) {
           results.failed++;
@@ -360,3 +372,6 @@ export class ShadowPublisherInvitationService {
     `;
   }
 }
+
+// Export default instance
+export const shadowPublisherInvitationService = new ShadowPublisherInvitationService();

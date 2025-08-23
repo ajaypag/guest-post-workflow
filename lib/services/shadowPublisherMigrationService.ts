@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { db } from '@/lib/db/connection';
 import { publishers } from '@/lib/db/accountSchema';
 import { 

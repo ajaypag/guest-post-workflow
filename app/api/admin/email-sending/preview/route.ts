@@ -63,7 +63,6 @@ export async function POST(request: NextRequest) {
     const emailComponent = PublisherMigrationInvitationEmail({
       publisherName: publisher.contactName || 'Publisher',
       companyName: publisher.companyName || 'Your Company',
-      email: publisher.email,
       websites,
       claimUrl: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/publisher/claim?token=${publisher.invitationToken}`,
       totalWebsites: websites.length,
@@ -76,7 +75,6 @@ export async function POST(request: NextRequest) {
     const text = PublisherMigrationInvitationEmailPlainText({
       publisherName: publisher.contactName || 'Publisher',
       companyName: publisher.companyName || 'Your Company',
-      email: publisher.email,
       websites,
       claimUrl: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/publisher/claim?token=${publisher.invitationToken}`,
       totalWebsites: websites.length,

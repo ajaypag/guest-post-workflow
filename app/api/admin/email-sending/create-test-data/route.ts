@@ -70,8 +70,10 @@ export async function POST(request: NextRequest) {
         domain: `${publisher.companyName?.toLowerCase().replace(/\s+/g, '-')}.com`,
         guestPostCost: '250',
         avgResponseTimeHours: 48,
-        successRatePercentage: 85,
+        successRatePercentage: '85',
         source: 'test',
+        airtableCreatedAt: new Date(),
+        airtableUpdatedAt: new Date(),
         createdAt: new Date(),
         updatedAt: new Date()
       });
