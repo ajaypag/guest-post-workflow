@@ -187,7 +187,7 @@ export class ShadowPublisherMigrationService {
                 offeringType: 'guest_post',
                 basePrice: parseInt(parseFloat(shadowRow.guest_post_cost) * 100) || 0, // Convert to cents
                 currency: 'USD',
-                turnaroundDays: parseInt(shadowRow.turnaround_time) || 7,
+                turnaroundDays: parseInt(shadowRow.turnaround_time) || null,
                 isActive: true,
                 attributes: {
                   migratedAt: new Date().toISOString(),

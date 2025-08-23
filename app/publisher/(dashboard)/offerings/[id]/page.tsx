@@ -269,7 +269,7 @@ export default function PublisherOfferingDetailPage({ params }: { params: Promis
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-gray-900">
-                    {offering.minWordCount || 0} - {offering.maxWordCount || 0}
+                    {offering.minWordCount ? `${offering.minWordCount} - ${offering.maxWordCount || 'No max'}` : 'Not specified'}
                   </p>
                   <p className="text-xs text-gray-500">Words per article</p>
                 </div>

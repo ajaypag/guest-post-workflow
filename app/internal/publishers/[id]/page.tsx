@@ -115,6 +115,7 @@ export default async function PublisherDetailPage({
   params: Promise<{ id: string }> 
 }) {
   const { id } = await params;
+  const publisherId = id;
   const data = await getPublisherDetails(id);
 
   if (!data) {
@@ -251,7 +252,7 @@ export default async function PublisherDetailPage({
               </div>
               
               {offerings.length > 0 ? (
-                <div className="overflow-hidden">
+                <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
@@ -269,6 +270,9 @@ export default async function PublisherDetailPage({
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Availability
+                        </th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                          Actions
                         </th>
                       </tr>
                     </thead>
@@ -300,6 +304,14 @@ export default async function PublisherDetailPage({
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {offering.currentAvailability || 'available'}
                           </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <Link
+                              href={`/internal/publishers/${publisherId}/offerings/${offering.id}/edit`}
+                              className="text-indigo-600 hover:text-indigo-900"
+                            >
+                              Edit
+                            </Link>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -321,7 +333,7 @@ export default async function PublisherDetailPage({
               </div>
               
               {relationships.length > 0 ? (
-                <div className="overflow-hidden">
+                <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>

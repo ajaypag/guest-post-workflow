@@ -52,13 +52,13 @@ export default function OfferingForm({ websites, offering, isNew }: OfferingForm
     offeringType: offering?.offeringType || 'guest_post',
     basePrice: offering ? (parseFloat(offering.basePrice) / 100).toString() : '',
     currency: offering?.currency || 'USD',
-    turnaroundDays: offering?.turnaroundDays?.toString() || '7',
+    turnaroundDays: offering?.turnaroundDays?.toString() || '',
     isActive: offering?.isActive ?? true,
     availability: offering?.availability || 'available',
     
     // Content Requirements
-    minWords: offering?.contentRequirements?.minWords?.toString() || '500',
-    maxWords: offering?.contentRequirements?.maxWords?.toString() || '3000',
+    minWords: offering?.contentRequirements?.minWords?.toString() || '',
+    maxWords: offering?.contentRequirements?.maxWords?.toString() || '',
     allowedTopics: offering?.contentRequirements?.allowedTopics || [],
     prohibitedTopics: offering?.contentRequirements?.prohibitedTopics || [],
     includeImages: offering?.contentRequirements?.includeImages ?? true,

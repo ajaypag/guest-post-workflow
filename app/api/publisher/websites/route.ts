@@ -206,7 +206,7 @@ export async function POST(request: NextRequest) {
         offeringType: 'guest_post',
         basePrice: 10000, // Default $100 in cents
         currency: 'USD',
-        turnaroundDays: 7,
+        turnaroundDays: null,
         currentAvailability: 'available',
         isActive: true
       })

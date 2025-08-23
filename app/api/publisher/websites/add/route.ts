@@ -172,7 +172,7 @@ export async function POST(request: NextRequest) {
           websiteLanguage: websiteLanguage || 'en',
           targetAudience: targetAudience || null,
           publisherTier: publisherTier || 'standard',
-          typicalTurnaroundDays: typicalTurnaroundDays || 7,
+          typicalTurnaroundDays: typicalTurnaroundDays || null,
           // Remove per-offering requirements from website level (now stored per-offering)
           acceptsDoFollow: true, // Default, overridden per-offering
           requiresAuthorBio: false, // Default, overridden per-offering  
@@ -212,9 +212,9 @@ export async function POST(request: NextRequest) {
           offeringType: offeringData.offeringType || 'guest_post',
           basePrice: offeringData.basePrice || 10000, // Already in cents from form
           currency: offeringData.currency || 'USD',
-          turnaroundDays: offeringData.turnaroundDays || 7,
-          minWordCount: offeringData.minWordCount || 500,
-          maxWordCount: offeringData.maxWordCount || 2000,
+          turnaroundDays: offeringData.turnaroundDays || null,
+          minWordCount: offeringData.minWordCount || null,
+          maxWordCount: offeringData.maxWordCount || null,
           currentAvailability: offeringData.currentAvailability || 'available',
           expressAvailable: offeringData.expressAvailable || false,
           expressPrice: offeringData.expressPrice || null,

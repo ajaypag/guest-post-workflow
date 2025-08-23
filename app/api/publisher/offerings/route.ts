@@ -183,7 +183,7 @@ export async function POST(request: NextRequest) {
         offeringType,
         basePrice: Number(basePrice), // Ensure it's a number for validation
         currency: currency || 'USD',
-        turnaroundDays: turnaroundDays || 7,
+        turnaroundDays: turnaroundDays || null,
         isActive: isActive ?? true,
         currentAvailability: availability || 'available',
         attributes: {

@@ -664,7 +664,7 @@ export class ShadowPublisherService {
           offeringType: offering.type,
           basePrice: offering.basePrice ? Math.round(offering.basePrice) : 0,
           currency: offering.currency || 'USD',
-          turnaroundDays: offering.turnaroundDays || 7,
+          turnaroundDays: offering.turnaroundDays || null,
           currentAvailability: 'available', // For existing publishers, mark as available
           isActive: true, // For existing publishers, activate immediately
           attributes: Object.keys(attributes).length > 0 ? attributes : {},
