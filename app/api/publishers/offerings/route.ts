@@ -107,9 +107,9 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Create the offering
+    // Create the offering with proper website relationship
     const { relationshipId, ...offeringData } = validatedData;
-    const offering = await publisherOfferingsService.createOffering(
+    const result = await publisherOfferingsService.createOfferingWithRelationship(
       relationshipId,
       {
         ...offeringData,
@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json({
       success: true,
-      data: offering
+      data: result.offering
     });
     
   } catch (error) {
