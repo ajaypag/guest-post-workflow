@@ -6,7 +6,7 @@ const isLocalDevelopment = process.env.NODE_ENV === 'development' &&
   (process.env.NEXTAUTH_URL?.includes('localhost') || !process.env.NEXTAUTH_URL);
 import { publishers } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import { renderToStaticMarkup } from 'react-dom/server';
+import { render } from '@react-email/render';
 import PublisherMigrationInvitationEmail, { 
   PublisherMigrationInvitationEmailPlainText 
 } from '@/lib/email/templates/PublisherMigrationInvitationEmail';
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
       estimatedMonthlyValue: websites.reduce((sum, w) => sum + (w.currentRate || 0), 0) * 2
     });
 
-    const html = renderToStaticMarkup(emailComponent);
+    const html = await render(emailComponent);
     
     // Generate text version
     const text = PublisherMigrationInvitationEmailPlainText({

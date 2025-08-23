@@ -8,7 +8,7 @@
 import dotenv from 'dotenv';
 import path from 'path';
 import { Resend } from 'resend';
-import { renderToStaticMarkup } from 'react-dom/server';
+import { render } from '@react-email/render';
 import PublisherInvitationEmailV2, { PublisherInvitationEmailV2PlainText } from '../lib/email/templates/PublisherInvitationEmailV2';
 
 // Load environment variables
@@ -72,7 +72,7 @@ async function testEmailV2() {
   };
 
   // Generate email HTML and text
-  const emailHtml = renderToStaticMarkup(
+  const emailHtml = await render(
     PublisherInvitationEmailV2(sampleData)
   );
   

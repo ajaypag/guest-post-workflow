@@ -19,7 +19,7 @@ import { migrationStatusService } from './migrationStatusService';
 import { WebsiteToPublisherMigrator } from '../../scripts/migrate-websites-to-publishers';
 import { migrationValidator } from '../utils/publisherMigrationValidation';
 import { v4 as uuidv4 } from 'uuid';
-import { renderToStaticMarkup } from 'react-dom/server';
+import { render } from '@react-email/render';
 import PublisherMigrationInvitationEmail, { 
   PublisherMigrationInvitationEmailPlainText 
 } from '../email/templates/PublisherMigrationInvitationEmail';
@@ -231,7 +231,7 @@ export class PublisherMigrationService {
     const claimUrl = `${process.env.NEXTAUTH_URL}/publisher/claim/${data.claimToken}`;
     
     // Render email templates
-    const htmlContent = renderToStaticMarkup(
+    const htmlContent = await render(
       PublisherMigrationInvitationEmail({
         publisherName: data.publisherName,
         companyName: data.companyName,
