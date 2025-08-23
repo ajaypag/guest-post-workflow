@@ -10,6 +10,7 @@ import { eq, inArray, and, or, ilike, desc, asc, isNull, sql } from 'drizzle-orm
 import VettedSitesTable from './components/VettedSitesTable';
 import VettedSitesFilters from './components/VettedSitesFilters';
 import VettedSitesWrapper from './VettedSitesWrapper';
+import DynamicStats from './components/DynamicStats';
 
 export const dynamic = 'force-dynamic';
 
@@ -257,21 +258,21 @@ async function getInitialData(session: any, searchParams: any) {
 
     // Apply conditions
     if (conditions.length > 0) {
-      query = query.where(and(...conditions));
+      query = query.where(and(...conditions)) as typeof query;
     }
 
     // Apply sorting
-    const sortColumn = {
+    const sortColumn = ({
       'domain': bulkAnalysisDomains.domain,
       'dr': websites.domainRating,
       'traffic': websites.totalTraffic,
       'price': websites.guestPostCost,
       'qualified_at': bulkAnalysisDomains.aiQualifiedAt,
       'updated_at': bulkAnalysisDomains.updatedAt,
-    }[filters.sortBy] || bulkAnalysisDomains.updatedAt;
+    } as any)[filters.sortBy] || bulkAnalysisDomains.updatedAt;
 
     const sortFn = filters.sortOrder === 'asc' ? asc : desc;
-    query = query.orderBy(sortFn(sortColumn));
+    query = query.orderBy(sortFn(sortColumn)) as typeof query;
 
     // Get total count
     const totalCountQuery = await db
@@ -287,7 +288,7 @@ async function getInitialData(session: any, searchParams: any) {
 
     // Apply pagination
     const offset = (filters.page - 1) * filters.limit;
-    query = query.limit(filters.limit).offset(offset);
+    query = query.limit(filters.limit).offset(offset) as typeof query;
 
     // Execute query
     const domains = await query;
@@ -405,27 +406,6 @@ export default async function VettedSitesPage({ searchParams: searchParamsPromis
             </p>
           </div>
           
-          {/* Quick Stats */}
-          <div className="hidden md:flex items-center space-x-6 text-sm">
-            <div className="text-center">
-              <div className="font-semibold text-gray-900">{initialData.stats.totalQualified}</div>
-              <div className="text-gray-500">Qualified</div>
-            </div>
-            <div className="text-center">
-              <div className="font-semibold text-green-600">{initialData.stats.available}</div>
-              <div className="text-gray-500">Available</div>
-            </div>
-            <div className="text-center">
-              <div className="font-semibold text-yellow-600">{initialData.stats.used}</div>
-              <div className="text-gray-500">In Use</div>
-            </div>
-            {initialData.stats.bookmarked > 0 && (
-              <div className="text-center">
-                <div className="font-semibold text-blue-600">{initialData.stats.bookmarked}</div>
-                <div className="text-gray-500">Bookmarked</div>
-              </div>
-            )}
-          </div>
         </div>
       </div>
 
@@ -454,55 +434,39 @@ export default async function VettedSitesPage({ searchParams: searchParamsPromis
 
         {/* Main Content */}
         <div className="col-span-12 lg:col-span-9 xl:col-span-10">
-          <Suspense fallback={
-            <div className="bg-white rounded-lg border">
-              <div className="p-4 border-b">
-                <div className="animate-pulse flex items-center justify-between">
-                  <div className="h-4 bg-gray-200 rounded w-48"></div>
-                  <div className="h-8 bg-gray-200 rounded w-32"></div>
-                </div>
-              </div>
-              <div className="p-4">
-                <div className="animate-pulse space-y-3">
-                  {Array.from({ length: 10 }).map((_, i) => (
-                    <div key={i} className="h-12 bg-gray-200 rounded"></div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          }>
-            <VettedSitesTable 
-              initialData={initialData}
-              initialFilters={searchParams}
-              userType={session.userType}
+          <div className="space-y-6">
+            <DynamicStats 
+              initialStats={initialData.stats} 
+              total={initialData.total} 
             />
-          </Suspense>
+            
+            <Suspense fallback={
+              <div className="bg-white rounded-lg border">
+                <div className="p-4 border-b">
+                  <div className="animate-pulse flex items-center justify-between">
+                    <div className="h-4 bg-gray-200 rounded w-48"></div>
+                    <div className="h-8 bg-gray-200 rounded w-32"></div>
+                  </div>
+                </div>
+                <div className="p-4">
+                  <div className="animate-pulse space-y-3">
+                    {Array.from({ length: 10 }).map((_, i) => (
+                      <div key={i} className="h-12 bg-gray-200 rounded"></div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            }>
+              <VettedSitesTable
+                initialData={initialData}
+                initialFilters={searchParams}
+                userType={session.userType}
+              />
+            </Suspense>
+          </div>
         </div>
       </div>
 
-      {/* Mobile Stats - shown on small screens */}
-      <div className="md:hidden mt-6 grid grid-cols-2 gap-4">
-        <div className="bg-white rounded-lg border p-3 text-center">
-          <div className="font-semibold text-gray-900">{initialData.stats.totalQualified}</div>
-          <div className="text-xs text-gray-500">Qualified</div>
-        </div>
-        <div className="bg-white rounded-lg border p-3 text-center">
-          <div className="font-semibold text-green-600">{initialData.stats.available}</div>
-          <div className="text-xs text-gray-500">Available</div>
-        </div>
-        {initialData.stats.used > 0 && (
-          <div className="bg-white rounded-lg border p-3 text-center">
-            <div className="font-semibold text-yellow-600">{initialData.stats.used}</div>
-            <div className="text-xs text-gray-500">In Use</div>
-          </div>
-        )}
-        {initialData.stats.bookmarked > 0 && (
-          <div className="bg-white rounded-lg border p-3 text-center">
-            <div className="font-semibold text-blue-600">{initialData.stats.bookmarked}</div>
-            <div className="text-xs text-gray-500">Bookmarked</div>
-          </div>
-        )}
-      </div>
     </div>
   );
 

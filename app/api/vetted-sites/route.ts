@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { db } from '@/lib/db/connection';
-import { bulkAnalysisDomains, clients, bulkAnalysisProjects } from '@/lib/db/schema';
+import { clients } from '@/lib/db/schema';
+import { bulkAnalysisDomains, bulkAnalysisProjects } from '@/lib/db/bulkAnalysisSchema';
 import { websites } from '@/lib/db/websiteSchema';
 import { orderLineItems } from '@/lib/db/orderLineItemSchema';
 import { eq, and, or, inArray, ilike, desc, asc, isNull, isNotNull, sql } from 'drizzle-orm';
@@ -75,9 +76,15 @@ export async function GET(request: NextRequest) {
         authorityDirect: bulkAnalysisDomains.authorityDirect,
         authorityRelated: bulkAnalysisDomains.authorityRelated,
         evidence: bulkAnalysisDomains.evidence,
+        aiQualificationReasoning: bulkAnalysisDomains.aiQualificationReasoning,
+        topicScope: bulkAnalysisDomains.topicScope,
+        topicReasoning: bulkAnalysisDomains.topicReasoning,
+        // qualificationData field doesn't exist in schema - removed
+        targetPageIds: bulkAnalysisDomains.targetPageIds,
         
         // Target URL data
         suggestedTargetUrl: bulkAnalysisDomains.suggestedTargetUrl,
+        targetMatchData: bulkAnalysisDomains.targetMatchData,
         
         // Client and project info
         clientId: bulkAnalysisDomains.clientId,
@@ -190,8 +197,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Apply all conditions
+    console.log(`Total conditions to apply: ${conditions.length}`);
     if (conditions.length > 0) {
-      query = query.where(and(...conditions));
+      query = query.where(and(...conditions)) as typeof query;
     }
 
     // Apply sorting
@@ -202,10 +210,12 @@ export async function GET(request: NextRequest) {
       'price': websites.guestPostCost,
       'qualified_at': bulkAnalysisDomains.aiQualifiedAt,
       'updated_at': bulkAnalysisDomains.updatedAt,
-    }[filters.sortBy] || bulkAnalysisDomains.updatedAt;
+    }[filters.sortBy || 'updated_at'] || bulkAnalysisDomains.updatedAt;
 
-    const sortFn = filters.sortOrder === 'asc' ? asc : desc;
-    query = query.orderBy(sortFn(sortColumn));
+    if (sortColumn) {
+      const sortFn = filters.sortOrder === 'asc' ? asc : desc;
+      query = query.orderBy(sortFn(sortColumn)) as typeof query;
+    }
 
     // Get total count for pagination (before applying limit/offset)
     const totalCountQuery = await db
@@ -219,11 +229,22 @@ export async function GET(request: NextRequest) {
     const total = totalCountQuery[0]?.count || 0;
 
     // Apply pagination
-    const offset = (filters.page - 1) * filters.limit;
-    query = query.limit(filters.limit).offset(offset);
+    const page = filters.page || 1;
+    const limit = filters.limit || 50;
+    const offset = (page - 1) * limit;
+    console.log(`Pagination: page ${page}, limit ${limit}, offset ${offset}`);
+    query = query.limit(limit).offset(offset) as typeof query;
 
     // Execute the query
-    const domains = await query;
+    console.log('About to execute main query...');
+    let domains;
+    try {
+      domains = await query;
+      console.log(`Found ${domains.length} domains for page ${filters.page}`);
+    } catch (queryError) {
+      console.error('Query execution error:', queryError);
+      throw queryError;
+    }
 
     // Calculate summary stats
     const statsQuery = await db
@@ -249,22 +270,28 @@ export async function GET(request: NextRequest) {
     const stats = statsQuery[0] || { totalQualified: 0, available: 0, bookmarked: 0, hidden: 0 };
 
     return NextResponse.json({
-      domains: domains.map(domain => ({
-        ...domain,
-        // Calculate availability status
-        availabilityStatus: domain.activeLineItemsCount > 0 ? 'used' : 'available',
-        // Format evidence data if it exists
-        evidence: domain.evidence ? {
-          directCount: (domain.evidence as any)?.direct_count || 0,
-          directMedianPosition: (domain.evidence as any)?.direct_median_position || null,
-          relatedCount: (domain.evidence as any)?.related_count || 0,
-          relatedMedianPosition: (domain.evidence as any)?.related_median_position || null,
-        } : null,
-      })),
+      domains: domains.map(domain => {
+        if (!domain) {
+          console.error('Null domain in results');
+          return null;
+        }
+        return {
+          ...domain,
+          // Calculate availability status
+          availabilityStatus: domain.activeLineItemsCount > 0 ? 'used' : 'available',
+          // Format evidence data if it exists
+          evidence: domain.evidence ? {
+            directCount: (domain.evidence as any)?.direct_count || 0,
+            directMedianPosition: (domain.evidence as any)?.direct_median_position || null,
+            relatedCount: (domain.evidence as any)?.related_count || 0,
+            relatedMedianPosition: (domain.evidence as any)?.related_median_position || null,
+          } : null,
+        };
+      }).filter(Boolean),
       total,
-      page: filters.page,
-      limit: filters.limit,
-      totalPages: Math.ceil(total / filters.limit),
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
       stats: {
         totalQualified: stats.totalQualified,
         available: stats.available,
@@ -274,10 +301,11 @@ export async function GET(request: NextRequest) {
       },
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Vetted Sites API Error:', error);
+    console.error('Stack trace:', error?.stack);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: error?.message },
       { status: 500 }
     );
   }

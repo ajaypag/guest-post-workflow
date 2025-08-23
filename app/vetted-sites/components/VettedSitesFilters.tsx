@@ -102,8 +102,8 @@ export default function VettedSitesFilters({
     // Reset to page 1 when filters change
     params.set('page', '1');
     
-    // Force a hard navigation to ensure server component refreshes
-    window.location.href = `/vetted-sites?${params.toString()}`;
+    // Use router.push for smooth navigation without full page reload
+    router.push(`/vetted-sites?${params.toString()}`, { scroll: false });
   };
 
   // Debounced search - removed to prevent infinite loops
@@ -194,14 +194,14 @@ export default function VettedSitesFilters({
     : availableProjects;
 
   return (
-    <div className="bg-white rounded-lg border">
-      <div className="p-4 border-b">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+      <div className="p-4 border-b border-gray-100">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium text-gray-900">Filters</h3>
+          <h3 className="text-sm font-semibold text-gray-900">Filters</h3>
           {hasActiveFilters && (
             <button
               onClick={clearAllFilters}
-              className="text-xs text-blue-600 hover:text-blue-800"
+              className="text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors"
             >
               Clear all
             </button>
@@ -222,7 +222,7 @@ export default function VettedSitesFilters({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Enter domain name..."
-              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
+              className="w-full pl-10 pr-3 py-2 border border-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-200 hover:shadow-sm"
             />
           </div>
         </div>
@@ -345,7 +345,7 @@ export default function VettedSitesFilters({
             <select
               value={selectedProject}
               onChange={(e) => setSelectedProject(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-300 hover:shadow-sm"
             >
               <option value="">All Projects</option>
               {filteredProjects.map((project) => (
@@ -452,7 +452,7 @@ export default function VettedSitesFilters({
                     value={minDR}
                     onChange={(e) => setMinDR(e.target.value)}
                     placeholder="Min"
-                    className="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-blue-500 focus:border-blue-500"
+                    className="w-20 px-2 py-1 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-300 hover:shadow-sm"
                     min="0"
                     max="100"
                   />
@@ -462,7 +462,7 @@ export default function VettedSitesFilters({
                     value={maxDR}
                     onChange={(e) => setMaxDR(e.target.value)}
                     placeholder="Max"
-                    className="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-blue-500 focus:border-blue-500"
+                    className="w-20 px-2 py-1 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-300 hover:shadow-sm"
                     min="0"
                     max="100"
                   />
@@ -480,7 +480,7 @@ export default function VettedSitesFilters({
                     value={minTraffic}
                     onChange={(e) => setMinTraffic(e.target.value)}
                     placeholder="Min"
-                    className="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-blue-500 focus:border-blue-500"
+                    className="w-20 px-2 py-1 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-300 hover:shadow-sm"
                     min="0"
                   />
                   <span className="text-gray-500 text-xs">to</span>
@@ -489,7 +489,7 @@ export default function VettedSitesFilters({
                     value={maxTraffic}
                     onChange={(e) => setMaxTraffic(e.target.value)}
                     placeholder="Max"
-                    className="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-blue-500 focus:border-blue-500"
+                    className="w-20 px-2 py-1 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-300 hover:shadow-sm"
                     min="0"
                   />
                 </div>
@@ -506,7 +506,7 @@ export default function VettedSitesFilters({
                     value={minPrice}
                     onChange={(e) => setMinPrice(e.target.value)}
                     placeholder="Min"
-                    className="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-blue-500 focus:border-blue-500"
+                    className="w-20 px-2 py-1 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-300 hover:shadow-sm"
                     min="0"
                   />
                   <span className="text-gray-500 text-xs">to</span>
@@ -515,7 +515,7 @@ export default function VettedSitesFilters({
                     value={maxPrice}
                     onChange={(e) => setMaxPrice(e.target.value)}
                     placeholder="Max"
-                    className="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-blue-500 focus:border-blue-500"
+                    className="w-20 px-2 py-1 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-gray-300 hover:shadow-sm"
                     min="0"
                   />
                 </div>
@@ -527,7 +527,7 @@ export default function VettedSitesFilters({
         {/* Apply Filters Button */}
         <button
           onClick={updateFilters}
-          className="w-full bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 hover:shadow-md transition-all focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
         >
           Apply Filters
         </button>
