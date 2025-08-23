@@ -146,6 +146,10 @@ export const publishers = pgTable('publishers', {
   // Notes
   internalNotes: text('internal_notes'), // Only visible to internal team
   
+  // Shadow data migration tracking
+  shadowDataMigrated: boolean('shadow_data_migrated').default(false),
+  shadowMigrationCompletedAt: timestamp('shadow_migration_completed_at'),
+  
   // Timestamps
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),

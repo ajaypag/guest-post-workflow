@@ -185,6 +185,11 @@ export const shadowPublisherWebsites = pgTable('shadow_publisher_websites', {
   verifiedBy: uuid('verified_by').references(() => users.id),
   verifiedAt: timestamp('verified_at'),
   
+  // Migration tracking (for shadow -> active publisher migration)
+  migrationStatus: varchar('migration_status', { length: 20 }).default('pending'), // pending, migrating, migrated, failed, skipped
+  migratedAt: timestamp('migrated_at'),
+  migrationNotes: text('migration_notes'),
+  
   // Timestamps
   createdAt: timestamp('created_at').defaultNow(),
 }, (table) => ({

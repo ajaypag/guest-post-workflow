@@ -22,10 +22,22 @@ Production-ready workflow system with PostgreSQL, multi-user auth, and AI agent 
 5. **Inclusion Status Fix**: `migrations/0061_fix_inclusion_status_defaults.sql` (✅ NEW - 2025-08-20)
    - **IMPORTANT**: Run via `/admin/fix-inclusion-status` page for production
    - Fixes NULL inclusion_status defaulting to 'included' for better UX
-6. **Use Admin Panel**: `/admin/domain-migration` for safe migration
-7. **Use Admin Panel**: `/admin/email-qualification-migration` for email qualification migration
+6. **🆕 CRITICAL: Shadow Publisher Migration**: `migrations/0062_shadow_publisher_migration_tracking.sql` (✅ NEW - 2025-01-23)
+   - **CRITICAL**: Enables shadow → active publisher data migration
+   - **MUST RUN BEFORE DEPLOYMENT**: Publishers claiming accounts need this
+   - See [PUBLISHER_ONBOARDING_AUDIT.md](PUBLISHER_ONBOARDING_AUDIT.md) for deployment checklist
+7. **Use Admin Panel**: `/admin/domain-migration` for safe migration
+8. **Use Admin Panel**: `/admin/email-qualification-migration` for email qualification migration
 
 ### Recent Changes (Keep in Mind)
+- ✅ **CRITICAL: Shadow Publisher Data Migration Fixed** (2025-01-23)
+  - **MAJOR BUG FIXED**: Publishers claiming accounts now get their extracted data
+  - Auto-migrates websites, pricing, and relationships from shadow tables
+  - Soft delete pattern preserves audit trail
+  - Migration runs during claim process (`/api/publisher/claim`)
+  - Service: `ShadowPublisherMigrationService`
+  - Migration: `migrations/0062_shadow_publisher_migration_tracking.sql`
+  - **DEPLOYMENT**: See [PUBLISHER_ONBOARDING_AUDIT.md](PUBLISHER_ONBOARDING_AUDIT.md) checklist
 - ✅ Inclusion Status Default Fix (2025-08-20)
   - Fixed NULL inclusion_status causing UI/backend mismatch
   - All line items now default to 'included' for better UX

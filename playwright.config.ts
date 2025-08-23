@@ -46,7 +46,7 @@ export default defineConfig({
   ],
 
   /* Run your local dev server before starting the tests */
-  webServer: {
+  webServer: process.env.E2E_TESTING ? undefined : {
     command: 'PORT=3002 npm run dev',
     url: 'http://localhost:3002',
     reuseExistingServer: true, // Use existing server since we already have one running

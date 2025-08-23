@@ -3,6 +3,7 @@ import { db } from '@/lib/db/connection';
 import { publishers } from '@/lib/db/accountSchema';
 import { publisherClaimHistory } from '@/lib/db/emailProcessingSchema';
 import { shadowPublisherConfig } from '@/lib/config/shadowPublisherConfig';
+import { shadowPublisherMigrationService } from '@/lib/services/shadowPublisherMigrationService';
 import { eq, and, gte } from 'drizzle-orm';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
@@ -201,6 +202,24 @@ export async function POST(request: NextRequest) {
         })
         .where(eq(publishers.id, publisher.id));
       
+      // CRITICAL: Migrate shadow publisher data (websites, offerings, relationships)
+      console.log('Starting shadow data migration for publisher:', publisher.id);
+      let migrationResult = null;
+      try {
+        migrationResult = await shadowPublisherMigrationService.migratePublisherData(publisher.id);
+        
+        if (migrationResult.success) {
+          console.log(`Shadow data migration successful: ${migrationResult.websitesMigrated} websites, ${migrationResult.offeringsActivated} offerings`);
+        } else {
+          console.error('Shadow data migration had errors:', migrationResult.errors);
+        }
+      } catch (migrationError) {
+        // Log migration error but don't fail the claim
+        console.error('Shadow data migration failed:', migrationError);
+        // Continue with claim process even if migration fails
+        // Publisher will have empty dashboard but can still login
+      }
+      
       // Log successful claim
       await logClaimAttempt(publisher.id, 'complete_claim', true, null, ipAddress, userAgent);
       
@@ -212,11 +231,23 @@ export async function POST(request: NextRequest) {
         // Don't fail the claim if email fails
       }
       
-      return NextResponse.json({
+      // Include migration status in response
+      const response: any = {
         success: true,
         message: 'Account successfully claimed',
         redirectUrl: '/publisher/dashboard'
-      });
+      };
+      
+      if (migrationResult) {
+        response.migration = {
+          success: migrationResult.success,
+          websitesMigrated: migrationResult.websitesMigrated,
+          offeringsActivated: migrationResult.offeringsActivated,
+          hasErrors: migrationResult.errors.length > 0
+        };
+      }
+      
+      return NextResponse.json(response);
       
     } catch (error) {
       // Increment claim attempts
