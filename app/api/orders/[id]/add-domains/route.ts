@@ -4,6 +4,7 @@ import { db } from '@/lib/db/connection';
 import { orders } from '@/lib/db/orderSchema';
 import { orderLineItems, lineItemChanges, type NewOrderLineItem } from '@/lib/db/orderLineItemSchema';
 import { bulkAnalysisDomains } from '@/lib/db/bulkAnalysisSchema';
+import { targetPages } from '@/lib/db/schema';
 import { eq, inArray, and, count } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { PricingService } from '@/lib/services/pricingService';
@@ -79,6 +80,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         projectId: bulkAnalysisDomains.projectId,
         suggestedTargetUrl: bulkAnalysisDomains.suggestedTargetUrl,
         targetMatchData: bulkAnalysisDomains.targetMatchData,
+        targetPageIds: bulkAnalysisDomains.targetPageIds,
       })
       .from(bulkAnalysisDomains)
       .where(inArray(bulkAnalysisDomains.id, domainIds));
@@ -88,6 +90,47 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         { error: 'No valid domains found' },
         { status: 400 }
       );
+    }
+
+    // Fetch target pages for domains that have targetPageIds (to get vetted URLs)
+    const domainsWithTargetPageIds = selectedDomains.filter(domain => 
+      domain?.targetPageIds && Array.isArray(domain.targetPageIds) && domain.targetPageIds.length > 0
+    );
+
+    let targetPagesMap: Record<string, any[]> = {};
+    
+    if (domainsWithTargetPageIds.length > 0) {
+      try {
+        // Get all unique target page IDs
+        const allTargetPageIds = Array.from(new Set(
+          domainsWithTargetPageIds.flatMap(domain => domain.targetPageIds as string[])
+        ));
+
+        if (allTargetPageIds.length > 0) {
+          // Fetch target pages
+          const targetPagesResults = await db
+            .select()
+            .from(targetPages)
+            .where(inArray(targetPages.id, allTargetPageIds));
+
+          // Build lookup map for target pages
+          const targetPagesLookup = new Map(
+            targetPagesResults.map(page => [page.id, page])
+          );
+
+          // Build target pages map by domain ID
+          domainsWithTargetPageIds.forEach(domain => {
+            if (domain.targetPageIds) {
+              targetPagesMap[domain.id] = (domain.targetPageIds as string[])
+                .map(id => targetPagesLookup.get(id))
+                .filter(Boolean); // Remove any null/undefined entries
+            }
+          });
+        }
+      } catch (targetPagesError) {
+        console.error('Error fetching target pages:', targetPagesError);
+        // Continue without failing - target pages are optional for fallback
+      }
     }
 
     // Validate client compatibility
@@ -208,7 +251,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       
       // Get target configuration for this domain
       const targetConfig = targetMap.get(domain.id);
-      const targetUrl = targetConfig?.targetUrl || domain.suggestedTargetUrl || '';
+      // Use proper fallback: explicit user selection → AI suggested target → vetted target URL → empty string
+      const vettedTargetUrl = targetPagesMap[domain.id]?.[0]?.url || null;
+      const targetUrl = targetConfig?.targetUrl || domain.suggestedTargetUrl || vettedTargetUrl || '';
       const anchorText = targetConfig?.anchorText || '';
 
       // Create line item

@@ -26,14 +26,26 @@ const navigationItems = [
   {
     name: 'Dashboard',
     href: '/account/dashboard',
-    icon: Package,
+    icon: Home,
     description: 'Overview of your account and orders'
+  },
+  {
+    name: 'Brands',
+    href: '/clients',
+    icon: Package,
+    description: 'Manage your brands and target pages'
   },
   {
     name: 'Vetted Sites',
     href: '/vetted-sites',
     icon: Database,
     description: 'Browse and manage qualified domains for guest posts'
+  },
+  {
+    name: 'My Orders',
+    href: '/orders',
+    icon: User,
+    description: 'View and manage your guest post orders'
   },
   {
     name: 'Account Settings',
@@ -78,6 +90,20 @@ export default function AccountLayout({
       return {
         title: 'Vetted Sites',
         description: 'Browse and manage qualified domains for guest posts'
+      };
+    }
+    
+    if (pathname.startsWith('/clients')) {
+      return {
+        title: 'Brands',
+        description: 'Manage your brands and target pages'
+      };
+    }
+    
+    if (pathname.startsWith('/orders')) {
+      return {
+        title: 'My Orders',
+        description: 'View and manage your guest post orders'
       };
     }
     
