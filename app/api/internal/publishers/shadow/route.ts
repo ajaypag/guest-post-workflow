@@ -16,7 +16,8 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || '';
     const status = searchParams.get('status') || 'all';
     const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '50');
+    // No arbitrary limits - get all that match the criteria
+    const limit = parseInt(searchParams.get('limit') || '10000');
     const offset = (page - 1) * limit;
 
     // Build where conditions
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
       eq(publishers.accountStatus, 'shadow')
     ];
 
-    // Add status filter
+    // Add status filter - allow seeing all by default
     if (status === 'not_sent') {
       conditions.push(isNull(publishers.invitationSentAt));
     } else if (status === 'sent') {
@@ -32,6 +33,7 @@ export async function GET(request: NextRequest) {
     } else if (status === 'claimed') {
       conditions.push(sql`${publishers.claimedAt} IS NOT NULL`);
     }
+    // status === 'all' shows everything
 
     // Add search filter
     if (search) {

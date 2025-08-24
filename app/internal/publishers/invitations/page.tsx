@@ -75,7 +75,7 @@ export default function PublisherInvitationsPage() {
   const loadPublishers = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/internal/publishers/shadow?limit=1000');
+      const response = await fetch('/api/internal/publishers/shadow');
       if (response.ok) {
         const data = await response.json();
         setPublishers(data.publishers || []);
