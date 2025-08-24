@@ -251,7 +251,7 @@ export async function POST(request: NextRequest) {
       const responseData: any = {
         success: true,
         message: 'Account successfully claimed',
-        redirectUrl: '/publisher',
+        redirectUrl: '/publisher/onboarding',
         user: {
           id: updatedPublisher.id,
           email: updatedPublisher.email,
