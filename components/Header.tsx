@@ -5,13 +5,14 @@ import { useRouter } from 'next/navigation';
 import { sessionStorage } from '@/lib/userStorage';
 import { type AuthSession } from '@/lib/auth';
 import { useState, useEffect } from 'react';
-import { User, LogOut, Users, Building2, Zap, Search, BarChart2, Globe, Mail, ShoppingCart, Package, Database, ChevronDown, Settings, CreditCard, HelpCircle, Menu, X } from 'lucide-react';
+import { User, LogOut, Users, Building2, Zap, Search, BarChart2, Globe, Mail, ShoppingCart, Package, Database, ChevronDown, Settings, CreditCard, HelpCircle, Menu, X, Shield, FileText } from 'lucide-react';
 import NotificationBell from '@/components/ui/NotificationBell';
 
 export default function Header() {
   const router = useRouter();
   const [session, setSession] = useState<AuthSession | null>(null);
   const [adminDropdownOpen, setAdminDropdownOpen] = useState(false);
+  const [internalDropdownOpen, setInternalDropdownOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -23,15 +24,16 @@ export default function Header() {
   useEffect(() => {
     const handleClickOutside = () => {
       setAdminDropdownOpen(false);
+      setInternalDropdownOpen(false);
       setUserDropdownOpen(false);
       setMobileMenuOpen(false);
     };
 
-    if (adminDropdownOpen || userDropdownOpen || mobileMenuOpen) {
+    if (adminDropdownOpen || internalDropdownOpen || userDropdownOpen || mobileMenuOpen) {
       document.addEventListener('click', handleClickOutside);
       return () => document.removeEventListener('click', handleClickOutside);
     }
-  }, [adminDropdownOpen, userDropdownOpen, mobileMenuOpen]);
+  }, [adminDropdownOpen, internalDropdownOpen, userDropdownOpen, mobileMenuOpen]);
 
   // Prevent body scroll when mobile menu is open
   useEffect(() => {
@@ -127,6 +129,74 @@ export default function Header() {
                   <ShoppingCart className="w-4 h-4 mr-1.5" />
                   Orders
                 </Link>
+
+                {/* Internal Portal Dropdown */}
+                <div className="relative">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setInternalDropdownOpen(!internalDropdownOpen);
+                    }}
+                    className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
+                  >
+                    <Shield className="w-4 h-4 mr-1.5" />
+                    Internal Portal
+                    <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${internalDropdownOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {internalDropdownOpen && (
+                    <div className="absolute right-0 mt-2 w-52 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-50">
+                      <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100">
+                        Management
+                      </div>
+                      <Link
+                        href="/internal"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+                        onClick={() => setInternalDropdownOpen(false)}
+                      >
+                        <BarChart2 className="w-4 h-4 mr-2" />
+                        Dashboard
+                      </Link>
+                      <Link
+                        href="/internal/websites"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+                        onClick={() => setInternalDropdownOpen(false)}
+                      >
+                        <Globe className="w-4 h-4 mr-2" />
+                        Websites
+                      </Link>
+                      <Link
+                        href="/internal/publishers"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+                        onClick={() => setInternalDropdownOpen(false)}
+                      >
+                        <Users className="w-4 h-4 mr-2" />
+                        Publishers
+                      </Link>
+                      <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100 border-t mt-1 pt-2">
+                        Quick Actions
+                      </div>
+                      <Link
+                        href="/internal/publishers/new"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+                        onClick={() => setInternalDropdownOpen(false)}
+                      >
+                        <Users className="w-4 h-4 mr-2" />
+                        Add Publisher
+                      </Link>
+                      {session.role === 'admin' && (
+                        <Link
+                          href="/admin"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center border-t border-gray-100 mt-1 pt-2"
+                          onClick={() => setInternalDropdownOpen(false)}
+                        >
+                          <Settings className="w-4 h-4 mr-2" />
+                          Full Admin Panel
+                        </Link>
+                      )}
+                    </div>
+                  )}
+                </div>
                 
                 {/* Admin Dropdown */}
                 <div className="relative">
@@ -485,6 +555,45 @@ export default function Header() {
                 >
                   <ShoppingCart className="w-5 h-5" />
                   <span className="text-base font-medium">Orders</span>
+                </Link>
+
+                {/* Internal Portal Section - Mobile */}
+                <div className="border-t border-gray-100 my-4"></div>
+                <div className="px-4 py-2">
+                  <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Internal Portal</div>
+                </div>
+                
+                <Link
+                  href="/internal"
+                  className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors min-h-[44px]"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <BarChart2 className="w-5 h-5" />
+                  <span className="text-base font-medium">Dashboard</span>
+                </Link>
+                <Link
+                  href="/internal/websites"
+                  className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors min-h-[44px]"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Globe className="w-5 h-5" />
+                  <span className="text-base font-medium">Websites</span>
+                </Link>
+                <Link
+                  href="/internal/publishers"
+                  className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors min-h-[44px]"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Users className="w-5 h-5" />
+                  <span className="text-base font-medium">Publishers</span>
+                </Link>
+                <Link
+                  href="/internal/publishers/new"
+                  className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors min-h-[44px]"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Users className="w-5 h-5" />
+                  <span className="text-base font-medium">Add Publisher</span>
                 </Link>
                 
                 {/* Admin Section - Mobile */}
