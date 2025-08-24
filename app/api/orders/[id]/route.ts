@@ -103,8 +103,7 @@ export async function GET(
               }
             },
             targetPage: true,
-            // Don't fetch full assignedDomain relation - the string is already in the line item
-            // assignedDomain: true,
+            assignedDomain: true,
             addedByUser: {
               columns: {
                 id: true,
@@ -398,8 +397,7 @@ export async function PUT(
               }
             },
             targetPage: true,
-            // Don't fetch full assignedDomain relation - the string is already in the line item
-            // assignedDomain: true,
+            assignedDomain: true,
             addedByUser: {
               columns: {
                 id: true,

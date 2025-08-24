@@ -62,6 +62,7 @@ export const bulkAnalysisDomains = pgTable('bulk_analysis_domains', {
   topicScope: varchar('topic_scope', { length: 20 }), // 'short_tail' | 'long_tail' | 'ultra_long_tail'
   topicReasoning: text('topic_reasoning'), // Modifier guidance for topic creation
   evidence: jsonb('evidence'), // { direct_count, direct_median_position, related_count, related_median_position }
+  qualificationData: jsonb('qualification_data'), // { evidence: { direct_keywords: string[], related_keywords: string[] } }
   manuallyQualifiedBy: uuid('manually_qualified_by').references(() => users.id),
   manuallyQualifiedAt: timestamp('manually_qualified_at'),
   // Human verification tracking

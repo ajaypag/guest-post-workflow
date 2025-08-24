@@ -349,7 +349,9 @@ export default function ExpandedDomainDetailsImproved({ domain, initialExpandedS
                   </div>
                   {(() => {
                     const directKeywords = domain.targetMatchData?.target_analysis
-                      ?.flatMap((analysis: any) => analysis.evidence?.direct_keywords || []) || [];
+                      ?.flatMap((analysis: any) => analysis.evidence?.direct_keywords || []) ||
+                      (domain as any).qualificationData?.evidence?.direct_keywords ||
+                      [];
                     
                     return directKeywords.length > 0 ? (
                       <div className="max-h-32 overflow-y-auto border border-gray-200 rounded p-2 bg-gray-50">
@@ -371,7 +373,9 @@ export default function ExpandedDomainDetailsImproved({ domain, initialExpandedS
                   </div>
                   {(() => {
                     const relatedKeywords = domain.targetMatchData?.target_analysis
-                      ?.flatMap((analysis: any) => analysis.evidence?.related_keywords || []) || [];
+                      ?.flatMap((analysis: any) => analysis.evidence?.related_keywords || []) ||
+                      (domain as any).qualificationData?.evidence?.related_keywords ||
+                      [];
                     
                     return relatedKeywords.length > 0 ? (
                       <div className="max-h-32 overflow-y-auto border border-gray-200 rounded p-2 bg-gray-50">

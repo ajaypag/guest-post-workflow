@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
         aiQualificationReasoning: bulkAnalysisDomains.aiQualificationReasoning,
         topicScope: bulkAnalysisDomains.topicScope,
         topicReasoning: bulkAnalysisDomains.topicReasoning,
-        // qualificationData field doesn't exist in schema - removed
+        qualificationData: bulkAnalysisDomains.qualificationData,
         targetPageIds: bulkAnalysisDomains.targetPageIds,
         
         // Target URL data

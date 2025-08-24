@@ -180,7 +180,7 @@ export default function LineItemsDisplay({
                         <td className="px-6 py-4">
                           {item.assignedDomain ? (
                             <span className="text-sm text-gray-900">
-                              {item.assignedDomain || 'Domain assigned'}
+                              {typeof item.assignedDomain === 'string' ? item.assignedDomain : (item.assignedDomain as any)?.domain || 'Domain assigned'}
                             </span>
                           ) : (
                             <span className="text-sm text-gray-400 italic">Pending</span>

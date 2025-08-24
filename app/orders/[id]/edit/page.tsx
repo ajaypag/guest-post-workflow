@@ -2004,8 +2004,8 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                           <td className="px-4 py-3">
                             {item.assignedDomain ? (
                               <div className="flex items-center space-x-1">
-                                <p className="text-sm font-medium text-blue-600 truncate max-w-xs" title={item.assignedDomain}>
-                                  {item.assignedDomain}
+                                <p className="text-sm font-medium text-blue-600 truncate max-w-xs" title={typeof item.assignedDomain === 'string' ? item.assignedDomain : (item.assignedDomain as any)?.domain}>
+                                  {typeof item.assignedDomain === 'string' ? item.assignedDomain : (item.assignedDomain as any)?.domain}
                                 </p>
                                 <Globe className="h-3 w-3 text-blue-400" />
                               </div>
@@ -2212,8 +2212,8 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                                     <td className="px-4 py-3">
                                       {item.assignedDomain ? (
                                         <div className="flex items-center space-x-1">
-                                          <span className="text-sm font-medium text-blue-600" title={item.assignedDomain}>
-                                            {item.assignedDomain}
+                                          <span className="text-sm font-medium text-blue-600" title={typeof item.assignedDomain === 'string' ? item.assignedDomain : (item.assignedDomain as any)?.domain}>
+                                            {typeof item.assignedDomain === 'string' ? item.assignedDomain : (item.assignedDomain as any)?.domain}
                                           </span>
                                           <Globe className="h-3 w-3 text-blue-400" />
                                         </div>
