@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Database, Activity, Wrench, Users, BarChart3, Settings, AlertTriangle, Bug, FileSearch, Search, Mail, MessageSquare, GitBranch, ArrowRightLeft } from 'lucide-react';
+import { Database, Activity, Wrench, Users, BarChart3, Settings, AlertTriangle, Bug, FileSearch, Search, Mail, MessageSquare, GitBranch, ArrowRightLeft, DollarSign, CreditCard, Shield, Eye, Code } from 'lucide-react';
 
 export default function AdminDashboard() {
   const adminTools = [
@@ -70,8 +70,16 @@ export default function AdminDashboard() {
       color: 'bg-violet-50 border-violet-200 text-violet-700',
       iconColor: 'text-violet-600'
     },
+    {
+      title: 'Marketing Diagnostics',
+      description: 'Monitor marketing and promotional system health',
+      icon: BarChart3,
+      href: '/admin/marketing-diagnostics',
+      color: 'bg-pink-50 border-pink-200 text-pink-700',
+      iconColor: 'text-pink-600'
+    },
     
-    // Order Management Diagnostics
+    // Order Management & System Tools
     {
       title: 'Order Flow Matrix',
       description: 'View complete order status/stage permissions and visibility matrix',
@@ -80,8 +88,24 @@ export default function AdminDashboard() {
       color: 'bg-orange-50 border-orange-200 text-orange-700',
       iconColor: 'text-orange-600'
     },
+    {
+      title: 'Audit Images',
+      description: 'Audit and manage uploaded images in the system',
+      icon: FileSearch,
+      href: '/admin/audit-images',
+      color: 'bg-gray-50 border-gray-200 text-gray-700',
+      iconColor: 'text-gray-600'
+    },
 
-    // System Migration
+    // Database & Schema Management
+    {
+      title: 'Database Migration',
+      description: 'General database migration tools and schema updates',
+      icon: Database,
+      href: '/admin/database-migration',
+      color: 'bg-slate-50 border-slate-200 text-slate-700',
+      iconColor: 'text-slate-600'
+    },
     {
       title: 'LineItems Migration',
       description: 'Migrate orders from orderGroups to lineItems system with full rollback capability',
@@ -89,6 +113,62 @@ export default function AdminDashboard() {
       href: '/admin/migration',
       color: 'bg-purple-50 border-purple-200 text-purple-700',
       iconColor: 'text-purple-600'
+    },
+    {
+      title: 'Domain Migration',
+      description: 'Normalize domain names and fix duplicate websites',
+      icon: Database,
+      href: '/admin/domain-migration',
+      color: 'bg-emerald-50 border-emerald-200 text-emerald-700',
+      iconColor: 'text-emerald-600'
+    },
+    {
+      title: 'Fix Inclusion Status',
+      description: 'Fix NULL inclusion status values to default included',
+      icon: Wrench,
+      href: '/admin/fix-inclusion-status',
+      color: 'bg-yellow-50 border-yellow-200 text-yellow-700',
+      iconColor: 'text-yellow-600'
+    },
+    {
+      title: 'Fix Bulk Domains Constraint',
+      description: 'Fix database constraint issues in bulk analysis domains',
+      icon: AlertTriangle,
+      href: '/admin/fix-bulk-domains-constraint',
+      color: 'bg-red-50 border-red-200 text-red-700',
+      iconColor: 'text-red-600'
+    },
+    {
+      title: 'Schema Audit',
+      description: 'Audit database schema and identify potential issues',
+      icon: Search,
+      href: '/admin/schema-audit',
+      color: 'bg-cyan-50 border-cyan-200 text-cyan-700',
+      iconColor: 'text-cyan-600'
+    },
+    {
+      title: '🚀 Publisher System Migrations',
+      description: 'Run all publisher & domain normalization migrations for production',
+      icon: Database,
+      href: '/admin/publisher-migrations',
+      color: 'bg-orange-50 border-orange-200 text-orange-700',
+      iconColor: 'text-orange-600'
+    },
+    {
+      title: 'Publisher Claims Migration',
+      description: 'Migrate publisher claims and ownership data',
+      icon: Shield,
+      href: '/admin/publisher-claims-migration',
+      color: 'bg-teal-50 border-teal-200 text-teal-700',
+      iconColor: 'text-teal-600'
+    },
+    {
+      title: 'Publisher Portal Migration',
+      description: 'Migrate publisher portal data and configurations',
+      icon: ArrowRightLeft,
+      href: '/admin/publisher-portal-migration',
+      color: 'bg-indigo-50 border-indigo-200 text-indigo-700',
+      iconColor: 'text-indigo-600'
     },
     
     // User & Account Management
@@ -109,22 +189,38 @@ export default function AdminDashboard() {
       iconColor: 'text-blue-600'
     },
     {
-      title: 'Create System User',
-      description: 'Create internal system users for automation',
-      icon: Users,
-      href: '/admin/create-system-user',
-      color: 'bg-teal-50 border-teal-200 text-teal-700',
-      iconColor: 'text-teal-600'
+      title: 'Signup Monitoring',
+      description: 'Monitor user signups and registration activity',
+      icon: Eye,
+      href: '/admin/signup-monitoring',
+      color: 'bg-rose-50 border-rose-200 text-rose-700',
+      iconColor: 'text-rose-600'
     },
-    
-    // Database Migrations
+
+    // Payment & Financial Management
     {
-      title: '🚀 Publisher System Migrations',
-      description: 'Run all publisher & domain normalization migrations for production',
-      icon: Database,
-      href: '/admin/publisher-migrations',
-      color: 'bg-orange-50 border-orange-200 text-orange-700',
-      iconColor: 'text-orange-600'
+      title: 'Payment Reconciliation',
+      description: 'Reconcile payments and track payment status',
+      icon: DollarSign,
+      href: '/admin/payment-reconciliation',
+      color: 'bg-green-50 border-green-200 text-green-700',
+      iconColor: 'text-green-600'
+    },
+    {
+      title: 'Refund Management',
+      description: 'Process and track customer refunds',
+      icon: CreditCard,
+      href: '/admin/refunds',
+      color: 'bg-red-50 border-red-200 text-red-700',
+      iconColor: 'text-red-600'
+    },
+    {
+      title: 'Stripe Migration',
+      description: 'Migrate Stripe payment configurations and data',
+      icon: CreditCard,
+      href: '/admin/stripe-migration',
+      color: 'bg-purple-50 border-purple-200 text-purple-700',
+      iconColor: 'text-purple-600'
     },
     
     // External Integrations
@@ -161,6 +257,14 @@ export default function AdminDashboard() {
       href: '/admin/email',
       color: 'bg-emerald-50 border-emerald-200 text-emerald-700',
       iconColor: 'text-emerald-600'
+    },
+    {
+      title: 'Email Portal',
+      description: 'Advanced email portal management and configuration',
+      icon: Mail,
+      href: '/admin/email-portal',
+      color: 'bg-lime-50 border-lime-200 text-lime-700',
+      iconColor: 'text-lime-600'
     },
     {
       title: 'Analytics',
@@ -213,19 +317,28 @@ export default function AdminDashboard() {
 
           <div className="mt-8 pt-6 border-t border-gray-200">
             <div className="bg-gray-50 rounded-lg p-4">
-              <h3 className="font-semibold text-gray-900 mb-2">Tool Categories</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
+              <h3 className="font-semibold text-gray-900 mb-2">Tool Categories (32 Total)</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm text-gray-600">
                 <div>
-                  <strong>Monitoring & Diagnostics:</strong> System health and performance monitoring
+                  <strong>AI & Diagnostics (9):</strong> Agent monitoring, health checks, and system diagnostics
                 </div>
                 <div>
-                  <strong>User Management:</strong> User accounts, permissions, and invitations
+                  <strong>Database & Schema (10):</strong> Migrations, schema audits, and data integrity tools
                 </div>
                 <div>
-                  <strong>External Integrations:</strong> Airtable, Chatwoot, and email services
+                  <strong>User Management (3):</strong> User accounts, invitations, and signup monitoring
                 </div>
                 <div>
-                  <strong>Analytics & Audit:</strong> Usage tracking and API monitoring
+                  <strong>Payment & Financial (3):</strong> Payment processing, refunds, and Stripe management
+                </div>
+                <div>
+                  <strong>External Integrations (3):</strong> Airtable, Chatwoot, and third-party services
+                </div>
+                <div>
+                  <strong>Email & Analytics (3):</strong> Email systems, analytics, and communication tools
+                </div>
+                <div>
+                  <strong>System Tools (2):</strong> Order flow matrix and image auditing
                 </div>
               </div>
             </div>
