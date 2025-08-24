@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
 import { publishers, websites } from '@/lib/db/schema';
 import { publisherWebsites } from '@/lib/db/accountSchema';
+import { publisherOfferings, publisherOfferingRelationships } from '@/lib/db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { Resend } from 'resend';
@@ -60,13 +61,27 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        // Get publisher's websites for the email
+        // Get publisher's websites with pricing info for the email
         const publisherWebsitesList = await db
           .select({
-            domain: websites.domain
+            domain: websites.domain,
+            basePrice: publisherOfferings.basePrice,
+            turnaroundDays: publisherOfferings.turnaroundDays,
+            offeringType: publisherOfferings.offeringType
           })
           .from(publisherWebsites)
           .innerJoin(websites, eq(websites.id, publisherWebsites.websiteId))
+          .leftJoin(
+            publisherOfferingRelationships,
+            eq(publisherOfferingRelationships.websiteId, websites.id)
+          )
+          .leftJoin(
+            publisherOfferings,
+            and(
+              eq(publisherOfferings.id, publisherOfferingRelationships.offeringId),
+              eq(publisherOfferings.publisherId, publisher.id)
+            )
+          )
           .where(eq(publisherWebsites.publisherId, publisher.id))
           .limit(5);
 
@@ -74,13 +89,13 @@ export async function POST(request: NextRequest) {
         const invitationToken = crypto.randomBytes(32).toString('base64url');
         const claimUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3002'}/publisher/claim?token=${invitationToken}`;
 
-        // Create email content
+        // Create email content with better template
         const emailHtml = `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
-  <title>You're Invited to Join Our Publisher Network</title>
+  <title>You're Invited to Join Linkio Publishers</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; }
     .container { max-width: 600px; margin: 0 auto; padding: 20px; }
@@ -100,110 +115,147 @@ export async function POST(request: NextRequest) {
 <body>
   <div class="container">
     <div class="header">
-      <h1 style="margin: 0; font-size: 32px; font-weight: 700;">Welcome to Our Publisher Network!</h1>
-      <p style="margin: 10px 0 0 0; font-size: 18px; opacity: 0.95;">Your exclusive invitation awaits</p>
+      <h1 style="margin: 0; font-size: 28px; font-weight: 600;">You're Invited to Join Linkio Publishers</h1>
     </div>
     <div class="content">
-      <p style="font-size: 18px; color: #1f2937;">Hello ${publisher.contactName || 'Publisher'},</p>
+      <p style="font-size: 18px; margin-top: 0;">Hi ${publisher.contactName || 'there'},</p>
       
-      <p>We've been successfully working with ${publisher.companyName ? `<strong>${publisher.companyName}</strong>` : 'your websites'} and are excited to invite you to join our exclusive publisher platform.</p>
+      <div style="background: #f3f4f6; border-left: 4px solid #667eea; padding: 20px; margin: 20px 0; border-radius: 4px;">
+        <p style="margin: 0 0 10px 0;"><strong>Why are you receiving this email?</strong></p>
+        <p style="margin: 10px 0;">
+          We're Linkio, a link building agency that helps businesses improve their SEO through high-quality guest posts. 
+          Over the past few months, we've reached out to various publishers about guest posting opportunities, and 
+          you responded to one of our outreach emails with pricing and availability for your website(s).
+        </p>
+        <p style="margin: 10px 0 0 0;">
+          We're now streamlining how we work with publishers like you through our new Publisher Portal, 
+          which will make it easier for you to receive and manage guest post orders from us.
+        </p>
+      </div>
+
+      <h2 style="font-size: 20px; margin-top: 30px; margin-bottom: 20px;">Here's What We Have On File For You:</h2>
       
       ${publisherWebsitesList.length > 0 ? `
-      <div class="websites">
-        <strong style="color: #1f2937; font-size: 16px;">Your Registered Websites:</strong>
-        ${publisherWebsitesList.map((w: any) => `
-        <div class="website-item">🌐 ${w.domain}</div>
-        `).join('')}
-        ${publisherWebsitesList.length === 5 ? '<div class="website-item" style="font-style: italic;">...and more websites in your portfolio</div>' : ''}
+      ${publisherWebsitesList.map((w: any) => `
+      <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 15px 0;">
+        <div style="font-size: 18px; font-weight: 600; color: #1f2937; margin-bottom: 10px;">${w.domain}</div>
+        <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+          <div style="flex: 1;">
+            <div style="font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;">Guest Post Rate</div>
+            <div style="font-size: 16px; color: #1f2937; font-weight: 500; margin-top: 4px;">
+              ${w.basePrice ? `$${w.basePrice}` : 'To be confirmed'}
+            </div>
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;">Turnaround Time</div>
+            <div style="font-size: 16px; color: #1f2937; font-weight: 500; margin-top: 4px;">
+              ${w.turnaroundDays ? `${w.turnaroundDays} days` : 'To be confirmed'}
+            </div>
+          </div>
+        </div>
       </div>
+      `).join('')}
+      ${publisherWebsitesList.length === 5 ? '<p style="text-align: center; color: #6b7280; font-size: 14px; margin: 10px 0;">+ more websites on file</p>' : ''}
       ` : ''}
       
-      <div class="benefits">
-        <h3 style="color: #1f2937; margin-bottom: 15px;">By claiming your account, you'll unlock:</h3>
-        <div class="benefit-item">
-          <span class="benefit-icon">✓</span>
-          <div><strong>Complete Control:</strong> Manage all your website listings and guest post offerings in one place</div>
-        </div>
-        <div class="benefit-item">
-          <span class="benefit-icon">✓</span>
-          <div><strong>Set Your Terms:</strong> Define your own pricing, requirements, and content guidelines</div>
-        </div>
-        <div class="benefit-item">
-          <span class="benefit-icon">✓</span>
-          <div><strong>Analytics Dashboard:</strong> Track performance, views, and conversion metrics</div>
-        </div>
-        <div class="benefit-item">
-          <span class="benefit-icon">✓</span>
-          <div><strong>Direct Opportunities:</strong> Receive pre-qualified guest post requests from verified clients</div>
-        </div>
-        <div class="benefit-item">
-          <span class="benefit-icon">✓</span>
-          <div><strong>Faster Payments:</strong> Automated invoicing and streamlined payment processing</div>
-        </div>
-      </div>
-      
-      <div style="text-align: center; margin: 35px 0;">
-        <a href="${claimUrl}" class="button" style="color: white;">Claim Your Publisher Account →</a>
-        <p style="color: #6b7280; font-size: 13px; margin: 10px 0 0 0;">
-          Takes less than 2 minutes to complete
+      <div style="background: #dbeafe; border: 1px solid #60a5fa; padding: 15px; border-radius: 6px; margin: 20px 0;">
+        <p style="margin: 5px 0; color: #1e40af; font-size: 14px;">
+          <strong>Is this information still accurate?</strong><br>
+          You can update your rates, turnaround times, and website details anytime in your publisher dashboard.
         </p>
       </div>
       
-      <div style="background: #fef3c7; border: 1px solid #fcd34d; border-radius: 6px; padding: 15px; margin: 25px 0;">
-        <p style="margin: 0; color: #92400e; font-size: 14px;">
-          <strong>⏰ Limited Time:</strong> This exclusive invitation link will expire in 30 days. 
-          Claim your account now to secure your publisher profile.
+      <div style="background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 20px; margin: 25px 0;">
+        <h3 style="color: #92400e; margin-top: 0; font-size: 16px;">🎯 What's In It For You?</h3>
+        <ul style="margin: 10px 0; padding-left: 20px;">
+          <li style="color: #78350f; margin: 8px 0;"><strong>Regular Orders:</strong> Get consistent guest post requests from our clients</li>
+          <li style="color: #78350f; margin: 8px 0;"><strong>Quick Payment:</strong> Fast, reliable payments for completed posts</li>
+          <li style="color: #78350f; margin: 8px 0;"><strong>No More Email Back-and-Forth:</strong> Manage everything in one dashboard</li>
+          <li style="color: #78350f; margin: 8px 0;"><strong>Set Your Own Terms:</strong> Control your pricing, turnaround times, and availability</li>
+        </ul>
+      </div>
+      
+      <div style="text-align: center; margin: 40px 0;">
+        <p style="font-size: 16px; margin-bottom: 20px;">
+          <strong>Ready to start receiving orders?</strong><br>
+          Your account is already set up - just confirm your details:
+        </p>
+        <a href="${claimUrl}" class="button" style="color: white;">Activate Your Publisher Account →</a>
+        <p style="font-size: 14px; color: #6b7280; margin-top: 15px;">
+          Takes less than 2 minutes
         </p>
       </div>
       
-      <div class="footer">
-        <p style="margin-bottom: 10px;"><strong>Need help?</strong> Simply reply to this email and our team will assist you.</p>
-        <p>Best regards,<br><strong>The Guest Post Workflow Team</strong></p>
-        <p style="font-size: 12px; color: #9ca3af; margin-top: 20px;">
-          You're receiving this because your websites are part of our publisher network. 
-          If you believe this email was sent in error, you can safely ignore it.
+      <div style="border-top: 2px solid #e5e7eb; padding-top: 20px; margin-top: 40px;">
+        <p style="font-size: 14px; color: #6b7280;">
+          <strong>Questions?</strong> Simply reply to this email and we'll help you get set up.
         </p>
       </div>
+    </div>
+    
+    <div style="background: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
+      <p style="color: #6b7280; font-size: 14px; margin: 5px 0;">
+        <strong>Linkio</strong> - Publisher Network Management Platform
+      </p>
+      <p style="color: #6b7280; font-size: 14px; margin: 5px 0;">
+        © 2025 Linkio. All rights reserved.
+      </p>
+      <p style="font-size: 12px; color: #9ca3af; margin-top: 15px;">
+        You're receiving this because you previously expressed interest in accepting guest posts.<br>
+        If this was sent in error, please ignore this email.
+      </p>
     </div>
   </div>
 </body>
 </html>`;
 
         const emailText = `
-Welcome to Our Publisher Network!
+You're Invited to Join Linkio Publishers
 
-Hello ${publisher.contactName || 'Publisher'},
+Hi ${publisher.contactName || 'there'},
 
-We've been successfully working with ${publisher.companyName || 'your websites'} and are excited to invite you to join our exclusive publisher platform.
+=== Why are you receiving this email? ===
 
-${publisherWebsitesList.length > 0 ? `Your Registered Websites:
-${publisherWebsitesList.map((w: any) => `- ${w.domain}`).join('\n')}
-${publisherWebsitesList.length === 5 ? '...and more websites in your portfolio' : ''}
-` : ''}
+We're Linkio, a link building agency that helps businesses improve their SEO through high-quality guest posts. Over the past few months, we've reached out to various publishers about guest posting opportunities, and you responded to one of our outreach emails with pricing and availability for your website(s).
 
-By claiming your account, you'll unlock:
+We're now streamlining how we work with publishers like you through our new Publisher Portal, which will make it easier for you to receive and manage guest post orders from us.
 
-✓ Complete Control: Manage all your website listings and guest post offerings in one place
-✓ Set Your Terms: Define your own pricing, requirements, and content guidelines  
-✓ Analytics Dashboard: Track performance, views, and conversion metrics
-✓ Direct Opportunities: Receive pre-qualified guest post requests from verified clients
-✓ Faster Payments: Automated invoicing and streamlined payment processing
+=== Here's What We Have On File For You ===
 
-Claim Your Publisher Account:
+${publisherWebsitesList.map((w: any) => `
+• ${w.domain}
+  - Guest Post Rate: ${w.basePrice ? `$${w.basePrice}` : 'To be confirmed'}
+  - Turnaround Time: ${w.turnaroundDays ? `${w.turnaroundDays} days` : 'To be confirmed'}
+`).join('')}
+${publisherWebsitesList.length === 5 ? '\n+ more websites on file\n' : ''}
+
+Is this information still accurate?
+You can update your rates, turnaround times, and website details anytime in your publisher dashboard.
+
+=== What's In It For You? ===
+
+✓ Regular Orders: Get consistent guest post requests from our clients
+✓ Quick Payment: Fast, reliable payments for completed posts  
+✓ No More Email Back-and-Forth: Manage everything in one dashboard
+✓ Set Your Own Terms: Control your pricing, turnaround times, and availability
+
+=== Ready to start receiving orders? ===
+
+Your account is already set up - just confirm your details:
+
 ${claimUrl}
 
-Takes less than 2 minutes to complete.
+(Takes less than 2 minutes)
 
-⏰ Limited Time: This exclusive invitation link will expire in 30 days. 
-Claim your account now to secure your publisher profile.
+---
 
-Need help? Simply reply to this email and our team will assist you.
+Questions? Simply reply to this email and we'll help you get set up.
 
-Best regards,
-The Guest Post Workflow Team
+Linkio - Publisher Network Management Platform
+© 2025 Linkio. All rights reserved.
 
-You're receiving this because your websites are part of our publisher network. 
-If you believe this email was sent in error, you can safely ignore it.
+You're receiving this because you previously expressed interest in accepting guest posts.
+If this was sent in error, please ignore this email.
 `;
 
         // Send email (or simulate in test mode)
@@ -218,7 +270,7 @@ If you believe this email was sent in error, you can safely ignore it.
           const emailResult = await resend.emails.send({
             from: 'Guest Post Workflow <info@linkio.com>',
             to: publisher.email,
-            subject: `${publisher.contactName ? publisher.contactName + ', you\'re' : 'You\'re'} invited to join our Publisher Network`,
+            subject: `Action Required: Confirm your guest post rates for ${publisher.companyName || 'your websites'}`,
             html: emailHtml,
             text: emailText,
             replyTo: 'info@linkio.com'
