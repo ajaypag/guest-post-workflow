@@ -360,14 +360,15 @@ export class ImpersonationService {
       const publisherResult = await pool.query(`
         SELECT id, email, 
                COALESCE(contact_name, company_name, 'Publisher User') as name,
-               'publisher' as user_type, id as publisher_id, company_name, status
+               'publisher' as user_type, id as "publisherId", company_name, status
         FROM publishers WHERE id = $1 AND status IN ('active', 'pending')
       `, [userId]);
       
       if (publisherResult.rows.length > 0) {
         return {
           ...publisherResult.rows[0],
-          userType: 'publisher'
+          userType: 'publisher',
+          publisherId: publisherResult.rows[0].publisherId // Ensure publisherId is set
         };
       }
       
