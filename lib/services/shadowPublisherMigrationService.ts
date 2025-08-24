@@ -88,7 +88,7 @@ export class ShadowPublisherMigrationService {
             w.id as website_id,
             w.domain,
             w.guest_post_cost,
-            w.turnaround_time,
+            w.typical_turnaround_days,
             w.domain_rating,
             w.total_traffic
           FROM shadow_publisher_websites spw
@@ -122,112 +122,103 @@ export class ShadowPublisherMigrationService {
               .limit(1);
 
             if (existingRelationship.length > 0) {
-              console.log(`Website relationship already exists for ${shadowRow.domain}, skipping`);
+              console.log(`Website relationship already exists for ${shadowRow.domain}, updating`);
               
-              // Mark as skipped
-              await tx.execute(sql`
-                UPDATE shadow_publisher_websites 
-                SET 
-                  migration_status = 'skipped',
-                  migrated_at = CURRENT_TIMESTAMP,
-                  migration_notes = 'Relationship already exists'
-                WHERE id = ${shadowRow.shadow_id}
-              `);
-              continue;
+              // Update existing relationship to ensure it's active
+              await tx
+                .update(publisherOfferingRelationships)
+                .set({
+                  isActive: true,
+                  verificationStatus: 'verified',
+                  updatedAt: new Date()
+                })
+                .where(
+                  and(
+                    eq(publisherOfferingRelationships.publisherId, publisherId),
+                    eq(publisherOfferingRelationships.websiteId, shadowRow.website_id)
+                  )
+                );
+              
+              relationshipsCreated++;
+            } else {
+
+              // Create publisher-website relationship
+              const newRelationshipId = crypto.randomUUID();
+              await tx.insert(publisherOfferingRelationships).values({
+                id: newRelationshipId,
+                publisherId: publisherId,
+                websiteId: shadowRow.website_id,
+                relationshipType: 'contact', // Default relationship type
+                verificationStatus: shadowRow.verified ? 'verified' : 'claimed',
+                verificationMethod: shadowRow.confidence > 0.7 ? 'email_domain' : 'claimed',
+                isActive: true,
+                contactEmail: publisher.email,
+                internalNotes: `Migrated from shadow data. Shadow ID: ${shadowRow.shadow_id}`,
+                createdAt: new Date(),
+                updatedAt: new Date()
+              });
+
+              websitesMigrated++;
+              relationshipsCreated++;
             }
 
-            // Create publisher-website relationship
-            const newRelationshipId = crypto.randomUUID();
-            await tx.insert(publisherOfferingRelationships).values({
-              id: newRelationshipId,
-              publisherId: publisherId,
-              websiteId: shadowRow.website_id,
-              relationshipType: 'contact', // Default relationship type
-              verificationStatus: shadowRow.verified ? 'verified' : 'claimed',
-              verificationMethod: shadowRow.confidence > 0.7 ? 'email_domain' : 'claimed',
-              isActive: true,
-              contactEmail: publisher.email,
-              internalNotes: `Migrated from shadow data. Shadow ID: ${shadowRow.shadow_id}`,
-              createdAt: new Date(),
-              updatedAt: new Date()
-            });
-
-            websitesMigrated++;
-
-            // 4. Check for existing offerings and activate them
+            // 4. Check for existing offerings for this publisher
             const offerings = await tx
               .select()
               .from(publisherOfferings)
               .where(
-                and(
-                  eq(publisherOfferings.publisherId, publisherId),
-                  eq(publisherOfferings.websiteId, shadowRow.website_id)
-                )
+                eq(publisherOfferings.publisherId, publisherId)
               );
 
-            if (offerings.length > 0) {
-              // Activate existing offerings
-              await tx
-                .update(publisherOfferings)
-                .set({
-                  isActive: true,
-                  updatedAt: new Date()
-                })
-                .where(
-                  eq(publisherOfferings.publisherId, publisherId)
-                );
-              
-              offeringsActivated += offerings.length;
-            } else if (shadowRow.guest_post_cost) {
+            // Check if we already have an offering for this specific website
+            // Each website should have its own offering, regardless of price
+            const matchingOffering = offerings.find(o => 
+              (o.attributes as any)?.websiteId === shadowRow.website_id
+            );
+
+            if (!matchingOffering && shadowRow.guest_post_cost) {
               // Create new offering from shadow data
               const offeringId = crypto.randomUUID();
               await tx.insert(publisherOfferings).values({
                 id: offeringId,
                 publisherId: publisherId,
                 offeringType: 'guest_post',
+                offeringName: `Guest Post - ${shadowRow.domain}`,
                 basePrice: parseInt(parseFloat(shadowRow.guest_post_cost) * 100) || 0, // Convert to cents
                 currency: 'USD',
-                turnaroundDays: parseInt(shadowRow.turnaround_time) || null,
+                turnaroundDays: parseInt(shadowRow.typical_turnaround_days) || 7,
+                currentAvailability: 'available',
                 isActive: true,
                 attributes: {
                   migratedAt: new Date().toISOString(),
                   shadowId: shadowRow.shadow_id,
+                  websiteId: shadowRow.website_id, // Store website association
                   extractedPrice: shadowRow.guest_post_cost,
-                  extractedTurnaround: shadowRow.turnaround_time
+                  extractedTurnaround: shadowRow.typical_turnaround_days
                 },
+                createdAt: new Date(),
+                updatedAt: new Date()
+              });
+
+              // CRITICAL: Create proper offering-website relationship
+              const relationshipId = crypto.randomUUID();
+              await tx.insert(publisherOfferingRelationships).values({
+                id: relationshipId,
+                publisherId: publisherId,
+                offeringId: offeringId,
+                websiteId: shadowRow.website_id,
+                isPrimary: true,
+                isActive: true,
+                relationshipType: 'owner',
+                verificationStatus: 'verified',
+                verificationMethod: 'migration',
+                contactEmail: publisher.email,
+                internalNotes: `Created during shadow data migration. Shadow ID: ${shadowRow.shadow_id}`,
                 createdAt: new Date(),
                 updatedAt: new Date()
               });
               
               offeringsActivated++;
-            }
-
-            // 5. Create publisher-offering relationship if needed
-            const relationshipExists = await tx
-              .select()
-              .from(publisherOfferingRelationships)
-              .where(
-                and(
-                  eq(publisherOfferingRelationships.publisherId, publisherId),
-                  eq(publisherOfferingRelationships.websiteId, shadowRow.website_id)
-                )
-              )
-              .limit(1);
-
-            if (relationshipExists.length === 0) {
-              await tx.insert(publisherOfferingRelationships).values({
-                id: crypto.randomUUID(),
-                publisherId: publisherId,
-                websiteId: shadowRow.website_id,
-                relationshipType: 'owner',
-                verificationStatus: shadowRow.verified ? 'verified' : 'pending',
-                verificationMethod: 'migration',
-                isActive: true,
-                contactEmail: publisher.email,
-                createdAt: new Date(),
-                updatedAt: new Date()
-              });
-              
               relationshipsCreated++;
             }
 

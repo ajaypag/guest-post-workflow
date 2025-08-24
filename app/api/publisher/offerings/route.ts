@@ -37,26 +37,37 @@ export async function GET(request: NextRequest) {
     
     const totalCount = Number(countResult[0]?.count || 0);
 
-    // Get paginated offerings with their associated websites
-    const offeringsData = await db
-      .select({
-        offering: publisherOfferings,
-        relationship: publisherOfferingRelationships,
-        website: websites
-      })
+    // Get paginated offerings 
+    const offeringsOnly = await db
+      .select()
       .from(publisherOfferings)
-      .leftJoin(
-        publisherOfferingRelationships,
-        eq(publisherOfferingRelationships.offeringId, publisherOfferings.id)
-      )
-      .leftJoin(
-        websites,
-        eq(websites.id, publisherOfferingRelationships.websiteId)
-      )
       .where(eq(publisherOfferings.publisherId, session.publisherId))
       .orderBy(publisherOfferings.createdAt)
       .limit(paginationParams.limit)
       .offset(paginationParams.offset);
+
+    // For each offering, get website from relationship table
+    const offeringsData = [];
+    for (const offering of offeringsOnly) {
+      let website = null;
+
+      // Get website from relationship table
+      const relationship = await db
+        .select({ website: websites })
+        .from(publisherOfferingRelationships)
+        .leftJoin(websites, eq(websites.id, publisherOfferingRelationships.websiteId))
+        .where(eq(publisherOfferingRelationships.offeringId, offering.id))
+        .limit(1);
+
+      if (relationship.length > 0 && relationship[0].website) {
+        website = relationship[0].website;
+      }
+
+      offeringsData.push({
+        offering,
+        website
+      });
+    }
 
     // Get pricing rules for the paginated offerings only
     const offeringIds = [...new Set(offeringsData.map(o => o.offering.id))];
