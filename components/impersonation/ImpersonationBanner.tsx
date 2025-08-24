@@ -12,16 +12,8 @@ import { AlertTriangle, User, Clock, LogOut, Shield } from 'lucide-react';
 import { useImpersonation } from '@/lib/contexts/ImpersonationContext';
 
 export default function ImpersonationBanner() {
-  // Safely handle case where provider isn't ready yet
-  let impersonationContext;
-  try {
-    impersonationContext = useImpersonation();
-  } catch (error) {
-    // Provider not ready yet, don't render banner
-    return null;
-  }
-
-  const { isImpersonating, impersonationData, endImpersonation, timeElapsed, loading, error: contextError } = impersonationContext;
+  // Always call hooks at the top level
+  const { isImpersonating, impersonationData, endImpersonation, timeElapsed, loading, error: contextError } = useImpersonation();
 
   // Don't show banner if not impersonating
   if (!isImpersonating || !impersonationData) {
