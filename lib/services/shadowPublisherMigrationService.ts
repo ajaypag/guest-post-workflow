@@ -6,7 +6,7 @@ import {
   publisherOfferingRelationships
 } from '@/lib/db/publisherSchemaActual';
 import { websites } from '@/lib/db/websiteSchema';
-import { eq, and, isNull, sql } from 'drizzle-orm';
+import { eq, and, isNull, sql, or } from 'drizzle-orm';
 import * as crypto from 'crypto';
 
 // Define the shadow_publisher_websites table structure
@@ -60,6 +60,46 @@ export class ShadowPublisherMigrationService {
 
         if (!publisher) {
           throw new Error('Publisher not found');
+        }
+        
+        // 1.5 Clean up any unnamed test offerings before migration
+        const unnamedOfferings = await tx
+          .select()
+          .from(publisherOfferings)
+          .where(
+            and(
+              eq(publisherOfferings.publisherId, publisherId),
+              or(
+                isNull(publisherOfferings.offeringName),
+                eq(publisherOfferings.offeringName, ''),
+                eq(publisherOfferings.offeringName, 'null')
+              )
+            )
+          );
+        
+        if (unnamedOfferings.length > 0) {
+          console.log(`Cleaning up ${unnamedOfferings.length} unnamed test offerings before migration`);
+          
+          // Delete relationships first
+          for (const offering of unnamedOfferings) {
+            await tx
+              .delete(publisherOfferingRelationships)
+              .where(eq(publisherOfferingRelationships.offeringId, offering.id));
+          }
+          
+          // Then delete the offerings
+          await tx
+            .delete(publisherOfferings)
+            .where(
+              and(
+                eq(publisherOfferings.publisherId, publisherId),
+                or(
+                  isNull(publisherOfferings.offeringName),
+                  eq(publisherOfferings.offeringName, ''),
+                  eq(publisherOfferings.offeringName, 'null')
+                )
+              )
+            );
         }
 
         // Skip shadow data migrated check for now since field doesn't exist
