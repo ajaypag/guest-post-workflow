@@ -10,7 +10,7 @@ interface UserActionRequest {
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { domainId: string } }
+  { params }: { params: Promise<{ domainId: string }> }
 ) {
   try {
     const session = await AuthServiceServer.getSession();
@@ -18,7 +18,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { domainId } = params;
+    const { domainId } = await params;
     if (!domainId) {
       return NextResponse.json({ error: 'Domain ID is required' }, { status: 400 });
     }
@@ -141,7 +141,7 @@ export async function PATCH(
 // Bulk action endpoint for multiple domains
 export async function POST(
   request: NextRequest,
-  { params }: { params: { domainId: string } }
+  { params }: { params: Promise<{ domainId: string }> }
 ) {
   try {
     const session = await AuthServiceServer.getSession();
@@ -150,7 +150,8 @@ export async function POST(
     }
 
     // Handle bulk actions if domainId is 'bulk'
-    if (params.domainId !== 'bulk') {
+    const { domainId } = await params;
+    if (domainId !== 'bulk') {
       return NextResponse.json({ error: 'Invalid bulk endpoint' }, { status: 400 });
     }
 

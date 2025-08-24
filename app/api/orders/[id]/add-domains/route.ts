@@ -13,9 +13,9 @@ import { PricingService } from '@/lib/services/pricingService';
 const SERVICE_FEE_CENTS = 7900; // $79.00
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export async function POST(request: NextRequest, { params }: RouteParams) {
