@@ -19,7 +19,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const publisherId = session.publisherId;
+    // During impersonation, the publisherId might be the userId itself for publishers
+    const publisherId = session.publisherId || (session.userType === 'publisher' ? session.userId : null);
+    
+    console.log('🔍 Publisher websites API:', {
+      sessionUserId: session.userId,
+      sessionPublisherId: session.publisherId,
+      sessionUserType: session.userType,
+      derivedPublisherId: publisherId
+    });
+    
     if (!publisherId) {
       return NextResponse.json(
         { error: 'Publisher ID not found' },
@@ -94,9 +103,19 @@ export async function GET(request: NextRequest) {
       links: response.links
     });
   } catch (error) {
-    console.error('Error fetching publisher websites:', error);
+    console.error('❌ Error fetching publisher websites:', {
+      error,
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      publisherId: session?.publisherId,
+      userId: session?.userId,
+      userType: session?.userType
+    });
     return NextResponse.json(
-      { error: 'Failed to fetch websites' },
+      { 
+        error: 'Failed to fetch websites',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }
@@ -114,7 +133,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const publisherId = session.publisherId;
+    // During impersonation, the publisherId might be the userId itself for publishers
+    const publisherId = session.publisherId || (session.userType === 'publisher' ? session.userId : null);
+    
+    console.log('🔍 Publisher websites API:', {
+      sessionUserId: session.userId,
+      sessionPublisherId: session.publisherId,
+      sessionUserType: session.userType,
+      derivedPublisherId: publisherId
+    });
+    
     if (!publisherId) {
       return NextResponse.json(
         { error: 'Publisher ID not found' },
