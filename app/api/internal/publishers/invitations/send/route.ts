@@ -139,18 +139,10 @@ export async function POST(request: NextRequest) {
       ${publisherWebsitesList.map((w: any) => `
       <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 15px 0;">
         <div style="font-size: 18px; font-weight: 600; color: #1f2937; margin-bottom: 10px;">${w.domain}</div>
-        <div style="display: flex; justify-content: space-between; margin-top: 10px;">
-          <div style="flex: 1;">
-            <div style="font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;">Guest Post Rate</div>
-            <div style="font-size: 16px; color: #1f2937; font-weight: 500; margin-top: 4px;">
-              ${w.basePrice ? `$${w.basePrice}` : 'To be confirmed'}
-            </div>
-          </div>
-          <div style="flex: 1;">
-            <div style="font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;">Turnaround Time</div>
-            <div style="font-size: 16px; color: #1f2937; font-weight: 500; margin-top: 4px;">
-              ${w.turnaroundDays ? `${w.turnaroundDays} days` : 'To be confirmed'}
-            </div>
+        <div style="margin-top: 10px;">
+          <div style="font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;">Guest Post Rate</div>
+          <div style="font-size: 16px; color: #1f2937; font-weight: 500; margin-top: 4px;">
+            ${w.basePrice ? `$${(w.basePrice / 100).toFixed(0)}` : 'To be confirmed'}
           </div>
         </div>
       </div>
@@ -224,8 +216,7 @@ We're now streamlining how we work with publishers like you through our new Publ
 
 ${publisherWebsitesList.map((w: any) => `
 • ${w.domain}
-  - Guest Post Rate: ${w.basePrice ? `$${w.basePrice}` : 'To be confirmed'}
-  - Turnaround Time: ${w.turnaroundDays ? `${w.turnaroundDays} days` : 'To be confirmed'}
+  - Guest Post Rate: ${w.basePrice ? `$${(w.basePrice / 100).toFixed(0)}` : 'To be confirmed'}
 `).join('')}
 ${publisherWebsitesList.length === 5 ? '\n+ more websites on file\n' : ''}
 
