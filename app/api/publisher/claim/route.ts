@@ -18,10 +18,8 @@ const initiateClaimSchema = z.object({
 const completeClaimSchema = z.object({
   token: z.string().min(1),
   password: z.string().min(8).max(100),
-  confirmPassword: z.string(),
   contactName: z.string().min(1).max(255),
   companyName: z.string().optional(),
-  phone: z.string().optional(),
 });
 
 // GET - Validate claim token and return publisher info
@@ -120,15 +118,7 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    const { token, password, confirmPassword, contactName, companyName, phone } = validation.data;
-    
-    // Validate passwords match
-    if (password !== confirmPassword) {
-      return NextResponse.json(
-        { error: 'Passwords do not match' },
-        { status: 400 }
-      );
-    }
+    const { token, password, contactName, companyName } = validation.data;
     
     // Find publisher by invitation token
     const [publisher] = await db
@@ -189,7 +179,6 @@ export async function POST(request: NextRequest) {
           password: hashedPassword,
           contactName,
           companyName: companyName || publisher.companyName,
-          phone: phone || publisher.phone,
           accountStatus: 'active',
           status: 'active',
           emailVerified: true,
