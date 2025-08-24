@@ -107,7 +107,12 @@ export const ImpersonationProvider: React.FC<Props> = ({
         // Dispatch custom event to trigger session state refetch
         window.dispatchEvent(new CustomEvent('impersonationEnd'));
         // Reload the page to refresh with admin session
-        window.location.href = data.redirectUrl || '/accounts';
+        // Smart fallback based on current location
+        let fallbackUrl = '/accounts';
+        if (window.location.pathname.startsWith('/publisher')) {
+          fallbackUrl = '/internal/publishers';
+        }
+        window.location.href = data.redirectUrl || fallbackUrl;
       } else {
         setError(data.error || 'Failed to end impersonation');
         setLoading(false);

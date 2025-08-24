@@ -43,10 +43,18 @@ export async function POST(request: NextRequest) {
       restoredAdmin: sessionState.impersonation.adminUser.email
     });
     
+    // Determine redirect URL based on target user type
+    let redirectUrl = '/accounts'; // Default
+    if (sessionState.impersonation.targetUser.userType === 'publisher') {
+      redirectUrl = '/internal/publishers';
+    } else if (sessionState.impersonation.targetUser.userType === 'account') {
+      redirectUrl = '/accounts';
+    }
+    
     return NextResponse.json({
       success: true,
       message: 'Impersonation ended successfully',
-      redirectUrl: '/accounts' // Redirect back to accounts page
+      redirectUrl
     });
     
   } catch (error: any) {
