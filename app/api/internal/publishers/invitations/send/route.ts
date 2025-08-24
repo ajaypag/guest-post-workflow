@@ -87,7 +87,11 @@ export async function POST(request: NextRequest) {
 
         // Generate secure invitation token
         const invitationToken = crypto.randomBytes(32).toString('base64url');
-        const claimUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3002'}/publisher/claim?token=${invitationToken}`;
+        // Use proper environment variable or construct from request headers
+        const baseUrl = process.env.APP_URL || 
+                       process.env.NEXT_PUBLIC_APP_URL || 
+                       `${request.headers.get('x-forwarded-proto') || 'http'}://${request.headers.get('host') || 'localhost:3002'}`;
+        const claimUrl = `${baseUrl}/publisher/claim?token=${invitationToken}`;
 
         // Create email content with better template
         const emailHtml = `
