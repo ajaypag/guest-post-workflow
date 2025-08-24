@@ -98,6 +98,13 @@ export default function Header() {
                   <ShoppingCart className="w-4 h-4 mr-1.5" />
                   My Orders
                 </Link>
+                <Link
+                  href="/vetted-sites"
+                  className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
+                >
+                  <Database className="w-4 h-4 mr-1.5" />
+                  Vetted Sites
+                </Link>
               </>
             ) : (
               // Internal Team Navigation
@@ -128,6 +135,13 @@ export default function Header() {
                 >
                   <ShoppingCart className="w-4 h-4 mr-1.5" />
                   Orders
+                </Link>
+                <Link
+                  href="/vetted-sites"
+                  className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
+                >
+                  <Database className="w-4 h-4 mr-1.5" />
+                  Vetted Sites
                 </Link>
 
                 {/* Internal Portal Dropdown */}
@@ -493,6 +507,14 @@ export default function Header() {
                   <ShoppingCart className="w-5 h-5" />
                   <span className="text-base font-medium">My Orders</span>
                 </Link>
+                <Link
+                  href="/vetted-sites"
+                  className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors min-h-[44px]"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Database className="w-5 h-5" />
+                  <span className="text-base font-medium">Vetted Sites</span>
+                </Link>
                 
                 <div className="border-t border-gray-100 my-4"></div>
                 
@@ -555,6 +577,14 @@ export default function Header() {
                 >
                   <ShoppingCart className="w-5 h-5" />
                   <span className="text-base font-medium">Orders</span>
+                </Link>
+                <Link
+                  href="/vetted-sites"
+                  className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors min-h-[44px]"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Database className="w-5 h-5" />
+                  <span className="text-base font-medium">Vetted Sites</span>
                 </Link>
 
                 {/* Internal Portal Section - Mobile */}

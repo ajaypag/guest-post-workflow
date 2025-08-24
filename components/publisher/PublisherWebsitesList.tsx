@@ -20,7 +20,7 @@ import {
   XCircle,
   Clock
 } from 'lucide-react';
-import ResponsiveTable from '@/components/ui/ResponsiveTable';
+// import ResponsiveTable from '@/components/ui/ResponsiveTable'; // Component not found
 import { PublisherWebsite } from '@/lib/types/publisher';
 
 interface PublisherWebsitesListProps {
@@ -290,13 +290,30 @@ export default function PublisherWebsitesList({ websites }: PublisherWebsitesLis
 
       {/* Websites Table/List */}
       {filteredWebsites.length > 0 ? (
-        <ResponsiveTable
-          columns={columns}
-          data={rows}
-          keyExtractor={(row) => row.key}
-          breakpoint="lg"
-          mobileCardRenderer={mobileCardRenderer}
-        />
+        <div className="bg-white rounded-lg shadow-md overflow-x-auto">
+          <table className="min-w-full">
+            <thead>
+              <tr className="border-b">
+                {columns.map(col => (
+                  <th key={col.key} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    {col.label}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row: any) => (
+                <tr key={row.key} className="border-b">
+                  {columns.map(col => (
+                    <td key={col.key} className="px-6 py-4 whitespace-nowrap">
+                      {row[col.key]}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : (
         <div className="bg-white rounded-lg shadow-md p-12 text-center">
           <Globe className="h-12 w-12 text-gray-300 mx-auto mb-4" />

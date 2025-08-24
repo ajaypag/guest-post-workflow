@@ -29,7 +29,7 @@ const SERVICE_FEE_CENTS = 7900;
 // User-friendly status messaging
 const getStatusMessage = (status: string, state?: string) => {
   if (status === 'confirmed') {
-    if (state === 'analyzing') {
+    if (state === 'analyzing' || state === 'finding_sites') {
       return {
         title: "🔍 Finding Perfect Sites for You",
         description: "Our team is analyzing your requirements to identify high-quality sites that match your criteria.",
@@ -38,7 +38,7 @@ const getStatusMessage = (status: string, state?: string) => {
         userAction: "none",
         actionText: "No action needed - we're working on it!"
       };
-    } else if (state === 'sites_ready' || state === 'client_reviewing') {
+    } else if (state === 'sites_ready' || state === 'site_review' || state === 'client_reviewing') {
       return {
         title: "📋 Sites Ready for Your Review",
         description: "We've found sites that match your criteria. Review and approve the ones you'd like to use.",
@@ -1093,26 +1093,28 @@ export default function OrderDetailPage() {
                 )}
               </div>
               
-              {/* Account Information */}
-              <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mt-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Information</h3>
-                <dl className="space-y-3">
-                  <div>
-                    <dt className="text-sm text-gray-500">Account Name</dt>
-                    <dd className="text-sm font-medium text-gray-900">{order.account?.contactName || order.account?.companyName || 'Unknown'}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm text-gray-500">Email</dt>
-                    <dd className="text-sm font-medium text-gray-900">{order.account?.email || 'No email'}</dd>
-                  </div>
-                  {order.account?.companyName && order.account?.contactName && (
+              {/* Account Information - Only for Internal Users */}
+              {user?.userType === 'internal' && (
+                <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mt-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Information</h3>
+                  <dl className="space-y-3">
                     <div>
-                      <dt className="text-sm text-gray-500">Company</dt>
-                      <dd className="text-sm font-medium text-gray-900">{order.account.companyName}</dd>
+                      <dt className="text-sm text-gray-500">Account Name</dt>
+                      <dd className="text-sm font-medium text-gray-900">{order.account?.contactName || order.account?.companyName || 'Unknown'}</dd>
                     </div>
-                  )}
-                </dl>
-              </div>
+                    <div>
+                      <dt className="text-sm text-gray-500">Email</dt>
+                      <dd className="text-sm font-medium text-gray-900">{order.account?.email || 'No email'}</dd>
+                    </div>
+                    {order.account?.companyName && order.account?.contactName && (
+                      <div>
+                        <dt className="text-sm text-gray-500">Company</dt>
+                        <dd className="text-sm font-medium text-gray-900">{order.account.companyName}</dd>
+                      </div>
+                    )}
+                  </dl>
+                </div>
+              )}
             </div>
 
             {/* Middle/Right Columns - Order Details Table */}

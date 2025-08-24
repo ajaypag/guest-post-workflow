@@ -467,13 +467,15 @@ export const formattingQaChecksRelations = relations(formattingQaChecks, ({ one 
 export { 
   orders,
   orderItems,
+  guestPostItems,
   orderShareTokens,
   orderStatusHistory,
   domainSuggestions,
   accountOrderAccess,
   pricingRules,
   ordersRelations,
-  orderItemsRelations
+  orderItemsRelations,
+  guestPostItemsRelations
 } from './orderSchema';
 
 // Re-export website schema tables  
