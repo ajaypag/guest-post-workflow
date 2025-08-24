@@ -87,8 +87,8 @@ export async function POST(request: NextRequest) {
 
         // Generate secure invitation token
         const invitationToken = crypto.randomBytes(32).toString('base64url');
-        // Use FRONTEND_URL from production environment
-        const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3002';
+        // Use NEXTAUTH_URL like all other email templates
+        const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3002';
         const claimUrl = `${baseUrl}/publisher/claim?token=${invitationToken}`;
 
         // Create email content with better template
