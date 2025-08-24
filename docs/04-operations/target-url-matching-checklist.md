@@ -43,7 +43,7 @@ This checklist provides step-by-step implementation of the target URL matching f
 - [ ] **Output**: Clean TypeScript compilation
 
 ### ✅ **Checkpoint 1.5: Update Planning Document**
-- [ ] **Task**: Update `TARGET_URL_MATCHING_IMPLEMENTATION.md`
+- [ ] **Task**: Update `docs/02-architecture/target-url-matching.md`
   - [ ] Document completed Phase 1 tasks
   - [ ] List migration file created
   - [ ] Update schema changes section
@@ -437,7 +437,7 @@ This checklist provides step-by-step implementation of the target URL matching f
 5. **Zero Errors**: No TypeScript compilation errors allowed at any checkpoint
 
 ### **Documentation Requirements**
-1. **Update**: `TARGET_URL_MATCHING_IMPLEMENTATION.md` after each phase
+1. **Update**: `docs/02-architecture/target-url-matching.md` after each phase
 2. **Track**: All migration files and their status
 3. **Record**: Any deviations from original plan
 4. **Include**: Troubleshooting for common issues

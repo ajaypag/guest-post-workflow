@@ -25,7 +25,7 @@ Production-ready workflow system with PostgreSQL, multi-user auth, and AI agent 
 6. **🆕 CRITICAL: Shadow Publisher Migration**: `migrations/0062_shadow_publisher_migration_tracking.sql` (✅ NEW - 2025-01-23)
    - **CRITICAL**: Enables shadow → active publisher data migration
    - **MUST RUN BEFORE DEPLOYMENT**: Publishers claiming accounts need this
-   - See [PUBLISHER_ONBOARDING_AUDIT.md](PUBLISHER_ONBOARDING_AUDIT.md) for deployment checklist
+   - See [PUBLISHER_ONBOARDING_AUDIT.md](docs/04-operations/publisher-onboarding-audit.md) for deployment checklist
 7. **Use Admin Panel**: `/admin/domain-migration` for safe migration
 8. **Use Admin Panel**: `/admin/email-qualification-migration` for email qualification migration
 
@@ -37,7 +37,7 @@ Production-ready workflow system with PostgreSQL, multi-user auth, and AI agent 
   - Migration runs during claim process (`/api/publisher/claim`)
   - Service: `ShadowPublisherMigrationService`
   - Migration: `migrations/0062_shadow_publisher_migration_tracking.sql`
-  - **DEPLOYMENT**: See [PUBLISHER_ONBOARDING_AUDIT.md](PUBLISHER_ONBOARDING_AUDIT.md) checklist
+  - **DEPLOYMENT**: See [PUBLISHER_ONBOARDING_AUDIT.md](docs/04-operations/publisher-onboarding-audit.md) checklist
 - ✅ Inclusion Status Default Fix (2025-08-20)
   - Fixed NULL inclusion_status causing UI/backend mismatch
   - All line items now default to 'included' for better UX
@@ -52,7 +52,7 @@ Production-ready workflow system with PostgreSQL, multi-user auth, and AI agent 
   - Integrated in master-qualify with `skipTargetMatching` option
   - Full evidence tracking with match quality scores
   - Migration: `migrations/0060_add_target_url_matching.sql`
-  - See: [TARGET_URL_MATCHING_IMPLEMENTATION.md](TARGET_URL_MATCHING_IMPLEMENTATION.md)
+  - See: [TARGET_URL_MATCHING_IMPLEMENTATION.md](docs/02-architecture/target-url-matching.md)
 - ✅ TypeScript Compilation Fixed (2025-02-14) - ALL ERRORS RESOLVED
   - Fixed Next.js 15 Promise-based searchParams compatibility
   - Aligned database schema with TypeScript interfaces
