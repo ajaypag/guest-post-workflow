@@ -4,13 +4,14 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Loader2, Zap, Mail, Lock, User, Building, AlertCircle, CheckCircle } from 'lucide-react';
+import LinkioHeader from '@/components/LinkioHeader';
+import MarketingFooter from '@/components/MarketingFooter';
 
 export default function PublisherSignupPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    confirmPassword: '',
     contactName: '',
     companyName: '',
   });
@@ -30,9 +31,6 @@ export default function PublisherSignupPage() {
     }
     if (formData.password.length < 8) {
       return 'Password must be at least 8 characters';
-    }
-    if (formData.password !== formData.confirmPassword) {
-      return 'Passwords do not match';
     }
     if (!/\S+@\S+\.\S+/.test(formData.email)) {
       return 'Please enter a valid email address';
@@ -80,7 +78,9 @@ export default function PublisherSignupPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+    <>
+      <LinkioHeader />
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
       <div className="max-w-md w-full">
         {/* Logo */}
         <div className="text-center mb-8">
@@ -186,26 +186,6 @@ export default function PublisherSignupPage() {
               <p className="text-xs text-gray-500 mt-1">Must be at least 8 characters</p>
             </div>
 
-            {/* Confirm Password Field */}
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                Confirm Password *
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                <input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type="password"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="••••••••"
-                  required
-                  autoComplete="new-password"
-                />
-              </div>
-            </div>
 
             {/* Submit Button */}
             <button
@@ -248,6 +228,8 @@ export default function PublisherSignupPage() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+      <MarketingFooter />
+    </>
   );
 }
