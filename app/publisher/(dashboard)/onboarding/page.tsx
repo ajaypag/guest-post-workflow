@@ -116,7 +116,7 @@ export default function PublisherOnboardingPage() {
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       // Redirect to main dashboard
-      router.push('/publisher/dashboard');
+      router.push('/publisher');
     } catch (error) {
       console.error('Failed to complete onboarding:', error);
     } finally {
