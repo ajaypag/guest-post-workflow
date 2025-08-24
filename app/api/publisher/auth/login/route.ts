@@ -39,6 +39,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check if publisher has a password (shadow publishers don't)
+    if (!publisher.password) {
+      return NextResponse.json(
+        { error: 'Account not activated. Please check your email for claim instructions.' },
+        { status: 401 }
+      );
+    }
+    
     // Check password
     const validPassword = await bcrypt.compare(password, publisher.password);
     if (!validPassword) {

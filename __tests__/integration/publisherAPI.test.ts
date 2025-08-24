@@ -520,7 +520,7 @@ describe('Publisher API Integration Tests', () => {
         // In real implementation, this would be handled by error middleware
         // For testing, we expect the error to be thrown
       } catch (error) {
-        expect(error.message).toBe('Database connection failed');
+        expect((error as Error).message).toBe('Database connection failed');
       } finally {
         // Restore original function
         testUtils.query = originalQuery;

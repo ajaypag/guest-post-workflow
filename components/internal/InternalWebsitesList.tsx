@@ -19,7 +19,13 @@ import {
   Edit,
   Trash2,
   MoreVertical,
-  AlertCircle
+  AlertCircle,
+  ChevronDown,
+  Copy,
+  Download,
+  Archive,
+  Clock,
+  Eye
 } from 'lucide-react';
 
 interface Website {
@@ -30,6 +36,8 @@ interface Website {
   guestPostCost: string | null; // Note: DECIMAL field comes as string
   internalQualityScore: number | null;
   internalNotes: string | null;
+  status?: string | null;
+  source?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -61,6 +69,14 @@ export default function InternalWebsitesList({
   const [showFilters, setShowFilters] = useState(false);
   const [bulkActionMenu, setBulkActionMenu] = useState(false);
 
+  // New state for interactive features
+  const [expandedPublishers, setExpandedPublishers] = useState<string[]>([]);
+  const [expandedOfferings, setExpandedOfferings] = useState<string[]>([]);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [publisherData, setPublisherData] = useState<{[key: string]: any}>({});
+  const [offeringData, setOfferingData] = useState<{[key: string]: any}>({});
+  const [copiedDomain, setCopiedDomain] = useState<string | null>(null);
+
   // Filter states
   const [search, setSearch] = useState(searchParams.search || '');
   const [minDR, setMinDR] = useState(searchParams.minDR || '');
@@ -68,6 +84,8 @@ export default function InternalWebsitesList({
   const [hasPublisher, setHasPublisher] = useState(searchParams.hasPublisher || '');
   const [verified, setVerified] = useState(searchParams.verified || '');
   const [sort, setSort] = useState(searchParams.sort || 'created_desc');
+  const [status, setStatus] = useState(searchParams.status || '');
+  const [source, setSource] = useState(searchParams.source || '');
 
   const totalPages = Math.ceil(totalCount / itemsPerPage);
 
@@ -80,6 +98,8 @@ export default function InternalWebsitesList({
     if (hasPublisher) params.set('hasPublisher', hasPublisher);
     if (verified) params.set('verified', verified);
     if (sort) params.set('sort', sort);
+    if (status) params.set('status', status);
+    if (source) params.set('source', source);
     params.set('page', '1'); // Reset to first page
     
     router.push(`/internal/websites?${params.toString()}`);
@@ -93,6 +113,8 @@ export default function InternalWebsitesList({
     setHasPublisher('');
     setVerified('');
     setSort('created_desc');
+    setStatus('');
+    setSource('');
     router.push('/internal/websites');
   };
 
@@ -138,6 +160,52 @@ export default function InternalWebsitesList({
       currency: 'USD',
       minimumFractionDigits: 0,
     }).format(numericAmount);
+  };
+
+  // New helper functions for interactive features
+  const togglePublisherExpansion = async (websiteId: string) => {
+    if (expandedPublishers.includes(websiteId)) {
+      setExpandedPublishers(prev => prev.filter(id => id !== websiteId));
+    } else {
+      setExpandedPublishers(prev => [...prev, websiteId]);
+      
+      // Load publisher data if not already loaded
+      if (!publisherData[websiteId]) {
+        try {
+          const response = await fetch(`/api/internal/websites/${websiteId}/publishers`);
+          const data = await response.json();
+          console.log('Publisher data received for website', websiteId, ':', data);
+          setPublisherData(prev => ({...prev, [websiteId]: data}));
+        } catch (error) {
+          console.error('Failed to load publisher data:', error);
+        }
+      }
+    }
+  };
+
+  const toggleOfferingExpansion = async (websiteId: string) => {
+    if (expandedOfferings.includes(websiteId)) {
+      setExpandedOfferings(prev => prev.filter(id => id !== websiteId));
+    } else {
+      setExpandedOfferings(prev => [...prev, websiteId]);
+      
+      // Load offering data if not already loaded
+      if (!offeringData[websiteId]) {
+        try {
+          const response = await fetch(`/api/internal/websites/${websiteId}/offerings`);
+          const data = await response.json();
+          setOfferingData(prev => ({...prev, [websiteId]: data}));
+        } catch (error) {
+          console.error('Failed to load offering data:', error);
+        }
+      }
+    }
+  };
+
+  const copyDomain = (domain: string) => {
+    navigator.clipboard.writeText(domain);
+    setCopiedDomain(domain);
+    setTimeout(() => setCopiedDomain(null), 2000);
   };
 
   return (
@@ -285,6 +353,35 @@ export default function InternalWebsitesList({
                 <option value="false">Not Verified</option>
               </select>
             </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              >
+                <option value="">All Status</option>
+                <option value="active">Active</option>
+                <option value="pending">Pending</option>
+                <option value="verified">Verified</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Source</label>
+              <select
+                value={source}
+                onChange={(e) => setSource(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              >
+                <option value="">All Sources</option>
+                <option value="manyreach">ManyReach (Email)</option>
+                <option value="airtable">Airtable</option>
+                <option value="manual">Manual</option>
+              </select>
+            </div>
           </div>
         )}
       </div>
@@ -332,6 +429,9 @@ export default function InternalWebsitesList({
                   Website
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Source
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Metrics
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -375,6 +475,22 @@ export default function InternalWebsitesList({
                     </div>
                   </td>
                   <td className="px-6 py-4">
+                    <span className={`inline-flex items-center text-xs px-2 py-1 rounded font-medium ${
+                      website.source === 'manyreach' ? 'bg-blue-100 text-blue-700' :
+                      website.source === 'airtable' ? 'bg-green-100 text-green-700' :
+                      website.source === 'manual' ? 'bg-purple-100 text-purple-700' :
+                      'bg-gray-100 text-gray-600'
+                    }`}>
+                      {website.source === 'manyreach' ? '📧 Email' :
+                       website.source === 'airtable' ? '📊 Airtable' :
+                       website.source === 'manual' ? '✏️ Manual' :
+                       website.source || 'Unknown'}
+                    </span>
+                    {website.status === 'pending' && website.source === 'manyreach' && (
+                      <span className="ml-1 text-xs text-orange-600" title="Pending verification">⏳</span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4">
                     <div className="text-sm">
                       <div className="flex items-center space-x-4">
                         <span className="text-gray-900">
@@ -387,20 +503,81 @@ export default function InternalWebsitesList({
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex items-center space-x-2">
-                      {publisherCount > 0 ? (
-                        <>
-                          <Users className="h-4 w-4 text-green-600" />
-                          <span className="text-sm text-gray-900">{publisherCount}</span>
-                          {offeringCount > 0 && (
-                            <>
-                              <Package className="h-4 w-4 text-blue-600 ml-2" />
-                              <span className="text-sm text-gray-900">{offeringCount}</span>
-                            </>
-                          )}
-                        </>
-                      ) : (
-                        <span className="text-sm text-gray-500">No publishers</span>
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2">
+                        {publisherCount > 0 ? (
+                          <>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                togglePublisherExpansion(website.id);
+                              }}
+                              className="flex items-center space-x-1 text-green-600 hover:text-green-800 hover:bg-green-50 px-2 py-1 rounded-lg transition-colors cursor-pointer"
+                              title="View publishers"
+                            >
+                              <Users className="h-4 w-4" />
+                              <span className="text-sm font-medium">{publisherCount}</span>
+                              <ChevronDown className={`h-3 w-3 transform transition-transform ${
+                                expandedPublishers.includes(website.id) ? 'rotate-180' : ''
+                              }`} />
+                            </button>
+                            
+                            {offeringCount > 0 && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleOfferingExpansion(website.id);
+                                }}
+                                className="flex items-center space-x-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-2 py-1 rounded-lg transition-colors cursor-pointer"
+                                title="View offerings"
+                              >
+                                <Package className="h-4 w-4" />
+                                <span className="text-sm font-medium">{offeringCount}</span>
+                                <ChevronDown className={`h-3 w-3 transform transition-transform ${
+                                  expandedOfferings.includes(website.id) ? 'rotate-180' : ''
+                                }`} />
+                              </button>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-sm text-gray-500">No publishers</span>
+                        )}
+                      </div>
+                      
+                      {/* Expandable Publisher Details */}
+                      {expandedPublishers.includes(website.id) && (
+                        <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                          <div className="space-y-1 text-xs">
+                            {publisherData[website.id]?.publishers && publisherData[website.id].publishers.length > 0 ? (
+                              publisherData[website.id].publishers.map((pub: any, idx: number) => (
+                                <div key={idx} className="text-green-800">
+                                  <span className="font-medium">{pub.name || pub.email}</span>
+                                  {pub.company && <span className="text-green-600 ml-2">({pub.company})</span>}
+                                  {pub.status && <span className="text-green-500 ml-2 text-xs">({pub.status})</span>}
+                                </div>
+                              ))
+                            ) : publisherData[website.id] ? (
+                              <div className="text-green-800">No publishers found</div>
+                            ) : (
+                              <div className="text-green-800">Loading publishers...</div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Expandable Offering Details */}
+                      {expandedOfferings.includes(website.id) && offeringData[website.id] && (
+                        <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                          <div className="space-y-1 text-xs">
+                            {offeringData[website.id].offerings?.map((offer: any, idx: number) => (
+                              <div key={idx} className="text-blue-800">
+                                <span className="font-medium">{offer.type}</span>: 
+                                <span className="text-blue-600 ml-1">${offer.basePrice || 'Variable'}</span>
+                                {offer.turnaroundDays && <span className="text-blue-500 ml-2">({offer.turnaroundDays} days)</span>}
+                              </div>
+                            )) || <div className="text-blue-800">Loading offerings...</div>}
+                          </div>
+                        </div>
                       )}
                     </div>
                   </td>
@@ -433,27 +610,107 @@ export default function InternalWebsitesList({
                   <td className="px-6 py-4">
                     <div className="flex items-center space-x-2">
                       <Link
+                        href={`/internal/websites/${website.id}`}
+                        className="inline-flex items-center px-3 py-1 text-xs font-medium text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 rounded-lg transition-colors"
+                        title="View Details"
+                      >
+                        <Eye className="h-3 w-3 mr-1" />
+                        View
+                      </Link>
+                      
+                      <Link
                         href={`/internal/websites/${website.id}/edit`}
-                        className="text-gray-400 hover:text-gray-600"
+                        className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-100"
                         title="Edit"
                       >
                         <Edit className="h-4 w-4" />
                       </Link>
+                      
                       <a
                         href={`https://${website.domain}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-gray-400 hover:text-gray-600"
-                        title="Visit"
+                        className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-100"
+                        title="Visit website"
                       >
                         <ExternalLink className="h-4 w-4" />
                       </a>
-                      <button
-                        className="text-gray-400 hover:text-gray-600"
-                        title="More"
-                      >
-                        <MoreVertical className="h-4 w-4" />
-                      </button>
+                      
+                      <div className="relative">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenDropdown(openDropdown === website.id ? null : website.id);
+                          }}
+                          className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-100"
+                          title="More actions"
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </button>
+                        
+                        {openDropdown === website.id && (
+                          <>
+                            {/* Backdrop to close dropdown */}
+                            <div 
+                              className="fixed inset-0 z-10" 
+                              onClick={() => setOpenDropdown(null)}
+                            />
+                            
+                            {/* Dropdown Menu */}
+                            <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+                              <div className="py-1">
+                                <button
+                                  onClick={() => {
+                                    copyDomain(website.domain);
+                                    setOpenDropdown(null);
+                                  }}
+                                  className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left"
+                                >
+                                  <Copy className="h-4 w-4 mr-3" />
+                                  {copiedDomain === website.domain ? 'Copied!' : 'Copy Domain'}
+                                </button>
+                                
+                                <Link
+                                  href={`/internal/relationships/assign?websiteId=${website.id}`}
+                                  className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                  onClick={() => setOpenDropdown(null)}
+                                >
+                                  <Users className="h-4 w-4 mr-3" />
+                                  Assign Publishers
+                                </Link>
+                                
+                                <div className="border-t border-gray-100 my-1" />
+                                
+                                <button
+                                  onClick={() => {
+                                    // TODO: Add export functionality
+                                    console.log('Export data for', website.domain);
+                                    setOpenDropdown(null);
+                                  }}
+                                  className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left"
+                                >
+                                  <Download className="h-4 w-4 mr-3" />
+                                  Export Data
+                                </button>
+                                
+                                <button
+                                  onClick={() => {
+                                    // TODO: Add archive functionality
+                                    if (confirm(`Archive ${website.domain}?`)) {
+                                      console.log('Archive', website.domain);
+                                    }
+                                    setOpenDropdown(null);
+                                  }}
+                                  className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 text-left"
+                                >
+                                  <Archive className="h-4 w-4 mr-3" />
+                                  Archive Website
+                                </button>
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </td>
                 </tr>

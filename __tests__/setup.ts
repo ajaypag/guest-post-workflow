@@ -22,8 +22,8 @@ const testDbPool = new Pool({
 });
 
 // Global test utilities
-global.testDbPool = testDbPool;
-global.generateTestId = () => `test_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+(global as any).testDbPool = testDbPool;
+(global as any).generateTestId = () => `test_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
 // Increase default timeout for integration tests
 jest.setTimeout(TEST_TIMEOUT);
@@ -90,13 +90,13 @@ afterEach(async () => {
           await testDbPool.query(query);
         } catch (error) {
           // Ignore errors for non-existent tables during setup
-          if (!error.message?.includes('does not exist')) {
-            console.warn('Cleanup warning:', error.message);
+          if (!(error as Error).message?.includes('does not exist')) {
+            console.warn('Cleanup warning:', (error as Error).message);
           }
         }
       }
     } catch (error) {
-      console.warn('Test cleanup warning:', error.message);
+      console.warn('Test cleanup warning:', (error as Error).message);
     }
   }
 });
@@ -108,7 +108,7 @@ process.on('unhandledRejection', (reason, promise) => {
 
 // Export test utilities
 export const testUtils = {
-  generateTestId: global.generateTestId,
+  generateTestId: (global as any).generateTestId,
   dbPool: testDbPool,
   
   // Wait for condition helper

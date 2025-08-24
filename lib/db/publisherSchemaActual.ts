@@ -27,6 +27,10 @@ export const publisherOfferings = pgTable('publisher_offerings', {
   languages: varchar('languages', { length: 10 }).array().default(['en']),
   attributes: jsonb('attributes').default({}),
   isActive: boolean('is_active').default(true),
+  // Source email tracking (added by migration 0058) - NOT IN CURRENT DATABASE
+  // sourceEmailId: uuid('source_email_id'), // References email_processing_logs(id)
+  // sourceEmailContent: text('source_email_content'),
+  // pricingExtractedFrom: text('pricing_extracted_from'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });

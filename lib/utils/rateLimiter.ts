@@ -25,8 +25,9 @@ class RateLimiter {
   }
   
   check(identifier: string): { allowed: boolean; retryAfter?: number } {
-    // Skip rate limiting for E2E tests
-    if (process.env.E2E_TESTING === 'true') {
+    // For E2E tests, allow testing rate limits specifically
+    // Skip only for non-security test identifiers
+    if (process.env.E2E_TESTING === 'true' && !identifier.includes('security-test')) {
       return { allowed: true };
     }
     
@@ -65,6 +66,11 @@ export const claimViewRateLimiter = new RateLimiter(10, 5 * 60 * 1000); // 10 vi
 // Stricter rate limiting for signup to prevent spam
 export const signupRateLimiter = new RateLimiter(2, 60 * 60 * 1000); // 2 signups per hour per IP
 export const signupEmailRateLimiter = new RateLimiter(1, 24 * 60 * 60 * 1000); // 1 signup per email per day
+
+// Critical security endpoints - very strict limits
+export const verificationRateLimiter = new RateLimiter(5, 5 * 60 * 1000); // 5 attempts per 5 minutes
+export const apiWriteRateLimiter = new RateLimiter(30, 60 * 1000); // 30 writes per minute
+export const apiReadRateLimiter = new RateLimiter(100, 60 * 1000); // 100 reads per minute
 
 // Helper function to get client IP
 export function getClientIp(request: Request): string {

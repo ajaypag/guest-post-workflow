@@ -17,13 +17,27 @@ Production-ready workflow system with PostgreSQL, multi-user auth, and AI agent 
 ### 🚨 PENDING MIGRATIONS (Run These First!)
 1. **Publisher System**: `migrations/0035_publisher_offerings_system_fixed.sql`
 2. **Domain Normalization**: `migrations/0037_normalize_existing_domains.sql`
-3. **Target URL Matching**: `migrations/0060_add_target_url_matching.sql` (✅ Tested locally)
-4. **Inclusion Status Fix**: `migrations/0061_fix_inclusion_status_defaults.sql` (✅ NEW - 2025-08-20)
+3. **🆕 Email Qualification Tracking**: `migrations/0058_email_qualification_tracking.sql` - **CRITICAL before V2 parser updates**
+4. **Target URL Matching**: `migrations/0060_add_target_url_matching.sql` (✅ Tested locally)
+5. **Inclusion Status Fix**: `migrations/0061_fix_inclusion_status_defaults.sql` (✅ NEW - 2025-08-20)
    - **IMPORTANT**: Run via `/admin/fix-inclusion-status` page for production
    - Fixes NULL inclusion_status defaulting to 'included' for better UX
-5. **Use Admin Panel**: `/admin/domain-migration` for safe migration
+6. **🆕 CRITICAL: Shadow Publisher Migration**: `migrations/0062_shadow_publisher_migration_tracking.sql` (✅ NEW - 2025-01-23)
+   - **CRITICAL**: Enables shadow → active publisher data migration
+   - **MUST RUN BEFORE DEPLOYMENT**: Publishers claiming accounts need this
+   - See [PUBLISHER_ONBOARDING_AUDIT.md](docs/04-operations/publisher-onboarding-audit.md) for deployment checklist
+7. **Use Admin Panel**: `/admin/domain-migration` for safe migration
+8. **Use Admin Panel**: `/admin/email-qualification-migration` for email qualification migration
 
 ### Recent Changes (Keep in Mind)
+- ✅ **CRITICAL: Shadow Publisher Data Migration Fixed** (2025-01-23)
+  - **MAJOR BUG FIXED**: Publishers claiming accounts now get their extracted data
+  - Auto-migrates websites, pricing, and relationships from shadow tables
+  - Soft delete pattern preserves audit trail
+  - Migration runs during claim process (`/api/publisher/claim`)
+  - Service: `ShadowPublisherMigrationService`
+  - Migration: `migrations/0062_shadow_publisher_migration_tracking.sql`
+  - **DEPLOYMENT**: See [PUBLISHER_ONBOARDING_AUDIT.md](docs/04-operations/publisher-onboarding-audit.md) checklist
 - ✅ Inclusion Status Default Fix (2025-08-20)
   - Fixed NULL inclusion_status causing UI/backend mismatch
   - All line items now default to 'included' for better UX
@@ -38,7 +52,7 @@ Production-ready workflow system with PostgreSQL, multi-user auth, and AI agent 
   - Integrated in master-qualify with `skipTargetMatching` option
   - Full evidence tracking with match quality scores
   - Migration: `migrations/0060_add_target_url_matching.sql`
-  - See: [docs/05-features/target-url-matching-implementation.md](docs/05-features/target-url-matching-implementation.md)
+  - See: [docs/02-architecture/target-url-matching.md](docs/02-architecture/target-url-matching.md)
 - ✅ TypeScript Compilation Fixed (2025-02-14) - ALL ERRORS RESOLVED
   - Fixed Next.js 15 Promise-based searchParams compatibility
   - Aligned database schema with TypeScript interfaces

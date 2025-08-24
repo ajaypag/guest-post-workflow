@@ -86,7 +86,8 @@ test.describe('Publisher Workflow Accessibility E2E', () => {
     
     // Check table accessibility
     await expect(page.locator('table[role="table"]')).toBeVisible();
-    await expect(page.locator('th[scope="col"]')).toHaveCount({ min: 1 });
+    const colHeaders = page.locator('th[scope="col"]');
+    await expect(colHeaders.count()).resolves.toBeGreaterThanOrEqual(1);
     
     // Check row accessibility
     const tableRows = page.locator('tbody tr');
@@ -97,7 +98,8 @@ test.describe('Publisher Workflow Accessibility E2E', () => {
       await expect(tableRows.first()).toHaveAttribute('role', 'row');
       
       // Check cells have proper headers association
-      await expect(page.locator('td[headers]')).toHaveCount({ min: 1 });
+      const cellsWithHeaders = page.locator('td[headers]');
+      await expect(cellsWithHeaders.count()).resolves.toBeGreaterThanOrEqual(1);
     }
     
     // Test filter controls accessibility
@@ -122,7 +124,8 @@ test.describe('Publisher Workflow Accessibility E2E', () => {
       await expect(page).toHaveTitle(/Order Details/);
       
       // Check ARIA live regions for status updates
-      await expect(page.locator('[aria-live="polite"]')).toHaveCount({ min: 1 });
+      const liveRegions = page.locator('[aria-live="polite"]');
+      await expect(liveRegions.count()).resolves.toBeGreaterThanOrEqual(1);
       
       // Check action buttons have descriptive labels
       const actionButtons = page.locator('button[data-testid*="order"]');
@@ -189,8 +192,10 @@ test.describe('Publisher Workflow Accessibility E2E', () => {
     await page.click('[data-testid="submit-invoice"]');
     
     // Error messages should be announced to screen readers
-    await expect(page.locator('[role="alert"]')).toHaveCount({ min: 1 });
-    await expect(page.locator('[aria-live="assertive"]')).toHaveCount({ min: 1 });
+    const alerts = page.locator('[role="alert"]');
+    await expect(alerts.count()).resolves.toBeGreaterThanOrEqual(1);
+    const assertiveRegions = page.locator('[aria-live="assertive"]');
+    await expect(assertiveRegions.count()).resolves.toBeGreaterThanOrEqual(1);
   });
 
   test('payment profile form should support assistive technology', async ({ page }) => {
@@ -202,8 +207,10 @@ test.describe('Publisher Workflow Accessibility E2E', () => {
     expect(accessibilityScanResults.violations).toEqual([]);
     
     // Check fieldset grouping
-    await expect(page.locator('fieldset')).toHaveCount({ min: 1 });
-    await expect(page.locator('legend')).toHaveCount({ min: 1 });
+    const fieldsets = page.locator('fieldset');
+    await expect(fieldsets.count()).resolves.toBeGreaterThanOrEqual(1);
+    const legends = page.locator('legend');
+    await expect(legends.count()).resolves.toBeGreaterThanOrEqual(1);
     
     // Check sensitive field handling
     const bankAccountField = page.locator('[data-testid="bank-account"]');
@@ -282,7 +289,8 @@ test.describe('Publisher Workflow Accessibility E2E', () => {
     await page.goto('/publisher/orders');
     
     // Check for ARIA live regions
-    await expect(page.locator('[aria-live]')).toHaveCount({ min: 1 });
+    const liveElements = page.locator('[aria-live]');
+    await expect(liveElements.count()).resolves.toBeGreaterThanOrEqual(1);
     
     // Test status updates are announced
     const statusElements = page.locator('[data-testid*="status"]');
@@ -290,7 +298,8 @@ test.describe('Publisher Workflow Accessibility E2E', () => {
     
     if (statusCount > 0) {
       // Status changes should be in live regions or have announcements
-      await expect(page.locator('[role="status"], [aria-live="polite"]')).toHaveCount({ min: 1 });
+      const statusElements = page.locator('[role="status"], [aria-live="polite"]');
+      await expect(statusElements.count()).resolves.toBeGreaterThanOrEqual(1);
     }
     
     // Check page title updates

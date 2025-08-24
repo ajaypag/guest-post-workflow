@@ -146,7 +146,7 @@ export async function PUT(
           offeringType: 'guest_post',
           basePrice: body.basePrice,
           currency: 'USD',
-          turnaroundDays: body.turnaroundDays || 7,
+          turnaroundDays: body.turnaroundDays || null,
           currentAvailability: 'available',
           expressAvailable: body.expressAvailable || false,
           expressPrice: body.expressPrice,

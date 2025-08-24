@@ -21,7 +21,8 @@ import {
   Package,
   DollarSign,
   FileText,
-  Search
+  Search,
+  Wrench
 } from 'lucide-react';
 import { AuthSession } from '@/lib/types/auth';
 
@@ -34,6 +35,7 @@ const navigation = [
   { name: 'Dashboard', href: '/internal', icon: Home },
   { name: 'Websites', href: '/internal/websites', icon: Globe },
   { name: 'Publishers', href: '/internal/publishers', icon: Users },
+  { name: 'Publisher Tools', href: '/internal/publishers/tools', icon: Wrench },
   { name: 'Relationships', href: '/internal/relationships', icon: Link2 },
   { name: 'Bulk Import', href: '/internal/import', icon: Upload },
   { name: 'Quality Control', href: '/internal/quality', icon: CheckCircle },

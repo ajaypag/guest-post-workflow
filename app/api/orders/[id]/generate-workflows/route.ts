@@ -88,7 +88,7 @@ export async function POST(
 
           // Get workflow details for completion percentage
           const workflowIds = lineItemsWithWorkflows
-            .filter(item => item.workflowId)
+            .filter((item): item is typeof item & { workflowId: string } => Boolean(item.workflowId))
             .map(item => item.workflowId);
           
           const workflowData = workflowIds.length > 0 

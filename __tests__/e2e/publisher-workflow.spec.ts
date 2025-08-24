@@ -42,7 +42,7 @@ async function createTestScenario() {
   // Set specific values for testing
   scenario.lineItem.publisherPrice = 10000; // $100
   scenario.lineItem.platformFee = 3000; // $30
-  scenario.lineItem.publisherStatus = null; // Not assigned yet
+  scenario.lineItem.publisherStatus = undefined; // Not assigned yet
   scenario.lineItem.status = 'pending';
   
   // Create admin user

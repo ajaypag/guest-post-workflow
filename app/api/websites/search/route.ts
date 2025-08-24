@@ -52,6 +52,7 @@ export async function POST(request: NextRequest) {
       websiteType: w.website_type || [], // SaaS, Blog, News, eCommerce, etc.
       niche: w.niche || [], // Multiple niches
       status: w.status,
+      source: w.source,
       hasGuestPost: w.has_guest_post,
       hasLinkInsert: w.has_link_insert,
       publishedOpportunities: w.published_opportunities,

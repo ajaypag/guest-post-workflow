@@ -7,12 +7,14 @@
     "strict": true,
     "noEmit": true,
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "module": "esnext",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
+    "forceConsistentCasingInFileNames": true,
     "plugins": [
       {
         "name": "next"
@@ -23,5 +25,5 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "__tests__/**/*", "tests/**/*", "**/*.test.ts", "**/*.spec.ts", "playwright.config.ts", "*.ts", "*.js", "scripts/**/*", "check-*.ts", "test-*.ts", "test-*.js", "analyze-*.ts", "analyze-*.js", "debug-*.ts", "debug-*.js", "reset-*.ts", "reset-*.js", "trace-*.ts", "trace-*.js", "update-*.ts", "update-*.js"]
+  "exclude": ["node_modules", "__tests__/**/*", "tests/**/*", "**/*.test.ts", "**/*.spec.ts", "playwright.config.ts", "*.ts", "*.js", "scripts/**/*", "check-*.ts", "test-*.ts", "test-*.js", "analyze-*.ts", "analyze-*.js", "debug-*.ts", "debug-*.js", "reset-*.ts", "reset-*.js", "trace-*.ts", "trace-*.js", "update-*.ts", "update-*.js", "fix-*.ts"]
 }

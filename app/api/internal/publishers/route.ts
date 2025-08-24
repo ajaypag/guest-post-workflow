@@ -25,7 +25,6 @@ export async function POST(request: NextRequest) {
       contactName,
       phone,
       tier,
-      isVerified,
       status,
       website,
       description,

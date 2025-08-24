@@ -4,7 +4,7 @@ import { defineConfig, devices } from '@playwright/test';
  * @see https://playwright.dev/docs/test-configuration
  */
 export default defineConfig({
-  testDir: './tests/playwright',
+  testDir: './__tests__/e2e',
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
@@ -15,14 +15,17 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: 'html',
-  /* Shared settings for all the tests below. */
+  /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: 'http://localhost:3000',
-    /* Collect trace when retrying the failed test. */
+    baseURL: 'http://localhost:3002',
+
+    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
-    /* Screenshot on failure */
+    
+    /* Take screenshot on failure */
     screenshot: 'only-on-failure',
+    
     /* Video on failure */
     video: 'retain-on-failure',
   },
@@ -46,9 +49,9 @@ export default defineConfig({
   ],
 
   /* Run your local dev server before starting the tests */
-  webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
+  webServer: process.env.E2E_TESTING ? undefined : {
+    command: 'PORT=3002 npm run dev',
+    url: 'http://localhost:3002',
+    reuseExistingServer: true, // Use existing server since we already have one running
   },
 });

@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Loader2, Zap, Mail, Lock, AlertCircle } from 'lucide-react';
+import LinkioHeader from '@/components/LinkioHeader';
+import MarketingFooter from '@/components/MarketingFooter';
 
 export default function PublisherLoginPage() {
   const router = useRouter();
@@ -40,7 +42,9 @@ export default function PublisherLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+    <>
+      <LinkioHeader />
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
       <div className="max-w-md w-full">
         {/* Logo */}
         <div className="text-center mb-8">
@@ -146,6 +150,8 @@ export default function PublisherLoginPage() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+      <MarketingFooter />
+    </>
   );
 }

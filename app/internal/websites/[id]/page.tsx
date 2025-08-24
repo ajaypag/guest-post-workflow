@@ -1,12 +1,26 @@
 import { Suspense } from 'react';
 import { db } from '@/lib/db/connection';
 import { websites } from '@/lib/db/schema';
-import { publisherOfferingRelationships } from '@/lib/db/publisherSchemaActual';
+import { publisherOfferingRelationships, publisherOfferings } from '@/lib/db/publisherSchemaActual';
 import { publishers } from '@/lib/db/schema';
 import { eq, sql } from 'drizzle-orm';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Globe, Users, DollarSign, Calendar, CheckCircle, XCircle, AlertCircle, Edit, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Globe, Users, DollarSign, Calendar, CheckCircle, XCircle, AlertCircle, Edit, ExternalLink, Package, Clock, FileText } from 'lucide-react';
+
+interface OfferingAttributes {
+  acceptsDoFollow?: boolean;
+  requiresAuthorBio?: boolean;
+  maxLinksPerPost?: number;
+  contentRequirements?: string;
+  prohibitedTopics?: string;
+  requiredElements?: string[];
+  samplePostUrl?: string;
+  authorBioRequirements?: string;
+  linkRequirements?: string;
+  imagesRequired?: boolean;
+  minImages?: number;
+}
 
 async function getWebsiteDetails(id: string) {
   const website = await db
@@ -36,9 +50,38 @@ async function getWebsiteDetails(id: string) {
     .leftJoin(publishers, eq(publisherOfferingRelationships.publisherId, publishers.id))
     .where(eq(publisherOfferingRelationships.websiteId, id));
 
+  // Get offerings for this website
+  const offerings = await db
+    .select({
+      id: publisherOfferings.id,
+      offeringType: publisherOfferings.offeringType,
+      basePrice: publisherOfferings.basePrice,
+      currency: publisherOfferings.currency,
+      turnaroundDays: publisherOfferings.turnaroundDays,
+      minWordCount: publisherOfferings.minWordCount,
+      maxWordCount: publisherOfferings.maxWordCount,
+      expressAvailable: publisherOfferings.expressAvailable,
+      expressPrice: publisherOfferings.expressPrice,
+      expressDays: publisherOfferings.expressDays,
+      attributes: publisherOfferings.attributes,
+      publisherId: publisherOfferings.publisherId,
+      publisherName: publishers.companyName,
+    })
+    .from(publisherOfferings)
+    .innerJoin(
+      publisherOfferingRelationships,
+      eq(publisherOfferings.id, publisherOfferingRelationships.offeringId)
+    )
+    .leftJoin(
+      publishers,
+      eq(publisherOfferings.publisherId, publishers.id)
+    )
+    .where(eq(publisherOfferingRelationships.websiteId, id));
+
   return {
     website: website[0],
     publishers: publisherRelationships,
+    offerings,
   };
 }
 
@@ -86,7 +129,7 @@ export default async function WebsiteDetailPage({ params }: { params: Promise<{ 
     notFound();
   }
 
-  const { website, publishers } = data;
+  const { website, publishers, offerings } = data;
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -133,6 +176,85 @@ export default async function WebsiteDetailPage({ params }: { params: Promise<{ 
               </div>
             </div>
           </div>
+
+          {/* Offerings Section */}
+          {offerings && offerings.length > 0 && (
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Offerings</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {offerings.map((offering) => (
+                  <div key={offering.id} className="border rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center space-x-2">
+                        <Package className="w-5 h-5 text-gray-400" />
+                        <span className="font-medium">
+                          {offering.offeringType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </span>
+                      </div>
+                      <span className="text-lg font-semibold text-green-600">
+                        ${(offering.basePrice / 100).toFixed(2)}
+                      </span>
+                    </div>
+                    
+                    <div className="space-y-1 text-sm text-gray-600">
+                      <div className="flex items-center space-x-2">
+                        <Clock className="w-4 h-4" />
+                        <span>{offering.turnaroundDays} days turnaround</span>
+                      </div>
+                      
+                      {offering.offeringType === 'guest_post' && (
+                        <div className="flex items-center space-x-2">
+                          <FileText className="w-4 h-4" />
+                          <span>{offering.minWordCount}-{offering.maxWordCount} words</span>
+                        </div>
+                      )}
+                      
+                      {offering.expressAvailable && (
+                        <div className="flex items-center space-x-2">
+                          <AlertCircle className="w-4 h-4 text-yellow-500" />
+                          <span>Express: ${offering.expressPrice ? (offering.expressPrice / 100).toFixed(2) : '0.00'} ({offering.expressDays} days)</span>
+                        </div>
+                      )}
+                      
+                      {offering.publisherName && (
+                        <div className="flex items-center space-x-2">
+                          <Users className="w-4 h-4" />
+                          <span className="text-xs">by {offering.publisherName}</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {(() => {
+                      const attrs = offering.attributes as OfferingAttributes;
+                      if (!attrs) return null;
+                      
+                      return (
+                        <div className="mt-3 pt-3 border-t">
+                          <div className="text-xs space-y-1">
+                            {attrs.acceptsDoFollow && (
+                              <span className="inline-block px-2 py-1 bg-green-100 text-green-800 rounded-full mr-2">
+                                DoFollow
+                              </span>
+                            )}
+                            {attrs.requiresAuthorBio && (
+                              <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 rounded-full mr-2">
+                                Author Bio
+                              </span>
+                            )}
+                            {attrs.maxLinksPerPost && (
+                              <span className="inline-block px-2 py-1 bg-gray-100 text-gray-800 rounded-full">
+                                Max {attrs.maxLinksPerPost} links
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Metrics Grid */}
           <div className="px-6 py-4 grid grid-cols-2 md:grid-cols-4 gap-4">

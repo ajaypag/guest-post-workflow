@@ -46,3 +46,15 @@ db-backups/
 *.dmp
 *.sql.backup
 *.dump
+
+# Test and analysis scripts - local development only
+analyze-*.ts
+check-*.ts
+fix-*.ts
+test-*.ts
+test-*.js
+reset-*.ts
+reset-*.js
+reset-*.sql
+cookies.txt
+database_backup/

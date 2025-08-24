@@ -19,14 +19,14 @@ export const TEST_USERS = {
     email: 'test-internal@outreachlabs.com',
     name: 'Test Internal User',
     userType: 'internal' as const,
-    password: 'test123'
+    password: process.env.E2E_TEST_PASSWORD || 'defaultpassword'
   },
   account: {
     id: 'account-user-1', 
     email: 'test-account@client.com',
     name: 'Test Account User',
     userType: 'account' as const,
-    password: 'test123'
+    password: process.env.E2E_TEST_PASSWORD || 'defaultpassword'
   }
 };
 

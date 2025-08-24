@@ -2,6 +2,7 @@ import { AuthServiceServer } from '@/lib/auth-server';
 import { redirect } from 'next/navigation';
 import { db } from '@/lib/db/connection';
 import { websites, publisherOfferingRelationships, publishers } from '@/lib/db/schema';
+import { shadowPublisherWebsites } from '@/lib/db/emailProcessingSchema';
 import { sql, desc, asc, ilike, and, gte, lte, eq } from 'drizzle-orm';
 import InternalWebsitesList from '@/components/internal/InternalWebsitesList';
 
@@ -12,6 +13,8 @@ interface SearchParams {
   maxDR?: string;
   hasPublisher?: string;
   verified?: string;
+  status?: string;
+  source?: string;
   page?: string;
 }
 
@@ -36,6 +39,8 @@ export default async function InternalWebsitesPage({
   const maxDR = params.maxDR ? parseInt(params.maxDR) : undefined;
   const hasPublisher = params.hasPublisher;
   const verified = params.verified;
+  const status = params.status;
+  const source = params.source;
   const page = parseInt(params.page || '1');
   const limit = 50;
   const offset = (page - 1) * limit;
@@ -61,6 +66,14 @@ export default async function InternalWebsitesPage({
     conditions.push(sql`${websites.internalQualityScore} IS NOT NULL`);
   } else if (verified === 'false') {
     conditions.push(sql`${websites.internalQualityScore} IS NULL`);
+  }
+  
+  if (status) {
+    conditions.push(eq(websites.status, status));
+  }
+  
+  if (source) {
+    conditions.push(eq(websites.source, source));
   }
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
@@ -90,14 +103,21 @@ export default async function InternalWebsitesPage({
       orderBy = desc(websites.createdAt);
   }
 
-  // Get websites with publisher count
+  // Get websites with publisher count from BOTH offering relationships AND shadow publishers
   const websitesQuery = db
     .select({
       website: websites,
       publisherCount: sql<number>`(
-        SELECT COUNT(DISTINCT por.publisher_id)
-        FROM ${publisherOfferingRelationships} por
-        WHERE por.website_id = websites.id
+        SELECT COUNT(DISTINCT publisher_id)
+        FROM (
+          SELECT publisher_id
+          FROM ${publisherOfferingRelationships}
+          WHERE website_id = websites.id
+          UNION
+          SELECT publisher_id
+          FROM ${shadowPublisherWebsites}
+          WHERE website_id = websites.id
+        ) combined
       )`,
       offeringCount: sql<number>`(
         SELECT COUNT(*)

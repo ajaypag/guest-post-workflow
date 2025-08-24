@@ -247,10 +247,10 @@ export default function DiagnosticsPage() {
           {/* Navigation */}
           <div className="mt-8 pt-6 border-t border-gray-200">
             <a
-              href="/admin/database-migration"
+              href="/admin"
               className="inline-flex items-center text-sm text-blue-600 hover:text-blue-700"
             >
-              ← Back to Database Migration
+              ← Back to Admin Dashboard
             </a>
           </div>
         </div>
