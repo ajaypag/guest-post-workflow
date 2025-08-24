@@ -270,7 +270,12 @@ If this was sent in error, please ignore this email.
           const emailResult = await resend.emails.send({
             from: 'Guest Post Workflow <info@linkio.com>',
             to: publisher.email,
-            subject: `Action Required: Confirm your guest post rates for ${publisherWebsitesList.length > 0 ? publisherWebsitesList[0].domain : 'your website'}`,
+            subject: `Action Required: Confirm your guest post rates for ${
+              publisherWebsitesList.length === 0 ? 'your website' :
+              publisherWebsitesList.length === 1 ? publisherWebsitesList[0].domain :
+              publisherWebsitesList.length === 2 ? `${publisherWebsitesList[0].domain} and ${publisherWebsitesList[1].domain}` :
+              `${publisherWebsitesList[0].domain} and ${publisherWebsitesList.length - 1} other sites`
+            }`,
             html: emailHtml,
             text: emailText,
             replyTo: 'info@linkio.com'
