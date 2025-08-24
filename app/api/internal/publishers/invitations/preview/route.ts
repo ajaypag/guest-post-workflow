@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
 
     // Generate invitation token (would be real in production)
     const invitationToken = Buffer.from(`${publisherId}-${Date.now()}`).toString('base64');
-    const claimUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3002'}/publisher/claim?token=${invitationToken}`;
+    const claimUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3002'}/publisher/claim?token=${invitationToken}`;
 
     // Create email HTML template
     const emailHtml = `
