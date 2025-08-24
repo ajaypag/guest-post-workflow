@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
 import { publishers } from '@/lib/db/accountSchema';
-import { websites, publisherOfferings, publisherOfferingRelationships } from '@/lib/db/publisherSchemaActual';
+import { publisherOfferings, publisherOfferingRelationships } from '@/lib/db/publisherSchemaActual';
+import { websites } from '@/lib/db/websiteSchema';
 import { shadowPublisherWebsites } from '@/lib/db/emailProcessingSchema';
 import { eq, and } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
@@ -154,7 +155,7 @@ export async function GET(request: NextRequest) {
         extractionMethod: sw.extractionMethod || 'unknown',
         verified: sw.verified || false,
         migrationStatus: sw.migrationStatus || 'pending',
-        guestPostCost: sw.guestPostCost || undefined,
+        guestPostCost: sw.guestPostCost ? (typeof sw.guestPostCost === 'string' ? parseFloat(sw.guestPostCost) : sw.guestPostCost) : undefined,
         domainRating: sw.domainRating || undefined,
         totalTraffic: sw.totalTraffic || undefined,
       })),
