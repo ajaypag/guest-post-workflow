@@ -17,23 +17,33 @@ export default function InternalPageWrapper({ children, requireAdmin = false }: 
   useEffect(() => {
     const checkAuth = () => {
       const currentSession = AuthService.getSession();
+      console.log('🔐 InternalPageWrapper - Checking auth:', {
+        hasSession: !!currentSession,
+        userType: currentSession?.userType,
+        role: currentSession?.role,
+        requireAdmin
+      });
       
       if (!currentSession) {
+        console.log('🔐 InternalPageWrapper - No session, redirecting to login');
         router.push('/login');
         return;
       }
       
       // Redirect account users to their dashboard
       if (currentSession.userType === 'account') {
+        console.log('🔐 InternalPageWrapper - Account user, redirecting to dashboard');
         router.push('/account/dashboard');
         return;
       }
       
       if (requireAdmin && currentSession.role !== 'admin') {
+        console.log('🔐 InternalPageWrapper - Non-admin user, redirecting to home');
         router.push('/'); // Redirect non-admins away from admin pages
         return;
       }
       
+      console.log('🔐 InternalPageWrapper - Auth successful, setting session');
       setSession(currentSession);
       setLoading(false);
     };
@@ -53,8 +63,14 @@ export default function InternalPageWrapper({ children, requireAdmin = false }: 
   }
 
   if (!session || session.userType !== 'internal') {
+    console.log('🔐 InternalPageWrapper - Render blocked:', {
+      hasSession: !!session,
+      userType: session?.userType,
+      expected: 'internal'
+    });
     return null; // Will redirect
   }
 
+  console.log('🔐 InternalPageWrapper - Rendering children for internal user');
   return <>{children}</>;
 }

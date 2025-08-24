@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { NextRequest } from 'next/server';
-import { jwtVerify, SignJWT } from 'jose';
+import { SessionManager } from './services/sessionManager';
+import { SessionState } from './types/session';
 import { db } from './db/connection';
 import { users } from './db/schema';
 import { eq } from 'drizzle-orm';
@@ -9,88 +10,87 @@ import { AuthSession, UserType, UserRole } from './types/auth';
 // Re-export for backward compatibility
 export type { AuthSession };
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || 'your-secret-key-change-in-production'
-);
+// Helper function to convert SessionState to AuthSession for backward compatibility
+function sessionStateToAuthSession(session: SessionState): AuthSession {
+  return {
+    userId: session.currentUser.userId,
+    email: session.currentUser.email,
+    name: session.currentUser.name,
+    role: session.currentUser.role as UserRole,
+    userType: session.currentUser.userType as UserType,
+    accountId: session.currentUser.accountId,
+    clientId: undefined, // Will be populated if needed
+    companyName: session.currentUser.companyName,
+    publisherId: session.currentUser.publisherId,
+    status: session.currentUser.status,
+  };
+}
 
 export class AuthServiceServer {
   static async getSession(request?: NextRequest): Promise<AuthSession | null> {
-    console.log('🔐 AuthServiceServer.getSession - Starting');
+    console.log('🔐 AuthServiceServer.getSession - Starting (Session Store)');
     
     try {
-      let token: string | undefined;
+      let sessionId: string | undefined;
 
-      // Try to get token from cookies first
+      // Get session ID from single auth-session cookie
       const cookieStore = await cookies();
+      const sessionCookie = cookieStore.get('auth-session');
+      sessionId = sessionCookie?.value;
       
-      // Check for tokens in priority order: publisher, account, internal user
-      const publisherTokenCookie = cookieStore.get('auth-token-publisher');
-      const accountTokenCookie = cookieStore.get('auth-token-account');
-      const authTokenCookie = cookieStore.get('auth-token');
-      token = publisherTokenCookie?.value || accountTokenCookie?.value || authTokenCookie?.value;
-      
-      console.log('🔐 Cookie check:', {
-        hasAuthToken: !!token,
-        cookieValue: token ? 'Token present' : 'No token',
-        publisherTokenCookie: publisherTokenCookie?.name,
-        accountTokenCookie: accountTokenCookie?.name,
-        authTokenCookie: authTokenCookie?.name,
+      console.log('🔐 Session cookie check:', {
+        hasSessionId: !!sessionId,
+        cookieValue: sessionId ? 'Session ID present' : 'No session ID',
         allCookies: cookieStore.getAll().map(c => c.name)
       });
 
       // If no cookie and request provided, check Authorization header
-      if (!token && request) {
+      if (!sessionId && request) {
         const authHeader = request.headers.get('authorization');
         console.log('🔐 Authorization header:', authHeader || 'None');
         if (authHeader?.startsWith('Bearer ')) {
-          token = authHeader.substring(7);
-          console.log('🔐 Token from header extracted');
+          sessionId = authHeader.substring(7);
+          console.log('🔐 Session ID from header extracted');
         }
       }
 
-      if (!token) {
-        console.log('🔐 No token found in cookies or headers');
+      if (!sessionId) {
+        console.log('🔐 No session ID found in cookies or headers');
         return null;
       }
 
-      console.log('🔐 Attempting to verify JWT token');
-      // Verify JWT token
-      const { payload } = await jwtVerify(token, JWT_SECRET);
+      console.log('🔐 Attempting to retrieve session from store');
+      // Get session from store
+      const session = await SessionManager.validateSession(sessionId);
       
-      return {
-        userId: payload.userId as string,
-        email: payload.email as string,
-        name: payload.name as string,
-        role: payload.role as UserRole,
-        userType: (payload.userType as UserType) || 'internal',
-        accountId: payload.accountId as string | undefined,
-        clientId: payload.clientId as string | null | undefined,
-        companyName: payload.companyName as string | undefined,
-        publisherId: payload.publisherId as string | undefined,
-        status: payload.status as string | undefined,
-      };
+      if (!session) {
+        console.log('🔐 Session not found or expired in store');
+        return null;
+      }
+      
+      console.log('🔐 Session retrieved successfully', {
+        userId: session.currentUser.userId,
+        userType: session.currentUser.userType,
+        isImpersonating: !!session.impersonation?.isActive
+      });
+      
+      // Convert to AuthSession for backward compatibility
+      return sessionStateToAuthSession(session);
+      
     } catch (error) {
       console.error('Session verification error:', error);
       return null;
     }
   }
 
-  static async createSession(user: any): Promise<string> {
-    const token = await new SignJWT({
-      userId: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-      userType: user.userType || 'internal',
-      accountId: user.accountId || undefined,
-      clientId: user.clientId || undefined,
-      companyName: user.companyName || undefined,
-    })
-      .setProtectedHeader({ alg: 'HS256' })
-      .setExpirationTime('7d')
-      .sign(JWT_SECRET);
-
-    return token;
+  static async createSession(
+    user: any, 
+    request?: NextRequest
+  ): Promise<string> {
+    const ipAddress = request?.headers.get('x-forwarded-for') || request?.headers.get('x-real-ip') || undefined;
+    const userAgent = request?.headers.get('user-agent') || undefined;
+    
+    return await SessionManager.createSession(user, ipAddress, userAgent);
   }
 
   static async requireAuth(
@@ -121,29 +121,40 @@ export class AuthServiceServer {
     return user;
   }
   
+  // Get the raw session state (for impersonation)
+  static async getSessionState(request?: NextRequest): Promise<SessionState | null> {
+    try {
+      let sessionId: string | undefined;
+
+      const cookieStore = await cookies();
+      const sessionCookie = cookieStore.get('auth-session');
+      sessionId = sessionCookie?.value;
+
+      if (!sessionId && request) {
+        const authHeader = request.headers.get('authorization');
+        if (authHeader?.startsWith('Bearer ')) {
+          sessionId = authHeader.substring(7);
+        }
+      }
+
+      if (!sessionId) return null;
+
+      return await SessionManager.validateSession(sessionId);
+      
+    } catch (error) {
+      console.error('Failed to get session state:', error);
+      return null;
+    }
+  }
+  
+  // Clean up old token methods - keeping for backward compatibility but deprecated
   static async createAccountToken(sessionData: AuthSession): Promise<string> {
-    const token = await new SignJWT({
-      ...sessionData,
-      iat: Date.now(),
-      exp: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
-    })
-      .setProtectedHeader({ alg: 'HS256' })
-      .setExpirationTime('7d')
-      .sign(JWT_SECRET);
-    
-    return token;
+    console.warn('⚠️ createAccountToken is deprecated - use createSession instead');
+    return this.createSession(sessionData);
   }
   
   static async createPublisherToken(sessionData: any): Promise<string> {
-    const token = await new SignJWT({
-      ...sessionData,
-      iat: Date.now(),
-      exp: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
-    })
-      .setProtectedHeader({ alg: 'HS256' })
-      .setExpirationTime('7d')
-      .sign(JWT_SECRET);
-    
-    return token;
+    console.warn('⚠️ createPublisherToken is deprecated - use createSession instead');
+    return this.createSession(sessionData);
   }
 }
