@@ -356,12 +356,12 @@ export class ImpersonationService {
         };
       }
       
-      // Try publishers table
+      // Try publishers table (allow both active and pending publishers)
       const publisherResult = await pool.query(`
         SELECT id, email, 
-               COALESCE(first_name || ' ' || last_name, company_name) as name,
+               COALESCE(contact_name, company_name, 'Publisher User') as name,
                'publisher' as user_type, id as publisher_id, company_name, status
-        FROM publishers WHERE id = $1 AND status = 'active'
+        FROM publishers WHERE id = $1 AND status IN ('active', 'pending')
       `, [userId]);
       
       if (publisherResult.rows.length > 0) {
