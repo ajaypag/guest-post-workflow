@@ -108,8 +108,9 @@ export async function POST(
         const projectName = `Order #${orderId.slice(0, 8)} - ${client.name}`;
         const projectDescription = `Bulk analysis for ${linkCount} links ordered for ${client.name}`;
           
-          // Get target page keywords for auto-apply
+          // Get target page keywords for auto-apply and URLs for tags
           let autoApplyKeywords: string[] = [];
+          let targetPageUrls: string[] = [];
           if (targetPageIds.length > 0) {
             const pages = await tx
               .select()
@@ -117,6 +118,9 @@ export async function POST(
               .where(eq(targetPages.clientId, clientId));
               
             const relevantPages = pages.filter(p => targetPageIds.includes(p.id));
+            
+            // Collect URLs for tags
+            targetPageUrls = relevantPages.map(p => p.url).filter(Boolean);
             
             // Generate keywords for pages that don't have them
             for (const page of relevantPages) {
@@ -195,7 +199,7 @@ export async function POST(
               color: '#3B82F6',
               status: 'active',
               autoApplyKeywords,
-              tags: ['order', `${linkCount} links`, `order:${orderId}`, ...targetPageIds.map((id: string) => `target-page:${id}`)],
+              tags: ['order', `${linkCount} links`, `order:${orderId}`, ...targetPageUrls.map((url: string) => `target-page:${url}`)],
               createdBy: assignedTo || '00000000-0000-0000-0000-000000000000',
               createdAt: new Date(),
               updatedAt: new Date(),

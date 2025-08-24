@@ -741,3 +741,14 @@ export {
   type PublisherPerformance,
   type NewPublisherPerformance,
 } from './publisherSchemaActual';
+
+// Re-export client brand intelligence schema
+export {
+  clientBrandIntelligence,
+  clientBrandIntelligenceRelations,
+  type ClientBrandIntelligence,
+  type NewClientBrandIntelligence,
+  type ResearchOutput,
+  type ResearchStatus,
+  type BriefStatus,
+} from './clientBrandIntelligenceSchema';

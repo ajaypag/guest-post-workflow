@@ -154,7 +154,12 @@ export function getClientKeywordPreferences(client: any): KeywordPreferences | n
   } catch (error) {
     console.error('Error parsing client topic preferences:', error);
   }
-  return null;
+  
+  // Return default preference: Commercial Investigation
+  return {
+    primaryFocus: 'commercial-investigation',
+    customInstructions: 'Focus on comparison topics, review articles, and evaluation content that targets buying research intent.'
+  };
 }
 
 export function setClientKeywordPreferences(client: any, preferences: KeywordPreferences): any {

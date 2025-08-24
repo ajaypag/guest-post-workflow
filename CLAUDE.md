@@ -52,7 +52,7 @@ Production-ready workflow system with PostgreSQL, multi-user auth, and AI agent 
   - Integrated in master-qualify with `skipTargetMatching` option
   - Full evidence tracking with match quality scores
   - Migration: `migrations/0060_add_target_url_matching.sql`
-  - See: [TARGET_URL_MATCHING_IMPLEMENTATION.md](docs/02-architecture/target-url-matching.md)
+  - See: [docs/02-architecture/target-url-matching.md](docs/02-architecture/target-url-matching.md)
 - ✅ TypeScript Compilation Fixed (2025-02-14) - ALL ERRORS RESOLVED
   - Fixed Next.js 15 Promise-based searchParams compatibility
   - Aligned database schema with TypeScript interfaces

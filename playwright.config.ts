@@ -25,6 +25,9 @@ export default defineConfig({
     
     /* Take screenshot on failure */
     screenshot: 'only-on-failure',
+    
+    /* Video on failure */
+    video: 'retain-on-failure',
   },
 
   /* Configure projects for major browsers */

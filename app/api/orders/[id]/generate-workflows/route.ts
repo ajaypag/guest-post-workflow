@@ -3,7 +3,7 @@ import { db } from '@/lib/db/connection';
 import { orders } from '@/lib/db/orderSchema';
 import { orderLineItems } from '@/lib/db/orderLineItemSchema';
 import { workflows } from '@/lib/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, inArray } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { WorkflowGenerationService } from '@/lib/services/workflowGenerationService';
 import { EmailService } from '@/lib/services/emailService';
@@ -93,7 +93,7 @@ export async function POST(
           
           const workflowData = workflowIds.length > 0 
             ? await db.query.workflows.findMany({
-                where: (workflow, { inArray }) => inArray(workflow.id, workflowIds),
+                where: inArray(workflows.id, workflowIds as string[]),
               })
             : [];
 

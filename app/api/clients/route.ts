@@ -18,40 +18,45 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
     const includeArchived = searchParams.get('includeArchived') === 'true';
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '12');
+    const search = searchParams.get('search') || '';
+    const filterType = searchParams.get('filterType') || 'all';
     
-    let clients;
+    // Use pagination for performance
+    const accountId = session.userType === 'account' ? session.userId : undefined;
+    const result = await ClientService.getPaginatedClients({
+      page,
+      limit,
+      search,
+      filterType: session.userType === 'internal' ? filterType : 'all', // Only internal users can filter
+      includeArchived,
+      accountId
+    });
     
-    // Check access based on user type
-    if (session.userType === 'internal') {
-      // Internal users: Full access to all clients
-      if (userId) {
-        clients = await ClientService.getUserClients(userId);
-      } else {
-        clients = await ClientService.getAllClients(includeArchived);
-      }
-    } else if (session.userType === 'account') {
-      // Account users: Only access their own clients
-      clients = await ClientService.getClientsByAccount(session.userId, includeArchived);
-      
-      // Also check if account has a primary client (legacy support)
+    // Legacy support for account primary clients
+    if (session.userType === 'account') {
       const account = await db.query.accounts.findFirst({
         where: eq(accounts.id, session.userId),
       });
       
-      if (account && account.primaryClientId) {
+      if (account && account.primaryClientId && page === 1) { // Only on first page
         const primaryClient = await ClientService.getClient(account.primaryClientId);
-        if (primaryClient && !clients.find(c => c.id === primaryClient.id)) {
-          // Only include if not archived (unless includeArchived is true)
+        if (primaryClient && !result.clients.find(c => c.id === primaryClient.id)) {
           if (includeArchived || !primaryClient.archivedAt) {
-            clients.push(primaryClient);
+            const pages = await ClientService.getTargetPages(primaryClient.id);
+            const orderStats = await ClientService.getClientOrderStats(primaryClient.id);
+            result.clients.unshift({ 
+              ...primaryClient, 
+              targetPages: pages,
+              orderStats
+            } as any);
           }
         }
       }
-    } else {
-      return NextResponse.json({ error: 'Unauthorized - Invalid user type' }, { status: 401 });
     }
 
-    return NextResponse.json({ clients });
+    return NextResponse.json(result);
   } catch (error) {
     console.error('Error fetching clients:', error);
     return NextResponse.json(
