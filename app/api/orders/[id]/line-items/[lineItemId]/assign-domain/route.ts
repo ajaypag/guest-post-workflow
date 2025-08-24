@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
 import { orderLineItems } from '@/lib/db/orderLineItemSchema';
+import { orders } from '@/lib/db/orderSchema';
 import { orderSiteSubmissions } from '@/lib/db/projectOrderAssociationsSchema';
 import { bulkAnalysisDomains } from '@/lib/db/bulkAnalysisSchema';
-import { eq, and } from 'drizzle-orm';
+import { websites } from '@/lib/db/websiteSchema';
+import { eq, and, sql } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
+import { EnhancedOrderPricingService } from '@/lib/services/enhancedOrderPricingService';
 
 export async function POST(
   request: NextRequest,
@@ -53,7 +56,67 @@ export async function POST(
       where: eq(orderSiteSubmissions.id, submissionId)
     });
 
-    // Update the line item with domain assignment
+    // Get pricing information for the domain
+    let wholesalePrice = lineItem.wholesalePrice;
+    let estimatedPrice = lineItem.estimatedPrice;
+    let domainRating: number | null = null;
+    let traffic: number | null = null;
+
+    try {
+      // Fetch the website to get pricing and metrics
+      // Use proper casting to avoid PostgreSQL parameter type errors
+      const website = await db.query.websites.findFirst({
+        where: sql`${websites.domain} = ${domain.domain}::text 
+                  OR ${websites.domain} = CONCAT('www.'::text, ${domain.domain}::text)
+                  OR CONCAT('www.'::text, ${websites.domain}) = ${domain.domain}::text`
+      });
+
+      if (website) {
+        // Get DR and traffic from websites table
+        domainRating = website.domainRating || null;
+        traffic = website.totalTraffic || null;
+        
+        // Use the enhanced pricing service for pricing logic
+        const pricingResult = await EnhancedOrderPricingService.getWebsitePrice(
+          website.id,
+          domain.domain,
+          {
+            quantity: 1,
+            clientType: 'standard',
+            urgency: 'standard'
+          }
+        );
+
+        if (pricingResult.wholesalePrice > 0) {
+          wholesalePrice = pricingResult.wholesalePrice;
+          estimatedPrice = pricingResult.retailPrice;
+        } else if (website.guestPostCost) {
+          // Fallback to direct calculation if enhanced service returns 0
+          wholesalePrice = Math.floor(Number(website.guestPostCost) * 100);
+          estimatedPrice = wholesalePrice + 7900; // $79 service fee in cents
+        }
+      } else {
+        // Try enhanced pricing service without website record
+        const pricingResult = await EnhancedOrderPricingService.getWebsitePrice(
+          null,
+          domain.domain,
+          {
+            quantity: 1,
+            clientType: 'standard',
+            urgency: 'standard'
+          }
+        );
+
+        if (pricingResult.wholesalePrice > 0) {
+          wholesalePrice = pricingResult.wholesalePrice;
+          estimatedPrice = pricingResult.retailPrice;
+        }
+      }
+    } catch (error) {
+      console.log('Could not fetch pricing data, using defaults:', error);
+    }
+
+    // Update the line item with domain assignment and pricing
     await db
       .update(orderLineItems)
       .set({
@@ -62,11 +125,24 @@ export async function POST(
         // Copy over target page and anchor text from submission if available
         targetPageUrl: submission?.metadata?.targetPageUrl || lineItem.targetPageUrl,
         anchorText: submission?.metadata?.anchorText || lineItem.anchorText,
+        // Update pricing with calculated values
+        wholesalePrice: wholesalePrice,
+        estimatedPrice: estimatedPrice,
         status: 'assigned',
         assignedAt: new Date(),
         assignedBy: session.userId,
         modifiedAt: new Date(),
-        modifiedBy: session.userId
+        modifiedBy: session.userId,
+        metadata: {
+          ...((lineItem.metadata as any) || {}),
+          // Store metrics from websites table
+          domainRating: domainRating,
+          traffic: traffic,
+          // Store domain qualification data
+          domainQualificationStatus: domain.qualificationStatus,
+          aiQualificationReasoning: domain.aiQualificationReasoning,
+          notes: domain.notes
+        }
       })
       .where(eq(orderLineItems.id, params.lineItemId));
 
@@ -84,6 +160,33 @@ export async function POST(
         })
         .where(eq(orderSiteSubmissions.id, submissionId));
     }
+
+    // Recalculate order totals after assignment
+    const allLineItems = await db.query.orderLineItems.findMany({
+      where: eq(orderLineItems.orderId, params.id)
+    });
+    
+    const activeItems = allLineItems.filter(item => 
+      !['cancelled', 'refunded'].includes(item.status)
+    );
+    
+    const newTotalRetail = activeItems.reduce((sum, item) => 
+      sum + (item.approvedPrice || item.estimatedPrice || 0), 0
+    );
+    
+    const newTotalWholesale = activeItems.reduce((sum, item) => 
+      sum + (item.wholesalePrice || 0), 0
+    );
+    
+    await db
+      .update(orders)
+      .set({
+        totalRetail: newTotalRetail,
+        totalWholesale: newTotalWholesale,
+        profitMargin: newTotalRetail - newTotalWholesale,
+        updatedAt: new Date()
+      })
+      .where(eq(orders.id, params.id));
 
     return NextResponse.json({ 
       success: true,
@@ -135,6 +238,33 @@ export async function DELETE(
         modifiedBy: session.userId
       })
       .where(eq(orderLineItems.id, params.lineItemId));
+    
+    // Recalculate order totals after removal
+    const allLineItems = await db.query.orderLineItems.findMany({
+      where: eq(orderLineItems.orderId, params.id)
+    });
+    
+    const activeItems = allLineItems.filter(item => 
+      !['cancelled', 'refunded'].includes(item.status)
+    );
+    
+    const newTotalRetail = activeItems.reduce((sum, item) => 
+      sum + (item.approvedPrice || item.estimatedPrice || 0), 0
+    );
+    
+    const newTotalWholesale = activeItems.reduce((sum, item) => 
+      sum + (item.wholesalePrice || 0), 0
+    );
+    
+    await db
+      .update(orders)
+      .set({
+        totalRetail: newTotalRetail,
+        totalWholesale: newTotalWholesale,
+        profitMargin: newTotalRetail - newTotalWholesale,
+        updatedAt: new Date()
+      })
+      .where(eq(orders.id, params.id));
 
     // Find and update any submission that was assigned to this line item
     const submissions = await db.query.orderSiteSubmissions.findMany();

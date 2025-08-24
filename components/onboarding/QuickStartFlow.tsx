@@ -179,46 +179,47 @@ export default function QuickStartFlow() {
     
     const { orderId } = await orderRes.json();
     
-    // Now add order groups to the created order
-    const orderGroupsData = [{
-      clientId,
-      linkCount,
-      targetPages: targetPageId ? [{ pageId: targetPageId, url: targetUrl }] : [{ url: targetUrl }],
-      packageType: orderPreferences?.packageType || 'better',
-      packagePrice: orderPreferences?.maxPrice || 20000,
-      requirementOverrides: orderPreferences ? {
-        drMin: orderPreferences.drRange?.[0] || 30,
-        drMax: orderPreferences.drRange?.[1] || 100,
-        minTraffic: orderPreferences.minTraffic || 100,
-        maxPrice: orderPreferences.maxPrice || 20000,
-        categories: orderPreferences.categories || [],
-        types: orderPreferences.types || []
-      } : {}
-    }];
-    
-    // Update the order with order groups and pricing
+    // Calculate pricing per link
     const pricePerLink = (orderPreferences?.maxPrice || 200) * 100; // Convert to cents
-    const updateRes = await fetch(`/api/orders/${orderId}`, {
-      method: 'PUT',
+    
+    // Create line items for each link requested
+    const lineItems = [];
+    for (let i = 0; i < linkCount; i++) {
+      lineItems.push({
+        clientId,
+        targetPageId: targetPageId,
+        targetPageUrl: targetUrl,
+        anchorText: ``, // Empty for now, will be filled during review
+        status: 'draft',
+        estimatedPrice: pricePerLink,
+        metadata: {
+          packageType: orderPreferences?.packageType || 'better',
+          requirements: orderPreferences ? {
+            drMin: orderPreferences.drRange?.[0] || 30,
+            drMax: orderPreferences.drRange?.[1] || 100,
+            minTraffic: orderPreferences.minTraffic || 100,
+            maxPrice: orderPreferences.maxPrice || 20000,
+            categories: orderPreferences.categories || [],
+            types: orderPreferences.types || []
+          } : {},
+          createdFromQuickStart: true
+        }
+      });
+    }
+    
+    // Add line items to the order
+    const lineItemsRes = await fetch(`/api/orders/${orderId}/line-items`, {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        orderGroups: orderGroupsData,
-        // Calculate pricing based on link count and actual price per link
-        subtotalRetail: linkCount * pricePerLink,
-        totalRetail: linkCount * pricePerLink,
-        totalWholesale: Math.round(linkCount * pricePerLink * 0.6), // 60% of retail
-        estimatedLinksCount: linkCount,
-        // Add preferences to the order
-        preferencesDrMin: orderPreferences?.drRange?.[0] || 30,
-        preferencesDrMax: orderPreferences?.drRange?.[1] || 100,
-        preferencesTrafficMin: orderPreferences?.minTraffic || 100,
-        estimatedPricePerLink: pricePerLink,
+        items: lineItems,
+        reason: 'Created from QuickStart flow'
       })
     });
     
-    if (!updateRes.ok) {
-      const error = await updateRes.json();
-      console.error('Failed to update order with groups:', error);
+    if (!lineItemsRes.ok) {
+      const error = await lineItemsRes.json();
+      console.error('Failed to create line items:', error);
       throw new Error('Failed to configure order details');
     }
     

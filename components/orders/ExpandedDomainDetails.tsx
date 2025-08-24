@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { Brain, Search, TrendingUp, AlertCircle, Info, Clock, CheckCircle, HelpCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { Brain, Search, TrendingUp, AlertCircle, Info, Clock, CheckCircle, HelpCircle, Globe } from 'lucide-react';
 
 interface ExpandedDetailsProps {
   submission: {
@@ -10,14 +10,19 @@ interface ExpandedDetailsProps {
       aiQualificationReasoning?: string;
       topicReasoning?: string;
       overlapStatus?: 'direct' | 'related' | 'both' | 'none';
-      authorityDirect?: 'strong' | 'moderate' | 'weak' | 'n/a';
-      authorityRelated?: 'strong' | 'moderate' | 'weak' | 'n/a';
-      topicScope?: 'short_tail' | 'long_tail' | 'ultra_long_tail';
+      authorityDirect?: 'strong' | 'moderate' | 'weak' | 'n/a' | string;
+      authorityRelated?: 'strong' | 'moderate' | 'weak' | 'n/a' | string;
+      topicScope?: 'short_tail' | 'long_tail' | 'ultra_long_tail' | string;
+      keywordCount?: number;
+      dataForSeoResultsCount?: number;
       evidence?: {
         direct_count?: number;
         direct_median_position?: number | null;
         related_count?: number;
         related_median_position?: number | null;
+        da?: number;
+        traffic?: string;
+        quality?: string;
       };
       notes?: string;
     } | null;
@@ -43,39 +48,81 @@ interface ExpandedDetailsProps {
   };
 }
 
+// Target Analysis Card Component
+function TargetAnalysisCard({ 
+  analysis, 
+  isCurrentTarget, 
+  isSuggestedTarget,
+  isBestMatch 
+}: { 
+  analysis: any; 
+  isCurrentTarget: boolean; 
+  isSuggestedTarget: boolean;
+  isBestMatch: boolean; 
+}) {
+  const reasoning = analysis.reasoning || '';
+  
+  return (
+    <div className={`p-2 rounded border ${isCurrentTarget ? 'bg-blue-50 border-blue-200' : isSuggestedTarget ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          <div className="font-medium text-sm flex items-center gap-2 flex-wrap">
+            <span className="break-all">{analysis.target_url}</span>
+            {isCurrentTarget && <span className="text-xs bg-blue-600 text-white px-1 py-0.5 rounded">CURRENT</span>}
+            {isSuggestedTarget && <span className="text-xs bg-green-600 text-white px-1 py-0.5 rounded">AI SUGGESTED</span>}
+            {isBestMatch && <span className="text-xs bg-purple-600 text-white px-1 py-0.5 rounded">BEST ANALYSIS</span>}
+          </div>
+          
+          <div className="text-xs mt-1 space-y-0.5">
+            <div>
+              Match Quality: <span className="font-medium">{analysis.match_quality || 'N/A'}</span>
+            </div>
+            
+            {/* Keyword evidence */}
+            {analysis.evidence && (
+              <div className="flex gap-4">
+                <span>Direct: <strong>{analysis.evidence.direct_count || 0}</strong></span>
+                <span>Related: <strong>{analysis.evidence.related_count || 0}</strong></span>
+              </div>
+            )}
+          </div>
+          
+          {/* Full reasoning - no truncation */}
+          {reasoning && (
+            <div className="text-xs mt-1 text-gray-600">
+              <div className="font-medium mb-0.5">Analysis:</div>
+              <div className="text-gray-700">
+                {reasoning}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ExpandedDomainDetails({ submission }: ExpandedDetailsProps) {
   const domain = submission.domain;
   const metadata = submission.metadata || {};
   
   return (
     <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:items-stretch">
         
-        {/* AI Analysis Section */}
-        {domain?.aiQualificationReasoning && (
+        {/* Domain Justification - Why this domain was selected */}
+        {(domain?.qualificationStatus || domain?.aiQualificationReasoning || domain?.overlapStatus || domain?.evidence) && (
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
               <Brain className="h-4 w-4" />
-              AI Analysis
+              Domain Justification
             </div>
-            <div className="text-sm text-gray-600 bg-white p-3 rounded border border-gray-200">
-              {domain.aiQualificationReasoning}
-            </div>
-          </div>
-        )}
-
-        {/* Tag Analysis Breakdown */}
-        {domain && (domain.qualificationStatus || domain.overlapStatus || domain.topicScope) && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-              <Info className="h-4 w-4" />
-              Analysis Breakdown
-            </div>
-            <div className="text-sm bg-white p-3 rounded border border-gray-200 space-y-3">
-              {/* Quality Level */}
+            <div className="text-sm bg-white p-3 rounded border border-gray-200 space-y-3 min-h-96">
+              
+              {/* Quality Level with Explanation */}
               {domain.qualificationStatus && (
                 <div>
-                  <div className="font-medium text-gray-900">Quality Level</div>
+                  <div className="font-medium text-gray-900">Quality Assessment</div>
                   <div className="text-gray-600 text-xs mt-1">
                     {domain.qualificationStatus === 'high_quality' && (
                       <>
@@ -84,12 +131,12 @@ export default function ExpandedDomainDetails({ submission }: ExpandedDetailsPro
                     )}
                     {domain.qualificationStatus === 'good_quality' && (
                       <>
-                        <span className="font-medium text-blue-700">Good</span> - Either direct overlap with weak rankings OR related topics with strong rankings. Solid choice for link building.
+                        <span className="font-medium text-blue-700">Good Quality</span> - Either direct overlap with weak rankings OR related topics with strong rankings. Solid choice for link building.
                       </>
                     )}
                     {domain.qualificationStatus === 'marginal_quality' && (
                       <>
-                        <span className="font-medium text-yellow-700">Marginal</span> - Some overlap exists but all rankings are weak (61-100). Consider for volume strategies.
+                        <span className="font-medium text-yellow-700">Marginal Quality</span> - Some overlap exists but all rankings are weak (61-100). Consider for volume strategies.
                       </>
                     )}
                     {(domain.qualificationStatus === 'disqualified' || domain.qualificationStatus === 'not_qualified') && (
@@ -100,62 +147,133 @@ export default function ExpandedDomainDetails({ submission }: ExpandedDetailsPro
                   </div>
                 </div>
               )}
-              
-              {/* Overlap Status */}
-              {domain.overlapStatus && (
+
+              {/* AI Reasoning */}
+              {domain?.aiQualificationReasoning && (
                 <div>
-                  <div className="font-medium text-gray-900">Keyword Overlap</div>
-                  <div className="text-gray-600 text-xs mt-1">
-                    {domain.overlapStatus === 'direct' && (
-                      <>
-                        <span className="font-medium">Direct</span> - Site ranks for your exact niche keywords
-                      </>
+                  <div className="font-medium text-gray-900">AI Analysis</div>
+                  <div className="text-gray-600 text-xs mt-1 bg-gray-50 p-2 rounded">
+                    {domain.aiQualificationReasoning}
+                  </div>
+                </div>
+              )}
+
+              {/* Keyword Overlap & Authority */}
+              {(domain.overlapStatus || domain.authorityDirect || domain.authorityRelated) && (
+                <div>
+                  <div className="font-medium text-gray-900">Keyword Analysis</div>
+                  <div className="text-gray-600 text-xs mt-1 space-y-2">
+                    
+                    {/* Overlap Type */}
+                    {domain.overlapStatus && (
+                      <div>
+                        <span className="font-medium">Overlap Type:</span>{' '}
+                        {domain.overlapStatus === 'direct' && 'Direct - Site ranks for your exact niche keywords'}
+                        {domain.overlapStatus === 'related' && 'Related - Site ranks for broader industry topics'}
+                        {domain.overlapStatus === 'both' && 'Both - Has direct niche keywords AND related industry topics'}
+                        {domain.overlapStatus === 'none' && 'None - No topical relevance found'}
+                      </div>
                     )}
-                    {domain.overlapStatus === 'related' && (
-                      <>
-                        <span className="font-medium">Related</span> - Site ranks for broader industry topics
-                      </>
-                    )}
-                    {domain.overlapStatus === 'both' && (
-                      <>
-                        <span className="font-medium">Both</span> - Has direct niche keywords AND related industry topics
-                      </>
-                    )}
-                    {domain.overlapStatus === 'none' && (
-                      <>
-                        <span className="font-medium">None</span> - No topical relevance found
-                      </>
+                    
+                    {/* Authority Breakdown */}
+                    {(domain.authorityDirect || domain.authorityRelated) && (
+                      <div className="grid grid-cols-2 gap-2">
+                        {domain.authorityDirect && (
+                          <div>
+                            <span className="font-medium">Direct Authority:</span>{' '}
+                            {(() => {
+                              const val = domain.authorityDirect;
+                              if (val === 'strong') return 'Strong (1-30)';
+                              if (val === 'moderate') return 'Moderate (31-60)';
+                              if (val === 'weak') return 'Weak (61-100)';
+                              if (val === 'n/a') return 'N/A';
+                              const num = parseInt(val);
+                              if (!isNaN(num)) {
+                                if (num <= 30) return `Strong (${num})`;
+                                if (num <= 60) return `Moderate (${num})`;
+                                return `Weak (${num})`;
+                              }
+                              return val;
+                            })()}
+                          </div>
+                        )}
+                        {domain.authorityRelated && (
+                          <div>
+                            <span className="font-medium">Related Authority:</span>{' '}
+                            {(() => {
+                              const val = domain.authorityRelated;
+                              if (val === 'strong') return 'Strong (1-30)';
+                              if (val === 'moderate') return 'Moderate (31-60)';
+                              if (val === 'weak') return 'Weak (61-100)';
+                              if (val === 'n/a') return 'N/A';
+                              const num = parseInt(val);
+                              if (!isNaN(num)) {
+                                if (num <= 30) return `Strong (${num})`;
+                                if (num <= 60) return `Moderate (${num})`;
+                                return `Weak (${num})`;
+                              }
+                              return val;
+                            })()}
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>
               )}
-              
-              {/* Authority Scores */}
-              {(domain.authorityDirect !== 'n/a' || domain.authorityRelated !== 'n/a') && (
+
+              {/* Keyword Evidence */}
+              {domain?.evidence && (
                 <div>
-                  <div className="font-medium text-gray-900">Ranking Authority</div>
-                  <div className="text-gray-600 text-xs mt-1 space-y-1">
-                    {domain.authorityDirect && domain.authorityDirect !== 'n/a' && (
-                      <div>
-                        <span className="font-medium">Direct Keywords:</span>{' '}
-                        {domain.authorityDirect === 'strong' && 'Strong (positions 1-30)'}
-                        {domain.authorityDirect === 'moderate' && 'Moderate (positions 31-60)'}
-                        {domain.authorityDirect === 'weak' && 'Weak (positions 61-100)'}
+                  <div className="font-medium text-gray-900">Supporting Evidence</div>
+                  <div className="mt-1 grid grid-cols-2 gap-3">
+                    <div>
+                      <div className="text-xs">
+                        <span className="font-medium text-green-700">Direct Keywords: {domain.evidence?.direct_count || 0}</span>
+                        {domain.evidence?.direct_median_position && (
+                          <span className="text-gray-500 ml-1">(median: {domain.evidence.direct_median_position.toFixed(1)})</span>
+                        )}
                       </div>
-                    )}
-                    {domain.authorityRelated && domain.authorityRelated !== 'n/a' && (
-                      <div>
-                        <span className="font-medium">Related Keywords:</span>{' '}
-                        {domain.authorityRelated === 'strong' && 'Strong (positions 1-30)'}
-                        {domain.authorityRelated === 'moderate' && 'Moderate (positions 31-60)'}
-                        {domain.authorityRelated === 'weak' && 'Weak (positions 61-100)'}
+                      {/* Sample direct keywords */}
+                      {metadata.targetMatchData?.target_analysis && (
+                        <div className="mt-1">
+                          <div className="max-h-24 overflow-y-auto border border-gray-200 rounded p-1 bg-gray-50">
+                            {metadata.targetMatchData.target_analysis
+                              .flatMap((analysis: any) => analysis.evidence?.direct_keywords || [])
+                              .slice(0, 15)
+                              .map((kw: string, i: number) => (
+                                <div key={i} className="text-xs text-gray-600">• {kw}</div>
+                              ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <div className="text-xs">
+                        <span className="font-medium text-blue-700">Related Keywords: {domain.evidence?.related_count || 0}</span>
+                        {domain.evidence?.related_median_position && (
+                          <span className="text-gray-500 ml-1">(median: {domain.evidence.related_median_position.toFixed(1)})</span>
+                        )}
                       </div>
-                    )}
+                      {/* Sample related keywords */}
+                      {metadata.targetMatchData?.target_analysis && (
+                        <div className="mt-1">
+                          <div className="max-h-24 overflow-y-auto border border-gray-200 rounded p-1 bg-gray-50">
+                            {metadata.targetMatchData.target_analysis
+                              .flatMap((analysis: any) => analysis.evidence?.related_keywords || [])
+                              .slice(0, 15)
+                              .map((kw: string, i: number) => (
+                                <div key={i} className="text-xs text-gray-600">• {kw}</div>
+                              ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
-              
-              {/* Topic Scope */}
+
+              {/* Content Strategy */}
               {domain.topicScope && (
                 <div>
                   <div className="font-medium text-gray-900">Content Strategy</div>
@@ -175,52 +293,116 @@ export default function ExpandedDomainDetails({ submission }: ExpandedDetailsPro
                         <span className="font-medium">Ultra Long Tail</span> - Requires very specific niche angles with multiple modifiers. Hyper-targeted content needed.
                       </>
                     )}
+                    {!['short_tail', 'long_tail', 'ultra_long_tail'].includes(domain.topicScope) && (
+                      <>
+                        <span className="font-medium">Strategy:</span> {domain.topicScope}
+                      </>
+                    )}
                   </div>
-                </div>
-              )}
-              
-              {/* Original Topic Reasoning if it exists */}
-              {domain.topicReasoning && (
-                <div className="pt-2 border-t border-gray-100">
-                  <div className="text-xs text-gray-500">
-                    {domain.topicReasoning}
-                  </div>
+                  {domain.topicReasoning && (
+                    <div className="text-xs text-gray-500 mt-1 bg-gray-50 p-2 rounded">
+                      {domain.topicReasoning}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           </div>
         )}
 
-        {/* Evidence Data */}
-        {domain?.evidence && (
-          <div className="space-y-2">
+        {/* Target Page Justification - Why this specific page was selected */}
+        {(metadata.targetPageUrl || metadata.suggestedTargetUrl || metadata.targetMatchData) && (
+          <div className="space-y-2 flex flex-col">
             <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-              <Search className="h-4 w-4" />
-              Keyword Evidence
+              <Globe className="h-4 w-4" />
+              Target Page Justification
             </div>
-            <div className="text-sm bg-white p-3 rounded border border-gray-200">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <span className="font-medium text-green-700">Direct Matches:</span>
-                  <div className="text-gray-600">
-                    {domain.evidence.direct_count || 0} keywords
-                    {domain.evidence.direct_median_position && (
-                      <span className="text-xs text-gray-500 ml-1">
-                        (median pos: {domain.evidence.direct_median_position.toFixed(1)})
-                      </span>
-                    )}
-                  </div>
+            <div className="text-sm bg-white p-3 rounded border border-gray-200 flex-1 flex flex-col">
+              
+              {/* Current & Suggested Targets - side by side - fixed at top */}
+              {(metadata.targetPageUrl || metadata.suggestedTargetUrl) && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                  {/* Current/Assigned Target */}
+                  {metadata.targetPageUrl && (
+                    <div>
+                      <div className="font-medium text-gray-900 text-sm">Current Target</div>
+                      <div className="text-blue-600 text-xs break-all">
+                        {metadata.targetPageUrl}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* AI Suggested Target */}
+                  {metadata.suggestedTargetUrl && (
+                    <div>
+                      <div className="font-medium text-gray-900 text-sm">
+                        {metadata.targetPageUrl && metadata.suggestedTargetUrl !== metadata.targetPageUrl ? 'AI Suggested Alternative' : 'AI Recommended Target'}
+                      </div>
+                      <div className="text-green-600 text-xs break-all">
+                        {metadata.suggestedTargetUrl}
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <span className="font-medium text-blue-700">Related Matches:</span>
-                  <div className="text-gray-600">
-                    {domain.evidence.related_count || 0} keywords
-                    {domain.evidence.related_median_position && (
-                      <span className="text-xs text-gray-500 ml-1">
-                        (median pos: {domain.evidence.related_median_position.toFixed(1)})
-                      </span>
-                    )}
-                  </div>
+              )}
+              
+              {/* Page Analysis Header - fixed */}
+              {metadata.targetMatchData && (
+                <div className="font-medium text-gray-900 mb-2">Page Analysis</div>
+              )}
+              
+              {/* Scrollable Target Analysis - fills remaining space */}
+              {metadata.targetMatchData && (
+                <div className="flex-1 flex flex-col">
+                  {(() => {
+                    const targetAnalyses = metadata.targetMatchData?.target_analysis || [];
+                    if (targetAnalyses.length === 0) return null;
+                    
+                    // Always show current target first, then AI's top picks
+                    const currentTargetAnalysis = targetAnalyses.find((a: any) => a.target_url === metadata.targetPageUrl);
+                    const otherAnalyses = targetAnalyses.filter((a: any) => a.target_url !== metadata.targetPageUrl);
+                    
+                    const sortedAnalyses = currentTargetAnalysis 
+                      ? [currentTargetAnalysis, ...otherAnalyses]
+                      : targetAnalyses;
+                    
+                    return (
+                      <>
+                        {/* Scrollable container - large fixed height */}
+                        <div className="h-[28rem] overflow-y-auto border border-gray-200 rounded">
+                          <div className="space-y-1 p-1">
+                            {sortedAnalyses.map((analysis: any, i: number) => {
+                              const isCurrentTarget = analysis.target_url === metadata.targetPageUrl;
+                              const isSuggestedTarget = analysis.target_url === metadata.suggestedTargetUrl;
+                              const originalIndex = targetAnalyses.findIndex((a: any) => a.target_url === analysis.target_url);
+                              const isBestMatch = originalIndex === 0; // First in original analysis array
+                              
+                              return (
+                                <TargetAnalysisCard 
+                                  key={analysis.target_url}
+                                  analysis={analysis}
+                                  isCurrentTarget={isCurrentTarget}
+                                  isSuggestedTarget={isSuggestedTarget}
+                                  isBestMatch={isBestMatch && !isCurrentTarget && !isSuggestedTarget}
+                                />
+                              );
+                            })}
+                          </div>
+                        </div>
+                        
+                        {/* Count indicator - fixed at bottom */}
+                        <div className="text-xs text-gray-500 text-center mt-2">
+                          {targetAnalyses.length} target{targetAnalyses.length === 1 ? '' : 's'} analyzed
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              )}
+              
+              <div className="pt-2 border-t border-gray-100">
+                <div className="text-xs text-gray-500">
+                  Target URLs analyzed based on keyword overlap and topical relevance to maximize link effectiveness.
                 </div>
               </div>
             </div>

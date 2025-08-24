@@ -153,6 +153,7 @@ export interface TablePermissions {
   canMarkSitesReady?: boolean;
   canViewInternalTools?: boolean;
   canViewPricing?: boolean;
+  canEditPricing?: boolean;
   canEditDomainAssignments?: boolean;
   canSetExclusionReason?: boolean;
 }
@@ -188,13 +189,19 @@ export interface LineItem {
   id: string;
   orderId: string;
   clientId: string;
+  client?: {
+    id: string;
+    name: string;
+    website: string;
+  };
   targetPageUrl?: string;
   targetPageId?: string;
   anchorText?: string;
   status: string;
   assignedDomainId?: string;
-  assignedDomain?: string;
+  assignedDomain?: any; // Changed to any to match actual data structure
   estimatedPrice?: number;
+  wholesalePrice?: number;
   metadata?: any;
 }
 
@@ -311,16 +318,28 @@ export default function OrderSiteReviewTableV2({
   onSelectionChange,
   onAssignToLineItem,
   useStatusSystem = true, // Default to new system
-  useLineItems = false, // Default to not using line items yet
+  useLineItems = true, // FORCED: Migration to lineItems in progress
   benchmarkData
 }: OrderSiteReviewTableProps) {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
-    new Set(orderGroups.map(g => g.id))
+    new Set() // Will be populated with all group IDs after render
   );
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [expandedDomains, setExpandedDomains] = useState<Set<string>>(new Set());
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
+  
+  // Auto-expand all groups on mount
+  React.useEffect(() => {
+    if (orderGroups.length > 0) {
+      setExpandedGroups(new Set(orderGroups.map(g => g.id)));
+    } else if (lineItems.length > 0) {
+      // For virtual groups from lineItems
+      const clientIds = new Set(lineItems.map(item => item.clientId));
+      setExpandedGroups(clientIds);
+    }
+  }, [orderGroups, lineItems]);
+  
   const [editingSubmission, setEditingSubmission] = useState<{
     id: string;
     groupId: string;
@@ -757,11 +776,120 @@ export default function OrderSiteReviewTableV2({
       />
 
       {/* Order Groups */}
-      {orderGroups.map(group => {
-        const submissions = filterSubmissions(siteSubmissions[group.id] || []);
-        const includedCount = (siteSubmissions[group.id] || []).filter(s => getInclusionStatus(s) === 'included').length;
-        const excludedCount = (siteSubmissions[group.id] || []).filter(s => getInclusionStatus(s) === 'excluded').length;
-        const savedCount = (siteSubmissions[group.id] || []).filter(s => getInclusionStatus(s) === 'saved_for_later').length;
+      {(() => {
+        // Handle migration: Create virtual groups from lineItems when orderGroups is empty
+        let groupsToRender = orderGroups;
+        
+        if (orderGroups.length === 0 && lineItems.length > 0) {
+          console.log('[DEBUG] Creating virtual groups from lineItems:', lineItems);
+          // Create virtual groups from lineItems by client
+          const clientsMap = new Map();
+          lineItems.forEach(item => {
+            if (!clientsMap.has(item.clientId)) {
+              // Get client info from the first line item for this client
+              const clientLineItem = lineItems.find(li => li.clientId === item.clientId && li.client);
+              const client = clientLineItem?.client || item.client || { 
+                id: item.clientId, 
+                name: 'Unknown Client', 
+                website: '' 
+              };
+              
+              console.log('[DEBUG] Creating virtual group for client:', client);
+              
+              clientsMap.set(item.clientId, {
+                id: item.clientId, // Use clientId as virtual group ID
+                clientId: item.clientId,
+                client: client,
+                linkCount: lineItems.filter(li => li.clientId === item.clientId).length,
+                bulkAnalysisProjectId: item.metadata?.bulkAnalysisProjectId,
+                targetPages: [],
+                anchorTexts: [],
+                groupStatus: 'sites_ready',
+                siteSelections: { approved: 0, pending: 0, total: 0 }
+              });
+            }
+          });
+          groupsToRender = Array.from(clientsMap.values());
+          console.log('[DEBUG] Virtual groups created:', groupsToRender);
+        }
+        
+        return groupsToRender.map(group => {
+        // Create virtual submissions from lineItems if no actual submissions exist
+        // Check both group.id and group.clientId since virtual groups use clientId as id
+        let submissions = siteSubmissions[group.id] || siteSubmissions[group.clientId] || [];
+        
+        if (submissions.length === 0 && lineItems.length > 0) {
+          console.log('[DEBUG] Creating virtual submissions for group:', group.id, 'clientId:', group.clientId);
+          // Create virtual submissions from lineItems for this client
+          const clientLineItems = lineItems.filter(item => item.clientId === group.clientId);
+          console.log('[DEBUG] Found client line items:', clientLineItems);
+          submissions = clientLineItems.map(item => {
+            console.log('[DEBUG] Creating submission from item:', {
+              id: item.id,
+              targetPageUrl: item.targetPageUrl,
+              anchorText: item.anchorText,
+              assignedDomain: item.assignedDomain
+            });
+            // Extract domain data from assignedDomain object
+            const domainData = item.assignedDomain || {};
+            const domainRating = domainData.evidence?.da || parseInt(domainData.authorityDirect) || null;
+            const traffic = domainData.evidence?.traffic || domainData.traffic || null;
+            
+            // Parse traffic string if needed (e.g., "1.2M" -> 1200000)
+            let trafficNumber = null;
+            if (traffic) {
+              if (typeof traffic === 'string') {
+                const match = traffic.match(/^([\d.]+)([KMB])?$/i);
+                if (match) {
+                  trafficNumber = parseFloat(match[1]);
+                  if (match[2]) {
+                    const multiplier = { 'K': 1000, 'M': 1000000, 'B': 1000000000 }[match[2].toUpperCase()];
+                    trafficNumber *= multiplier || 1;
+                  }
+                }
+              } else {
+                trafficNumber = traffic;
+              }
+            }
+            
+            const submission = {
+              id: item.id,
+              orderId: item.orderId,
+              groupId: group.id,
+              orderGroupId: group.id, // Add missing property
+              domainId: item.assignedDomainId || '',
+              domain: domainData,
+              domainRating: domainRating,
+              traffic: trafficNumber,
+              targetPageUrl: item.targetPageUrl || '',
+              anchorText: item.anchorText || '',
+              price: item.wholesalePrice || item.estimatedPrice || 0,
+              inclusionStatus: 'included' as const,
+              selectionPool: 'primary' as const,
+              poolRank: 1,
+              status: (item.status as any) || 'pending', // Add missing property
+              metadata: {
+                ...item.metadata,
+                qualificationStatus: domainData.qualificationStatus,
+                hasDataForSeoResults: domainData.hasDataForSeoResults,
+                domainRating: domainRating,
+                traffic: trafficNumber
+              }
+            };
+            console.log('[DEBUG] Created submission:', submission);
+            return submission;
+          });
+        }
+        
+        console.log('[DEBUG] siteSubmissions[group.id]:', siteSubmissions[group.id]);
+        console.log('[DEBUG] siteSubmissions[group.clientId]:', siteSubmissions[group.clientId]);
+        console.log('[DEBUG] virtual submissions:', submissions);
+        const allSubmissions = siteSubmissions[group.id] || siteSubmissions[group.clientId] || submissions; // Use virtual submissions if no real ones
+        console.log('[DEBUG] allSubmissions being used:', allSubmissions);
+        const filteredSubmissions = filterSubmissions(allSubmissions);
+        const includedCount = allSubmissions.filter(s => getInclusionStatus(s) === 'included').length;
+        const excludedCount = allSubmissions.filter(s => getInclusionStatus(s) === 'excluded').length;
+        const savedCount = allSubmissions.filter(s => getInclusionStatus(s) === 'saved_for_later').length;
         const unassignedLineItems = useLineItems ? getUnassignedLineItems(group.clientId) : [];
         
         return (
@@ -817,7 +945,7 @@ export default function OrderSiteReviewTableV2({
               <>
                 {/* Mobile Cards View */}
                 <div className="md:hidden p-4 space-y-4">
-                  {submissions.map(submission => {
+                  {filteredSubmissions.map(submission => {
                     const status = getInclusionStatus(submission);
                     const benchmarkStatus = getBenchmarkStatus(submission, group.id);
                     const assignedLineItem = useLineItems ? lineItems.find(
@@ -949,10 +1077,10 @@ export default function OrderSiteReviewTableV2({
                         <th className="pb-2 pr-2">
                           <input
                             type="checkbox"
-                            checked={submissions.length > 0 && submissions.every(s => selectedRows.has(s.id))}
+                            checked={filteredSubmissions.length > 0 && filteredSubmissions.every(s => selectedRows.has(s.id))}
                             onChange={(e) => {
                               if (e.target.checked) {
-                                selectAll(submissions);
+                                selectAll(filteredSubmissions);
                               } else {
                                 clearSelection();
                               }
@@ -972,7 +1100,7 @@ export default function OrderSiteReviewTableV2({
                       </tr>
                     </thead>
                     <tbody>
-                    {submissions.map(submission => {
+                    {filteredSubmissions.map(submission => {
                       const status = getInclusionStatus(submission);
                       const benchmarkStatus = getBenchmarkStatus(submission, group.id);
                       // Find associated line item if assigned
@@ -1091,10 +1219,16 @@ export default function OrderSiteReviewTableV2({
                             </td>
                           )}
                           <td className="py-3 text-sm">
-                            {submission.targetPageUrl || '-'}
+                            {(() => {
+                              console.log('[RENDER] Submission target:', submission.id, submission.targetPageUrl);
+                              return submission.targetPageUrl || '-';
+                            })()}
                           </td>
                           <td className="py-3 text-sm">
-                            {submission.anchorText || '-'}
+                            {(() => {
+                              console.log('[RENDER] Submission anchor:', submission.id, submission.anchorText);
+                              return submission.anchorText || '-';
+                            })()}
                           </td>
                           {permissions.canViewPricing && (
                             <td className="py-3 text-sm">
@@ -1153,7 +1287,8 @@ export default function OrderSiteReviewTableV2({
             )}
           </div>
         );
-      })}
+      });
+      })()}
 
       {/* Edit Modal */}
       {editingSubmission && (
@@ -1261,35 +1396,35 @@ export default function OrderSiteReviewTableV2({
                 />
               </div>
               
+              {permissions.canEditPricing && (
+                <div>
+                  <label className="block text-sm font-medium mb-1">Price Override ($)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={editingSubmission.priceOverride || ''}
+                    onChange={(e) => setEditingSubmission({
+                      ...editingSubmission,
+                      priceOverride: parseFloat(e.target.value)
+                    })}
+                    className="w-full px-3 py-2 border rounded"
+                  />
+                </div>
+              )}
+              
               {userType === 'internal' && (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Price Override ($)</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={editingSubmission.priceOverride || ''}
-                      onChange={(e) => setEditingSubmission({
-                        ...editingSubmission,
-                        priceOverride: parseFloat(e.target.value)
-                      })}
-                      className="w-full px-3 py-2 border rounded"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Internal Notes</label>
-                    <textarea
-                      value={editingSubmission.internalNotes || ''}
-                      onChange={(e) => setEditingSubmission({
-                        ...editingSubmission,
-                        internalNotes: e.target.value
-                      })}
-                      className="w-full px-3 py-2 border rounded"
-                      rows={2}
-                    />
-                  </div>
-                </>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Internal Notes</label>
+                  <textarea
+                    value={editingSubmission.internalNotes || ''}
+                    onChange={(e) => setEditingSubmission({
+                      ...editingSubmission,
+                      internalNotes: e.target.value
+                    })}
+                    className="w-full px-3 py-2 border rounded"
+                    rows={2}
+                  />
+                </div>
               )}
             </div>
             

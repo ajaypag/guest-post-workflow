@@ -3,12 +3,15 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Check, Clock, AlertCircle, FileText } from 'lucide-react';
+import { ArrowLeft, Check, Clock, AlertCircle, FileText, Package, User, Edit3, X } from 'lucide-react';
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
 import { GuestPostWorkflow, WORKFLOW_STEPS } from '@/types/workflow';
 import { storage } from '@/lib/storage';
 import StepForm from '@/components/StepForm';
+import { AuthService } from '@/lib/auth';
+import { userStorage } from '@/lib/userStorage';
+import { User as UserType } from '@/types/user';
 
 export default function WorkflowDetail() {
   const params = useParams();
@@ -16,14 +19,41 @@ export default function WorkflowDetail() {
   const searchParams = useSearchParams();
   const [workflow, setWorkflow] = useState<GuestPostWorkflow | null>(null);
   const [activeStep, setActiveStep] = useState(0);
+  const [orderDetails, setOrderDetails] = useState<any>(null);
+  const [users, setUsers] = useState<UserType[]>([]);
+  const [session, setSession] = useState<any>(null);
+  const [isEditingAssignment, setIsEditingAssignment] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const loadWorkflow = async () => {
       try {
+        // Get current session
+        const currentSession = AuthService.getSession();
+        setSession(currentSession);
+        
+        // Load all users if internal user
+        if (currentSession?.userType === 'internal' || currentSession?.role === 'admin') {
+          const allUsers = await userStorage.getAllUsers();
+          setUsers(allUsers.filter((u: any) => u.isActive !== false));
+        }
+        
         const data = await storage.getWorkflow(params.id as string);
         if (data) {
           setWorkflow(data);
+          
+          // Check if workflow is from an order and fetch order details
+          if (data.metadata?.orderId) {
+            try {
+              const orderResponse = await fetch(`/api/orders/${data.metadata.orderId}`);
+              if (orderResponse.ok) {
+                const orderData = await orderResponse.json();
+                setOrderDetails(orderData);
+              }
+            } catch (error) {
+              console.error('Error fetching order details:', error);
+            }
+          }
           
           // Check if there's a step parameter in the URL
           const stepParam = searchParams.get('step');
@@ -88,8 +118,11 @@ export default function WorkflowDetail() {
               ...step,
               inputs: inputs || {},
               outputs: outputs || {},
-              completedAt: new Date(),
-              status: 'completed' as const
+              // Only mark as completed and set completedAt on manual save
+              ...(isManualSave ? {
+                completedAt: new Date(),
+                status: 'completed' as const
+              } : {})
             };
             return updatedStep;
           }
@@ -103,7 +136,15 @@ export default function WorkflowDetail() {
       // Only auto-advance on manual save (user clicking save button), not on auto-save
       if (isManualSave && activeStep < workflow.steps.length - 1) {
         console.log('📍 Auto-advancing to next step after manual save');
-        changeActiveStep(activeStep + 1);
+        // Update the currentStep field in the workflow and advance UI
+        const nextStep = activeStep + 1;
+        const workflowWithAdvancedStep = { 
+          ...updatedWorkflow, 
+          currentStep: nextStep 
+        };
+        setWorkflow(workflowWithAdvancedStep);
+        await storage.saveWorkflow(workflowWithAdvancedStep);
+        changeActiveStep(nextStep);
       } else if (!isManualSave) {
         console.log('💾 Auto-save completed - staying on current step');
       }
@@ -146,25 +187,114 @@ export default function WorkflowDetail() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-6 flex items-center justify-between">
             <Link
-              href="/"
+              href={workflow.metadata?.orderId ? `/orders/${workflow.metadata.orderId}/internal` : "/"}
               className="inline-flex items-center text-gray-600 hover:text-gray-900"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Workflows
+              {workflow.metadata?.orderId ? 'Back to Order' : 'Back to Workflows'}
             </Link>
-            <Link
-              href={`/workflow/${workflow.id}/overview`}
-              className="inline-flex items-center px-4 py-2 bg-gray-50 text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors"
-            >
-              <FileText className="w-4 h-4 mr-2" />
-              Overview
-            </Link>
+            <div className="flex items-center gap-3">
+              {workflow.metadata?.orderId && orderDetails && (
+                <div className="inline-flex items-center px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg text-sm font-medium">
+                  <Package className="w-4 h-4 mr-2" />
+                  Order #{orderDetails.orderNumber || workflow.metadata.orderId.slice(0, 8)}
+                </div>
+              )}
+              <Link
+                href={`/workflow/${workflow.id}/overview`}
+                className="inline-flex items-center px-4 py-2 bg-gray-50 text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                Overview
+              </Link>
+            </div>
           </div>
 
           <div className="bg-white border border-gray-200 rounded-2xl shadow-sm mb-6">
             <div className="p-8">
               <div className="flex items-center justify-between mb-6">
-                <h1 className="text-3xl font-semibold text-gray-900">{workflow.clientName}</h1>
+                <div>
+                  <h1 className="text-3xl font-semibold text-gray-900">{workflow.clientName}</h1>
+                  {workflow.metadata?.orderId && orderDetails && (
+                    <p className="text-sm text-gray-600 mt-1">
+                      From Order #{orderDetails.orderNumber || workflow.metadata.orderId.slice(0, 8)} • 
+                      Domain: {workflow.targetDomain} • 
+                      {orderDetails.lineItems?.length || 0} total guest posts
+                    </p>
+                  )}
+                  {workflow.estimatedCompletionDate && (
+                    <p className="text-sm text-gray-600 mt-1">
+                      <span className="inline-flex items-center">
+                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        Estimated Delivery: {new Date(workflow.estimatedCompletionDate).toLocaleDateString('en-US', { 
+                          month: 'long', 
+                          day: 'numeric', 
+                          year: 'numeric' 
+                        })}
+                      </span>
+                    </p>
+                  )}
+                  {(session?.userType === 'internal' || session?.role === 'admin') && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <User className="w-4 h-4 text-gray-500" />
+                      <label className="text-sm text-gray-600">Assigned to:</label>
+                      
+                      {!isEditingAssignment ? (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-gray-900">
+                            {users.find(u => u.id === (workflow.assignedUserId || workflow.userId))?.name || 'Unknown User'}
+                          </span>
+                          <button
+                            onClick={() => setIsEditingAssignment(true)}
+                            className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                            title="Change assignment"
+                          >
+                            <Edit3 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={workflow.assignedUserId || workflow.userId}
+                            onChange={async (e) => {
+                              const newAssigneeId = e.target.value;
+                              try {
+                                const response = await fetch(`/api/workflows/${workflow.id}/assign`, {
+                                  method: 'PATCH',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ assignedUserId: newAssigneeId })
+                                });
+                                if (response.ok) {
+                                  setWorkflow({ ...workflow, assignedUserId: newAssigneeId });
+                                  setIsEditingAssignment(false);
+                                }
+                              } catch (error) {
+                                console.error('Failed to reassign:', error);
+                              }
+                            }}
+                            className="px-2 py-1 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            autoFocus
+                          >
+                            {users.map(user => (
+                              <option key={user.id} value={user.id}>
+                                {user.name}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            onClick={() => setIsEditingAssignment(false)}
+                            className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                            title="Cancel"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
                 <div className="bg-gray-50 border border-gray-200 rounded-full px-4 py-2">
                   <span className="text-gray-600 text-sm font-medium">Guest Post Campaign</span>
                 </div>

@@ -1,13 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
+import LineItemsReviewTable from '@/components/orders/LineItemsReviewTable';
 import OrderSiteReviewTableV2 from '@/components/orders/OrderSiteReviewTableV2';
 import BenchmarkDisplay from '@/components/orders/BenchmarkDisplay';
-import OrderDetailsTable from '@/components/orders/OrderDetailsTable';
+// Removed OrderDetailsTable - using LineItemsDisplay and OrderSiteReviewTableV2 instead
+import LineItemsDisplay from '@/components/orders/LineItemsDisplay';
 import OrderProgressSteps, { getStateDisplay } from '@/components/orders/OrderProgressSteps';
 import TransferOrderModal from '@/components/orders/TransferOrderModal';
 import ShareOrderButton from '@/components/orders/ShareOrderButton';
@@ -18,7 +20,7 @@ import {
   ArrowLeft, Loader2, CheckCircle, Clock, Search, Users, FileText, 
   RefreshCw, ExternalLink, Globe, LinkIcon, Eye, Edit, Package,
   Target, ChevronRight, AlertCircle, Activity, Building, User, DollarSign,
-  Download, Share2, XCircle, CreditCard, Trash2, ArrowRightLeft
+  Download, Share2, XCircle, CreditCard, Trash2, ArrowRightLeft, MoreVertical
 } from 'lucide-react';
 
 // Service fee constant - $79 per link for SEO content package
@@ -99,6 +101,11 @@ interface LineItem {
   id: string;
   orderId: string;
   clientId: string;
+  client?: {
+    id: string;
+    name: string;
+    website: string;
+  };
   clientName: string;
   targetPageId?: string;
   targetPageUrl?: string;
@@ -106,42 +113,21 @@ interface LineItem {
   status: string;
   price: number;
   wholesalePrice?: number;
+  estimatedPrice?: number;
   isEstimate?: boolean;
   guestPostSite?: string;
+  assignedDomain?: any;
+  assignedDomainId?: string;
   draftUrl?: string;
   publishedUrl?: string;
   bulkAnalysisId?: string;
   workflowId?: string;
-}
-
-interface OrderGroup {
-  id: string;
-  clientId: string;
-  client: {
-    id: string;
-    name: string;
-    website: string;
-  };
-  linkCount: number;
-  bulkAnalysisProjectId?: string;
-  targetPages?: Array<{
-    id?: string;
-    url: string;
-    pageId?: string;
-  }>;
-  anchorTexts?: string[];
-  // Legacy package pricing (deprecated)
-  packageType?: string;
-  packagePrice?: number;
-  // New cost-plus pricing model
-  totalPrice?: number;
-  estimatedPrice?: number;
-  wholesalePrice?: number;
+  metadata?: any;
 }
 
 interface SiteSubmission {
   id: string;
-  orderGroupId: string;
+  orderGroupId: string; // Now uses orderId for compatibility
   domainId: string;
   domain: string;
   domainRating?: number;
@@ -188,24 +174,27 @@ interface OrderDetail {
   invoicedAt?: string;
   paidAt?: string;
   completedAt?: string;
-  orderGroups?: OrderGroup[];
+  lineItems?: any[];
 }
 
 export default function OrderDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const pathname = usePathname();
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
-  const [siteSubmissions, setSiteSubmissions] = useState<Record<string, SiteSubmission[]>>({});
+  // Site submissions are now derived from line items
+  const [siteSubmissions, setSiteSubmissions] = useState<SiteSubmission[]>([]);
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
   const [expandedSubmission, setExpandedSubmission] = useState<string | null>(null);
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [benchmarkData, setBenchmarkData] = useState<any>(null);
   const [comparisonData, setComparisonData] = useState<any>(null);
   const [showBenchmarkHistory, setShowBenchmarkHistory] = useState(false);
+  const [showEditWarning, setShowEditWarning] = useState(false);
 
   useEffect(() => {
     loadUser();
@@ -213,24 +202,67 @@ export default function OrderDetailPage() {
   }, [params.id]);
 
   useEffect(() => {
-    // Internal users can see metrics during planning phase
-    // External users only see metrics after sites are ready for review
+    // Load line items and derive site submissions from them
     const shouldLoadSubmissions = user?.userType === 'internal' 
-      ? order?.orderGroups // Load if order groups exist for internal users
+      ? lineItems.length > 0 // Load if line items exist for internal users
       : ((order?.state === 'sites_ready' || order?.state === 'site_review' || 
           order?.state === 'client_reviewing' || order?.state === 'payment_pending' || 
           order?.state === 'payment_received' || order?.state === 'workflows_generated' || 
-          order?.state === 'in_progress') && order.orderGroups);
+          order?.state === 'in_progress') && lineItems.length > 0);
     
     if (shouldLoadSubmissions) {
-      loadSiteSubmissions();
+      // Convert line items to site submissions format for display
+      const submissions = lineItems
+        .filter(item => item.guestPostSite) // Only items with assigned domains
+        .map(item => {
+          // Extract DR and Traffic from assignedDomain
+          const domainData = item.assignedDomain || {};
+          const domainRating = domainData.evidence?.da || parseInt(domainData.authorityDirect) || 0;
+          const trafficStr = domainData.evidence?.traffic || domainData.traffic || '';
+          
+          // Parse traffic string (e.g., "1.2M" -> 1200000)
+          let traffic = 0;
+          if (trafficStr) {
+            if (typeof trafficStr === 'string') {
+              const match = trafficStr.match(/^([\d.]+)([KMB])?$/i);
+              if (match) {
+                traffic = parseFloat(match[1]);
+                if (match[2]) {
+                  const multiplier = { 'K': 1000, 'M': 1000000, 'B': 1000000000 }[match[2].toUpperCase()];
+                  traffic *= multiplier || 1;
+                }
+              }
+            } else {
+              traffic = trafficStr;
+            }
+          }
+          
+          return {
+            id: item.id,
+            orderGroupId: item.orderId, // Use orderId as groupId for compatibility
+            domainId: item.id,
+            domain: item.guestPostSite || '',
+            domainRating: domainRating,
+            traffic: traffic,
+            price: item.price,
+            status: item.status === 'assigned' ? 'pending' : item.status as any,
+            submissionStatus: item.status,
+            targetPageUrl: item.targetPageUrl,
+            anchorText: item.anchorText,
+            clientApprovedAt: undefined,
+            clientRejectedAt: undefined,
+            clientReviewNotes: undefined,
+            specialInstructions: item.anchorText
+          };
+        });
+      setSiteSubmissions(submissions);
     }
     
     // Load benchmark for orders that have been submitted (includes pending_confirmation)
     if (order?.status === 'pending_confirmation' || order?.status === 'confirmed' || order?.status === 'paid' || order?.status === 'in_progress' || order?.status === 'completed') {
       loadBenchmarkData();
     }
-  }, [order?.state, order?.orderGroups, order?.status, user?.userType]);
+  }, [order?.state, lineItems, order?.status, user?.userType]);
 
   const loadUser = async () => {
     const currentUser = await AuthService.getCurrentUser();
@@ -239,7 +271,7 @@ export default function OrderDetailPage() {
 
   const loadOrder = async () => {
     try {
-      const response = await fetch(`/api/orders/${params.id}`, {
+      const response = await fetch(`/api/orders/${params.id}?skipOrderGroups=true`, {
         credentials: 'include'
       });
       
@@ -254,56 +286,39 @@ export default function OrderDetailPage() {
       const data = await response.json();
       setOrder(data);
       
-      // Load line items from the line items system if available
-      if (isLineItemsSystemEnabled() && data.lineItems && data.lineItems.length > 0) {
-        console.log('[LOAD_ORDER] Loading from line items system');
+      // Load line items - this is now the primary system
+      if (data.lineItems && data.lineItems.length > 0) {
+        console.log('[LOAD_ORDER] Loading line items, found', data.lineItems.length, 'items');
         
         const items: LineItem[] = data.lineItems.map((dbItem: any) => ({
-          id: dbItem.id, // Use actual database ID
+          id: dbItem.id,
+          orderId: params.id as string,
           clientId: dbItem.clientId,
+          client: dbItem.client, // Preserve the full client object
           clientName: dbItem.client?.name || 'Unknown Client',
           targetPageId: dbItem.targetPageId,
           targetPageUrl: dbItem.targetPageUrl,
           anchorText: dbItem.anchorText,
+          status: dbItem.status || 'draft',
           price: dbItem.approvedPrice || dbItem.estimatedPrice || 0,
-          wholesalePrice: dbItem.metadata?.wholesalePrice || (dbItem.estimatedPrice - SERVICE_FEE_CENTS),
+          wholesalePrice: dbItem.wholesalePrice || (dbItem.estimatedPrice ? dbItem.estimatedPrice - SERVICE_FEE_CENTS : 0),
+          estimatedPrice: dbItem.estimatedPrice,
           isEstimate: data.status === 'draft' || data.status === 'pending_confirmation',
-          guestPostSite: dbItem.assignedDomain || '',
+          guestPostSite: dbItem.assignedDomain?.domain || dbItem.assignedDomain || '', // Use domain string for display
+          assignedDomain: dbItem.assignedDomain, // Preserve the full assignedDomain object
+          assignedDomainId: dbItem.assignedDomainId,
           draftUrl: '',
           publishedUrl: dbItem.publishedUrl || '',
           bulkAnalysisId: dbItem.metadata?.bulkAnalysisId,
-          workflowId: dbItem.metadata?.workflowId
+          workflowId: dbItem.workflowId || dbItem.metadata?.workflowId, // Check both locations
+          metadata: dbItem.metadata
         }));
         
         setLineItems(items);
-      }
-      // Fallback to transform orderGroups into lineItems for the table (legacy system)
-      else if (data.orderGroups && data.orderGroups.length > 0) {
-        console.log('[LOAD_ORDER] Loading from orderGroups system (fallback)');
-        const items: LineItem[] = [];
-        data.orderGroups.forEach((group: OrderGroup) => {
-          // Create a line item for each link in the group
-          for (let i = 0; i < group.linkCount; i++) {
-            items.push({
-              id: `${group.id}-${i}`,
-              orderId: params.id as string,
-              clientId: group.clientId,
-              clientName: group.client?.name || 'Unknown Client',
-              targetPageUrl: group.targetPages?.[i]?.url || '',
-              targetPageId: group.targetPages?.[i]?.pageId,
-              anchorText: group.anchorTexts?.[i] || '',
-              status: 'draft',
-              price: group.totalPrice || group.estimatedPrice || 0,
-              wholesalePrice: group.wholesalePrice || (group.totalPrice ? group.totalPrice - SERVICE_FEE_CENTS * group.linkCount : 0),
-              isEstimate: data.status === 'draft' || data.status === 'pending_confirmation',
-              guestPostSite: '',
-              draftUrl: '',
-              publishedUrl: '',
-              bulkAnalysisId: group.bulkAnalysisProjectId
-            });
-          }
-        });
-        setLineItems(items);
+      } else {
+        // No line items available
+        console.log('[LOAD_ORDER] No line items found');
+        setLineItems([]);
       }
     } catch (error) {
       console.error('Error loading order:', error);
@@ -314,7 +329,8 @@ export default function OrderDetailPage() {
   
   const handleEditSubmission = async (submissionId: string, groupId: string, updates: any) => {
     try {
-      const response = await fetch(`/api/orders/${params.id}/groups/${groupId}/submissions/${submissionId}/edit`, {
+      // For line items, we need to update the line item directly
+      const response = await fetch(`/api/orders/${params.id}/line-items/${submissionId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -326,7 +342,7 @@ export default function OrderDetailPage() {
         throw new Error(errorData.error || 'Failed to edit submission');
       }
       
-      await loadSiteSubmissions();
+      await loadOrder(); // Reload the entire order to refresh data
       alert('Submission updated successfully');
       
     } catch (error: any) {
@@ -337,9 +353,12 @@ export default function OrderDetailPage() {
 
   const handleRemoveSubmission = async (submissionId: string, groupId: string) => {
     try {
-      const response = await fetch(`/api/orders/${params.id}/groups/${groupId}/submissions/${submissionId}/edit`, {
-        method: 'DELETE',
-        credentials: 'include'
+      // For line items, we update the status to 'cancelled'
+      const response = await fetch(`/api/orders/${params.id}/line-items/${submissionId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ status: 'cancelled' })
       });
       
       if (!response.ok) {
@@ -347,7 +366,7 @@ export default function OrderDetailPage() {
         throw new Error(errorData.error || 'Failed to remove submission');
       }
       
-      await loadSiteSubmissions();
+      await loadOrder(); // Reload the entire order to refresh data
       alert('Submission removed successfully');
       
     } catch (error: any) {
@@ -356,47 +375,20 @@ export default function OrderDetailPage() {
     }
   };
 
-  const loadSiteSubmissions = async () => {
-    if (!order?.orderGroups) return;
-    
-    setLoadingSubmissions(true);
-    try {
-      const submissionsByGroup: Record<string, SiteSubmission[]> = {};
-      
-      for (const group of order.orderGroups) {
-        try {
-          const response = await fetch(`/api/orders/${order.id}/groups/${group.id}/submissions?includeCompleted=true`);
-          if (response.ok) {
-            const data = await response.json();
-            submissionsByGroup[group.id] = data.submissions || [];
-          }
-        } catch (error) {
-          console.error(`Error loading submissions for group ${group.id}:`, error);
-        }
-      }
-      
-      setSiteSubmissions(submissionsByGroup);
-    } catch (error) {
-      console.error('Error loading site submissions:', error);
-    } finally {
-      setLoadingSubmissions(false);
-    }
-  };
-
+  // Removed loadSiteSubmissions - no longer needed with lineItems system
+  
   const handleApproveSubmission = async (groupId: string, submissionId: string) => {
     try {
-      const response = await fetch(
-        `/api/orders/${order!.id}/groups/${groupId}/submissions/${submissionId}/review`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'approve' })
-        }
-      );
+      // For line items, update the status to 'approved'
+      const response = await fetch(`/api/orders/${params.id}/line-items/${submissionId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ status: 'approved' })
+      });
       
       if (response.ok) {
-        // Reload submissions
-        await loadSiteSubmissions();
+        await loadOrder(); // Reload the entire order
       }
     } catch (error) {
       console.error('Error approving submission:', error);
@@ -405,18 +397,19 @@ export default function OrderDetailPage() {
 
   const handleRejectSubmission = async (groupId: string, submissionId: string, reason?: string) => {
     try {
-      const response = await fetch(
-        `/api/orders/${order!.id}/groups/${groupId}/submissions/${submissionId}/review`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'reject', notes: reason })
-        }
-      );
+      // For line items, update the status to 'rejected' with notes
+      const response = await fetch(`/api/orders/${params.id}/line-items/${submissionId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ 
+          status: 'rejected',
+          notes: reason 
+        })
+      });
       
       if (response.ok) {
-        // Reload submissions
-        await loadSiteSubmissions();
+        await loadOrder(); // Reload the entire order
       }
     } catch (error) {
       console.error('Error rejecting submission:', error);
@@ -425,11 +418,18 @@ export default function OrderDetailPage() {
 
   const loadBenchmarkData = async () => {
     try {
+      console.log('Loading benchmark data for order:', params.id);
       const response = await fetch(`/api/orders/${params.id}/benchmark?comparison=true`);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('Benchmark data loaded:', data);
         setBenchmarkData(data.benchmark);
         setComparisonData(data.comparison);
+      } else {
+        console.error('Benchmark API error:', response.status, response.statusText);
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
       }
     } catch (error) {
       console.error('Failed to load benchmark data:', error);
@@ -467,12 +467,16 @@ export default function OrderDetailPage() {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await loadOrder();
-    if (order?.state === 'sites_ready' || order?.state === 'client_reviewing' || order?.state === 'payment_pending' || order?.state === 'payment_received' || order?.state === 'workflows_generated' || order?.state === 'in_progress') {
-      await loadSiteSubmissions();
-    }
-    if (order?.status === 'confirmed' || order?.status === 'paid' || order?.status === 'in_progress' || order?.status === 'completed') {
+    try {
+      await loadOrder();
+      // Line items and site submissions are loaded as part of loadOrder
+      
+      // Always try to load benchmark data if order exists - let the API decide if it's valid
+      console.log('Refreshing benchmark data for order:', params.id);
       await loadBenchmarkData();
+      
+    } catch (error) {
+      console.error('Error during refresh:', error);
     }
     setTimeout(() => setRefreshing(false), 1000);
   };
@@ -551,8 +555,8 @@ export default function OrderDetailPage() {
   return (
     <AuthWrapper>
       <Header />
-      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
-        <div className="max-w-7xl mx-auto">
+      <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-8">
+        <div className="max-w-full">
           {/* Header */}
           <div className="mb-6">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -582,102 +586,312 @@ export default function OrderDetailPage() {
                   <span className="hidden sm:inline">Refresh</span>
                   <span className="sm:hidden">Refresh</span>
                 </button>
-                {isOrderEditable && (
+                
+                {/* Show contextual primary action based on state */}
+                {order.state === 'payment_pending' && order.invoicedAt && !order.paidAt ? (
                   <Link
-                    href={`/orders/${order.id}/edit`}
+                    href={`/orders/${order.id}/invoice`}
+                    className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-xs sm:text-sm min-h-[44px]"
+                  >
+                    <CreditCard className="h-3 sm:h-4 w-3 sm:w-4 mr-1 sm:mr-2" />
+                    <span className="hidden sm:inline">Pay Invoice</span>
+                    <span className="sm:hidden">Pay</span>
+                  </Link>
+                ) : order.state === 'ready_for_review' || order.state === 'client_reviewing' ? (
+                  <Link
+                    href={`/orders/${order.id}/review`}
                     className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-xs sm:text-sm min-h-[44px]"
                   >
-                    <Edit className="h-3 sm:h-4 w-3 sm:w-4 mr-1 sm:mr-2" />
+                    <Eye className="h-3 sm:h-4 w-3 sm:w-4 mr-1 sm:mr-2" />
+                    <span className="hidden sm:inline">Review Sites</span>
+                    <span className="sm:hidden">Review</span>
+                  </Link>
+                ) : isOrderEditable && order.status === 'draft' ? (
+                  /* Only show edit button for draft orders - revise is in nav tabs */
+                  <Link
+                    href={`/orders/${order.id}/edit`}
+                    className="inline-flex items-center px-2.5 sm:px-3 py-1.5 border border-blue-200 text-blue-700 rounded-md hover:bg-blue-50 hover:border-blue-300 text-xs sm:text-sm min-h-[36px] transition-colors"
+                  >
+                    <Edit className="h-3.5 w-3.5 mr-1.5" />
                     <span className="hidden sm:inline">Edit Order</span>
                     <span className="sm:hidden">Edit</span>
                   </Link>
-                )}
+                ) : null}
                 {user?.userType === 'internal' && (
                   <>
-                    <ShareOrderButton 
-                      orderId={order.id}
-                      currentShareToken={order.shareToken}
-                    />
-                    <button
-                      onClick={() => setShowTransferModal(true)}
-                      className="inline-flex items-center px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 text-xs sm:text-sm min-h-[44px]"
-                    >
-                      <ArrowRightLeft className="h-3 sm:h-4 w-3 sm:w-4 mr-1 sm:mr-2" />
-                      <span className="hidden sm:inline">Transfer</span>
-                      <span className="sm:hidden">Transfer</span>
-                    </button>
+                    {/* Manage Order - keep outside */}
                     <Link
                       href={`/orders/${order.id}/internal`}
-                      className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 text-xs sm:text-sm min-h-[44px]"
+                      className="inline-flex items-center px-2.5 sm:px-3 py-1.5 border border-purple-200 text-purple-700 rounded-md hover:bg-purple-50 hover:border-purple-300 text-xs sm:text-sm min-h-[36px] transition-colors"
                     >
-                      <Activity className="h-3 sm:h-4 w-3 sm:w-4 mr-1 sm:mr-2" />
+                      <Activity className="h-3.5 w-3.5 mr-1.5" />
                       <span className="hidden sm:inline">Manage Order</span>
                       <span className="sm:hidden">Manage</span>
                     </Link>
-                  </>
-                )}
-                {/* Admin delete button */}
-                {(order.status === 'draft' || (user?.userType === 'internal' && user?.role === 'admin')) && (
-                  <button
-                    onClick={async () => {
-                      const isAdmin = user?.userType === 'internal' && user?.role === 'admin';
-                      const confirmMessage = isAdmin && order.status !== 'draft'
-                        ? `⚠️ ADMIN ACTION: Are you sure you want to delete this ${order.status} order?\n\nOrder ID: ${order.id}\nAccount: ${order.account?.email || 'Unknown'}\nValue: ${formatCurrency(order.totalPrice)}\n\nThis will permanently delete the order and all related data. This action cannot be undone.`
-                        : 'Are you sure you want to delete this draft order? This action cannot be undone.';
-                      
-                      if (confirm(confirmMessage)) {
-                        try {
-                          const response = await fetch(`/api/orders/${order.id}`, {
-                            method: 'DELETE',
-                            headers: { 'Content-Type': 'application/json' }
-                          });
+                    
+                    {/* Admin Actions Dropdown */}
+                    <div className="relative group">
+                      <button
+                        className="inline-flex items-center px-2 py-1.5 border border-gray-200 text-gray-500 rounded-md hover:border-gray-300 hover:text-gray-700 text-xs font-medium transition-all duration-150 min-h-[36px]"
+                        title="More Actions"
+                      >
+                        <MoreVertical className="h-3.5 w-3.5" />
+                      </button>
+                      <div className="absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                        <div className="py-1">
+                          <ShareOrderButton 
+                            orderId={order.id}
+                            currentShareToken={order.shareToken}
+                            className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+                          />
+                          <button
+                            onClick={() => setShowTransferModal(true)}
+                            className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+                          >
+                            <ArrowRightLeft className="h-3.5 w-3.5 mr-2 text-gray-400" />
+                            Transfer Order
+                          </button>
                           
-                          if (response.ok) {
-                            const data = await response.json();
-                            if (isAdmin && order.status !== 'draft') {
-                              console.log('Admin deleted order:', data.deletedOrder);
-                            }
-                            router.push('/orders');
-                          } else {
-                            const data = await response.json();
-                            alert(data.error || 'Failed to delete order');
-                          }
-                        } catch (error) {
-                          console.error('Error deleting order:', error);
-                          alert('Error deleting order');
-                        }
-                      }
-                    }}
-                    className={`inline-flex items-center px-2 sm:px-3 py-1.5 sm:py-2 border ${
-                      order.status !== 'draft' && user?.role === 'admin' 
-                        ? 'border-red-300 text-red-700 hover:bg-red-50' 
-                        : 'border-red-300 text-red-600 hover:bg-red-50'
-                    } rounded-md text-xs sm:text-sm min-h-[44px]`}
-                  >
-                    <Trash2 className="h-3 sm:h-4 w-3 sm:w-4 mr-1 sm:mr-2" />
-                    <span className="hidden sm:inline">Delete Order</span>
-                    <span className="sm:hidden">Delete</span>
-                  </button>
+                          {/* Delete button - moved to dropdown */}
+                          {(order.status === 'draft' || user?.role === 'admin') && (
+                            <>
+                              <hr className="my-1 border-gray-200" />
+                              <button
+                                onClick={async () => {
+                                  const isAdmin = user?.userType === 'internal' && user?.role === 'admin';
+                                  const confirmMessage = isAdmin && order.status !== 'draft'
+                                    ? `⚠️ ADMIN ACTION: Are you sure you want to delete this ${order.status} order?\n\nOrder ID: ${order.id}\nAccount: ${order.account?.email || 'Unknown'}\nValue: ${formatCurrency((order as any).totalRetail || 0)}\n\nThis will permanently delete the order and all related data. This action cannot be undone.`
+                                    : 'Are you sure you want to delete this draft order? This action cannot be undone.';
+                                  
+                                  if (confirm(confirmMessage)) {
+                                    try {
+                                      const response = await fetch(`/api/orders/${order.id}`, {
+                                        method: 'DELETE',
+                                        headers: { 'Content-Type': 'application/json' }
+                                      });
+                                      
+                                      if (response.ok) {
+                                        const data = await response.json();
+                                        if (isAdmin && order.status !== 'draft') {
+                                          console.log('Admin deleted order:', data.deletedOrder);
+                                        }
+                                        router.push('/orders');
+                                      } else {
+                                        const data = await response.json();
+                                        alert(data.error || 'Failed to delete order');
+                                      }
+                                    } catch (error) {
+                                      console.error('Error deleting order:', error);
+                                      alert('Error deleting order');
+                                    }
+                                  }
+                                }}
+                                className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center"
+                              >
+                                <Trash2 className="h-3.5 w-3.5 mr-2" />
+                                Delete Order
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Benchmark Display - Show original request */}
-          {benchmarkData && (
-            <div className="mb-6">
-              <BenchmarkDisplay 
-                benchmark={benchmarkData}
-                orderId={order.id}
-                userType={user?.userType || 'internal'}
-              />
+          {/* Unified Navigation Tabs for Order Flow - Always visible to show workflow */}
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm mb-4 sm:mb-6">
+            <div className="flex flex-wrap items-center justify-between p-2 sm:p-3">
+              <div className="flex space-x-1 sm:space-x-2 overflow-x-auto">
+                {/* Order Details - Always Available */}
+                <Link
+                  href={`/orders/${order.id}`}
+                  className={`px-3 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors ${
+                    !pathname.includes('/edit') && !pathname.includes('/review') && !pathname.includes('/invoice') && !pathname.includes('/payment')
+                      ? 'bg-blue-100 text-blue-700' 
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <span className="flex items-center gap-1">
+                    <FileText className="h-3 sm:h-4 w-3 sm:w-4" />
+                    Order Details
+                  </span>
+                </Link>
+                
+                {/* Step 1: Setup/Edit - Show state based on editability */}
+                {isOrderEditable ? (
+                  order.status === 'draft' ? (
+                    <Link
+                      href={`/orders/${order.id}/edit`}
+                      className={`px-3 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors ${
+                        pathname.includes('/edit')
+                          ? 'bg-blue-100 text-blue-700' 
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                      }`}
+                    >
+                      <span className="flex items-center gap-1">
+                        <Edit className="h-3 sm:h-4 w-3 sm:w-4" />
+                        1. Setup
+                      </span>
+                    </Link>
+                  ) : (
+                    // For early stage - direct link, no modal needed
+                    order.status === 'pending_confirmation' || order.status === 'draft' ? (
+                      <Link
+                        href={`/orders/${order.id}/edit`}
+                        className={`px-3 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors ${
+                          pathname.includes('/edit')
+                            ? 'bg-blue-100 text-blue-700'
+                            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                        }`}
+                        title="Edit order details"
+                      >
+                        <span className="flex items-center gap-1">
+                          <Edit className="h-3 sm:h-4 w-3 sm:w-4" />
+                          1. Edit
+                        </span>
+                      </Link>
+                    ) : (
+                      // For confirmed orders - show warning modal
+                      <button
+                        onClick={() => setShowEditWarning(true)}
+                        className={`px-3 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors ${
+                          pathname.includes('/edit')
+                            ? 'bg-amber-100 text-amber-700'
+                            : 'text-amber-600 hover:text-amber-700 hover:bg-amber-50'
+                        }`}
+                        title="Revise order (will reset for review)"
+                      >
+                        <span className="flex items-center gap-1">
+                          <RefreshCw className="h-3 sm:h-4 w-3 sm:w-4" />
+                          1. Revise
+                        </span>
+                      </button>
+                    )
+                  )
+                ) : (
+                  <button
+                    disabled
+                    className="px-3 py-2 rounded-md text-xs sm:text-sm font-medium text-gray-400 bg-gray-50 cursor-not-allowed"
+                    title={order.state === 'analyzing' ? "Setup complete - finding sites" : "Setup complete"}
+                  >
+                    <span className="flex items-center gap-1">
+                      <CheckCircle className="h-3 sm:h-4 w-3 sm:w-4" />
+                      1. Setup ✓
+                    </span>
+                  </button>
+                )}
+                
+                {/* Step 2: Review - Available after sites are ready */}
+                {(order.state === 'ready_for_review' || order.state === 'client_reviewing' || ['payment_pending', 'payment_received'].includes(order.state || '')) ? (
+                  <Link
+                    href={`/orders/${order.id}/review`}
+                    className={`px-3 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors ${
+                      pathname.includes('/review')
+                        ? 'bg-blue-100 text-blue-700' 
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                    }`}
+                  >
+                    <span className="flex items-center gap-1">
+                      <Eye className="h-3 sm:h-4 w-3 sm:w-4" />
+                      2. Review
+                      {['payment_pending', 'payment_received'].includes(order.state || '') && ' ✓'}
+                    </span>
+                  </Link>
+                ) : (
+                  <button
+                    disabled
+                    className="px-3 py-2 rounded-md text-xs sm:text-sm font-medium text-gray-400 bg-gray-50 cursor-not-allowed"
+                    title={order.state === 'analyzing' ? "Sites being analyzed" : "Not ready for review yet"}
+                  >
+                    <span className="flex items-center gap-1">
+                      <Eye className="h-3 sm:h-4 w-3 sm:w-4 opacity-50" />
+                      2. Review
+                    </span>
+                  </button>
+                )}
+                
+                {/* Step 3: Invoice - Available after review */}
+                {order.invoicedAt ? (
+                  <Link
+                    href={`/orders/${order.id}/invoice`}
+                    className={`px-3 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors ${
+                      pathname.includes('/invoice')
+                        ? 'bg-blue-100 text-blue-700' 
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                    }`}
+                  >
+                    <span className="flex items-center gap-1">
+                      <FileText className="h-3 sm:h-4 w-3 sm:w-4" />
+                      3. Invoice ✓
+                    </span>
+                  </Link>
+                ) : (
+                  <button
+                    disabled
+                    className="px-3 py-2 rounded-md text-xs sm:text-sm font-medium text-gray-400 bg-gray-50 cursor-not-allowed"
+                    title="Invoice will be generated after site review"
+                  >
+                    <span className="flex items-center gap-1">
+                      <FileText className="h-3 sm:h-4 w-3 sm:w-4 opacity-50" />
+                      3. Invoice
+                    </span>
+                  </button>
+                )}
+                
+                {/* Step 4: Payment - Available after invoice */}
+                {order.paidAt ? (
+                  <button
+                    disabled
+                    className="px-3 py-2 rounded-md text-xs sm:text-sm font-medium text-green-700 bg-green-100 cursor-not-allowed"
+                  >
+                    <span className="flex items-center gap-1">
+                      <CheckCircle className="h-3 sm:h-4 w-3 sm:w-4" />
+                      4. Payment ✓
+                    </span>
+                  </button>
+                ) : order.state === 'payment_pending' && order.invoicedAt ? (
+                  <Link
+                    href={`/orders/${order.id}/payment`}
+                    className={`px-3 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors ${
+                      pathname.includes('/payment')
+                        ? 'bg-green-100 text-green-700' 
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                    }`}
+                  >
+                    <span className="flex items-center gap-1">
+                      <CreditCard className="h-3 sm:h-4 w-3 sm:w-4" />
+                      4. Payment
+                    </span>
+                  </Link>
+                ) : (
+                  <button
+                    disabled
+                    className="px-3 py-2 rounded-md text-xs sm:text-sm font-medium text-gray-400 bg-gray-50 cursor-not-allowed"
+                    title="Payment available after invoice"
+                  >
+                    <span className="flex items-center gap-1">
+                      <CreditCard className="h-3 sm:h-4 w-3 sm:w-4 opacity-50" />
+                      4. Payment
+                    </span>
+                  </button>
+                )}
+              </div>
+              
+              {/* Stage indicator */}
+              <div className="text-xs sm:text-sm text-gray-500 mt-2 sm:mt-0">
+                <span className="font-medium">{getStateDisplay(order.status, order.state).label}</span>
+              </div>
             </div>
-          )}
+          </div>
 
-          {/* Three Column Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+          {/* Three Column Layout - Optimized for wide screens */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-6">
             {/* Left Column - Progress Steps */}
-            <div className="lg:col-span-1">
+            <div className="lg:col-span-1 xl:col-span-1 2xl:col-span-1">
               <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
                 <h2 className="text-lg font-semibold mb-4">Order Progress</h2>
                 <OrderProgressSteps 
@@ -686,22 +900,58 @@ export default function OrderDetailPage() {
                   className="mt-4"
                 />
                 
-                {/* Quick Actions based on state - Internal users only */}
-                {user?.userType === 'internal' && (
-                  <div className="mt-6 pt-6 border-t">
-                    <h3 className="text-sm font-medium text-gray-900 mb-3">Quick Actions</h3>
-                    <div className="space-y-2">
-                      {order.state === 'analyzing' && order.orderGroups?.some(g => g.bulkAnalysisProjectId) && (
+                {/* Quick Actions based on state - only show if there are actions */}
+                {(() => {
+                  const hasPayAction = user?.userType !== 'internal' && order.state === 'payment_pending' && order.invoicedAt && !order.paidAt;
+                  const hasReviewAction = user?.userType !== 'internal' && (order.state === 'ready_for_review' || order.state === 'client_reviewing');
+                  
+                  if (!hasPayAction && !hasReviewAction) return null;
+                  
+                  return (
+                    <div className="mt-6 pt-6 border-t">
+                      <h3 className="text-sm font-medium text-gray-900 mb-3">Quick Actions</h3>
+                      <div className="space-y-2">
+                        {/* Pay Invoice Action for External Users */}
+                        {hasPayAction && (
+                          <Link
+                            href={`/orders/${order.id}/invoice`}
+                            className="block w-full px-3 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 text-center font-medium"
+                          >
+                            <span className="flex items-center justify-center gap-2">
+                              <CreditCard className="h-4 w-4" />
+                              Pay Invoice - ${(((order as any).totalRetail || 0) / 100).toFixed(2)}
+                            </span>
+                          </Link>
+                        )}
+                        
+                        {/* Review Sites Action for External Users */}
+                        {hasReviewAction && (
+                          <Link
+                            href={`/orders/${order.id}/review`}
+                            className="block w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 text-center font-medium"
+                          >
+                          <span className="flex items-center justify-center gap-2">
+                            <Eye className="h-4 w-4" />
+                            Review & Approve Sites
+                          </span>
+                        </Link>
+                      )}
+                      {order.state === 'analyzing' && lineItems.some(item => item.bulkAnalysisId) && (
                         <div className="space-y-2">
-                          {order.orderGroups.filter(g => g.bulkAnalysisProjectId).map(group => (
-                            <Link
-                              key={group.id}
-                              href={`/clients/${group.clientId}/bulk-analysis/projects/${group.bulkAnalysisProjectId}`}
-                              className="block w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 text-center"
-                            >
-                              Analyze {group.client.name}
-                            </Link>
-                          ))}
+                          {/* Group line items by client for bulk analysis links */}
+                          {Object.entries(groupedLineItems).map(([clientId, group]) => {
+                            const itemWithAnalysis = group.items.find(item => item.bulkAnalysisId);
+                            if (!itemWithAnalysis) return null;
+                            return (
+                              <Link
+                                key={clientId}
+                                href={`/clients/${clientId}/bulk-analysis/projects/${itemWithAnalysis.bulkAnalysisId}`}
+                                className="block w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 text-center"
+                              >
+                                Analyze {group.clientName}
+                              </Link>
+                            );
+                          })}
                           <button
                             onClick={async () => {
                               if (confirm('Mark sites as ready for client review? This will notify the client that sites are available.')) {
@@ -717,7 +967,8 @@ export default function OrderDetailPage() {
                                   
                                   if (response.ok) {
                                     await loadOrder();
-                                    await loadSiteSubmissions();
+                                    // Site submissions are derived from line items
+                                    await loadOrder();
                                   } else {
                                     const data = await response.json();
                                     alert(data.error || 'Failed to update order state');
@@ -742,9 +993,9 @@ export default function OrderDetailPage() {
                           >
                             <Users className="w-4 h-4 mx-auto mb-1" />
                             Review & Approve Sites
-                            {Object.values(siteSubmissions).flat().filter(s => s.status === 'pending').length > 0 && (
+                            {siteSubmissions.filter(s => s.status === 'pending').length > 0 && (
                               <div className="text-xs text-purple-200 mt-1">
-                                {Object.values(siteSubmissions).flat().filter(s => s.status === 'pending').length} sites pending
+                                {siteSubmissions.filter(s => s.status === 'pending').length} sites pending
                               </div>
                             )}
                           </Link>
@@ -775,7 +1026,7 @@ export default function OrderDetailPage() {
                             <FileText className="w-4 h-4 mx-auto mb-1" />
                             View Invoice
                             <div className="text-xs text-green-200 mt-1">
-                              {formatCurrency(order.totalPrice)}
+                              {formatCurrency((order as any).totalRetail || 0)}
                             </div>
                           </Link>
                         </div>
@@ -810,10 +1061,11 @@ export default function OrderDetailPage() {
                             </div>
                           </div>
                         </div>
-                      )}
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
                 
                 {/* Status Message for External Users when sites are ready */}
                 {user?.userType !== 'internal' && (order.state === 'sites_ready' || order.state === 'client_reviewing') && (
@@ -864,9 +1116,9 @@ export default function OrderDetailPage() {
             </div>
 
             {/* Middle/Right Columns - Order Details Table */}
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-3 xl:col-span-4 2xl:col-span-5">
               {/* Site Review Summary Card */}
-              {order.state === 'sites_ready' && Object.keys(siteSubmissions).length > 0 && (
+              {order.state === 'sites_ready' && siteSubmissions.length > 0 && (
                 <div className="bg-purple-50 border border-purple-200 rounded-lg p-6 mb-6">
                   <div className="flex items-start justify-between">
                     <div>
@@ -878,16 +1130,19 @@ export default function OrderDetailPage() {
                         Review and approve recommended sites for your guest posts
                       </p>
                       <div className="flex items-center gap-6 mt-3 text-sm">
-                        {Object.entries(siteSubmissions).map(([groupId, submissions]) => {
-                          const group = order.orderGroups?.find(g => g.id === groupId);
-                          if (!group) return null;
-                          const pending = submissions.filter(s => s.status === 'pending').length;
-                          const approved = submissions.filter(s => s.status === 'approved').length;
-                          const rejected = submissions.filter(s => s.status === 'rejected').length;
+                        {Object.entries(groupedLineItems).map(([clientId, group]) => {
+                          const clientSubmissions = siteSubmissions.filter(s => 
+                            lineItems.find(item => item.id === s.id)?.clientId === clientId
+                          );
+                          const pending = clientSubmissions.filter(s => s.status === 'pending').length;
+                          const approved = clientSubmissions.filter(s => s.status === 'approved').length;
+                          const rejected = clientSubmissions.filter(s => s.status === 'rejected').length;
+                          
+                          if (clientSubmissions.length === 0) return null;
                           
                           return (
-                            <div key={groupId} className="flex items-center gap-2">
-                              <span className="font-medium">{group.client.name}:</span>
+                            <div key={clientId} className="flex items-center gap-2">
+                              <span className="font-medium">{group.clientName}:</span>
                               {pending > 0 && <span className="text-yellow-700">{pending} pending</span>}
                               {approved > 0 && <span className="text-green-700">{approved} approved</span>}
                               {rejected > 0 && <span className="text-red-700">{rejected} rejected</span>}
@@ -896,63 +1151,70 @@ export default function OrderDetailPage() {
                         })}
                       </div>
                     </div>
-                    {loadingSubmissions && (
-                      <RefreshCw className="h-4 w-4 animate-spin text-purple-600" />
-                    )}
+                    <div className="flex items-center gap-3">
+                      {loadingSubmissions && (
+                        <RefreshCw className="h-4 w-4 animate-spin text-purple-600" />
+                      )}
+                      <Link
+                        href={`/orders/${order.id}/review`}
+                        className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors"
+                      >
+                        Review Sites
+                      </Link>
+                    </div>
                   </div>
                 </div>
               )}
               
-              {/* Use shared component for site review and other states with site data */}
-              {(order.state === 'sites_ready' || order.state === 'client_reviewing' || 
+              {/* Benchmark Display - Show original request (only after confirmation) */}
+              {benchmarkData && order.status !== 'pending_confirmation' && (
+                <div className="mb-6">
+                  <BenchmarkDisplay 
+                    benchmark={benchmarkData}
+                    comparison={comparisonData}
+                    orderId={order.id}
+                    userType={user?.userType || 'account'}
+                    onRefresh={loadBenchmarkData}
+                  />
+                </div>
+              )}
+              
+              {/* Show LineItemsDisplay for pending_confirmation orders with line items */}
+              {(order.status === 'pending_confirmation' || order.status === 'draft') && lineItems.length > 0 ? (
+                <LineItemsDisplay 
+                  lineItems={lineItems}
+                  orderStatus={order.status}
+                  orderState={order.state}
+                  userType={user?.userType || 'account'}
+                />
+              ) : (order.state === 'sites_ready' || order.state === 'client_reviewing' || 
                 order.state === 'payment_pending' || order.state === 'payment_received' || 
                 order.state === 'workflows_generated' || order.state === 'in_progress' || 
-                order.status === 'completed') && (order.orderGroups || lineItems.length > 0) ? (
-                <OrderSiteReviewTableV2
+                order.status === 'completed') && lineItems.length > 0 ? (
+                <LineItemsReviewTable
                   orderId={params.id as string}
-                  orderGroups={order.orderGroups || []}
                   lineItems={lineItems}
-                  siteSubmissions={(() => {
-                    // Transform siteSubmissions to match OrderSiteReviewTableV2's expected interface
-                    const transformed: Record<string, any[]> = {};
-                    Object.entries(siteSubmissions).forEach(([groupId, submissions]) => {
-                      transformed[groupId] = submissions.map(sub => ({
-                        ...sub,
-                        // Transform domain from string to expected object structure
-                        domain: typeof sub.domain === 'string' ? {
-                          id: sub.domainId,
-                          domain: sub.domain
-                          // Leave other properties undefined to avoid the React error
-                        } : sub.domain  // If already an object, keep it
-                      }));
-                    });
-                    return transformed;
-                  })()}
                   userType={user?.userType || 'account'}
                   permissions={{
-                    canChangeStatus: true,  // External users CAN organize sites
-                    canAssignTargetPages: true,  // External users CAN modify target pages
-                    canApproveReject: true,
-                    canGenerateWorkflows: false,
-                    canMarkSitesReady: false,
-                    canViewInternalTools: false,
-                    canViewPricing: true,
-                    canEditDomainAssignments: true  // External users CAN edit domain details
+                    canEditDomainAssignments: user?.userType === 'internal',
+                    canViewPricing: true,                              // All users can see pricing
+                    canEditPricing: user?.userType === 'internal',    // Only internal users can edit pricing
+                    canAssignTargetPages: user?.userType === 'internal'
                   }}
-                  workflowStage={order.state || 'sites_ready'}
-                  onEditSubmission={handleEditSubmission}
-                  onRemoveSubmission={handleRemoveSubmission}
-                  onRefresh={loadOrder}
-                  useLineItems={isLineItemsSystemEnabled()}
-                  useStatusSystem={true}  // External users CAN use status system
+                  onEditItem={async (itemId, updates) => {
+                    await handleEditSubmission(itemId, '', updates);
+                  }}
+                  onRemoveItem={async (itemId) => {
+                    await handleRemoveSubmission(itemId, '');
+                  }}
                 />
               ) : (
                 <>
-                  {/* Smart Order Details Table */}
-                  <OrderDetailsTable 
-                    order={order}
-                    orderGroups={order.orderGroups || []}
-                    siteSubmissions={siteSubmissions}
+                  {/* Fallback to LineItemsDisplay for orders without site submissions */}
+                  <LineItemsDisplay 
+                    lineItems={lineItems}
+                    orderStatus={order.status}
+                    orderState={order.state}
                     userType={user?.userType || 'account'}
                   />
                 </>
@@ -961,7 +1223,7 @@ export default function OrderDetailPage() {
               {/* OLD TABLE CODE REMOVED - NOW USING OrderDetailsTable COMPONENT */}
               
               {/* Additional Information Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mt-4 sm:mt-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 mt-4 sm:mt-6">
                 {/* Timeline */}
                 <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 sm:p-6">
                   <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Timeline</h3>
@@ -1097,25 +1359,12 @@ export default function OrderDetailPage() {
                     
                     {/* Payment Pending */}
                     {order.state === 'payment_pending' && (
-                      <div className="space-y-3">
-                        <div className="flex items-start gap-3">
-                          <div className="w-2 h-2 bg-orange-500 rounded-full mt-1.5 animate-pulse" />
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">Awaiting Payment</p>
-                            <p className="text-xs text-gray-500">Invoice ready - review and proceed with payment</p>
-                          </div>
+                      <div className="flex items-start gap-3">
+                        <div className="w-2 h-2 bg-orange-500 rounded-full mt-1.5 animate-pulse" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">Awaiting Payment</p>
+                          <p className="text-xs text-gray-500">Invoice ready - please complete payment to proceed</p>
                         </div>
-                        {!order.paidAt && (
-                          <a
-                            href={`/orders/${order.id}/payment`}
-                            className="inline-flex items-center gap-2 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                            </svg>
-                            Pay Invoice ${((order.totalPrice || 0) / 100).toFixed(2)}
-                          </a>
-                        )}
                       </div>
                     )}
                     
@@ -1146,7 +1395,7 @@ export default function OrderDetailPage() {
               
               {/* Notes Section - Full Width */}
               {(order.internalNotes || order.accountNotes) && (
-                <div className="lg:col-span-2 mt-6">
+                <div className="mt-6">
                   <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
                     <h3 className="text-lg font-semibold mb-4 flex items-center">
                       <FileText className="h-5 w-5 mr-2 text-gray-400" />
@@ -1172,19 +1421,19 @@ export default function OrderDetailPage() {
               
               {/* Pricing Details for Internal Users */}
               {user?.userType === 'internal' && (
-                <div className="lg:col-span-2 mt-6">
+                <div className="mt-6">
                   <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
                     <h3 className="text-lg font-semibold mb-4 flex items-center">
                       <DollarSign className="h-5 w-5 mr-2 text-gray-400" />
                       Pricing Details
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                       <div>
                         <h4 className="text-sm font-medium text-gray-700 mb-3">Customer Pricing</h4>
                         <dl className="space-y-2">
                           <div className="flex justify-between text-sm">
                             <dt className="text-gray-600">Subtotal</dt>
-                            <dd className="font-medium">{formatCurrency(order.subtotal || order.totalPrice)}</dd>
+                            <dd className="font-medium">{formatCurrency((order as any).subtotalRetail || (order as any).totalRetail || 0)}</dd>
                           </div>
                           {order.discountAmount && order.discountAmount > 0 && (
                             <div className="flex justify-between text-sm">
@@ -1206,7 +1455,7 @@ export default function OrderDetailPage() {
                           )}
                           <div className="flex justify-between text-sm pt-2 border-t">
                             <dt className="font-medium">Total Revenue</dt>
-                            <dd className="font-bold">{formatCurrency(order.totalPrice)}</dd>
+                            <dd className="font-bold">{formatCurrency((order as any).totalRetail || 0)}</dd>
                           </div>
                         </dl>
                       </div>
@@ -1223,7 +1472,7 @@ export default function OrderDetailPage() {
                           </div>
                           <div className="flex justify-between text-sm">
                             <dt className="text-gray-600">Total Revenue</dt>
-                            <dd className="font-medium">{formatCurrency(order.totalPrice)}</dd>
+                            <dd className="font-medium">{formatCurrency((order as any).totalRetail || 0)}</dd>
                           </div>
                           <div className="flex justify-between text-sm pt-2 border-t">
                             <dt className="font-medium">Gross Profit</dt>
@@ -1232,8 +1481,8 @@ export default function OrderDetailPage() {
                           <div className="flex justify-between text-sm">
                             <dt className="text-gray-600">Margin</dt>
                             <dd className="font-medium">
-                              {order.totalPrice > 0 ? 
-                                `${Math.round((SERVICE_FEE_CENTS * lineItems.length / order.totalPrice) * 100)}%` : 
+                              {(order as any).totalRetail > 0 ? 
+                                `${Math.round((SERVICE_FEE_CENTS * lineItems.length / (order as any).totalRetail) * 100)}%` : 
                                 'N/A'
                               }
                             </dd>
@@ -1260,6 +1509,56 @@ export default function OrderDetailPage() {
           loadOrder(); // Reload the order to show new account
         }}
       />
+      
+      {/* Edit Warning Modal */}
+      {showEditWarning && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <div className="flex items-start mb-4">
+              <div className="flex-shrink-0">
+                <AlertCircle className="h-6 w-6 text-amber-600" />
+              </div>
+              <div className="ml-3">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Revise Order?
+                </h3>
+                <div className="mt-2 text-sm text-gray-600 space-y-2">
+                  <p>
+                    Your order has already been confirmed and work has begun. Making changes now will:
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 text-gray-500">
+                    <li>Reset the order to "pending confirmation"</li>
+                    <li>Require the team to review your changes</li>
+                    {(order.state === 'sites_ready' || order.state === 'client_reviewing') && (
+                      <li>May affect site recommendations (team will re-evaluate)</li>
+                    )}
+                    {order.state === 'analyzing' && (
+                      <li>Pause the current site analysis</li>
+                    )}
+                  </ul>
+                  <p className="font-medium text-gray-700 mt-3">
+                    Are you sure you want to proceed with revisions?
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowEditWarning(false)}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <Link
+                href={`/orders/${order.id}/edit`}
+                className="px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700"
+              >
+                Continue to Revise
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
     </AuthWrapper>
   );
 }

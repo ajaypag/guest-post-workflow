@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { WorkflowService } from '@/lib/db/workflowService';
+import { WorkflowProgressService } from '@/lib/services/workflowProgressService';
 
 export async function GET(
   request: NextRequest,
@@ -80,6 +81,18 @@ export async function PUT(
 
     // Return the updated workflow in the expected format
     const result = WorkflowService.databaseToGuestPostWorkflow(updatedWorkflow);
+    
+    // Trigger progress calculation after workflow update
+    console.log('Triggering progress calculation for workflow:', updatedWorkflow.id);
+    try {
+      const progressResult = await WorkflowProgressService.updateWorkflowProgress(updatedWorkflow.id);
+      if (progressResult) {
+        console.log(`Progress updated: ${progressResult.completedSteps}/${progressResult.totalSteps} steps (${progressResult.completionPercentage}%)`);
+      }
+    } catch (progressError) {
+      console.error('Error updating workflow progress:', progressError);
+      // Don't fail the main request if progress calculation fails
+    }
     
     return NextResponse.json({ 
       success: true, 

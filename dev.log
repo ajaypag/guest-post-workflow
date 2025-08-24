@@ -2,140 +2,20 @@
 > guest-post-workflow@1.0.0 dev
 > next dev --turbopack
 
+ ⚠ Port 3000 is in use, using available port 3005 instead.
    ▲ Next.js 15.3.4 (Turbopack)
-   - Local:        http://localhost:3000
-   - Network:      http://10.255.255.254:3000
-   - Environments: .env.local
+   - Local:        http://localhost:3005
+   - Network:      http://10.255.255.254:3005
+   - Environments: .env.local, .env
 
  ✓ Starting...
- ✓ Ready in 1421ms
+ ○ Compiling middleware ...
+ ✓ Compiled middleware in 1510ms
+ ✓ Ready in 5.9s
  ⚠ Webpack is configured while Turbopack is not, which may cause problems.
  ⚠ See instructions if you need to configure Turbopack:
   https://nextjs.org/docs/app/api-reference/next-config-js/turbo
 
- ○ Compiling /api/admin/add-datasource-fields ...
- ✓ Compiled /api/admin/add-datasource-fields in 1004ms
- ⨯ [Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.918jo6ofvv'] {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.918jo6ofvv'
-}
- ○ Compiling /_error ...
- ✓ Compiled /_error in 1112ms
- ⨯ [Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.p7puvzmfyk'] {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.p7puvzmfyk'
-}
-[Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.918jo6ofvv'] {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.918jo6ofvv'
-}
- ⨯ [Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.iko397t85kg'] {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.iko397t85kg'
-}
-[Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.b1mylzon37g'] {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.b1mylzon37g'
-}
- ⨯ [Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.yug5t56no3b'] {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.yug5t56no3b'
-}
- ⨯ [Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.w8zm3bobdwl'] {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.w8zm3bobdwl'
-}
-[Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.yug5t56no3b'] {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.yug5t56no3b'
-}
- ⨯ [Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.c92u2rx0bis'] {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.c92u2rx0bis'
-}
-[Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.44foje2mwc'] {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.44foje2mwc'
-}
- ○ Compiling /api/admin/check-dataforseo-status ...
- ✓ Compiled /api/admin/check-dataforseo-status in 917ms
- ⨯ [Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.22x8elj5z4h'] {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.22x8elj5z4h'
-}
- ⨯ [Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/server/pages/_app/build-manifest.json'] {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/server/pages/_app/build-manifest.json'
-}
-[Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.22x8elj5z4h'] {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.22x8elj5z4h'
-}
- ⨯ [Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/server/pages/_app/build-manifest.json'] {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/server/pages/_app/build-manifest.json'
-}
-[Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/server/pages/_app/build-manifest.json'] {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/server/pages/_app/build-manifest.json'
-}
- ⨯ [Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.l60kedfllib'] {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.l60kedfllib'
-}
- ⨯ [Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/server/pages/_app/build-manifest.json'] {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/server/pages/_app/build-manifest.json'
-}
-[Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.l60kedfllib'] {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/static/development/_buildManifest.js.tmp.l60kedfllib'
-}
- ⨯ [Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/server/pages/_app/build-manifest.json'] {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/server/pages/_app/build-manifest.json'
-}
-[Error: ENOENT: no such file or directory, open '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/server/pages/_app/build-manifest.json'] {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/ajay/guest post workflow backup/guest post workflow to upload to cloud/guest-post-workflow/.next/server/pages/_app/build-manifest.json'
-}
+   Reload env: .env.local
+ ✓ Compiled middleware in 26ms
+[?25h

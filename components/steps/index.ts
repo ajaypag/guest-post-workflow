@@ -14,3 +14,6 @@ export { ImagesStep } from './ImagesStep';
 export { LinkRequestsStep } from './LinkRequestsStep';
 export { UrlSuggestionStep } from './UrlSuggestionStep';
 export { EmailTemplateStep } from './EmailTemplateStep';
+export { PublisherPreApprovalStep } from './PublisherPreApprovalStep';
+export { PublicationOutreachStep } from './PublicationOutreachStep';
+export { PublicationVerificationStep } from './PublicationVerificationStep';

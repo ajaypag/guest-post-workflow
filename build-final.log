@@ -3,10 +3,10 @@
 > next build
 
    ▲ Next.js 15.3.4
-   - Environments: .env.local, .env
+   - Environments: .env.local
 
    Creating an optimized production build ...
- ✓ Compiled successfully in 53s
+ ✓ Compiled successfully in 5.2min
    Linting and checking validity of types ...
 
 ./app/account/orders/[id]/status/page.tsx
@@ -84,10 +84,19 @@
 43:6  Warning: React Hook useEffect has a missing dependency: 'fetchOrder'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
 
 ./app/orders/claim/[token]/page.tsx
-47:6  Warning: React Hook useEffect has a missing dependency: 'loadOrderByToken'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+52:6  Warning: React Hook useEffect has a missing dependency: 'loadOrderByToken'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
 
 ./app/orders/page.tsx
 122:6  Warning: React Hook useEffect has a missing dependency: 'fetchOrders'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/publisher/(dashboard)/offerings/[id]/edit/page.tsx
+34:6  Warning: React Hook useEffect has a missing dependency: 'loadOffering'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/publisher/(dashboard)/websites/[id]/edit/page.tsx
+56:6  Warning: React Hook useEffect has a missing dependency: 'loadWebsite'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/publisher/(dashboard)/websites/[id]/page.tsx
+56:6  Warning: React Hook useEffect has a missing dependency: 'fetchWebsite'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
 
 ./app/register/account/page.tsx
 51:6  Warning: React Hook useEffect has a missing dependency: 'verifyInvitation'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
@@ -99,7 +108,7 @@
 25:6  Warning: React Hook useEffect has a missing dependency: 'verifyEmail'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
 
 ./components/AccountAuthWrapper.tsx
-37:6  Warning: React Hook useEffect has missing dependencies: 'checkAuth' and 'refreshTokenIfNeeded'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+38:6  Warning: React Hook useEffect has missing dependencies: 'checkAuth' and 'refreshTokenIfNeeded'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
 
 ./components/BulkAnalysisResultsModal.tsx
 45:6  Warning: React Hook useEffect has a missing dependency: 'fetchResults'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
@@ -112,6 +121,9 @@
 
 ./components/GuidedTriageFlow.tsx
 414:6  Warning: React Hook useEffect has missing dependencies: 'handleQualify' and 'props'. Either include them or remove the dependency array. However, 'props' will change when *any* prop changes, so the preferred fix is to destructure the 'props' object outside of the useEffect call and refer to those specific props inside useEffect.  react-hooks/exhaustive-deps
+
+./components/PublisherAuthWrapper.tsx
+37:6  Warning: React Hook useEffect has missing dependencies: 'checkAuth' and 'refreshTokenIfNeeded'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
 
 ./components/StepForm.tsx
 244:6  Warning: React Hook useEffect has missing dependencies: 'autoSaveTimer', 'handleSave', and 'step.outputs.finalArticle'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps

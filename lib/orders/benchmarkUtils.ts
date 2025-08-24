@@ -28,16 +28,69 @@ export async function createOrderBenchmark(
       throw new Error('Order not found');
     }
 
-    // Get order groups
-    const groups = await tx.query.orderGroups.findMany({
-      where: eq(orderGroups.orderId, orderId),
+    // Try to get line items first (new system)
+    const { orderLineItems } = await import('@/lib/db/orderLineItemSchema');
+    const lineItems = await tx.query.orderLineItems?.findMany({
+      where: eq(orderLineItems.orderId, orderId),
       with: {
         client: true,
+        targetPage: true,
       }
-    });
+    }) || [];
 
-    // Build benchmark data - capturing the original request at confirmation time
-    const clientGroups = await Promise.all(groups.map(async (group) => {
+    // If we have line items, use them. Otherwise fall back to order groups
+    let clientGroups: any[] = [];
+    
+    if (lineItems.length > 0) {
+      // Filter out cancelled and refunded line items
+      const activeLineItems = lineItems.filter(item => 
+        !['cancelled', 'refunded'].includes(item.status)
+      );
+      
+      // Group active line items by client
+      const clientMap = new Map<string, any[]>();
+      
+      activeLineItems.forEach(item => {
+        const clientId = item.clientId;
+        if (!clientMap.has(clientId)) {
+          clientMap.set(clientId, []);
+        }
+        clientMap.get(clientId)!.push(item);
+      });
+
+      clientGroups = Array.from(clientMap.entries()).map(([clientId, items]) => {
+        const targetPages = items.map(item => ({
+          url: item.targetPageUrl || item.targetPage?.url || '',
+          pageId: item.targetPageId,
+          requestedLinks: 1,
+          anchorText: item.anchorText,
+          requestedDomains: item.assignedDomainId ? [{
+            domainId: item.assignedDomainId,
+            domain: typeof item.assignedDomain === 'string' ? item.assignedDomain : (item.assignedDomain?.domain || ''),
+            wholesalePrice: item.wholesalePrice || 0,
+            retailPrice: item.approvedPrice || item.estimatedPrice || 0,
+            anchorText: item.anchorText,
+          }] : []
+        }));
+
+        return {
+          clientId,
+          clientName: items[0].client?.name || 'Unknown Client',
+          linkCount: items.length,
+          targetPages,
+        };
+      });
+    } else {
+      // Fall back to order groups (old system)
+      const groups = await tx.query.orderGroups.findMany({
+        where: eq(orderGroups.orderId, orderId),
+        with: {
+          client: true,
+        }
+      });
+
+      // Build benchmark data - capturing the original request at confirmation time
+      clientGroups = await Promise.all(groups.map(async (group) => {
       // For initial benchmark at confirmation, we capture the requested structure
       // not the selected submissions (which don't exist yet)
       
@@ -105,27 +158,63 @@ export async function createOrderBenchmark(
         };
       }
     }));
+    } // Close the else block for order groups
 
     // Calculate totals
     const totalRequestedLinks = clientGroups.reduce((sum, g) => sum + g.linkCount, 0);
     const totalTargetPages = clientGroups.reduce((sum, g) => sum + g.targetPages.length, 0);
     
-    // Calculate unique domains
+    // Calculate unique domains and average price
     const uniqueDomains = new Set<string>();
+    let totalPrice = 0;
+    let priceCount = 0;
+    
     clientGroups.forEach(group => {
-      group.targetPages.forEach(page => {
-        page.requestedDomains.forEach(domain => {
+      group.targetPages.forEach((page: any) => {
+        page.requestedDomains.forEach((domain: any) => {
           uniqueDomains.add(domain.domainId);
+          if (domain.retailPrice && domain.retailPrice > 0) {
+            totalPrice += domain.retailPrice;
+            priceCount++;
+          }
         });
       });
     });
+
+    // Calculate estimated price per link from active line items if not set on order
+    let estimatedPricePerLink = order.estimatedPricePerLink;
+    if (!estimatedPricePerLink && lineItems.length > 0) {
+      let totalEstimated = 0;
+      let countEstimated = 0;
+      // Only count active line items for price calculation
+      const activeLineItems = lineItems.filter(item => 
+        !['cancelled', 'refunded'].includes(item.status)
+      );
+      activeLineItems.forEach(item => {
+        if (item.approvedPrice && item.approvedPrice > 0) {
+          totalEstimated += item.approvedPrice;
+          countEstimated++;
+        } else if (item.estimatedPrice && item.estimatedPrice > 0) {
+          totalEstimated += item.estimatedPrice;
+          countEstimated++;
+        }
+      });
+      if (countEstimated > 0) {
+        estimatedPricePerLink = Math.round(totalEstimated / countEstimated);
+      }
+    }
+    
+    // If still no price, calculate from domains in benchmark
+    if (!estimatedPricePerLink && priceCount > 0) {
+      estimatedPricePerLink = Math.round(totalPrice / priceCount);
+    }
 
     const benchmarkData = {
       orderTotal: order.totalRetail || 0,
       serviceFee: order.clientReviewFee || 0,
       clientGroups,
       totalRequestedLinks,
-      totalClients: groups.length,
+      totalClients: clientGroups.length,
       totalTargetPages,
       totalUniqueDomains: uniqueDomains.size,
       
@@ -139,7 +228,7 @@ export async function createOrderBenchmark(
         types: order.preferencesTypes || [],
         niches: order.preferencesNiches || [],
         estimatedPricing: order.estimatorSnapshot,
-        estimatedPricePerLink: order.estimatedPricePerLink
+        estimatedPricePerLink: estimatedPricePerLink
       }
     };
 
@@ -185,39 +274,108 @@ export async function compareToBenchmark(orderId: string, userId?: string) {
     throw new Error('No benchmark found for this order');
   }
 
-  // Get current order state
-  const groups = await db.query.orderGroups.findMany({
-    where: eq(orderGroups.orderId, orderId),
+  // Get current order state - try line items first (new system), fallback to order groups
+  const { orderLineItems } = await import('@/lib/db/orderLineItemSchema');
+  const lineItems = await db.query.orderLineItems?.findMany({
+    where: eq(orderLineItems.orderId, orderId),
     with: {
       client: true,
     }
-  });
+  }) || [];
 
-  // Build current state data
-  const clientAnalysis = await Promise.all(groups.map(async (group) => {
-    const submissions = await db.query.orderSiteSubmissions.findMany({
-      where: eq(orderSiteSubmissions.orderGroupId, group.id)
-    });
+  let clientAnalysis: any[] = [];
 
-    // Count sites that are included (selected by internal team)
-    // This includes pending sites awaiting client approval
-    const delivered = submissions.filter(s => 
-      s.inclusionStatus === 'included'
-    ).length;
-    
-    const inProgress = submissions.filter(s => 
-      s.submissionStatus === 'in_progress' || s.submissionStatus === 'submitted'
-    ).length;
-
-    // Find the benchmark data for this client
-    const benchmarkGroup = benchmark.benchmarkData.clientGroups.find(
-      bg => bg.clientId === group.clientId
+  if (lineItems.length > 0) {
+    // Use new line items system
+    const activeLineItems = lineItems.filter(item => 
+      !['cancelled', 'refunded'].includes(item.status)
     );
 
-    const requested = benchmarkGroup?.linkCount || 0;
+    // Group by client
+    const clientMap = new Map<string, any[]>();
+    activeLineItems.forEach(item => {
+      const clientId = item.clientId;
+      if (!clientMap.has(clientId)) {
+        clientMap.set(clientId, []);
+      }
+      clientMap.get(clientId)!.push(item);
+    });
 
-    // Analyze each target page
-    const targetPageAnalysis = benchmarkGroup?.targetPages.map(benchmarkPage => {
+    clientAnalysis = Array.from(clientMap.entries()).map(([clientId, items]) => {
+      // Find the benchmark data for this client
+      const benchmarkGroup = benchmark.benchmarkData.clientGroups.find(
+        bg => bg.clientId === clientId
+      );
+
+      const requested = benchmarkGroup?.linkCount || 0;
+      
+      // Count assigned items as "delivered" for comparison purposes
+      const delivered = items.filter(item => item.assignedDomainId).length;
+      const inProgress = items.filter(item => 
+        !item.assignedDomainId && ['pending', 'in_progress'].includes(item.status)
+      ).length;
+
+      // For line items, we don't have the same target page analysis structure
+      // but we can create a simplified version
+      const targetPageAnalysis = benchmarkGroup?.targetPages.map(benchmarkPage => {
+        const pageItems = items.filter(item => 
+          item.targetPageUrl === benchmarkPage.url
+        );
+        
+        const deliveredForPage = pageItems.filter(item => item.assignedDomainId).length;
+
+        return {
+          url: benchmarkPage.url,
+          requested: benchmarkPage.requestedLinks,
+          delivered: deliveredForPage,
+          substitutions: [], // Line items don't track substitutions the same way
+          missing: [], // Would need complex logic to determine missing vs not yet assigned
+          extras: [], // Would need to compare against original request
+        };
+      }) || [];
+
+      return {
+        clientId,
+        clientName: items[0].client?.name || 'Unknown Client',
+        requested,
+        delivered,
+        inProgress,
+        targetPageAnalysis,
+      };
+    });
+  } else {
+    // Fallback to old order groups system
+    const groups = await db.query.orderGroups.findMany({
+      where: eq(orderGroups.orderId, orderId),
+      with: {
+        client: true,
+      }
+    });
+
+    clientAnalysis = await Promise.all(groups.map(async (group) => {
+      const submissions = await db.query.orderSiteSubmissions.findMany({
+        where: eq(orderSiteSubmissions.orderGroupId, group.id)
+      });
+
+      // Count sites that are included (selected by internal team)
+      // This includes pending sites awaiting client approval
+      const delivered = submissions.filter(s => 
+        s.inclusionStatus === 'included'
+      ).length;
+      
+      const inProgress = submissions.filter(s => 
+        s.submissionStatus === 'in_progress' || s.submissionStatus === 'submitted'
+      ).length;
+
+      // Find the benchmark data for this client
+      const benchmarkGroup = benchmark.benchmarkData.clientGroups.find(
+        bg => bg.clientId === group.clientId
+      );
+
+      const requested = benchmarkGroup?.linkCount || 0;
+
+      // Analyze each target page
+      const targetPageAnalysis = benchmarkGroup?.targetPages.map(benchmarkPage => {
       const currentSubmissions = submissions.filter(
         s => s.metadata?.targetPageUrl === benchmarkPage.url
       );
@@ -275,15 +433,16 @@ export async function compareToBenchmark(orderId: string, userId?: string) {
       };
     }) || [];
 
-    return {
-      clientId: group.clientId,
-      clientName: group.client?.name || '',
-      requested,
-      delivered,
-      inProgress,
-      targetPageAnalysis,
-    };
-  }));
+      return {
+        clientId: group.clientId,
+        clientName: group.client?.name || '',
+        requested,
+        delivered,
+        inProgress,
+        targetPageAnalysis,
+      };
+    }));
+  }
 
   // Calculate totals
   const totalRequested = benchmark.benchmarkData.totalRequestedLinks;
@@ -295,25 +454,82 @@ export async function compareToBenchmark(orderId: string, userId?: string) {
   // Financial comparison
   const expectedRevenue = benchmark.benchmarkData.orderTotal;
   
-  // Calculate actual revenue and metrics from all included/selected sites across all groups
+  // Calculate actual revenue and metrics from all assigned/included sites
   let actualRevenue = 0;
   let drValues: number[] = [];
   let trafficValues: number[] = [];
   
-  for (const group of groups) {
-    const submissions = await db.query.orderSiteSubmissions.findMany({
-      where: and(
-        eq(orderSiteSubmissions.orderGroupId, group.id),
-        eq(orderSiteSubmissions.inclusionStatus, 'included')
-      )
+  if (lineItems.length > 0) {
+    // Calculate from line items (new system)
+    const assignedItems = lineItems.filter(item => 
+      item.assignedDomainId && !['cancelled', 'refunded'].includes(item.status)
+    );
+    
+    // Get domain data for DR and traffic info
+    const { bulkAnalysisDomains } = await import('@/lib/db/bulkAnalysisSchema');
+    const { websites } = await import('@/lib/db/websiteSchema');
+    
+    for (const item of assignedItems) {
+      actualRevenue += item.approvedPrice || item.estimatedPrice || 0;
+      
+      // Get DR and traffic data for each assigned domain
+      if (item.assignedDomainId) {
+        try {
+          // Get domain string from assignedDomain field (which contains the actual domain)
+          let domainString = '';
+          if (item.assignedDomain) {
+            domainString = typeof item.assignedDomain === 'string' ? item.assignedDomain : (item.assignedDomain as any)?.domain || '';
+          }
+          
+          // Get metrics from websites table for this domain
+          if (domainString) {
+            // Try exact match first, then try with www prefix
+            let website = await db.query.websites.findFirst({
+              where: eq(websites.domain, domainString)
+            });
+            
+            // If not found, try with www prefix
+            if (!website) {
+              website = await db.query.websites.findFirst({
+                where: eq(websites.domain, `www.${domainString}`)
+              });
+            }
+            
+            if (website) {
+              if (website.domainRating && website.domainRating > 0) {
+                drValues.push(website.domainRating);
+              }
+              if (website.totalTraffic && website.totalTraffic > 0) {
+                trafficValues.push(website.totalTraffic);
+              }
+            }
+          }
+        } catch (error) {
+          console.log('Error fetching domain metrics:', error);
+        }
+      }
+    }
+  } else {
+    // Calculate from order groups (old system)
+    const groups = await db.query.orderGroups.findMany({
+      where: eq(orderGroups.orderId, orderId)
     });
     
-    actualRevenue += submissions.reduce((sum, sub) => {
-      // Also collect DR and traffic values
-      if (sub.metadata?.dr) drValues.push(sub.metadata.dr);
-      if (sub.metadata?.traffic) trafficValues.push(sub.metadata.traffic);
-      return sum + (sub.retailPriceSnapshot || 0);
-    }, 0);
+    for (const group of groups) {
+      const submissions = await db.query.orderSiteSubmissions.findMany({
+        where: and(
+          eq(orderSiteSubmissions.orderGroupId, group.id),
+          eq(orderSiteSubmissions.inclusionStatus, 'included')
+        )
+      });
+      
+      actualRevenue += submissions.reduce((sum, sub) => {
+        // Also collect DR and traffic values
+        if (sub.metadata?.dr) drValues.push(sub.metadata.dr);
+        if (sub.metadata?.traffic) trafficValues.push(sub.metadata.traffic);
+        return sum + (sub.retailPriceSnapshot || 0);
+      }, 0);
+    }
   }
   
   // Calculate DR and traffic ranges
@@ -328,19 +544,19 @@ export async function compareToBenchmark(orderId: string, userId?: string) {
   const issues: any[] = [];
   
   clientAnalysis.forEach(ca => {
-    ca.targetPageAnalysis.forEach(tpa => {
+    ca.targetPageAnalysis.forEach((tpa: any) => {
       if (tpa.missing.length > 0) {
         issues.push({
           type: 'missing' as const,
           description: `${tpa.missing.length} domains missing for ${tpa.url}`,
-          affectedItems: tpa.missing.map(m => m.domain)
+          affectedItems: tpa.missing.map((m: any) => m.domain)
         });
       }
       if (tpa.substitutions.length > 0) {
         issues.push({
           type: 'substitution' as const,
           description: `${tpa.substitutions.length} substitutions for ${tpa.url}`,
-          affectedItems: tpa.substitutions.map(s => s.requestedDomain)
+          affectedItems: tpa.substitutions.map((s: any) => s.requestedDomain)
         });
       }
     });

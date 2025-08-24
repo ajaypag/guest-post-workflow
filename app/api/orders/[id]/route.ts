@@ -20,6 +20,10 @@ export async function GET(
     }
 
     const { id } = await params;
+    
+    // Check if we should skip order groups (optimization for line items)
+    const url = new URL(request.url);
+    const skipOrderGroups = url.searchParams.get('skipOrderGroups') === 'true';
 
     // Fetch the order with relationships
     const order = await db.query.orders.findFirst({
@@ -34,8 +38,11 @@ export async function GET(
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
     
-    // Manually fetch orderGroups
-    const orderGroupsData = await db
+    // Skip order groups if requested (performance optimization)
+    let groupsWithSelections: any[] = [];
+    if (!skipOrderGroups) {
+      // Manually fetch orderGroups
+      const orderGroupsData = await db
       .select({
         orderGroup: orderGroups,
         client: clients
@@ -44,44 +51,47 @@ export async function GET(
       .leftJoin(clients, eq(orderGroups.clientId, clients.id))
       .where(eq(orderGroups.orderId, id));
     
-    // Fetch site selections for each group
-    const groupsWithSelections = await Promise.all(
-      orderGroupsData.map(async ({ orderGroup, client }) => {
-        // Count site selections
-        const siteSelections = await db.query.orderSiteSelections.findMany({
-          where: eq(orderSiteSelections.orderGroupId, orderGroup.id)
-        });
-        
-        return {
-          id: orderGroup.id,
-          orderId: orderGroup.orderId,
-          clientId: orderGroup.clientId,
-          linkCount: orderGroup.linkCount,
-          targetPages: orderGroup.targetPages,
-          anchorTexts: orderGroup.anchorTexts,
-          requirementOverrides: orderGroup.requirementOverrides,
-          groupStatus: orderGroup.groupStatus,
-          bulkAnalysisProjectId: orderGroup.bulkAnalysisProjectId,
-          createdAt: orderGroup.createdAt,
-          updatedAt: orderGroup.updatedAt,
-          client,
-          // Extract packageType and packagePrice from requirementOverrides
-          packageType: orderGroup.requirementOverrides?.packageType || 'better',
-          packagePrice: orderGroup.requirementOverrides?.packagePrice || 0,
-          // Add site selection counts
-          siteSelections: {
-            approved: siteSelections.filter(s => s.status === 'approved').length,
-            pending: siteSelections.filter(s => s.status === 'suggested').length,
-            total: siteSelections.length
-          }
-        };
-      })
-    );
+      // Fetch site selections for each group
+      groupsWithSelections = await Promise.all(
+        orderGroupsData.map(async ({ orderGroup, client }) => {
+          // Count site selections
+          const siteSelections = await db.query.orderSiteSelections.findMany({
+            where: eq(orderSiteSelections.orderGroupId, orderGroup.id)
+          });
+          
+          return {
+            id: orderGroup.id,
+            orderId: orderGroup.orderId,
+            clientId: orderGroup.clientId,
+            linkCount: orderGroup.linkCount,
+            targetPages: orderGroup.targetPages,
+            anchorTexts: orderGroup.anchorTexts,
+            requirementOverrides: orderGroup.requirementOverrides,
+            groupStatus: orderGroup.groupStatus,
+            bulkAnalysisProjectId: orderGroup.bulkAnalysisProjectId,
+            createdAt: orderGroup.createdAt,
+            updatedAt: orderGroup.updatedAt,
+            client,
+            // Extract packageType and packagePrice from requirementOverrides
+            packageType: orderGroup.requirementOverrides?.packageType || 'better',
+            packagePrice: orderGroup.requirementOverrides?.packagePrice || 0,
+            // Add site selection counts
+            siteSelections: {
+              approved: siteSelections.filter(s => s.status === 'approved').length,
+              pending: siteSelections.filter(s => s.status === 'suggested').length,
+              total: siteSelections.length
+            }
+          };
+        })
+      );
+    }
     
     // Load line items if the system is enabled
     let lineItems: any[] = [];
     if (isLineItemsSystemEnabled()) {
       try {
+        console.log('[DEBUG] Loading line items for order:', id);
+        console.log('[DEBUG] Line items system enabled:', isLineItemsSystemEnabled());
         lineItems = await db.query.orderLineItems.findMany({
           where: eq(orderLineItems.orderId, id),
           with: {
@@ -107,6 +117,7 @@ export async function GET(
             orderLineItems.addedAt
           ]
         });
+        console.log('[DEBUG] Found line items:', lineItems.length);
 
         // Fetch publisher data separately and merge it
         const lineItemsWithPublishers = await Promise.all(
@@ -143,11 +154,19 @@ export async function GET(
       }
     }
     
+    // Check if workflows have been generated for this order
+    let hasWorkflows = false;
+    if (lineItems.length > 0) {
+      // Check if any line items have associated workflows
+      hasWorkflows = lineItems.some(item => item.workflowId !== null);
+    }
+    
     // Transform the data
     const orderWithGroups = {
       ...order,
       orderGroups: groupsWithSelections,
-      lineItems: lineItems
+      lineItems: lineItems,
+      hasWorkflows: hasWorkflows
     };
 
     // Check permissions
@@ -262,8 +281,8 @@ export async function PUT(
 
     // Start a transaction to update order and groups
     await db.transaction(async (tx) => {
-      // Update the order fields (excluding orderGroups)
-      const { orderGroups: newOrderGroups, ...orderData } = data;
+      // Update the order fields (excluding orderGroups and lineItems)
+      const { orderGroups: newOrderGroups, lineItems: _, ...orderData } = data;
       
       await tx
         .update(orders)
@@ -273,9 +292,13 @@ export async function PUT(
         })
         .where(eq(orders.id, id));
       
-      // If orderGroups are provided, update them
+      // DEPRECATED: OrderGroups system - being phased out
+      // Only update orderGroups if explicitly provided (legacy support)
+      // New code should use line items API endpoints directly
       if (newOrderGroups && Array.isArray(newOrderGroups)) {
-        // Delete existing order groups
+        console.warn('[DEPRECATED] Order update using orderGroups - should migrate to line items API');
+        
+        // Delete existing order groups (legacy behavior)
         await tx.delete(orderGroups).where(eq(orderGroups.orderId, id));
         
         // Insert new order groups
@@ -298,6 +321,12 @@ export async function PUT(
           });
         }
       }
+      
+      // IMPORTANT: Line items are NOT handled here anymore
+      // They should be updated through the dedicated line items endpoints:
+      // - POST /api/orders/[id]/line-items (add new)
+      // - PATCH /api/orders/[id]/line-items (bulk update)
+      // - DELETE /api/orders/[id]/line-items/[lineItemId] (remove)
     });
 
     // Fetch the updated order

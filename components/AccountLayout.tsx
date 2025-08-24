@@ -18,6 +18,7 @@ interface AccountLayoutProps {
   title?: string;
   subtitle?: string;
   showBreadcrumbs?: boolean;
+  sidebarContent?: React.ReactNode;
 }
 
 const navigationItems = [
@@ -51,7 +52,8 @@ export default function AccountLayout({
   children, 
   title, 
   subtitle,
-  showBreadcrumbs = true 
+  showBreadcrumbs = true,
+  sidebarContent
 }: AccountLayoutProps) {
   const pathname = usePathname();
 
@@ -94,6 +96,13 @@ export default function AccountLayout({
           {/* Sidebar */}
           <div className="hidden lg:block lg:col-span-3 xl:col-span-2">
             <nav className="sticky top-8 space-y-1 bg-white rounded-lg shadow-sm p-6">
+              {/* Priority sidebar content - shown first for attention */}
+              {sidebarContent && (
+                <div className="mb-6">
+                  {sidebarContent}
+                </div>
+              )}
+              
               <div className="mb-8">
                 <h2 className="text-lg font-semibold text-gray-900">Account</h2>
                 <p className="text-sm text-gray-600 mt-1">Manage your settings and preferences</p>

@@ -22,6 +22,7 @@ import { BulkAnalysisProject } from '@/types/bulk-analysis-projects';
 import { BulkAnalysisDomain } from '@/types/bulk-analysis';
 import { ProcessedWebsite } from '@/types/airtable';
 import OrderSelectionModal from '@/components/orders/OrderSelectionModal';
+import DomainAssignmentModal from '@/components/orders/DomainAssignmentModal';
 import DuplicateResolutionModal from '@/components/ui/DuplicateResolutionModal';
 import { OrderBadgeDisplay } from '@/components/bulk-analysis/OrderBadgeDisplay';
 import { 
@@ -167,6 +168,10 @@ export default function ProjectDetailPage() {
   // Master qualification state
   const [masterQualificationRunning, setMasterQualificationRunning] = useState(false);
   const [masterQualificationProgress, setMasterQualificationProgress] = useState({ current: 0, total: 0 });
+  const [useOrderTargetPages, setUseOrderTargetPages] = useState(true); // Default to using order-specific target pages when in order context
+  const [targetPageSelectionMode, setTargetPageSelectionMode] = useState<'all' | 'order' | 'manual'>('all');
+  const [manuallySelectedTargetPages, setManuallySelectedTargetPages] = useState<Set<string>>(new Set());
+  const [showTargetPageSelector, setShowTargetPageSelector] = useState(false);
   
   // Smart selection state
   const [showSmartSelection, setShowSmartSelection] = useState(false);
@@ -180,19 +185,22 @@ export default function ProjectDetailPage() {
     isOpen: boolean;
     domains: BulkAnalysisDomain[];
   }>({ isOpen: false, domains: [] });
+
+  // Domain assignment modal state (new smart modal)
+  const [domainAssignmentModal, setDomainAssignmentModal] = useState<{
+    isOpen: boolean;
+    domains: BulkAnalysisDomain[];
+  }>({ isOpen: false, domains: [] });
   
   // Order context state - for when accessed from an order
   const orderId = searchParams.get('orderId');
-  const orderGroupId = searchParams.get('orderGroupId');
   const [orderContext, setOrderContext] = useState<{
     order: any | null;
-    orderGroup: any | null;
     isLoading: boolean;
     error: string | null;
   }>({ 
     order: null, 
-    orderGroup: null, 
-    isLoading: !!(orderId && orderGroupId),
+    isLoading: !!orderId,
     error: null 
   });
 
@@ -287,10 +295,10 @@ export default function ProjectDetailPage() {
   }, [params.id, params.projectId]);
 
   useEffect(() => {
-    if (client && project && !orderContext.isLoading) {
+    if (client && project) {
       loadDomains();
     }
-  }, [client, project, orderContext.isLoading]);
+  }, [client, project]);
 
   // Track if user came via guided parameter
   const [cameFromGuidedLink, setCameFromGuidedLink] = useState(false);
@@ -316,44 +324,45 @@ export default function ProjectDetailPage() {
 
   // Load order context if present
   useEffect(() => {
-    if (orderId && orderGroupId && !orderContext.isLoading) {
+    if (orderId) {
       loadOrderContext();
+      // Default to order mode when in order context
+      setTargetPageSelectionMode('order');
+    } else {
+      // Default to all mode when not in order context
+      setTargetPageSelectionMode('all');
     }
-  }, [orderId, orderGroupId]);
+  }, [orderId]);
 
   const loadOrderContext = async () => {
-    if (!orderId || !orderGroupId) return;
+    if (!orderId) return;
     
     try {
       setOrderContext(prev => ({ ...prev, isLoading: true, error: null }));
       
-      // Fetch order details
+      // Fetch order details with line items
       const orderResponse = await fetch(`/api/orders/${orderId}`);
       if (!orderResponse.ok) {
         throw new Error('Failed to load order');
       }
       const orderData = await orderResponse.json();
       
-      // Fetch order group details
-      const groupResponse = await fetch(`/api/orders/${orderId}/groups/${orderGroupId}`);
-      if (!groupResponse.ok) {
-        throw new Error('Failed to load order group');
-      }
-      const groupData = await groupResponse.json();
-      
       setOrderContext({
-        order: orderData.order,
-        orderGroup: groupData.orderGroup,
+        order: orderData,
         isLoading: false,
         error: null
       });
+      
+      // Extract target pages from line items - ONLY for current client
+      // Don't set target pages here, let loadClient handle it with full data
+      // This was causing the "0 keywords" issue by overwriting with incomplete data
       
       // Associate project with order if not already associated
       if (project) {
         const associateResponse = await fetch(`/api/projects/${params.projectId}/associate-order`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ orderId, orderGroupId })
+          body: JSON.stringify({ orderId })
         });
         
         if (!associateResponse.ok) {
@@ -444,23 +453,11 @@ export default function ProjectDetailPage() {
 
   const loadDomains = async () => {
     try {
-      // Don't load domains until order context is loaded (if needed)
-      if (orderId && orderGroupId && orderContext.isLoading) {
-        return;
-      }
-      
-      let response;
-      if (orderId && orderGroupId && !orderContext.error) {
-        // Load domains associated with the order
-        response = await fetch(
-          `/api/orders/${orderId}/groups/${orderGroupId}/associated-domains`
-        );
-      } else {
-        // Load all domains for the project
-        response = await fetch(
-          `/api/clients/${params.id}/bulk-analysis?projectId=${params.projectId}`
-        );
-      }
+      // Always load all domains for the project
+      // (We no longer filter by order since order groups are gone)
+      const response = await fetch(
+        `/api/clients/${params.id}/bulk-analysis?projectId=${params.projectId}`
+      );
       
       if (response.ok) {
         const data = await response.json();
@@ -507,7 +504,38 @@ export default function ProjectDetailPage() {
 
     setMasterQualificationRunning(true);
     setMasterQualificationProgress({ current: 0, total: selectedDomainList.length });
-    setMessage(`🚀 Running complete qualification for ${selectedDomainList.length} domains...`);
+    
+    // Determine which target page IDs to use based on selection mode
+    let targetPageIds: string[] | undefined;
+    
+    if (targetPageSelectionMode === 'order' && orderId && orderContext.order?.lineItems) {
+      // Use order-specific target pages
+      targetPageIds = [];
+      for (const lineItem of orderContext.order.lineItems) {
+        // Check both targetPageIds (array) and targetPageId (single)
+        if (lineItem.targetPageIds && Array.isArray(lineItem.targetPageIds)) {
+          targetPageIds.push(...lineItem.targetPageIds);
+        } else if (lineItem.targetPageId) {
+          targetPageIds.push(lineItem.targetPageId);
+        }
+      }
+      // Remove duplicates
+      targetPageIds = [...new Set(targetPageIds)];
+      
+      if (targetPageIds.length > 0) {
+        setMessage(`🎯 Running qualification for ${selectedDomainList.length} domains using ${targetPageIds.length} order-specific target URLs...`);
+      } else {
+        setMessage(`🚀 Running complete qualification for ${selectedDomainList.length} domains (no order target URLs found)...`);
+        targetPageIds = undefined;
+      }
+    } else if (targetPageSelectionMode === 'manual' && manuallySelectedTargetPages.size > 0) {
+      // Use manually selected target pages
+      targetPageIds = Array.from(manuallySelectedTargetPages);
+      setMessage(`🎯 Running qualification for ${selectedDomainList.length} domains using ${targetPageIds.length} manually selected target URLs...`);
+    } else {
+      // Use all client target pages (default)
+      setMessage(`🚀 Running complete qualification for ${selectedDomainList.length} domains using all client target URLs...`);
+    }
 
     // Start the qualification
     const qualificationPromise = fetch(`/api/clients/${params.id}/bulk-analysis/master-qualify`, {
@@ -515,6 +543,7 @@ export default function ProjectDetailPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         domainIds: selectedDomainList.map(d => d.id),
+        targetPageIds, // Include target page IDs if available
         locationCode: 2840,
         languageCode: 'en'
       })
@@ -1456,7 +1485,7 @@ export default function ProjectDetailPage() {
       setLoading(true);
       setMessage('Adding domains to order...');
       
-      // First, we need to get the order details to find the correct order group
+      // Get the order details with line items
       const orderResponse = await fetch(`/api/orders/${orderId}`);
       if (!orderResponse.ok) {
         throw new Error('Failed to fetch order details');
@@ -1464,38 +1493,41 @@ export default function ProjectDetailPage() {
       
       const orderData = await orderResponse.json();
       
-      // Find the order group for this client
-      const orderGroup = orderData.orderGroups?.find((group: any) => group.clientId === params.id);
-      
-      if (!orderGroup) {
-        throw new Error('No order group found for this client in the selected order');
+      // Check if order has line items
+      if (!orderData.lineItems || orderData.lineItems.length === 0) {
+        throw new Error('Order has no line items');
       }
       
-      // Prepare domains for the new append endpoint
-      const domainsToAdd = domains.map(domain => ({
+      // Find unassigned line items for this client (exclude cancelled and refunded items)
+      const unassignedLineItems = orderData.lineItems
+        .filter((item: any) => 
+          item.clientId === params.id && 
+          !item.assignedDomainId &&
+          !['cancelled', 'refunded'].includes(item.status)
+        );
+      
+      if (unassignedLineItems.length === 0) {
+        throw new Error('No unassigned line items available for this client. All line items already have domains assigned.');
+      }
+      
+      // Create assignments mapping domains to line items
+      const assignments = domains.slice(0, unassignedLineItems.length).map((domain, index) => ({
+        lineItemId: unassignedLineItems[index].id,
         domainId: domain.id,
-        targetPageUrl: targetPages[0]?.url || null, // Optional target page
-        anchorText: null, // Can be set later
-        specialInstructions: null,
-        reason: `Added from bulk analysis project: ${project?.name}`,
-        metadata: {
-          projectId: params.projectId,
-          qualificationStatus: domain.qualificationStatus,
-          hasDataForSeoResults: domain.hasDataForSeoResults,
-          notes: domain.notes
-        }
+        targetPageUrl: unassignedLineItems[index].targetPageUrl || targetPages[0]?.url || null,
+        anchorText: unassignedLineItems[index].anchorText || null
       }));
       
-      // Use the new append endpoint
-      const response = await fetch(`/api/orders/${orderId}/groups/${orderGroup.id}/site-selections/add`, {
+      // Use the line items endpoint for assigning domains
+      const response = await fetch(`/api/orders/${orderId}/line-items/assign-domains`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
         body: JSON.stringify({ 
-          domains: domainsToAdd,
-          batchId: `bulk-add-${Date.now()}` // Track this batch
+          assignments,
+          projectId: params.projectId // Pass the project ID so it can be stored in metadata
         })
       });
       
@@ -1507,10 +1539,13 @@ export default function ProjectDetailPage() {
       const result = await response.json();
       
       // Show detailed success message
-      if (result.duplicatesSkipped > 0) {
-        setMessage(`✅ Added ${result.added} new domains (${result.duplicatesSkipped} already existed). Total: ${result.stats?.total || 0} domains`);
+      const assignedCount = result.assignments?.length || 0;
+      const skippedCount = domains.length - assignedCount;
+      
+      if (skippedCount > 0) {
+        setMessage(`✅ Assigned ${assignedCount} domains to line items (${skippedCount} domains could not be assigned - not enough unassigned line items)`);
       } else {
-        setMessage(`✅ Successfully added ${result.added} domains to ${orderGroup.client?.name || 'order'}!`);
+        setMessage(`✅ Successfully assigned ${assignedCount} domains to line items!`);
       }
       
       // Optional: Navigate to order after a short delay to show the message
@@ -1807,13 +1842,23 @@ export default function ProjectDetailPage() {
           {/* Header */}
           <div className="mb-8">
             <div className="flex items-center mb-4">
-              <Link
-                href={`/clients/${client.id}/bulk-analysis`}
-                className="inline-flex items-center text-gray-600 hover:text-gray-900 mr-4"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Projects
-              </Link>
+              {orderId ? (
+                <Link
+                  href={`/orders/${orderId}/internal`}
+                  className="inline-flex items-center text-gray-600 hover:text-gray-900 mr-4"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Order
+                </Link>
+              ) : (
+                <Link
+                  href={`/clients/${client.id}/bulk-analysis`}
+                  className="inline-flex items-center text-gray-600 hover:text-gray-900 mr-4"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Projects
+                </Link>
+              )}
             </div>
             
             <div className="flex justify-between items-center">
@@ -1835,17 +1880,17 @@ export default function ProjectDetailPage() {
           </div>
 
           {/* Order Context Indicator */}
-          {orderContext.order && orderContext.orderGroup && (
+          {orderContext.order && (
             <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   <AlertCircle className="w-5 h-5 text-blue-600 mr-2" />
                   <span className="text-blue-800 font-medium">
-                    Viewing domains for order: {orderContext.order.name} - {orderContext.orderGroup.name}
+                    Viewing domains for order: {orderContext.order.name || `Order #${orderId?.substring(0, 8)}`}
                   </span>
                 </div>
                 <Link
-                  href={`/orders/${orderId}/detail`}
+                  href={`/orders/${orderId}/internal`}
                   className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center"
                 >
                   View Order
@@ -1871,7 +1916,7 @@ export default function ProjectDetailPage() {
                 currentOrderId={orderId || undefined}
                 onOrderClick={(order) => {
                   // Navigate to the bulk analysis page with this order context
-                  router.push(`/clients/${params.id}/bulk-analysis/projects/${params.projectId}?orderId=${order.orderId}&orderGroupId=${order.orderGroupId}`);
+                  router.push(`/clients/${params.id}/bulk-analysis/projects/${params.projectId}?orderId=${order.orderId}`);
                 }}
                 compact={associatedOrders.length > 3}
               />
@@ -2914,10 +2959,53 @@ anotherdomain.com"
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
+                      {/* Target Page Selection Mode */}
+                      <div className="flex items-center mr-3">
+                        <label htmlFor="targetPageMode" className="mr-2 text-sm text-gray-700">
+                          Target URLs:
+                        </label>
+                        <select
+                          id="targetPageMode"
+                          value={targetPageSelectionMode}
+                          onChange={(e) => setTargetPageSelectionMode(e.target.value as 'all' | 'order' | 'manual')}
+                          className="text-sm border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                        >
+                          <option value="all">All Client URLs</option>
+                          {orderId && orderContext.order && (
+                            <option value="order">Order URLs Only</option>
+                          )}
+                          <option value="manual">Select URLs...</option>
+                        </select>
+                        
+                        {/* Show selected count for manual mode */}
+                        {targetPageSelectionMode === 'manual' && (
+                          <>
+                            <button
+                              onClick={() => setShowTargetPageSelector(true)}
+                              className="ml-2 text-sm text-indigo-600 hover:text-indigo-700 underline"
+                            >
+                              {manuallySelectedTargetPages.size === 0 
+                                ? 'Select URLs' 
+                                : `${manuallySelectedTargetPages.size} selected`}
+                            </button>
+                            {manuallySelectedTargetPages.size > 0 && (
+                              <button
+                                onClick={() => setManuallySelectedTargetPages(new Set())}
+                                className="ml-2 text-sm text-red-600 hover:text-red-700"
+                                title="Clear selection"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            )}
+                          </>
+                        )}
+                      </div>
+                      
                       {/* Master Qualification Button */}
                       <button
                         onClick={startMasterQualification}
-                        disabled={bulkAnalysisRunning || loading || masterQualificationRunning}
+                        disabled={bulkAnalysisRunning || loading || masterQualificationRunning || 
+                                 (targetPageSelectionMode === 'manual' && manuallySelectedTargetPages.size === 0)}
                         className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
                       >
                         {masterQualificationRunning ? (
@@ -3306,8 +3394,8 @@ anotherdomain.com"
                       onDeleteDomain={deleteDomain}
                       onAnalyzeWithDataForSeo={analyzeWithDataForSeo}
                       onAddToOrder={(domains) => {
-                        // Open order selection modal
-                        setOrderSelectionModal({
+                        // Open smart domain assignment modal
+                        setDomainAssignmentModal({
                           isOpen: true,
                           domains: domains
                         });
@@ -3527,7 +3615,158 @@ anotherdomain.com"
         loading={loading}
       />
       
-      {/* Order Selection Modal */}
+      {/* Domain Assignment Modal (Smart Assignment) */}
+      <DomainAssignmentModal
+        isOpen={domainAssignmentModal.isOpen}
+        selectedDomains={domainAssignmentModal.domains}
+        clientId={params.id as string}
+        projectId={params.projectId as string}
+        sourceOrderId={orderId || undefined}
+        onClose={() => setDomainAssignmentModal({ isOpen: false, domains: [] })}
+        onAssignmentComplete={(result) => {
+          setMessage(`✅ Successfully assigned ${result.assignments?.length || 0} domains to line items!`);
+          // Refresh domains to show updated assignments
+          loadDomains();
+          // Navigate to order after a short delay
+          setTimeout(() => {
+            // Use orderId from result
+            const orderId = result.orderId || result.assignments?.[0]?.orderId;
+            if (orderId) {
+              router.push(`/orders/${orderId}/internal`);
+            }
+          }, 2000);
+        }}
+      />
+
+      {/* Target Page Selection Modal */}
+      {showTargetPageSelector && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">Select Target URLs for Qualification</h2>
+              <button
+                onClick={() => setShowTargetPageSelector(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="mb-4 text-sm text-gray-600">
+              Select which target URLs should be used when qualifying domains. Only selected URLs will be matched against.
+            </div>
+
+            {/* Quick actions */}
+            <div className="mb-4 flex gap-2">
+              <button
+                onClick={() => setManuallySelectedTargetPages(new Set(targetPages.map(tp => tp.id)))}
+                className="text-sm px-3 py-1 bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200"
+              >
+                Select All ({targetPages.length})
+              </button>
+              <button
+                onClick={() => setManuallySelectedTargetPages(new Set())}
+                className="text-sm px-3 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+              >
+                Clear All
+              </button>
+              {orderId && orderContext.order?.lineItems && (
+                <button
+                  onClick={() => {
+                    const orderTargetPageIds = new Set<string>();
+                    for (const lineItem of orderContext.order.lineItems) {
+                      // Check both targetPageIds (array) and targetPageId (single)
+                      if (lineItem.targetPageIds && Array.isArray(lineItem.targetPageIds)) {
+                        lineItem.targetPageIds.forEach((id: string) => orderTargetPageIds.add(id));
+                      } else if (lineItem.targetPageId) {
+                        orderTargetPageIds.add(lineItem.targetPageId);
+                      }
+                    }
+                    setManuallySelectedTargetPages(orderTargetPageIds);
+                  }}
+                  className="text-sm px-3 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                >
+                  Select Order URLs
+                </button>
+              )}
+            </div>
+
+            {/* Target pages list */}
+            <div className="flex-1 overflow-y-auto border rounded-lg p-4">
+              {targetPages.length === 0 ? (
+                <div className="text-center text-gray-500 py-8">
+                  No target pages found for this client
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {targetPages.map((targetPage) => (
+                    <label
+                      key={targetPage.id}
+                      className="flex items-start p-3 hover:bg-gray-50 cursor-pointer rounded-md"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={manuallySelectedTargetPages.has(targetPage.id)}
+                        onChange={(e) => {
+                          const newSelection = new Set(manuallySelectedTargetPages);
+                          if (e.target.checked) {
+                            newSelection.add(targetPage.id);
+                          } else {
+                            newSelection.delete(targetPage.id);
+                          }
+                          setManuallySelectedTargetPages(newSelection);
+                        }}
+                        className="mt-1 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                      />
+                      <div className="ml-3 flex-1">
+                        <div className="font-medium text-gray-900">
+                          {targetPage.url}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {targetPage.domain}
+                        </div>
+                        {targetPage.keywords && (
+                          <div className="text-xs text-gray-400 mt-1">
+                            {targetPage.keywords.split(',').filter(k => k.trim()).length} keywords
+                          </div>
+                        )}
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="mt-4 flex justify-between items-center">
+              <div className="text-sm text-gray-600">
+                {manuallySelectedTargetPages.size} of {targetPages.length} selected
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowTargetPageSelector(false)}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    setShowTargetPageSelector(false);
+                    if (manuallySelectedTargetPages.size > 0) {
+                      setMessage(`Selected ${manuallySelectedTargetPages.size} target URLs for qualification`);
+                    }
+                  }}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                >
+                  Apply Selection
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Legacy Order Selection Modal (keep for fallback) */}
       <OrderSelectionModal
         isOpen={orderSelectionModal.isOpen}
         onClose={() => setOrderSelectionModal({ isOpen: false, domains: [] })}

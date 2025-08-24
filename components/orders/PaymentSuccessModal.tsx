@@ -113,7 +113,7 @@ export default function PaymentSuccessModal({
               onClick={onClose}
               className="flex-1 bg-gray-100 text-gray-700 py-2 px-4 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
             >
-              Continue
+              Close
             </button>
           </div>
         </div>
@@ -122,8 +122,8 @@ export default function PaymentSuccessModal({
         <div className="mt-6 pt-6 border-t border-gray-200">
           <p className="text-xs text-gray-500 text-center">
             Need help? Contact our support team at{' '}
-            <a href="mailto:support@example.com" className="text-blue-600 hover:underline">
-              support@example.com
+            <a href="mailto:info@linkio.com" className="text-blue-600 hover:underline">
+              info@linkio.com
             </a>
           </p>
         </div>

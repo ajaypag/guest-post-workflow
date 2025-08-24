@@ -34,16 +34,6 @@ export default function SignupPage() {
     company_website: ''
   });
   
-  // Check if coming from QuickStart flow  
-  const [isQuickStartUser, setIsQuickStartUser] = useState(false);
-  
-  React.useEffect(() => {
-    // Check if user is coming from QuickStart
-    const quickstartState = typeof window !== 'undefined' ? sessionStorage.getItem('quickstart_state') : null;
-    if (quickstartState) {
-      setIsQuickStartUser(true);
-    }
-  }, []);
   
   const [errors, setErrors] = useState({
     email: '',
@@ -127,7 +117,7 @@ export default function SignupPage() {
           email: formData.email.toLowerCase(),
           password: formData.password,
           contactName: formData.contactName,
-          companyName: formData.email.split('@')[1] || 'Company', // Default from email domain
+          companyName: null, // Let the API handle smart defaults
           phone: null,
           // Include honeypot fields
           website: formData.website,
@@ -145,15 +135,8 @@ export default function SignupPage() {
           // Redirect to verification pending page
           router.push('/verify-email/pending');
         } else {
-          // Check if user was in middle of quick start flow
-          const quickstartState = sessionStorage.getItem('quickstart_state');
-          if (quickstartState) {
-            // Return to get-started page to complete order
-            router.push('/get-started');
-          } else {
-            // Normal signup - go to dashboard
-            router.push('/account/dashboard');
-          }
+          // Go to dashboard after signup
+          router.push('/account/dashboard');
         }
       } else {
         setError(data.error || 'Failed to create account');
@@ -177,20 +160,11 @@ export default function SignupPage() {
             <Building className="h-8 w-8 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900">
-            {isQuickStartUser ? 'Almost There!' : 'Create Account'}
+            Create Account
           </h1>
           <p className="text-gray-600 mt-2">
-            {isQuickStartUser 
-              ? 'Create your account to complete your order'
-              : 'Start getting cited by AI through smart link building'}
+            Start getting cited by AI through smart link building
           </p>
-          {isQuickStartUser && (
-            <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-              <p className="text-sm text-green-800">
-                ✨ Your order details have been saved and will be restored after signup
-              </p>
-            </div>
-          )}
         </div>
         
         {/* Signup Form */}

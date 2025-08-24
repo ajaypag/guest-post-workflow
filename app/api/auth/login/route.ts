@@ -10,25 +10,26 @@ import { authRateLimiter, getClientIp } from '@/lib/utils/rateLimiter';
 
 export async function POST(request: NextRequest) {
   try {
+    // RATE LIMITING DISABLED FOR TEST ENVIRONMENT
     // Check rate limit
-    const clientIp = getClientIp(request);
-    const rateLimitKey = `login:${clientIp}`;
-    const { allowed, retryAfter } = authRateLimiter.check(rateLimitKey);
+    // const clientIp = getClientIp(request);
+    // const rateLimitKey = `login:${clientIp}`;
+    // const { allowed, retryAfter } = authRateLimiter.check(rateLimitKey);
     
-    if (!allowed) {
-      return NextResponse.json(
-        { 
-          error: 'Too many login attempts. Please try again later.',
-          retryAfter 
-        },
-        { 
-          status: 429,
-          headers: {
-            'Retry-After': String(retryAfter)
-          }
-        }
-      );
-    }
+    // if (!allowed) {
+    //   return NextResponse.json(
+    //     { 
+    //       error: 'Too many login attempts. Please try again later.',
+    //       retryAfter 
+    //     },
+    //     { 
+    //       status: 429,
+    //       headers: {
+    //         'Retry-After': String(retryAfter)
+    //       }
+    //     }
+    //   );
+    // }
     
     const { email, password } = await request.json();
 

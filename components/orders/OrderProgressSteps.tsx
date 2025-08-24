@@ -17,10 +17,16 @@ interface Step {
 
 const PROGRESS_STEPS: Step[] = [
   { 
+    id: 'pending', 
+    label: 'Order Submitted', 
+    icon: FileText, 
+    description: 'Awaiting confirmation from our team' 
+  },
+  { 
     id: 'confirmed', 
     label: 'Order Confirmed', 
     icon: CheckCircle, 
-    description: 'Your order has been received' 
+    description: 'Your order has been approved' 
   },
   { 
     id: 'analyzing', 
@@ -61,32 +67,32 @@ export function getProgressSteps(status: string, state?: string) {
   if (status === 'draft') {
     currentStep = -1; // Not started
   } else if (status === 'pending_confirmation') {
-    currentStep = 0; // At confirmation step
+    currentStep = 0; // At "Order Submitted" step (awaiting confirmation)
   } else if (status === 'confirmed') {
     currentStep = 1; // Default to confirmed
     
     // Check the state for more specific progress
     if (state === 'analyzing') {
-      currentStep = 1;
+      currentStep = 2; // Finding sites
     } else if (state === 'sites_ready' || state === 'client_reviewing') {
-      currentStep = 2;
+      currentStep = 3; // Review sites
     } else if (state === 'payment_pending') {
-      currentStep = 3;
+      currentStep = 4; // Invoicing
     } else if (state === 'payment_received' || state === 'workflows_generated' || state === 'in_progress') {
-      currentStep = 4;
+      currentStep = 5; // Content & Submission
     }
   } else if (status === 'paid') {
     // Order has been paid, move to content & submission
-    currentStep = 4;
+    currentStep = 5;
     if (state === 'payment_received' || state === 'workflows_generated') {
-      currentStep = 4;
+      currentStep = 5;
     } else if (state === 'in_progress') {
-      currentStep = 4;
+      currentStep = 5;
     }
   } else if (status === 'in_progress') {
-    currentStep = 4;
-  } else if (status === 'completed') {
     currentStep = 5;
+  } else if (status === 'completed') {
+    currentStep = 6;
   }
   
   return { steps: PROGRESS_STEPS, currentStep };

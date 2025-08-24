@@ -213,7 +213,7 @@ export default function OrderSelectionModal({
                               <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
                                 <div className="flex items-center gap-1">
                                   <Package className="h-3 w-3" />
-                                  <span>{order.itemCount || 0} domains</span>
+                                  <span>{order.itemCount || 0} links</span>
                                 </div>
                                 <div className="flex items-center gap-1">
                                   <Hash className="h-3 w-3" />

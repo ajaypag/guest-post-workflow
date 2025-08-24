@@ -42,12 +42,11 @@ export class InvoicePdfService {
     // Company Header
     doc.setFontSize(24);
     doc.setTextColor(33, 37, 41);
-    doc.text('PostFlow', 20, 20);
+    doc.text('Linkio', 20, 20);
     
     doc.setFontSize(10);
     doc.setTextColor(108, 117, 125);
-    doc.text('Outreach Labs', 20, 27);
-    doc.text('Invoice', 20, 33);
+    doc.text('Invoice', 20, 27);
 
     // Invoice Number and Date (Right side)
     doc.setFontSize(10);

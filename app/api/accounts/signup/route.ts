@@ -149,12 +149,27 @@ export async function POST(request: NextRequest) {
     const accountId = uuidv4();
     const now = new Date();
 
+    // Common free email domains that shouldn't be used as company names
+    const freeEmailDomains = [
+      'gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'live.com',
+      'aol.com', 'icloud.com', 'mail.com', 'protonmail.com', 'proton.me',
+      'ymail.com', 'me.com', 'mac.com', 'msn.com', 'hotmail.co.uk',
+      'yahoo.co.uk', 'gmail.co.uk', 'outlook.co.uk', 'yahoo.ca', 'gmail.ca'
+    ];
+    
+    const emailDomain = email.split('@')[1]?.toLowerCase();
+    const isFreeDomain = freeEmailDomains.includes(emailDomain);
+    
+    // Only use email domain as company if it's not a free email provider
+    const defaultCompanyName = companyName?.trim() || 
+      (!isFreeDomain && emailDomain ? emailDomain : null);
+
     const [newAccount] = await db.insert(accounts).values({
       id: accountId,
       email: email.toLowerCase(),
       password: hashedPassword,
       contactName: contactName.trim(),
-      companyName: companyName?.trim() || email.split('@')[1] || 'Company',
+      companyName: defaultCompanyName,
       phone: phone || null,
       role: 'viewer', // Default role for self-signup
       status: 'pending', // Pending until email verified

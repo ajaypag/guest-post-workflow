@@ -4,7 +4,7 @@ import { orders } from '@/lib/db/orderSchema';
 import { orderGroups } from '@/lib/db/orderGroupSchema';
 import { bulkAnalysisProjects } from '@/lib/db/bulkAnalysisSchema';
 import { clients, targetPages } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql, and } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { generateKeywords, formatKeywordsForStorage } from '@/lib/services/keywordGenerationService';
@@ -46,42 +46,81 @@ export async function POST(
         throw new Error('Order must be in pending_confirmation status to confirm');
       }
       
-      // Get all order groups with their clients
-      const groups = await tx
+      // Use lineItems directly for bulk analysis
+      const { orderLineItems } = await import('@/lib/db/orderLineItemSchema');
+      const { projectOrderAssociations } = await import('@/lib/db/projectOrderAssociationsSchema');
+      
+      const allLineItems = await tx
         .select({
-          orderGroup: orderGroups,
+          lineItem: orderLineItems,
           client: clients
         })
-        .from(orderGroups)
-        .innerJoin(clients, eq(orderGroups.clientId, clients.id))
-        .where(eq(orderGroups.orderId, orderId));
-        
-      if (groups.length === 0) {
-        throw new Error('No order groups found');
+        .from(orderLineItems)
+        .innerJoin(clients, eq(orderLineItems.clientId, clients.id))
+        .where(eq(orderLineItems.orderId, orderId));
+      
+      // Filter out cancelled and refunded line items for bulk analysis project creation
+      const lineItems = allLineItems.filter(item => 
+        !['cancelled', 'refunded'].includes(item.lineItem.status)
+      );
+      
+      if (lineItems.length === 0) {
+        throw new Error('No active line items found in order');
       }
       
-      // Create bulk analysis projects for each group
-      const projectPromises = groups.map(async ({ orderGroup, client }) => {
-        // Only create if no project exists yet
-        if (!orderGroup.bulkAnalysisProjectId) {
-          const projectId = uuidv4();
-          const projectName = `Order #${orderId.slice(0, 8)} - ${client.name}`;
-          const projectDescription = `Bulk analysis for ${orderGroup.linkCount} links ordered for ${client.name}`;
+      // Group active lineItems by client for project creation
+      const lineItemsByClient = new Map<string, typeof lineItems>();
+      lineItems.forEach(item => {
+        const clientId = item.client.id;
+        if (!lineItemsByClient.has(clientId)) {
+          lineItemsByClient.set(clientId, []);
+        }
+        lineItemsByClient.get(clientId)!.push(item);
+      });
+      
+      // Create bulk analysis projects for each client
+      const projectPromises = Array.from(lineItemsByClient.entries()).map(async ([clientId, clientItems]) => {
+        const client = clientItems[0].client;
+        const linkCount = clientItems.length;
+        
+        // Extract target page IDs from line items first
+        const targetPageIds = clientItems
+          .map(item => item.lineItem.targetPageId)
+          .filter((id): id is string => id !== null);
+        
+        // Check if project already exists for this order and client
+        // Since projectOrderAssociations requires orderGroupId, we'll check differently
+        const existingProjects = await tx
+          .select()
+          .from(bulkAnalysisProjects)
+          .where(and(
+            eq(bulkAnalysisProjects.clientId, clientId),
+            sql`tags @> ${JSON.stringify([`order:${orderId}`])}`
+          ))
+          .limit(1);
+        
+        if (existingProjects.length > 0) {
+          console.log(`Project already exists for client ${client.name}`);
+          return { project: existingProjects[0], targetPageIds };
+        }
+        
+        const projectId = uuidv4();
+        const projectName = `Order #${orderId.slice(0, 8)} - ${client.name}`;
+        const projectDescription = `Bulk analysis for ${linkCount} links ordered for ${client.name}`;
           
-          // Extract target page IDs from order group
-          const targetPageIds = orderGroup.targetPages
-            ?.filter((tp: any) => tp.pageId)
-            .map((tp: any) => tp.pageId) || [];
-          
-          // Get target page keywords for auto-apply
+          // Get target page keywords for auto-apply and URLs for tags
           let autoApplyKeywords: string[] = [];
+          let targetPageUrls: string[] = [];
           if (targetPageIds.length > 0) {
             const pages = await tx
               .select()
               .from(targetPages)
-              .where(eq(targetPages.clientId, orderGroup.clientId));
+              .where(eq(targetPages.clientId, clientId));
               
             const relevantPages = pages.filter(p => targetPageIds.includes(p.id));
+            
+            // Collect URLs for tags
+            targetPageUrls = relevantPages.map(p => p.url).filter(Boolean);
             
             // Generate keywords for pages that don't have them
             for (const page of relevantPages) {
@@ -153,14 +192,14 @@ export async function POST(
             .insert(bulkAnalysisProjects)
             .values({
               id: projectId,
-              clientId: orderGroup.clientId,
+              clientId: clientId,
               name: projectName,
               description: projectDescription,
               icon: '📊',
               color: '#3B82F6',
               status: 'active',
               autoApplyKeywords,
-              tags: ['order', `${orderGroup.linkCount} links`, `order-group:${orderGroup.id}`, ...targetPageIds.map((id: string) => `target-page:${id}`)],
+              tags: ['order', `${linkCount} links`, `order:${orderId}`, ...targetPageUrls.map((url: string) => `target-page:${url}`)],
               createdBy: assignedTo || '00000000-0000-0000-0000-000000000000',
               createdAt: new Date(),
               updatedAt: new Date(),
@@ -168,17 +207,35 @@ export async function POST(
             })
             .returning();
             
-          // Update order group with project ID
+          // Note: We can't use projectOrderAssociations as it requires orderGroupId
+          // The association is tracked via tags in the project and metadata in line items
+          
+          // Update line items with project ID in metadata
+          const currentMetadata = await tx
+            .select({ metadata: orderLineItems.metadata })
+            .from(orderLineItems)
+            .where(and(
+              eq(orderLineItems.orderId, orderId),
+              eq(orderLineItems.clientId, clientId)
+            ));
+          
+          const updatedMetadata = {
+            ...(currentMetadata[0]?.metadata || {}),
+            bulkAnalysisProjectId: project.id
+          };
+          
           await tx
-            .update(orderGroups)
-            .set({ 
-              bulkAnalysisProjectId: project.id,
-              updatedAt: new Date()
+            .update(orderLineItems)
+            .set({
+              metadata: updatedMetadata,
+              modifiedAt: new Date()
             })
-            .where(eq(orderGroups.id, orderGroup.id));
+            .where(and(
+              eq(orderLineItems.orderId, orderId),
+              eq(orderLineItems.clientId, clientId)
+            ));
             
           return { project, targetPageIds };
-        }
         
         return null;
       });
@@ -191,7 +248,59 @@ export async function POST(
         .filter(p => p !== null)
         .map(p => ({ projectId: p!.project.id, targetPageIds: p!.targetPageIds }));
       
-      // Update order status to confirmed
+      // Calculate pricing and totals from line items
+      let subtotalRetail = 0;
+      let totalRetail = 0;
+      let totalWholesale = 0;
+      let totalEstimatedPrice = 0;
+      let totalLineItems = 0;
+      let minDr: number | null = null;
+      let maxDr: number | null = null;
+      let minTraffic: number | null = null;
+      
+      lineItems.forEach(item => {
+        const lineItem = item.lineItem;
+        
+        // Note: cancelled and refunded items are already filtered out above
+        
+        // Use approved price if available, otherwise estimated price
+        const itemPrice = lineItem.approvedPrice || lineItem.estimatedPrice || 0;
+        if (itemPrice > 0) {
+          totalEstimatedPrice += itemPrice;
+          totalLineItems++;
+          subtotalRetail += itemPrice;
+          totalRetail += itemPrice;
+          
+          // Calculate wholesale (subtract service fee)
+          const wholesalePrice = Math.max(itemPrice - 7900, 0);
+          totalWholesale += wholesalePrice;
+        }
+        
+        // Extract DR and traffic from metadata if available
+        const metadata = lineItem.metadata as any;
+        if (metadata) {
+          if (metadata.domainRating) {
+            const dr = metadata.domainRating;
+            if (minDr === null || dr < minDr) minDr = dr;
+            if (maxDr === null || dr > maxDr) maxDr = dr;
+          }
+          if (metadata.totalTraffic) {
+            const traffic = metadata.totalTraffic;
+            if (minTraffic === null || traffic < minTraffic) minTraffic = traffic;
+          }
+        }
+      });
+      
+      const estimatedPricePerLink = totalLineItems > 0 
+        ? Math.round(totalEstimatedPrice / totalLineItems)
+        : null;
+      
+      // Calculate profit margin as integer (store as basis points for precision)
+      const profitMargin = totalRetail > 0 
+        ? Math.round(((totalRetail - totalWholesale) / totalRetail) * 100)
+        : 0;
+      
+      // Update order status to confirmed with calculated totals
       const [updatedOrder] = await tx
         .update(orders)
         .set({
@@ -199,12 +308,26 @@ export async function POST(
           state: 'analyzing',
           assignedTo: assignedTo || null,
           approvedAt: new Date(),
-          updatedAt: new Date()
+          updatedAt: new Date(),
+          // Pricing fields
+          subtotalRetail: subtotalRetail,
+          totalRetail: totalRetail,
+          totalWholesale: totalWholesale,
+          profitMargin: profitMargin,
+          estimatedPricePerLink: estimatedPricePerLink,
+          // Preferences (if not already set) - use nullish coalescing with defaults
+          preferencesDrMin: order.preferencesDrMin ?? minDr ?? 0,
+          preferencesDrMax: order.preferencesDrMax ?? maxDr ?? 100,
+          preferencesTrafficMin: order.preferencesTrafficMin ?? minTraffic ?? 0,
+          // Budget estimates (if not already set)
+          estimatedBudgetMin: order.estimatedBudgetMin || Math.round(totalRetail * 0.8),
+          estimatedBudgetMax: order.estimatedBudgetMax || Math.round(totalRetail * 1.2),
+          estimatedLinksCount: order.estimatedLinksCount || totalLineItems
         })
         .where(eq(orders.id, orderId))
         .returning();
       
-      // Create benchmark snapshot of the confirmed order
+      // Create benchmark snapshot of the confirmed order (uses line items directly)
       let benchmark;
       try {
         benchmark = await createOrderBenchmark(orderId, session.userId, 'order_confirmed');

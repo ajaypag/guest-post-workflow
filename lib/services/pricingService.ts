@@ -62,10 +62,10 @@ export class PricingService {
       };
     }
 
-    // Use the actual price from Airtable as retail
-    const retailPrice = website.guestPostCost ? parseFloat(website.guestPostCost) : 0;
-    // Calculate wholesale with 40% margin
-    const wholesalePrice = Math.floor(retailPrice * 0.6);
+    // website.guestPostCost is what we pay publishers (wholesale)
+    const wholesalePrice = website.guestPostCost ? parseFloat(website.guestPostCost) : 0;
+    // Customer price is wholesale + $79 service fee
+    const retailPrice = wholesalePrice + 79;
 
     return {
       retailPrice,

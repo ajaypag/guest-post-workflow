@@ -3,6 +3,7 @@ import { db } from '@/lib/db/connection';
 import { orders, orderGroups, clients } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
+import { emptyGroupsResponse } from './MIGRATION_NOTICE';
 
 export async function GET(
   request: NextRequest,
@@ -38,34 +39,38 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized - Invalid user type' }, { status: 401 });
     }
     
-    // Get order groups with client details
-    const groups = await db
-      .select({
-        orderGroup: orderGroups,
-        client: clients
-      })
-      .from(orderGroups)
-      .innerJoin(clients, eq(orderGroups.clientId, clients.id))
-      .where(eq(orderGroups.orderId, orderId));
-      
-    // Format the response
-    const formattedGroups = groups.map(({ orderGroup, client }) => ({
-      id: orderGroup.id,
-      clientId: orderGroup.clientId,
-      linkCount: orderGroup.linkCount,
-      targetPages: orderGroup.targetPages || [],
-      client: {
-        id: client.id,
-        name: client.name,
-        website: client.website
-      }
-    }));
+    // MIGRATION: Return empty groups during lineItems migration
+    return emptyGroupsResponse();
     
-    return NextResponse.json({
-      groups: formattedGroups,
-      totalGroups: formattedGroups.length,
-      totalLinks: formattedGroups.reduce((sum, g) => sum + g.linkCount, 0)
-    });
+    // Original code (disabled during migration):
+    // Get order groups with client details
+    // const groups = await db
+    //   .select({
+    //     orderGroup: orderGroups,
+    //     client: clients
+    //   })
+    //   .from(orderGroups)
+    //   .innerJoin(clients, eq(orderGroups.clientId, clients.id))
+    //   .where(eq(orderGroups.orderId, orderId));
+    //       
+    // Format the response
+    // const formattedGroups = groups.map(({ orderGroup, client }) => ({
+    //   id: orderGroup.id,
+    //   clientId: orderGroup.clientId,
+    //   linkCount: orderGroup.linkCount,
+    //   targetPages: orderGroup.targetPages || [],
+    //   client: {
+    //     id: client.id,
+    //     name: client.name,
+    //     website: client.website
+    //   }
+    // }));
+    // 
+    // return NextResponse.json({
+    //   groups: formattedGroups,
+    //   totalGroups: formattedGroups.length,
+    //   totalLinks: formattedGroups.reduce((sum, g) => sum + g.linkCount, 0)
+    // });
     
   } catch (error: any) {
     console.error('Error fetching order groups:', error);

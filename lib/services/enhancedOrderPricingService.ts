@@ -84,18 +84,28 @@ export class EnhancedOrderPricingService {
             orderContext
           );
           
+          // Convert to cents if needed (assuming finalPrice is in dollars)
+          // finalPrice IS the wholesale price (what we pay publishers)
+          const wholesaleInCents = finalCalculation.finalPrice < 1000 ? Math.floor(finalCalculation.finalPrice * 100) : finalCalculation.finalPrice;
+          const retailInCents = wholesaleInCents + 7900; // Add $79 service fee
+          
           return {
-            retailPrice: finalCalculation.finalPrice,
-            wholesalePrice: Math.floor(finalCalculation.finalPrice * 0.6), // 40% margin
+            retailPrice: retailInCents,
+            wholesalePrice: wholesaleInCents,
             source: 'publisher_offerings',
             currency: finalCalculation.currency,
             appliedRules: finalCalculation.appliedRules
           };
         } else {
           // No context, just use base price
+          // Convert to cents if needed (assuming bestPrice is in dollars)
+          // bestPrice IS the wholesale price (what we pay publishers)
+          const wholesaleInCents = bestPrice < 1000 ? Math.floor(bestPrice * 100) : bestPrice;
+          const retailInCents = wholesaleInCents + 7900; // Add $79 service fee
+          
           return {
-            retailPrice: bestPrice,
-            wholesalePrice: Math.floor(bestPrice * 0.6), // 40% margin
+            retailPrice: retailInCents,
+            wholesalePrice: wholesaleInCents,
             source: 'publisher_offerings',
             currency: bestOffering.offering.currency
           };
@@ -109,9 +119,13 @@ export class EnhancedOrderPricingService {
     // Fall back to legacy pricing from websites table
     const legacyPrice = website.guestPostCost ? parseFloat(website.guestPostCost) : 0;
     
+    // Convert to cents (prices in DB are in dollars)
+    const wholesalePriceInCents = Math.floor(legacyPrice * 100);
+    const retailPriceInCents = wholesalePriceInCents + 7900; // $79 markup
+    
     return {
-      retailPrice: legacyPrice,
-      wholesalePrice: Math.floor(legacyPrice * 0.6), // 40% margin
+      retailPrice: retailPriceInCents,
+      wholesalePrice: wholesalePriceInCents,
       source: 'legacy_pricing',
       currency: 'USD'
     };
@@ -154,9 +168,13 @@ export class EnhancedOrderPricingService {
           }
         }
         
+        // bestPrice is the wholesale price (what we pay publishers)
+        const wholesaleInCents = bestPrice < 1000 ? Math.floor(bestPrice * 100) : bestPrice;
+        const retailInCents = wholesaleInCents + 7900; // Add $79 service fee
+        
         return {
-          retailPrice: bestPrice,
-          wholesalePrice: Math.floor(bestPrice * 0.6),
+          retailPrice: retailInCents,
+          wholesalePrice: wholesaleInCents,
           source: 'publisher_offerings',
           currency: bestOffering.offering.currency
         };
@@ -166,10 +184,15 @@ export class EnhancedOrderPricingService {
     }
     
     // Fall back to guest post price with discount
+    // Link insertions are typically cheaper than guest posts
     const guestPostPrice = await this.getWebsitePrice(websiteId, '', orderContext);
+    // Take 30% off the wholesale price for link insertions
+    const linkInsertionWholesale = Math.floor(guestPostPrice.wholesalePrice * 0.7);
+    const linkInsertionRetail = linkInsertionWholesale + 7900; // Add $79 service fee
+    
     return {
-      retailPrice: Math.floor(guestPostPrice.retailPrice * 0.7), // 30% cheaper than guest post
-      wholesalePrice: Math.floor(guestPostPrice.wholesalePrice * 0.7),
+      retailPrice: linkInsertionRetail,
+      wholesalePrice: linkInsertionWholesale,
       source: 'legacy_pricing',
       currency: 'USD'
     };

@@ -39,7 +39,9 @@ export type EmailType =
   | 'account_invitation'
   | 'order_review'
   | 'order_approved'
-  | 'order_paid';
+  | 'order_paid'
+  | 'sites_ready'
+  | 'workflows_generated';
 
 // Email send options
 export interface EmailOptions {

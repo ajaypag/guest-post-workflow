@@ -13,9 +13,18 @@ export async function GET(
   context: { params: Promise<{ id: string; groupId: string }> }
 ) {
   const params = await context.params;
+  
+  // MIGRATION: Return empty submissions during lineItems migration
+  if (true) {
+    return NextResponse.json({ 
+      submissions: [],
+      message: 'Order uses lineItems system instead of submissions'
+    });
+  }
+  
   try {
     // Get user session
-    const session = await AuthServiceServer.getSession();
+    const session = await AuthServiceServer.getSession(request);
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -34,9 +43,9 @@ export async function GET(
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
     
-    // Check permissions
-    if (session.userType === 'account') {
-      if (order.accountId !== session.userId) {
+    // Check permissions - TypeScript needs explicit non-null assertion
+    if (session!.userType === 'account') {
+      if (order!.accountId !== session!.userId) {
         return NextResponse.json({ error: 'Forbidden - Account access denied' }, { status: 403 });
       }
     }
@@ -57,20 +66,20 @@ export async function GET(
     const conditions = [eq(orderSiteSubmissions.orderGroupId, params.groupId)];
     
     if (status) {
-      conditions.push(eq(orderSiteSubmissions.submissionStatus, status));
+      conditions.push(eq(orderSiteSubmissions.submissionStatus, status as string));
     }
     
     // For account users, by default don't show completed unless requested
-    if (session.userType === 'account' && !includeCompleted) {
+    if (session!.userType === 'account' && !includeCompleted) {
       conditions.push(eq(orderSiteSubmissions.submissionStatus, 'pending'));
     }
     
     // Debug logging
     console.log('[SUBMISSIONS API] Query conditions:', {
       orderGroupId: params.groupId,
-      userType: session.userType,
-      sessionUserId: session.userId,
-      orderAccountId: order.accountId,
+      userType: session!.userType,
+      sessionUserId: session!.userId,
+      orderAccountId: order!.accountId,
       status: status,
       includeCompleted: includeCompleted,
       conditions: conditions.length
@@ -176,7 +185,7 @@ export async function GET(
           (submission.selectionPool === 'primary' ? 'included' : 'saved_for_later'),
         inclusionOrder: submission.inclusionOrder || submission.poolRank,
         exclusionReason: submission.exclusionReason,
-        canReview: session.userType === 'account' && 
+        canReview: session!.userType === 'account' && 
                    submission.submissionStatus === 'pending' &&
                    submission.submittedAt !== null,
         canViewDetails: true
@@ -198,9 +207,9 @@ export async function GET(
       submissions: enrichedSubmissions,
       summary,
       userCapabilities: {
-        canReview: session.userType === 'account' || session.userType === 'internal',
-        canUpdateStatus: session.userType === 'internal',
-        userType: session.userType
+        canReview: session!.userType === 'account' || session!.userType === 'internal',
+        canUpdateStatus: session!.userType === 'internal',
+        userType: session!.userType
       }
     });
     

@@ -51,6 +51,7 @@ interface BulkAnalysisTableProps {
   onBulkCreateWorkflows?: (domainIds: string[]) => void;
   bulkWorkflowCreating?: boolean;
   onAIQualifySingle?: (domainId: string) => void;
+  onRunTargetMatching?: (domainIds: string[]) => void;
 }
 
 interface ExpandedRowData {
@@ -95,6 +96,38 @@ interface ExpandedRowData {
     url: string;
     selected: boolean;
   }>;
+}
+
+// Helper function to get the best match quality from target match data
+function getBestMatchQuality(targetMatchData: any): 'excellent' | 'good' | 'fair' | 'poor' {
+  if (!targetMatchData?.target_analysis) return 'poor';
+  
+  const qualities = targetMatchData.target_analysis.map((analysis: any) => analysis.match_quality);
+  
+  // Return the best quality found
+  if (qualities.includes('excellent')) return 'excellent';
+  if (qualities.includes('good')) return 'good';
+  if (qualities.includes('fair')) return 'fair';
+  return 'poor';
+}
+
+// Component to show match quality indicator
+function MatchQualityIndicator({ quality }: { quality: 'excellent' | 'good' | 'fair' | 'poor' }) {
+  const config = {
+    excellent: { bg: 'bg-green-100', text: 'text-green-800', icon: '🎯' },
+    good: { bg: 'bg-blue-100', text: 'text-blue-800', icon: '✅' },
+    fair: { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: '⚠️' },
+    poor: { bg: 'bg-red-100', text: 'text-red-800', icon: '❌' }
+  };
+  
+  const style = config[quality];
+  
+  return (
+    <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium ${style.bg} ${style.text}`}>
+      <span className="mr-0.5">{style.icon}</span>
+      {quality}
+    </span>
+  );
 }
 
 export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
@@ -495,6 +528,32 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                 Create {qualifiedDomains.length} Workflow{qualifiedDomains.length > 1 ? 's' : ''}
               </button>
             )}
+            {props.onRunTargetMatching && (
+              <button
+                onClick={() => {
+                  const qualifiedIds = props.domains
+                    .filter(d => 
+                      props.selectedDomains.has(d.id) && 
+                      (d.qualificationStatus === 'high_quality' || d.qualificationStatus === 'good_quality')
+                    )
+                    .map(d => d.id);
+                  if (qualifiedIds.length > 0 && props.onRunTargetMatching) {
+                    props.onRunTargetMatching(qualifiedIds);
+                  }
+                }}
+                disabled={!props.domains.some(d => 
+                  props.selectedDomains.has(d.id) && 
+                  (d.qualificationStatus === 'high_quality' || d.qualificationStatus === 'good_quality')
+                )}
+                className="inline-flex items-center px-3 py-1.5 bg-purple-600 text-white text-sm rounded hover:bg-purple-700 disabled:opacity-50"
+              >
+                <Target className="w-4 h-4 mr-1" />
+                Match Target URLs ({props.domains.filter(d => 
+                  props.selectedDomains.has(d.id) && 
+                  (d.qualificationStatus === 'high_quality' || d.qualificationStatus === 'good_quality')
+                ).length})
+              </button>
+            )}
             {props.onAddToOrder && (
               <button
                 onClick={() => {
@@ -702,13 +761,45 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                     </span>
                   </td>
                   {!props.triageMode && (
-                    <td className="px-3 py-4 text-sm text-gray-500">
-                      {domain.selectedTargetPageId ? (
-                        <span className="text-indigo-600">
-                          {props.targetPages.find(p => p.id === domain.selectedTargetPageId)?.url || 'Selected'}
-                        </span>
+                    <td className="px-3 py-4 text-sm">
+                      {domain.suggestedTargetUrl ? (
+                        // AI has a suggestion
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-gray-900 truncate max-w-[200px]" title={domain.suggestedTargetUrl}>
+                              {domain.suggestedTargetUrl.split('/').pop() || domain.suggestedTargetUrl}
+                            </span>
+                            {domain.targetMatchData?.target_analysis && (
+                              <MatchQualityIndicator 
+                                quality={getBestMatchQuality(domain.targetMatchData)} 
+                              />
+                            )}
+                          </div>
+                          <div className="text-xs text-green-600 flex items-center gap-1">
+                            <Sparkles className="w-3 h-3" />
+                            AI Suggested
+                          </div>
+                        </div>
+                      ) : domain.qualificationStatus === 'high_quality' || domain.qualificationStatus === 'good_quality' ? (
+                        // Qualified but no target matching yet
+                        <div className="space-y-1">
+                          <div className="text-gray-500">Multiple options</div>
+                          {props.onRunTargetMatching && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                props.onRunTargetMatching!([domain.id]);
+                              }}
+                              className="text-xs text-blue-600 hover:text-blue-800"
+                            >
+                              🎯 Get AI suggestion
+                            </button>
+                          )}
+                        </div>
+                      ) : domain.qualificationStatus === 'pending' ? (
+                        <span className="text-gray-400">Qualify first</span>
                       ) : (
-                        <span className="text-gray-400">Not selected</span>
+                        <span className="text-gray-400">Not suitable</span>
                       )}
                     </td>
                   )}
@@ -1313,6 +1404,93 @@ export default function BulkAnalysisTable(props: BulkAnalysisTableProps) {
                               </div>
                             </div>
                           </div>
+
+                          {/* Target URL Matching Section */}
+                          {domain.targetMatchData && (
+                            <div>
+                              <h4 className="font-medium text-gray-900 mb-3 flex items-center">
+                                <Target className="w-4 h-4 mr-2" />
+                                AI Target URL Analysis
+                              </h4>
+                              <div className="space-y-3">
+                                {domain.targetMatchData.target_analysis?.map((match: any, index: number) => (
+                                  <div key={index} className="bg-white rounded-lg border border-gray-200 p-4">
+                                    <div className="flex items-center justify-between mb-2">
+                                      <span className="font-medium text-sm text-gray-900 truncate flex-1 mr-2" title={match.target_url}>
+                                        {match.target_url}
+                                      </span>
+                                      <MatchQualityIndicator quality={match.match_quality} />
+                                    </div>
+                                    
+                                    <div className="text-xs text-gray-600 mb-2 flex items-center gap-4">
+                                      <span>Overlap: <span className="font-medium">{match.overlap_status}</span></span>
+                                      <span>Direct: <span className="font-medium">{match.strength_direct}</span></span>
+                                      <span>Related: <span className="font-medium">{match.strength_related}</span></span>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-2 gap-3 mb-2">
+                                      {match.evidence?.direct_keywords?.length > 0 && (
+                                        <div>
+                                          <div className="text-xs font-medium text-gray-700 mb-1">
+                                            Direct Keywords ({match.evidence.direct_count})
+                                          </div>
+                                          <div className="text-xs text-gray-600 space-y-0.5">
+                                            {match.evidence.direct_keywords.slice(0, 3).map((keyword: string, i: number) => (
+                                              <div key={i}>{keyword}</div>
+                                            ))}
+                                            {match.evidence.direct_keywords.length > 3 && (
+                                              <div className="text-gray-500">
+                                                +{match.evidence.direct_keywords.length - 3} more
+                                              </div>
+                                            )}
+                                          </div>
+                                        </div>
+                                      )}
+                                      
+                                      {match.evidence?.related_keywords?.length > 0 && (
+                                        <div>
+                                          <div className="text-xs font-medium text-gray-700 mb-1">
+                                            Related Keywords ({match.evidence.related_count})
+                                          </div>
+                                          <div className="text-xs text-gray-600 space-y-0.5">
+                                            {match.evidence.related_keywords.slice(0, 3).map((keyword: string, i: number) => (
+                                              <div key={i}>{keyword}</div>
+                                            ))}
+                                            {match.evidence.related_keywords.length > 3 && (
+                                              <div className="text-gray-500">
+                                                +{match.evidence.related_keywords.length - 3} more
+                                              </div>
+                                            )}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                    
+                                    <div className="text-xs text-gray-600 italic border-t pt-2">
+                                      {match.reasoning}
+                                    </div>
+                                  </div>
+                                ))}
+                                
+                                {/* Summary */}
+                                {domain.targetMatchData.recommendation_summary && (
+                                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                    <div className="text-xs font-medium text-blue-800 mb-1">AI Recommendation</div>
+                                    <div className="text-xs text-blue-700">
+                                      {domain.targetMatchData.recommendation_summary}
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                {/* Timing */}
+                                {domain.targetMatchedAt && (
+                                  <div className="text-xs text-gray-500">
+                                    Target matching completed: {new Date(domain.targetMatchedAt).toLocaleString()}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
 
                           {/* Notes Section */}
                           <div>

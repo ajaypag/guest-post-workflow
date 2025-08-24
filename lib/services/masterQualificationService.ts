@@ -13,12 +13,15 @@ interface DomainQualificationProgress {
   stage: 'pending' | 'dataforseo_running' | 'dataforseo_complete' | 'ai_running' | 'completed' | 'error';
   dataForSeoStatus?: 'success' | 'error' | 'skipped';
   aiStatus?: 'success' | 'error' | 'skipped';
+  targetMatchStatus?: 'success' | 'error' | 'skipped'; // New field
   error?: string;
   keywordsFound?: number;
   qualificationStatus?: string;
+  suggestedTargetUrl?: string; // New field
   timings?: {
     dataForSeoMs?: number;
     aiMs?: number;
+    targetMatchMs?: number; // New field
     totalMs?: number;
   };
 }
@@ -29,6 +32,8 @@ interface MasterQualificationOptions {
   onProgress?: (progress: DomainQualificationProgress) => void;
   skipDataForSeo?: boolean;
   skipAI?: boolean;
+  skipTargetMatching?: boolean; // New option to control target matching
+  targetPageIds?: string[]; // Optional: specific target pages to match against
 }
 
 interface DomainGroup {
@@ -287,16 +292,34 @@ export class MasterQualificationService {
     // Get necessary data for AI qualification
     const domainIds = domains.map(d => d.id);
     
-    // Get client context
-    const clientTargetPages = await db
-      .select()
-      .from(targetPages)
-      .where(
-        and(
-          eq(targetPages.clientId, clientId),
-          eq(targetPages.status, 'active')
-        )
-      );
+    // Get client context - filter by specific target pages if provided
+    let clientTargetPages;
+    if (options.targetPageIds && options.targetPageIds.length > 0) {
+      // Use only specified target pages
+      clientTargetPages = await db
+        .select()
+        .from(targetPages)
+        .where(
+          and(
+            eq(targetPages.clientId, clientId),
+            eq(targetPages.status, 'active'),
+            inArray(targetPages.id, options.targetPageIds)
+          )
+        );
+      console.log(`🎯 Using ${clientTargetPages.length} specific target pages for matching`);
+    } else {
+      // Use all active target pages for the client
+      clientTargetPages = await db
+        .select()
+        .from(targetPages)
+        .where(
+          and(
+            eq(targetPages.clientId, clientId),
+            eq(targetPages.status, 'active')
+          )
+        );
+      console.log(`🎯 Using all ${clientTargetPages.length} client target pages for matching`);
+    }
 
     // Get DataForSEO results
     const results = await db.execute(sql`
@@ -348,27 +371,67 @@ export class MasterQualificationService {
     // Use AI service's built-in concurrency (10 at a time)
     const qualifications = await aiService.qualifyDomains(domainData, clientContext);
 
+    // Run target matching for qualified domains (unless skipped)
+    let targetMatches: any[] = [];
+    if (!options.skipTargetMatching) {
+      const qualifiedDomains = qualifications
+        .filter(q => ['high_quality', 'good_quality'].includes(q.qualification))
+        .map(q => ({
+          domain: domainData.find(d => d.domainId === q.domainId)!,
+          qualification: q
+        }));
+
+      if (qualifiedDomains.length > 0) {
+        console.log(`🎯 Running target URL matching for ${qualifiedDomains.length} qualified domains...`);
+        try {
+          targetMatches = await aiService.matchTargetUrls(
+            qualifiedDomains,
+            clientContext,
+            (completed, total) => {
+              console.log(`Target matching progress: ${completed}/${total}`);
+            }
+          );
+          console.log(`✅ Target matched ${targetMatches.length} domains`);
+        } catch (error) {
+          console.error('Target matching error:', error);
+          // Don't fail the whole process if target matching fails
+        }
+      }
+    }
+
     // Update database and prepare results
     const updatePromises = qualifications.map(qual => {
       // Extract topic reasoning from the main reasoning if present
       const reasoningParts = qual.reasoning.match(/\(b\)\s*(.+)/);
       const topicReasoning = reasoningParts ? reasoningParts[1] : null;
       
+      // Find target match for this domain if exists
+      const targetMatch = targetMatches.find(tm => tm.domainId === qual.domainId);
+      
+      const updateData: any = {
+        qualificationStatus: qual.qualification,
+        aiQualificationReasoning: qual.reasoning,
+        overlapStatus: qual.overlapStatus,
+        authorityDirect: qual.authorityDirect,
+        authorityRelated: qual.authorityRelated,
+        topicScope: qual.topicScope,
+        topicReasoning: topicReasoning,
+        evidence: qual.evidence,
+        aiQualifiedAt: new Date(),
+        updatedAt: new Date()
+      };
+      
+      // Add target matching data if available
+      if (targetMatch) {
+        updateData.suggestedTargetUrl = targetMatch.best_target_url;
+        updateData.targetMatchData = targetMatch;
+        updateData.targetMatchedAt = new Date();
+      }
+      
       return this.openAILimiter(() =>
         db
           .update(bulkAnalysisDomains)
-          .set({
-            qualificationStatus: qual.qualification,
-            aiQualificationReasoning: qual.reasoning,
-            overlapStatus: qual.overlapStatus,
-            authorityDirect: qual.authorityDirect,
-            authorityRelated: qual.authorityRelated,
-            topicScope: qual.topicScope,
-            topicReasoning: topicReasoning,
-            evidence: qual.evidence,
-            aiQualifiedAt: new Date(),
-            updatedAt: new Date()
-          })
+          .set(updateData)
           .where(eq(bulkAnalysisDomains.id, qual.domainId))
       );
     });
@@ -376,14 +439,19 @@ export class MasterQualificationService {
     await Promise.all(updatePromises);
 
     // Convert to progress format
-    return qualifications.map(qual => ({
-      domainId: qual.domainId,
-      domain: qual.domain,
-      stage: 'completed' as const,
-      aiStatus: 'success' as const,
-      qualificationStatus: qual.qualification,
-      timings: { aiMs: 0 } // AI service doesn't provide timing
-    }));
+    return qualifications.map(qual => {
+      const targetMatch = targetMatches.find(tm => tm.domainId === qual.domainId);
+      return {
+        domainId: qual.domainId,
+        domain: qual.domain,
+        stage: 'completed' as const,
+        aiStatus: 'success' as const,
+        targetMatchStatus: targetMatch ? 'success' as const : 'skipped' as const,
+        qualificationStatus: qual.qualification,
+        suggestedTargetUrl: targetMatch?.best_target_url,
+        timings: { aiMs: 0, targetMatchMs: 0 } // AI service doesn't provide timing
+      };
+    });
   }
 
   /**

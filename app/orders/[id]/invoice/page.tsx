@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
+import AuthWrapper from '@/components/AuthWrapper';
+import Header from '@/components/Header';
 
 interface InvoiceData {
   invoiceNumber: string;
@@ -115,8 +117,10 @@ export default function InvoicePage() {
   const isPaid = order.status === 'paid';
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4">
+    <AuthWrapper>
+      <Header />
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-4xl mx-auto px-4">
         {/* Actions Bar - Hidden in print */}
         <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 print:hidden">
           <button
@@ -328,8 +332,9 @@ export default function InvoicePage() {
             <p>Thank you for your business!</p>
             <p className="mt-2">Questions? Contact us at info@linkio.com</p>
           </div>
+          </div>
         </div>
       </div>
-    </div>
+    </AuthWrapper>
   );
 }
