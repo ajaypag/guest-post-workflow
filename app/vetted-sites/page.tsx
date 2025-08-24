@@ -397,6 +397,12 @@ async function getInitialData(session: any, searchParams: any) {
       }
     }
 
+    console.log('🔍 DEBUG: First few domains with prices:', domains?.slice(0, 3).map(d => ({
+      domain: d.domain,
+      guestPostCost: d.guestPostCost,
+      rawData: Object.keys(d)
+    })));
+
     return {
       domains: Array.isArray(domains) ? domains.map(domain => ({
         ...domain,
@@ -411,6 +417,7 @@ async function getInitialData(session: any, searchParams: any) {
         successRatePercentage: domain.successRatePercentage ? parseFloat(domain.successRatePercentage) : null,
         lastCampaignDate: domain.lastCampaignDate ? domain.lastCampaignDate.toISOString() : null,
         linkInsertionPrice: null, // Not available in current schema
+        guestPostCost: domain.guestPostCost, // Explicitly preserve this field
         availabilityStatus: (domain?.activeLineItemsCount || 0) > 0 ? 'used' as const : 'available' as const,
         evidence: domain?.evidence ? {
           directCount: (domain.evidence as any)?.direct_count || 0,

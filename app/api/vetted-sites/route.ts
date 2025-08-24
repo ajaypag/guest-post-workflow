@@ -6,6 +6,7 @@ import { bulkAnalysisDomains, bulkAnalysisProjects } from '@/lib/db/bulkAnalysis
 import { websites } from '@/lib/db/websiteSchema';
 import { orderLineItems } from '@/lib/db/orderLineItemSchema';
 import { eq, and, or, inArray, ilike, desc, asc, isNull, isNotNull, sql } from 'drizzle-orm';
+import { PricingService } from '@/lib/services/pricingService';
 
 interface VettedSitesFilters {
   clientId?: string[];
@@ -100,9 +101,8 @@ export async function GET(request: NextRequest) {
         traffic: websites.totalTraffic,
         categories: websites.categories,
         
-        // Pricing from websites  
-        price: websites.guestPostCost,
-        // linkInsertionPrice doesn't exist in websites schema
+        // Raw guestPostCost for pricing service calculation
+        guestPostCost: websites.guestPostCost,
         
         // Availability check (count of active line items using this domain)
         activeLineItemsCount: sql<number>`
@@ -202,11 +202,16 @@ export async function GET(request: NextRequest) {
     if (filters.maxTraffic !== undefined) {
       conditions.push(sql`${websites.totalTraffic} <= ${filters.maxTraffic}`);
     }
+    // Price filters need to account for the +$79 markup
     if (filters.minPrice !== undefined) {
-      conditions.push(sql`COALESCE(${websites.guestPostCost}, 0) >= ${filters.minPrice}`);
+      // Convert retail price back to wholesale for database filtering
+      const minWholesale = Math.max(0, filters.minPrice - 79);
+      conditions.push(sql`COALESCE(${websites.guestPostCost}, 0) >= ${minWholesale}`);
     }
     if (filters.maxPrice !== undefined) {
-      conditions.push(sql`COALESCE(${websites.guestPostCost}, 0) <= ${filters.maxPrice}`);
+      // Convert retail price back to wholesale for database filtering  
+      const maxWholesale = Math.max(0, filters.maxPrice - 79);
+      conditions.push(sql`COALESCE(${websites.guestPostCost}, 0) <= ${maxWholesale}`);
     }
 
     // Availability filter
@@ -232,7 +237,7 @@ export async function GET(request: NextRequest) {
       'domain': bulkAnalysisDomains.domain,
       'dr': websites.domainRating,
       'traffic': websites.totalTraffic,
-      'price': websites.guestPostCost,
+      'price': websites.guestPostCost, // Sorting by wholesale price since retail will be +$79 for all
       'qualified_at': bulkAnalysisDomains.aiQualifiedAt,
       'updated_at': bulkAnalysisDomains.updatedAt,
     }[filters.sortBy || 'updated_at'] || bulkAnalysisDomains.updatedAt;
@@ -363,14 +368,35 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({
-      domains: Array.isArray(domains) ? domains.map(domain => {
+    // Calculate proper retail pricing using PricingService for all domains
+    console.log('🔍 DEBUG: About to calculate prices for domains...');
+    const domainsWithPricing = await Promise.all(
+      (Array.isArray(domains) ? domains : []).map(async (domain) => {
         if (!domain) {
           console.error('Null domain in results');
           return null;
         }
+
+        // Use PricingService to get proper retail price (guestPostCost + $79)
+        let retailPrice = 0;
+        let wholesalePrice = 0;
+        
+        if (domain.domain) {
+          try {
+            const priceInfo = await PricingService.getDomainPrice(domain.domain);
+            retailPrice = priceInfo.retailPrice;
+            wholesalePrice = priceInfo.wholesalePrice;
+            console.log(`💰 DEBUG: ${domain.domain} - wholesale: $${wholesalePrice}, retail: $${retailPrice}, found: ${priceInfo.found}`);
+          } catch (error) {
+            console.error(`Error getting price for ${domain.domain}:`, error);
+          }
+        }
+
         return {
           ...domain,
+          // Use calculated retail price instead of raw guestPostCost
+          price: retailPrice,
+          wholesalePrice: wholesalePrice,
           // Calculate availability status
           availabilityStatus: (domain.activeLineItemsCount || 0) > 0 ? 'used' : 'available',
           // Format evidence data if it exists
@@ -385,7 +411,11 @@ export async function GET(request: NextRequest) {
           // Add original vetted target URL (first target page URL if no AI suggestion)
           originalTargetUrl: targetPagesMap[domain.id]?.[0]?.url || null,
         };
-      }).filter(Boolean) : [],
+      })
+    );
+
+    return NextResponse.json({
+      domains: domainsWithPricing.filter(Boolean),
       total: total || 0,
       page: page || 1,
       limit: limit || 50,
