@@ -198,16 +198,6 @@ export default function Header() {
                         <Users className="w-4 h-4 mr-2" />
                         Add Publisher
                       </Link>
-                      {session.role === 'admin' && (
-                        <Link
-                          href="/admin"
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center border-t border-gray-100 mt-1 pt-2"
-                          onClick={() => setInternalDropdownOpen(false)}
-                        >
-                          <Settings className="w-4 h-4 mr-2" />
-                          Full Admin Panel
-                        </Link>
-                      )}
                     </div>
                   )}
                 </div>
