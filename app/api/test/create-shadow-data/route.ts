@@ -32,7 +32,6 @@ export async function POST(request: NextRequest) {
         contactName: 'Test Publisher',
         companyName: 'Test Company',
         accountStatus: 'active',
-        userType: 'publisher',
         createdAt: new Date(),
         updatedAt: new Date()
       });
@@ -43,7 +42,6 @@ export async function POST(request: NextRequest) {
         contactName: 'Test Publisher', 
         companyName: 'Test Company',
         accountStatus: 'active' as any,
-        userType: 'publisher' as any,
         createdAt: new Date(),
         updatedAt: new Date()
       }];
