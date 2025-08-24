@@ -7,13 +7,20 @@
 
 'use client';
 
-import React from 'react';
+import React, { useContext } from 'react';
 import { AlertTriangle, User, Clock, LogOut, Shield } from 'lucide-react';
-import { useImpersonation } from '@/lib/contexts/ImpersonationContext';
+import { ImpersonationContext } from '@/lib/contexts/ImpersonationContext';
 
 export default function ImpersonationBanner() {
-  // Always call hooks at the top level
-  const { isImpersonating, impersonationData, endImpersonation, timeElapsed, loading, error: contextError } = useImpersonation();
+  // Check if context is available
+  const context = useContext(ImpersonationContext);
+  
+  // If no context, return null (component is not wrapped in provider)
+  if (!context) {
+    return null;
+  }
+  
+  const { isImpersonating, impersonationData, endImpersonation, timeElapsed, loading, error: contextError } = context;
 
   // Don't show banner if not impersonating
   if (!isImpersonating || !impersonationData) {

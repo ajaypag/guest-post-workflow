@@ -19,7 +19,7 @@ interface ImpersonationContextType {
   error: string | null;
 }
 
-const ImpersonationContext = createContext<ImpersonationContextType | undefined>(undefined);
+export const ImpersonationContext = createContext<ImpersonationContextType | undefined>(undefined);
 
 export const useImpersonation = () => {
   const context = useContext(ImpersonationContext);

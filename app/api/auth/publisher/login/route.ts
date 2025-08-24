@@ -81,8 +81,9 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Create session data
+    // Create session data for publisher
     const sessionData = {
+      id: publisher.id,
       userId: publisher.id,
       publisherId: publisher.id,
       email: publisher.email,
@@ -90,11 +91,12 @@ export async function POST(request: NextRequest) {
       role: 'publisher' as any,
       userType: 'publisher' as const,
       companyName: publisher.companyName,
-      status: publisher.status
+      status: publisher.status,
+      isActive: publisher.status === 'active'
     };
     
-    // Create JWT token
-    const token = await AuthServiceServer.createPublisherToken(sessionData);
+    // Create session using the session manager
+    const sessionId = await AuthServiceServer.createSession(sessionData, request);
     
     // Set secure HTTP-only cookie
     const response = NextResponse.json({
@@ -106,14 +108,13 @@ export async function POST(request: NextRequest) {
         companyName: publisher.companyName,
         userType: 'publisher',
         status: publisher.status
-      },
-      // Token is stored in HTTP-only cookie, not returned to client
+      }
     });
     
-    // Set auth cookie
+    // Set auth-session cookie (same as other user types)
     response.cookies.set({
-      name: 'auth-token-publisher',
-      value: token,
+      name: 'auth-session',
+      value: sessionId,
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
