@@ -31,20 +31,11 @@ export async function POST(request: NextRequest) {
         email: email,
         contactName: 'Test Publisher',
         companyName: 'Test Company',
-        accountStatus: 'active',
-        createdAt: new Date(),
-        updatedAt: new Date()
+        accountStatus: 'active'
       });
       
-      publisher = [{ 
-        id: publisherId, 
-        email, 
-        contactName: 'Test Publisher', 
-        companyName: 'Test Company',
-        accountStatus: 'active' as any,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }];
+      // Re-query to get the created publisher
+      publisher = await db.select().from(publishers).where(eq(publishers.id, publisherId)).limit(1);
       
       console.log(`📝 Created new publisher: ${publisherId}`);
     }
@@ -95,28 +86,20 @@ export async function POST(request: NextRequest) {
       }
       
       // Create shadow data
-      const shadowId = crypto.randomUUID();
       await db.insert(shadowPublisherWebsites).values({
-        id: shadowId,
         publisherId: publisherId,
         websiteId: websiteId,
-        domain: testSite.domain,
-        confidence: 0.9,
+        confidence: '0.90',
         source: 'test_data',
         extractionMethod: 'manual_test',
-        guestPostCost: testSite.price,
-        typicalTurnaroundDays: testSite.turnaround,
         verified: true,
-        migrationStatus: 'pending',
-        createdAt: new Date(),
-        updatedAt: new Date()
+        migrationStatus: 'pending'
       });
       
       console.log(`✅ Created shadow data for ${testSite.domain}: $${testSite.price}, ${testSite.turnaround} days`);
       shadowDataCreated.push({
         domain: testSite.domain,
         status: 'created',
-        shadowId: shadowId,
         price: testSite.price,
         turnaround: testSite.turnaround
       });

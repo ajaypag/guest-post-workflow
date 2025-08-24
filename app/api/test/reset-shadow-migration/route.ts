@@ -21,8 +21,7 @@ export async function POST(request: NextRequest) {
       .set({
         migrationStatus: null,
         migratedAt: null,
-        migrationNotes: null,
-        updatedAt: new Date()
+        migrationNotes: null
       })
       .where(eq(shadowPublisherWebsites.publisherId, publisherId))
       .returning();

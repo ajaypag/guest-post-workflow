@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
       basePrice: row.basePrice,
       currency: row.currency,
       isActive: row.isActive,
-      website: row.website.id ? {
+      website: row.website ? {
         id: row.website.id,
         domain: row.website.domain,
         categories: row.website.categories,

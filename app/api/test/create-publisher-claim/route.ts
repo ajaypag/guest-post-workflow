@@ -184,17 +184,13 @@ export async function POST(request: NextRequest) {
         await db
           .insert(shadowPublisherWebsites)
           .values({
-            id: crypto.randomUUID(),
             publisherId,
             websiteId: website.id,
-            confidence: 0.95,
+            confidence: '0.95',
             source: 'email_extraction',
             extractionMethod: 'signature_parser',
             verified: true, // All websites verified for easier testing
-            migrationStatus: 'pending',
-            extractedAt: new Date(),
-            createdAt: new Date(),
-            updatedAt: new Date()
+            migrationStatus: 'pending'
           });
       }
     }

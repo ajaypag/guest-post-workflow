@@ -612,7 +612,7 @@ export default function PublisherOnboardingPage() {
                   type="button"
                   onClick={() => {
                     const newOffering = {
-                      offeringType: formData.offerings.length === 0 ? 'guest_post' : 'link_insertion',
+                      offeringType: formData.offerings.length === 0 ? 'guest_post' as const : 'link_insertion' as const,
                       basePrice: 0,
                       currency: 'USD',
                       turnaroundDays: 7,
@@ -1059,7 +1059,7 @@ export default function PublisherOnboardingPage() {
                         <span className="text-sm font-medium text-gray-900">{website.domain}</span>
                       </div>
                       <div className="text-sm text-gray-500">
-                        DR: {website.domainRating || 'N/A'} | Traffic: {website.monthlyTraffic?.toLocaleString() || 'N/A'}
+                        {website.websiteType.join(', ')} | {website.niche.join(', ')}
                       </div>
                     </div>
                   ))}
@@ -1076,7 +1076,7 @@ export default function PublisherOnboardingPage() {
                         <div className="flex items-center">
                           <Package className="h-4 w-4 text-purple-600 mr-2" />
                           <span className="text-sm font-medium text-gray-900">
-                            {offering.type.replace('_', ' ').toUpperCase()}
+                            {offering.offeringType.replace('_', ' ').toUpperCase()}
                           </span>
                         </div>
                         <div className="text-sm text-gray-500">
