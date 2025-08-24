@@ -8,9 +8,10 @@ import { normalizeDomain } from '@/lib/utils/domainNormalizer';
 import { getPaginationParams, createPaginatedResponse } from '@/lib/utils/pagination';
 
 export async function GET(request: NextRequest) {
+  let session: any = null;
   try {
     // Verify publisher authentication
-    const session = await AuthServiceServer.getSession(request);
+    session = await AuthServiceServer.getSession(request);
     
     if (!session || session.userType !== 'publisher') {
       return NextResponse.json(

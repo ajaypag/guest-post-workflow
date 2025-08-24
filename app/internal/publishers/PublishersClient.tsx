@@ -11,18 +11,26 @@ interface Publisher {
   email: string;
   contactName: string | null;
   phone: string | null;
-  emailVerified: boolean;
+  emailVerified: boolean | null;
   createdAt: Date;
   websiteCount: number;
   verifiedWebsites: number;
 }
 
-function StatusBadge({ emailVerified }: { emailVerified: boolean }) {
-  if (emailVerified) {
+function StatusBadge({ emailVerified }: { emailVerified: boolean | null }) {
+  if (emailVerified === true) {
     return (
       <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
         <CheckCircle className="w-3 h-3" />
         Verified
+      </span>
+    );
+  }
+  if (emailVerified === false) {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+        <XCircle className="w-3 h-3" />
+        Unverified
       </span>
     );
   }
