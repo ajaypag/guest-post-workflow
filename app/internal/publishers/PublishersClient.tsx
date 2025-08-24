@@ -71,9 +71,9 @@ export default function PublishersClient({
         // Dispatch custom event to trigger session state refetch
         window.dispatchEvent(new CustomEvent('impersonationStart'));
         
-        // Redirect to publisher dashboard
+        // Redirect to publisher dashboard (correct path)
         setTimeout(() => {
-          router.push('/publisher/dashboard');
+          router.push('/publisher/');
         }, 1500);
       } else {
         const error = await response.json();
