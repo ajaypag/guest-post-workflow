@@ -414,7 +414,7 @@ export default function ExpandedDomainDetails({ domain }: ExpandedDomainDetailsP
                   return (
                     <>
                       {/* Scrollable container */}
-                      <div className="h-[20rem] overflow-y-auto border border-gray-200 rounded">
+                      <div className="h-[28rem] overflow-y-auto border border-gray-200 rounded">
                         <div className="space-y-1 p-1">
                           {targetAnalyses.map((analysis: any, i: number) => {
                             const isSuggestedTarget = analysis.target_url === domain.suggestedTargetUrl;

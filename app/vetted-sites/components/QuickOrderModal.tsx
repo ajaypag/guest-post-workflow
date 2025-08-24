@@ -119,8 +119,8 @@ export default function QuickOrderModal({
           onClick={onClose}
         />
 
-        {/* Modal */}
-        <div className="relative inline-block w-full max-w-lg p-6 my-8 text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl">
+        {/* Modal - Expanded for better UX */}
+        <div className="relative inline-block w-full max-w-4xl p-8 my-8 text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div>

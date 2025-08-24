@@ -1,5 +1,293 @@
 # Domain Bank Implementation Plan
 
+## 🎯 UX Improvement Planning (2025-08-23)
+
+### Problem Analysis
+**Current Issue**: Table doesn't align with user mental model - users think "I need a link to MY target URL" but we show disconnected domains without clear vetting context.
+
+**User Mental Model**:
+- "I need to get a backlink to my website" 
+- "I need a link to this particular page"
+- "Let me find domains that were vetted against MY target URLs"
+
+**Current Issues**:
+1. Domain column shows just domain name (massive space usage)
+2. No filtering by target URLs in sidebar
+3. Target match data squeezed into tiny column
+4. Qualification Score and Evidence are separate but related
+5. Missing context: "Domain X analyzed against Target URLs Y,Z"
+
+### Strategic UX Improvements Plan
+
+#### Phase 1: Information Architecture Analysis
+- **Task 1.1**: Document current column space allocation and information density
+- **Task 1.2**: Map user mental model vs current information flow  
+- **Task 1.3**: Identify most critical data for user decision-making
+
+#### Phase 2: Column Structure Redesign
+- **Task 2.1**: Design enriched domain column showing domain + target URL context
+  - Show domain prominently
+  - Add subtle indicator: "Analyzed for: clientname.com/target-page, otherdomain.com/guide"
+  - Keep scannable, not overwhelming
+- **Task 2.2**: Plan merger of Qualification Score + Evidence columns
+  - Both relate to domain qualification phase
+  - Evidence supports qualification score
+  - Free up horizontal space
+- **Task 2.3**: Design enhanced Target Match column with freed space
+  - More room for clear target match results
+  - Show best target page with match quality
+  - Include match confidence indicators
+
+#### Phase 3: Context Enhancement  
+- **Task 3.1**: Add target URL filtering to sidebar filters
+  - Filter by original target URLs used in qualification
+  - Help users find "domains vetted against MY target URLs"
+- **Task 3.2**: Implement subtle target URL context in domain display
+  - Under domain name: "Vetted against: 3 target URLs"
+  - On hover/expand: Show actual target URLs used
+  - Visual hierarchy: Domain primary, context secondary
+
+#### Phase 4: Validation & Testing
+- **Task 4.1**: Test new layout with real data and user flow
+- **Task 4.2**: Validate user can quickly find relevant domains
+- **Task 4.3**: Test mental model alignment: "Find domains for my target URL"
+
+### Key Design Principles
+1. Make it clear this is "Domain X analyzed against Target URLs Y,Z" not just "Domain X exists"
+2. Users should quickly find domains vetted against their specific target URLs
+3. Maintain information density without overwhelming
+4. Support both qualification context and target match results
+
+### Current Column Structure Analysis (Completed 2025-08-23)
+
+#### Table Layout Overview
+**Current Column Structure**:
+1. **Checkbox** - Selection control
+2. **Domain** - `w-48 xl:w-auto` - Main domain info 
+3. **Client** - (Internal only) - Client and project context
+4. **Qualification Score** - `w-40 xl:w-auto` - Status badge + DR/Traffic
+5. **Evidence** - `w-32 xl:w-auto` - Keyword analysis data  
+6. **Target Match** - `w-36 xl:w-auto` - AI target URL results
+7. **Price** - `w-24 xl:w-auto` - Pricing info
+8. **Availability** - `w-32 xl:w-auto` - Usage status
+9. **Actions** - Star/hide controls
+
+#### Space Allocation Issues
+**Oversized Domain Column** (`w-48 xl:w-auto`):
+- Shows only: `domain.domain` + optional `Target: /pathname`
+- Takes up ~25% of table width but shows minimal info
+- Massive unused space that could display vetting context
+
+**Unconstrained Client Column** (no width limit):
+- Shows: `clientName` + optional `projectName`
+- Takes excessive auto space for simple text
+- Could be optimized to `w-32` for more critical columns
+
+**Qualification + Evidence Redundancy**:
+- Both relate to domain qualification phase  
+- Evidence data supports the qualification score
+- Split across two columns (`w-40` + `w-32`) = `w-72` combined
+- Could be merged into single comprehensive column
+
+**Squeezed Target Match** (`w-36`):
+- Critical AI matching data crammed into tiny space
+- Shows: target filename + "✓ AI Matched" 
+- Needs more room for match quality/confidence
+
+#### Information Hierarchy Problems  
+**Missing User Context**:
+1. No indication of what target URLs this domain was vetted against
+2. No connection to user's original analysis goals
+3. Users can't filter by "domains vetted for MY target URLs"
+
+**Data Relationship Issues**:
+- Domain appears disconnected from analysis context
+- Evidence separated from qualification score it supports
+- Target match results not connected to original vetting
+
+#### Optimal Redistribution Strategy
+**Constrain Client Column** → Save auto space:
+- Add `w-32` constraint for efficient client/project display
+- Truncate long names with hover tooltip
+- Saves significant auto space for critical columns
+
+**Merge Qualification + Evidence** → Free up `w-32` space:
+- Single column showing: Score + Evidence counts + DR/Traffic
+- More cohesive qualification story
+
+**Enhance Domain Column** → Add vetting context:
+- Domain name (primary)
+- Subtle context: "Vetted against: 3 target URLs" 
+- Expandable/hover: Show actual target URLs analyzed
+
+**Expand Target Match** → Use freed space:
+- More room for match quality indicators  
+- Show confidence scores and reasoning
+- Better visual hierarchy for AI recommendations
+
+#### Updated Space Allocation Plan
+**Before**:
+- Domain: `w-48` (oversized)
+- Client: `auto` (unconstrained)
+- Qualification: `w-40` + Evidence: `w-32` = `w-72`
+- Target Match: `w-36` (cramped)
+
+**After**:
+- Domain: `w-48` (same width, enriched content)
+- Client: `w-32` (constrained, efficient)
+- Qualification & Evidence: `w-48` (merged, cohesive)
+- Target Match: `w-48` (expanded, detailed)
+
+### Enriched Domain Column Design (Completed 2025-08-23)
+
+#### Current Domain Column Content
+```
+[>] ⭐ example.com
+    Target: /seo-guide/advanced
+```
+
+#### Proposed Enhanced Domain Column
+```
+[>] ⭐ example.com
+    Target: /seo-guide/advanced
+    Vetted against: clientname.com/landing, otherdomain.com/guide
+```
+
+#### Alternative Compact Design
+```
+[>] ⭐ example.com
+    AI Target: /seo-guide/advanced • Vetted: 3 URLs
+    [hover shows: clientname.com/landing, otherdomain.com/guide, thirdsite.com/resource]
+```
+
+#### Implementation Approach
+**Data Requirements**:
+- Domain name (existing: `domain.domain`)
+- Suggested target (existing: `domain.suggestedTargetUrl`) 
+- Original target URLs (NEW: `domain.targetPages` array)
+
+**Visual Hierarchy**:
+1. **Primary**: Domain name (bold, larger)
+2. **Secondary**: AI target path (gray, smaller)
+3. **Tertiary**: Vetting context (subtle, expandable)
+
+**Interaction Design**:
+- Hover over "Vetted: X URLs" → Tooltip with full URLs
+- Click context → Filter table to show only domains vetted against same URLs
+- Maintain current expand/collapse and star functionality
+
+#### Technical Implementation Plan
+**Data Enhancement** (API layer):
+- ✅ Already implemented: `targetPages` added to vetted-sites API response
+- Extract domains from targetPages URLs for compact display
+- Group by domain to avoid repetition
+
+**Component Updates** (VettedSitesTable.tsx):
+```typescript
+// Domain column content (lines ~600-608)
+<div>
+  <div className="text-sm font-medium text-gray-900">{domain.domain}</div>
+  {domain.suggestedTargetUrl && (
+    <div className="text-xs text-gray-500 mt-1">
+      AI Target: {new URL(domain.suggestedTargetUrl).pathname}
+    </div>
+  )}
+  {domain.targetPages && domain.targetPages.length > 0 && (
+    <div className="text-xs text-gray-400 mt-1">
+      <VettingContext targetPages={domain.targetPages} />
+    </div>
+  )}
+</div>
+```
+
+### Qualification + Evidence Column Merger Design (Completed 2025-08-23)
+
+#### Current Split Layout
+**Qualification Score** (`w-40`):
+```
+🟢 High Quality
+DR 45 • 2.3k traffic
+direct • Unknown Authority
+```
+
+**Evidence** (`w-32`):
+```
+Direct: 12 (pos 8)
+Related: 23 (pos 15)
+```
+
+#### Proposed Merged Layout
+**Qualification & Evidence** (`w-48` - freed from reducing Domain column):
+```
+🟢 High Quality • DR 45 • 2.3k traffic
+Direct: 12 (pos 8) • Related: 23 (pos 15)
+direct overlap • Unknown Authority
+```
+
+#### Benefits of Merger
+1. **Cohesive Story**: All qualification data in one place
+2. **Space Efficiency**: Reduce from `w-72` to `w-48` (saves `w-24`)
+3. **Logical Grouping**: Evidence supports qualification score
+4. **More Target Match Space**: Transfer saved space to Target Match column
+
+### Enhanced Target Match Column Design (Completed 2025-08-23)
+
+#### Current Cramped Layout (`w-36`)
+```
+advanced-techniques
+✓ AI Matched
+```
+
+#### Proposed Enhanced Layout (`w-48` - gained from Evidence merger)
+```
+🎯 /seo-guide/advanced-techniques
+✓ High Confidence (87%) • 3 targets analyzed
+```
+
+#### Advanced Target Match Display
+```
+🎯 Best Target: /advanced-techniques
+   Match Quality: High (87%)
+   📊 2 alternatives available
+```
+
+**Interaction**: 
+- Click "2 alternatives" → Expand to show all analyzed targets
+- Hover quality score → Tooltip with AI reasoning
+- Color coding: Green (High) • Blue (Medium) • Gray (Low)
+
+### Implementation Status (Completed 2025-08-23)
+1. ✅ Document current column space allocation and information density
+2. ✅ Create mockups for enriched domain column with vetting context  
+3. ✅ Design merged Qualification + Evidence column layout
+4. ✅ Plan enhanced Target Match column with freed space
+5. ✅ Optimize Client column width for maximum space efficiency
+6. ✅ Implement VettingContext component for domain column
+7. ✅ Constrain Client column to `w-32` with truncation  
+8. ✅ Update column widths and merge Qualification + Evidence
+9. ✅ Enhance Target Match display with confidence indicators
+
+### Implementation Summary
+**Files Created**:
+- `VettingContext.tsx` - Interactive component showing original target URLs with tooltip
+
+**Files Modified**:
+- `VettedSitesTable.tsx` - Complete column restructure and enhancements
+
+**Column Changes Implemented**:
+- **Client Column**: Added `w-32` constraint with `truncate` and hover tooltips
+- **Domain Column**: Added VettingContext component showing "Vetted: X URLs" with hover details
+- **Qualification & Evidence**: Merged into single `w-48` column with cohesive layout  
+- **Target Match**: Expanded to `w-48` with 🎯 icon, quality scores, and analysis count
+
+**User Experience Improvements**:
+- Clear connection between domains and what they were vetted against
+- Space-efficient layout with better information density
+- Enhanced Target Match display with AI confidence indicators
+- Clickable vetting context for future filtering functionality
+
+---
+
 ## Current Status Overview
 
 ### ✅ Completed Features (Vetted Sites Foundation)

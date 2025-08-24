@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { db } from '@/lib/db/connection';
-import { clients } from '@/lib/db/schema';
+import { clients, targetPages } from '@/lib/db/schema';
 import { bulkAnalysisDomains, bulkAnalysisProjects } from '@/lib/db/bulkAnalysisSchema';
 import { websites } from '@/lib/db/websiteSchema';
 import { orderLineItems } from '@/lib/db/orderLineItemSchema';
@@ -12,8 +12,9 @@ interface VettedSitesFilters {
   projectId?: string;
   qualificationStatus?: string[];
   view?: 'all' | 'bookmarked' | 'hidden';
-  available?: boolean;
+  available: boolean;  // Always has a value (defaults to true)
   search?: string;
+  targetUrls?: string[];
   minDR?: number;
   maxDR?: number;
   minTraffic?: number;
@@ -41,8 +42,9 @@ export async function GET(request: NextRequest) {
       projectId: searchParams.get('projectId') || undefined,
       qualificationStatus: searchParams.get('status')?.split(',').filter(Boolean) || ['high_quality', 'good_quality'],
       view: (searchParams.get('view') as any) || 'all',
-      available: searchParams.get('available') === 'true' ? true : undefined,
+      available: searchParams.get('available') === 'false' ? false : true,  // Default to true
       search: searchParams.get('search') || undefined,
+      targetUrls: searchParams.get('targetUrls')?.split(',').filter(Boolean),
       minDR: searchParams.get('minDR') ? parseInt(searchParams.get('minDR')!) : undefined,
       maxDR: searchParams.get('maxDR') ? parseInt(searchParams.get('maxDR')!) : undefined,
       minTraffic: searchParams.get('minTraffic') ? parseInt(searchParams.get('minTraffic')!) : undefined,
@@ -98,8 +100,8 @@ export async function GET(request: NextRequest) {
         traffic: websites.totalTraffic,
         categories: websites.categories,
         
-        // Pricing from websites
-        guestPostPrice: websites.guestPostCost,
+        // Pricing from websites  
+        price: websites.guestPostCost,
         // linkInsertionPrice doesn't exist in websites schema
         
         // Availability check (count of active line items using this domain)
@@ -162,6 +164,29 @@ export async function GET(request: NextRequest) {
     // Search filter
     if (filters.search) {
       conditions.push(ilike(bulkAnalysisDomains.domain, `%${filters.search}%`));
+    }
+
+    // Target URLs filter
+    if (filters.targetUrls && filters.targetUrls.length > 0) {
+      // Filter domains that have these target URLs in their targetPageIds OR suggestedTargetUrl
+      const targetUrlConditions = filters.targetUrls.map(url => {
+        // Check both original target pages and AI suggested targets
+        return or(
+          // Check if this URL exists in the targetPageIds array (original vetting targets)
+          sql`EXISTS (
+            SELECT 1 FROM ${targetPages}
+            WHERE ${bulkAnalysisDomains.targetPageIds}::jsonb ? ${targetPages.id}::text
+            AND ${targetPages.url} = ${url}
+          )`,
+          // Check if this URL matches the AI suggested target
+          eq(bulkAnalysisDomains.suggestedTargetUrl, url),
+          // Check if this URL is contained within the AI analysis data
+          sql`${bulkAnalysisDomains.targetMatchData}->>'target_analysis' LIKE '%' || ${url} || '%'`
+        );
+      });
+      
+      // At least one of the target URLs must match
+      conditions.push(or(...targetUrlConditions));
     }
 
     // Metrics filters
@@ -246,19 +271,42 @@ export async function GET(request: NextRequest) {
       throw queryError;
     }
 
-    // Calculate summary stats
+    // Calculate summary stats - dynamic based on current filters
     const statsQuery = await db
       .select({
-        totalQualified: sql<number>`COUNT(*)::int`,
-        available: sql<number>`
+        // Total in current view (respects all filters)
+        totalInView: sql<number>`COUNT(*)::int`,
+        
+        // Available in current view (not hidden, not in use)
+        availableInView: sql<number>`
           COUNT(*) FILTER (
-            WHERE NOT EXISTS (
+            WHERE ${bulkAnalysisDomains.userHidden} != true
+            AND NOT EXISTS (
               SELECT 1 FROM ${orderLineItems}
               WHERE ${orderLineItems.assignedDomain} = ${bulkAnalysisDomains.domain}
               AND ${orderLineItems.status} != 'cancelled'
             )
           )::int
         `,
+        
+        // In use from current view
+        inUseFromView: sql<number>`
+          COUNT(*) FILTER (
+            WHERE EXISTS (
+              SELECT 1 FROM ${orderLineItems}
+              WHERE ${orderLineItems.assignedDomain} = ${bulkAnalysisDomains.domain}
+              AND ${orderLineItems.status} != 'cancelled'
+            )
+          )::int
+        `,
+        
+        // Quality breakdown of current view
+        highQuality: sql<number>`COUNT(*) FILTER (WHERE ${bulkAnalysisDomains.qualificationStatus} = 'high_quality')::int`,
+        goodQuality: sql<number>`COUNT(*) FILTER (WHERE ${bulkAnalysisDomains.qualificationStatus} = 'good_quality')::int`,
+        marginal: sql<number>`COUNT(*) FILTER (WHERE ${bulkAnalysisDomains.qualificationStatus} = 'marginal')::int`,
+        disqualified: sql<number>`COUNT(*) FILTER (WHERE ${bulkAnalysisDomains.qualificationStatus} = 'disqualified')::int`,
+        
+        // User curation stats (always show these)
         bookmarked: sql<number>`COUNT(*) FILTER (WHERE ${bulkAnalysisDomains.userBookmarked} = true)::int`,
         hidden: sql<number>`COUNT(*) FILTER (WHERE ${bulkAnalysisDomains.userHidden} = true)::int`,
       })
@@ -267,7 +315,53 @@ export async function GET(request: NextRequest) {
       .leftJoin(websites, eq(bulkAnalysisDomains.domain, websites.domain))
       .where(conditions.length > 0 ? and(...conditions) : undefined);
 
-    const stats = statsQuery[0] || { totalQualified: 0, available: 0, bookmarked: 0, hidden: 0 };
+    const stats = statsQuery[0] || {};
+
+    // Fetch target pages for domains that have targetPageIds
+    const domainsWithTargetPageIds = domains.filter(domain => 
+      domain?.targetPageIds && Array.isArray(domain.targetPageIds) && domain.targetPageIds.length > 0
+    );
+
+    let targetPagesMap: Record<string, any[]> = {};
+    
+    if (domainsWithTargetPageIds.length > 0) {
+      try {
+        // Get all unique target page IDs
+        const allTargetPageIds = Array.from(new Set(
+          domainsWithTargetPageIds.flatMap(domain => domain.targetPageIds as string[])
+        ));
+
+        if (allTargetPageIds.length > 0) {
+          // Fetch target pages data
+          const targetPagesData = await db
+            .select({
+              id: targetPages.id,
+              url: targetPages.url,
+              keywords: targetPages.keywords,
+              description: targetPages.description,
+            })
+            .from(targetPages)
+            .where(inArray(targetPages.id, allTargetPageIds));
+
+          // Create lookup map for easy access
+          const targetPagesLookup = new Map(
+            targetPagesData.map(tp => [tp.id, tp])
+          );
+
+          // Build target pages map by domain ID
+          domainsWithTargetPageIds.forEach(domain => {
+            if (domain.targetPageIds) {
+              targetPagesMap[domain.id] = (domain.targetPageIds as string[])
+                .map(id => targetPagesLookup.get(id))
+                .filter(Boolean); // Remove any null/undefined entries
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching target pages:', error);
+        // Continue without target pages data if there's an error
+      }
+    }
 
     return NextResponse.json({
       domains: Array.isArray(domains) ? domains.map(domain => {
@@ -286,6 +380,10 @@ export async function GET(request: NextRequest) {
             relatedCount: (domain.evidence as any)?.related_count || 0,
             relatedMedianPosition: (domain.evidence as any)?.related_median_position || null,
           } : null,
+          // Include target pages data
+          targetPages: targetPagesMap[domain.id] || [],
+          // Add original vetted target URL (first target page URL if no AI suggestion)
+          originalTargetUrl: targetPagesMap[domain.id]?.[0]?.url || null,
         };
       }).filter(Boolean) : [],
       total: total || 0,
@@ -293,11 +391,20 @@ export async function GET(request: NextRequest) {
       limit: limit || 50,
       totalPages: Math.ceil((total || 0) / (limit || 50)),
       stats: {
-        totalQualified: stats?.totalQualified || 0,
-        available: stats?.available || 0,
-        used: (stats?.totalQualified || 0) - (stats?.available || 0),
+        // Dynamic stats based on current filter view
+        totalQualified: stats?.totalInView || 0,  // Total matching current filters
+        available: stats?.availableInView || 0,   // Available from current view
+        used: stats?.inUseFromView || 0,          // In use from current view
         bookmarked: stats?.bookmarked || 0,
         hidden: stats?.hidden || 0,
+        
+        // Quality breakdown for context
+        breakdown: {
+          highQuality: stats?.highQuality || 0,
+          goodQuality: stats?.goodQuality || 0,
+          marginal: stats?.marginal || 0,
+          disqualified: stats?.disqualified || 0,
+        },
       },
     });
 
