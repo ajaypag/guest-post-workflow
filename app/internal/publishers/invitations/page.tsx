@@ -75,7 +75,7 @@ export default function PublisherInvitationsPage() {
   const loadPublishers = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/internal/publishers/shadow');
+      const response = await fetch('/api/internal/publishers/shadow?limit=1000');
       if (response.ok) {
         const data = await response.json();
         setPublishers(data.publishers || []);
@@ -440,7 +440,7 @@ export default function PublisherInvitationsPage() {
           <div className="px-6 py-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-medium text-gray-900">
-                Shadow Publishers ({filteredPublishers.length})
+                Shadow Publishers (Showing {filteredPublishers.length} of {publishers.length} total)
               </h2>
               <button
                 onClick={handleSelectAll}
