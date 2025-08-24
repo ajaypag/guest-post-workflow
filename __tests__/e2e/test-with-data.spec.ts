@@ -3,8 +3,8 @@ import { test, expect } from '@playwright/test';
 const BASE_URL = 'http://localhost:3003';
 const TEST_CLIENT_ID = '99f819ed-9118-4e08-8802-2df99492d1c5'; 
 const TEST_PROJECT_ID = '5f7b0e95-d3b0-45b4-a05f-865488b1922d';
-const LOGIN_EMAIL = 'ajay@outreachlabs.com';
-const LOGIN_PASSWORD = 'FA64!I$nrbCauS^d';
+const LOGIN_EMAIL = process.env.E2E_TEST_EMAIL || 'test@example.com';
+const LOGIN_PASSWORD = process.env.E2E_TEST_PASSWORD || 'defaultpassword';
 
 async function loginAndNavigate(page: any, targetUrl: string) {
   console.log('🔐 Starting login process...');

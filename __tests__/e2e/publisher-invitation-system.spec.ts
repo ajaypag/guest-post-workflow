@@ -46,9 +46,12 @@ test.describe('Publisher Invitation System', () => {
     if (currentUrl.includes('/login') || hasLoginForm) {
       console.log('Login required, attempting to authenticate...');
       
-      // Fill login form with provided credentials
-      await page.fill('input[type="email"], input[name="email"]', 'ajay@outreachlabs.com');
-      await page.fill('input[type="password"], input[name="password"]', 'FA64!I$nrbCauS^d');
+      // Fill login form with environment credentials
+      const testEmail = process.env.E2E_TEST_EMAIL || 'test@example.com';
+      const testPassword = process.env.E2E_TEST_PASSWORD || 'defaultpassword';
+      
+      await page.fill('input[type="email"], input[name="email"]', testEmail);
+      await page.fill('input[type="password"], input[name="password"]', testPassword);
       
       // Submit login form
       const submitButton = page.locator('button[type="submit"], input[type="submit"], button:has-text("Login"), button:has-text("Sign in")').first();

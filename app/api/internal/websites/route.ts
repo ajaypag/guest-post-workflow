@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
             email: 'internal@system.local',
             companyName: 'Internal Management',
             contactName: 'Internal System',
-            password: 'not-used', // This account can't login
+            password: 'placeholder-system-account', // This account can't login
             status: 'active',
           })
           .returning();

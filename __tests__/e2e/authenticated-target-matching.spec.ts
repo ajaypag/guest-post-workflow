@@ -3,8 +3,8 @@ import { test, expect } from '@playwright/test';
 // Test configuration
 const BASE_URL = 'http://localhost:3003';
 const TEST_CLIENT_ID = '99f819ed-9118-4e08-8802-2df99492d1c5'; // Outreach Labs
-const LOGIN_EMAIL = 'ajay@outreachlabs.com';
-const LOGIN_PASSWORD = 'FA64!I$nrbCauS^d';
+const LOGIN_EMAIL = process.env.E2E_TEST_EMAIL || 'test@example.com';
+const LOGIN_PASSWORD = process.env.E2E_TEST_PASSWORD || 'defaultpassword';
 
 test.describe('Target URL Matching E2E Tests (Authenticated)', () => {
   test.beforeEach(async ({ page }) => {
