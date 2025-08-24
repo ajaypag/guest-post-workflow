@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
-import { publishers } from '@/lib/db/schema';
+import { publishers } from '@/lib/db/accountSchema';
 import { websites } from '@/lib/db/websiteSchema';
 import { shadowPublisherWebsites } from '@/lib/db/emailProcessingSchema';
 import { publisherOfferings, publisherOfferingRelationships } from '@/lib/db/publisherSchemaActual';
@@ -14,7 +14,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Not available in production' }, { status: 403 });
     }
 
-    const testEmail = 'test-publisher@example.com';
+    const body = await request.json();
+    const testEmail = body.email || 'test-publisher@example.com';
     
     // Check if test publisher already exists
     const [existingPublisher] = await db

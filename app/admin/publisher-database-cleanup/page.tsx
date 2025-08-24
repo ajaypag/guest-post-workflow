@@ -44,6 +44,7 @@ export default function PublisherDatabaseCleanupPage() {
       setStats(data.summary);
     } catch (err: any) {
       setError(err.message);
+      setStats(null);
     } finally {
       setIsLoading(false);
     }
@@ -153,32 +154,34 @@ export default function PublisherDatabaseCleanupPage() {
                 <div className="text-sm text-gray-600">Total Publishers</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{stats.cleanPublishers}</div>
+                <div className="text-2xl font-bold text-green-600">{stats.cleanPublishers || 0}</div>
                 <div className="text-sm text-gray-600">Clean</div>
-                <Badge className={getStatusColor('clean')}>
-                  {((stats.cleanPublishers / stats.totalPublishers) * 100).toFixed(1)}%
-                </Badge>
+                {stats.totalPublishers > 0 && (
+                  <Badge className={getStatusColor('clean')}>
+                    {((stats.cleanPublishers / stats.totalPublishers) * 100).toFixed(1)}%
+                  </Badge>
+                )}
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-red-600">{stats.corruptedPublishers}</div>
+                <div className="text-2xl font-bold text-red-600">{stats.corruptedPublishers || 0}</div>
                 <div className="text-sm text-gray-600">Corrupted</div>
-                {stats.corruptedPublishers > 0 && (
+                {stats.corruptedPublishers > 0 && stats.totalPublishers > 0 && (
                   <Badge className={getStatusColor('corrupted')}>
                     {((stats.corruptedPublishers / stats.totalPublishers) * 100).toFixed(1)}%
                   </Badge>
                 )}
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-yellow-600">{stats.publishersWithOrphans}</div>
+                <div className="text-2xl font-bold text-yellow-600">{stats.publishersWithOrphans || 0}</div>
                 <div className="text-sm text-gray-600">Has Orphans</div>
-                {stats.publishersWithOrphans > 0 && (
+                {stats.publishersWithOrphans > 0 && stats.totalPublishers > 0 && (
                   <Badge className={getStatusColor('orphans')}>
                     {((stats.publishersWithOrphans / stats.totalPublishers) * 100).toFixed(1)}%
                   </Badge>
                 )}
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-gray-600">{stats.noDataPublishers}</div>
+                <div className="text-2xl font-bold text-gray-600">{stats.noDataPublishers || 0}</div>
                 <div className="text-sm text-gray-600">No Data</div>
               </div>
             </div>

@@ -141,25 +141,8 @@ export class ShadowPublisherMigrationService {
               
               relationshipsCreated++;
             } else {
-
-              // Create publisher-website relationship
-              const newRelationshipId = crypto.randomUUID();
-              await tx.insert(publisherOfferingRelationships).values({
-                id: newRelationshipId,
-                publisherId: publisherId,
-                websiteId: shadowRow.website_id,
-                relationshipType: 'contact', // Default relationship type
-                verificationStatus: shadowRow.verified ? 'verified' : 'claimed',
-                verificationMethod: shadowRow.confidence > 0.7 ? 'email_domain' : 'claimed',
-                isActive: true,
-                contactEmail: publisher.email,
-                internalNotes: `Migrated from shadow data. Shadow ID: ${shadowRow.shadow_id}`,
-                createdAt: new Date(),
-                updatedAt: new Date()
-              });
-
+              // Skip creating relationship here - we'll create it with the offering below
               websitesMigrated++;
-              relationshipsCreated++;
             }
 
             // 4. Check for existing offerings for this publisher
