@@ -9,6 +9,7 @@ import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import { z } from 'zod';
 import { Resend } from 'resend';
+import { AuthServiceServer } from '@/lib/auth-server';
 
 // Validation schemas
 const initiateClaimSchema = z.object({
@@ -220,15 +221,49 @@ export async function POST(request: NextRequest) {
         // Don't fail the claim if email fails
       }
       
+      // Get updated publisher data
+      const [updatedPublisher] = await db
+        .select()
+        .from(publishers)
+        .where(eq(publishers.id, publisher.id))
+        .limit(1);
+      
+      if (!updatedPublisher) {
+        throw new Error('Failed to retrieve updated publisher data');
+      }
+      
+      // Create session data
+      const sessionData = {
+        userId: updatedPublisher.id,
+        publisherId: updatedPublisher.id,
+        email: updatedPublisher.email,
+        name: updatedPublisher.contactName || updatedPublisher.companyName || 'Publisher User',
+        role: 'publisher' as any,
+        userType: 'publisher' as const,
+        companyName: updatedPublisher.companyName,
+        status: updatedPublisher.status
+      };
+      
+      // Create JWT token
+      const token = await AuthServiceServer.createPublisherToken(sessionData);
+      
       // Include migration status in response
-      const response: any = {
+      const responseData: any = {
         success: true,
         message: 'Account successfully claimed',
-        redirectUrl: '/publisher/dashboard'
+        redirectUrl: '/publisher/dashboard',
+        user: {
+          id: updatedPublisher.id,
+          email: updatedPublisher.email,
+          name: updatedPublisher.contactName || updatedPublisher.companyName,
+          companyName: updatedPublisher.companyName,
+          userType: 'publisher',
+          status: updatedPublisher.status
+        }
       };
       
       if (migrationResult) {
-        response.migration = {
+        responseData.migration = {
           success: migrationResult.success,
           websitesMigrated: migrationResult.websitesMigrated,
           offeringsActivated: migrationResult.offeringsActivated,
@@ -236,7 +271,28 @@ export async function POST(request: NextRequest) {
         };
       }
       
-      return NextResponse.json(response);
+      const response = NextResponse.json(responseData);
+      
+      // Set auth cookie
+      response.cookies.set({
+        name: 'auth-token-publisher',
+        value: token,
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 60 * 24 * 7 // 7 days
+      });
+      
+      // Update last login
+      await db.update(publishers)
+        .set({ 
+          lastLoginAt: new Date(),
+          updatedAt: new Date()
+        })
+        .where(eq(publishers.id, publisher.id));
+      
+      return response;
       
     } catch (error) {
       // Increment claim attempts
