@@ -33,6 +33,7 @@ import {
   Database,
   ChevronDown
 } from 'lucide-react';
+import QuickVettedSitesRequest from '@/components/dashboard/QuickVettedSitesRequest';
 
 interface Order {
   id: string;
