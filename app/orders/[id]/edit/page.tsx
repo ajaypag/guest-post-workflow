@@ -306,6 +306,13 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
         setOrderStatus(order.status || 'draft');
         setOrderState(order.state || 'configuring');
         
+        // SECURITY: Block editing of non-draft orders for external users
+        if (order.status !== 'draft' && session.userType !== 'internal') {
+          console.log(`[SECURITY] Blocking external user from editing ${order.status} order`);
+          router.push(`/orders/${orderId}`);
+          return;
+        }
+        
         // Load preferences from database - load if ANY preference exists
         if (order.preferencesDrMin !== undefined || order.preferencesDrMax !== undefined || 
             order.preferencesTrafficMin !== undefined || order.preferencesCategories || 

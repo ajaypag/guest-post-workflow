@@ -349,7 +349,8 @@ export default function InternalOrderManagementPage() {
 
   const loadOrder = async () => {
     try {
-      const response = await fetch(`/api/orders/${orderId}`);
+      // Internal users should see ALL line items including cancelled ones for management
+      const response = await fetch(`/api/orders/${orderId}?includeCancelled=true`);
       if (!response.ok) {
         throw new Error('Failed to load order');
       }

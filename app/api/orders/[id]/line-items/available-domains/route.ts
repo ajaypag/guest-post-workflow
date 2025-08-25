@@ -67,7 +67,6 @@ export async function GET(
 
     // Find bulk analysis projects associated with this order
     // In the new line items system, projects are associated via tags: `order:${orderId}`
-    const { sql } = await import('drizzle-orm');
     
     const projectsForOrder = await db.query.bulkAnalysisProjects.findMany({
       where: and(

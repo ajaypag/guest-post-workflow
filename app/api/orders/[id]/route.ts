@@ -5,7 +5,7 @@ import { orders, orderItems } from '@/lib/db/orderSchema';
 import { orderGroups, orderSiteSelections } from '@/lib/db/orderGroupSchema';
 import { orderLineItems } from '@/lib/db/orderLineItemSchema';
 import { clients, users, publishers } from '@/lib/db/schema';
-import { eq, inArray, desc } from 'drizzle-orm';
+import { eq, inArray, desc, and, sql } from 'drizzle-orm';
 import { orderSiteSubmissions, projectOrderAssociations } from '@/lib/db/projectOrderAssociationsSchema';
 import { isLineItemsSystemEnabled } from '@/lib/config/featureFlags';
 
@@ -21,9 +21,10 @@ export async function GET(
 
     const { id } = await params;
     
-    // Check if we should skip order groups (optimization for line items)
+    // Check URL parameters for optimization and filtering
     const url = new URL(request.url);
     const skipOrderGroups = url.searchParams.get('skipOrderGroups') === 'true';
+    const includeCancelledItems = url.searchParams.get('includeCancelled') === 'true';
 
     // Fetch the order with relationships
     const order = await db.query.orders.findFirst({
@@ -92,8 +93,22 @@ export async function GET(
       try {
         console.log('[DEBUG] Loading line items for order:', id);
         console.log('[DEBUG] Line items system enabled:', isLineItemsSystemEnabled());
+        
+        // Determine whether to include cancelled items based on:
+        // 1. URL parameter (explicit override)
+        // 2. Order status (draft orders show all for editing, others hide cancelled)
+        const shouldIncludeCancelled = includeCancelledItems || order.status === 'draft';
+        
+        const lineItemsWhere = shouldIncludeCancelled 
+          ? eq(orderLineItems.orderId, id)
+          : and(
+              eq(orderLineItems.orderId, id),
+              sql`${orderLineItems.status} NOT IN ('cancelled', 'refunded')`,
+              sql`${orderLineItems.cancelledAt} IS NULL`
+            );
+            
         lineItems = await db.query.orderLineItems.findMany({
-          where: eq(orderLineItems.orderId, id),
+          where: lineItemsWhere,
           with: {
             client: {
               columns: {
@@ -386,8 +401,21 @@ export async function PUT(
     let lineItems: any[] = [];
     if (isLineItemsSystemEnabled()) {
       try {
+        // Apply same cancellation logic as GET request
+        const url = new URL(request.url);
+        const includeCancelledItems = url.searchParams.get('includeCancelled') === 'true';
+        const shouldIncludeCancelled = includeCancelledItems || updatedOrder.status === 'draft';
+        
+        const lineItemsWhere = shouldIncludeCancelled 
+          ? eq(orderLineItems.orderId, id)
+          : and(
+              eq(orderLineItems.orderId, id),
+              sql`${orderLineItems.status} NOT IN ('cancelled', 'refunded')`,
+              sql`${orderLineItems.cancelledAt} IS NULL`
+            );
+            
         lineItems = await db.query.orderLineItems.findMany({
-          where: eq(orderLineItems.orderId, id),
+          where: lineItemsWhere,
           with: {
             client: {
               columns: {
