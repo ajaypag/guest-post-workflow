@@ -55,6 +55,7 @@ interface VettedSitesFiltersProps {
   availableClients: Client[];
   availableAccounts: Account[];
   availableProjects: Project[];
+  availableRequests?: Request[];
   currentFilters: any;
   userType: string;
 }
