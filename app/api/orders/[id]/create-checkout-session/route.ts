@@ -7,11 +7,9 @@ import { accounts } from '@/lib/db/accountSchema';
 import { eq, and } from 'drizzle-orm';
 import { z } from 'zod';
 
-const createPaymentIntentSchema = z.object({
+const createCheckoutSessionSchema = z.object({
   currency: z.string().optional().default('USD'),
   description: z.string().optional(),
-  automaticPaymentMethods: z.boolean().optional().default(true),
-  setupFutureUsage: z.enum(['on_session', 'off_session']).optional(),
 });
 
 export async function POST(
@@ -43,13 +41,13 @@ export async function POST(
         try {
           body = JSON.parse(text);
         } catch (e) {
-          console.error('[PAYMENT INTENT] Failed to parse JSON body:', e);
+          console.error('[CHECKOUT SESSION] Failed to parse JSON body:', e);
           body = {}; // Use empty object if parsing fails
         }
       }
     }
     
-    const validatedData = createPaymentIntentSchema.parse(body);
+    const validatedData = createCheckoutSessionSchema.parse(body);
 
     // For account users, verify they own this order
     // For internal users, allow access to any order
@@ -62,7 +60,7 @@ export async function POST(
         );
       }
       
-      console.log('[PAYMENT INTENT] Account user access check:', {
+      console.log('[CHECKOUT SESSION] Account user access check:', {
         userType,
         userId,
         orderId
@@ -126,76 +124,10 @@ export async function POST(
       );
     }
 
-    // Check if payment intent already exists
-    let existingPI;
-    try {
-      console.log('[PAYMENT INTENT] Checking for existing payment intent...');
-      existingPI = await StripeService.getPaymentIntentByOrder(orderId);
-      if (existingPI) {
-        console.log('[PAYMENT INTENT] Found existing PI:', {
-          id: existingPI.paymentIntent.id,
-          status: existingPI.paymentIntent.status,
-          amount: existingPI.dbPaymentIntent.amount
-        });
-      } else {
-        console.log('[PAYMENT INTENT] No existing payment intent found');
-      }
-    } catch (error) {
-      console.error('[PAYMENT INTENT] Error checking existing PI:', error);
-      // Continue to create a new one if retrieval fails
-    }
-    
-    if (existingPI && existingPI.paymentIntent.status === 'succeeded') {
-      console.log('[PAYMENT INTENT] Existing payment intent already succeeded, creating new one for retesting');
-      // For development/testing: create a new payment intent when the old one is succeeded
-      // This allows retesting payments
-      existingPI = null; // Clear the existing PI to force new one creation below
-      // Note: In production, you'd want to prevent duplicate payments
-    }
-
-    // If there's an existing payment intent that's not succeeded, return it
-    console.log('[PAYMENT INTENT] Checking if should return existing PI:', {
-      hasExistingPI: !!existingPI,
-      status: existingPI?.paymentIntent?.status,
-      isValidStatus: existingPI ? ['requires_payment_method', 'requires_confirmation', 'requires_action'].includes(existingPI.paymentIntent.status) : false
-    });
-    
-    if (existingPI && 
-        ['requires_payment_method', 'requires_confirmation', 'requires_action'].includes(existingPI.paymentIntent.status)
-    ) {
-      console.log('[PAYMENT INTENT] Returning existing payment intent');
-      
-      let publishableKey;
-      try {
-        publishableKey = StripeService.getPublishableKey();
-        console.log('[PAYMENT INTENT] Got publishable key');
-      } catch (error) {
-        console.error('[PAYMENT INTENT] Error getting publishable key:', error);
-        publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
-      }
-      
-      const response = {
-        success: true,
-        clientSecret: existingPI.dbPaymentIntent.clientSecret,
-        paymentIntentId: existingPI.paymentIntent.id,
-        status: existingPI.paymentIntent.status,
-        amount: existingPI.dbPaymentIntent.amount,
-        currency: existingPI.dbPaymentIntent.currency,
-        publishableKey: publishableKey,
-      };
-      
-      console.log('[PAYMENT INTENT] Sending response:', {
-        ...response,
-        clientSecret: response.clientSecret ? 'present' : 'missing'
-      });
-      
-      return NextResponse.json(response);
-    }
-
     // Use the order's total retail amount for payment
     const amount = order.totalRetail;
     
-    console.log('[PAYMENT INTENT] Order payment details:', {
+    console.log('[CHECKOUT SESSION] Order payment details:', {
       orderId,
       totalRetail: order.totalRetail,
       subtotalRetail: order.subtotalRetail,
@@ -208,7 +140,7 @@ export async function POST(
     });
     
     if (!amount || amount <= 0) {
-      console.error('[PAYMENT INTENT] Invalid amount:', {
+      console.error('[CHECKOUT SESSION] Invalid amount:', {
         amount,
         totalRetail: order.totalRetail,
         orderState: order.state
@@ -227,15 +159,18 @@ export async function POST(
       );
     }
 
-    // Create payment intent 
-    const { paymentIntent, dbPaymentIntent } = await StripeService.createPaymentIntent({
+    // Get base URL for success/cancel URLs
+    const baseUrl = process.env.NEXTAUTH_URL || request.headers.get('origin') || 'https://postflow.outreachlabs.net';
+
+    // Create checkout session
+    const { session: stripeSession, dbSession } = await StripeService.createCheckoutSession({
       orderId,
       accountId: account.id,
       amount,
       currency: validatedData.currency,
       description: validatedData.description || `Payment for Order #${orderId.substring(0, 8)}`,
-      automaticPaymentMethods: validatedData.automaticPaymentMethods,
-      setupFutureUsage: validatedData.setupFutureUsage,
+      successUrl: `${baseUrl}/orders/${orderId}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancelUrl: `${baseUrl}/orders/${orderId}/payment/cancel`,
       metadata: {
         orderType: order.orderType,
         orderState: order.state || 'unknown',
@@ -253,20 +188,27 @@ export async function POST(
       })
       .where(eq(orders.id, orderId));
     
-    console.log('[PAYMENT INTENT] Updated order state to payment_pending');
+    console.log('[CHECKOUT SESSION] Updated order state to payment_pending');
+    console.log('[CHECKOUT SESSION] Created session:', {
+      sessionId: stripeSession.id,
+      amount: dbSession.amountTotal,
+      currency: dbSession.currency,
+      status: stripeSession.status,
+      expiresAt: stripeSession.expires_at
+    });
 
     return NextResponse.json({
       success: true,
-      clientSecret: paymentIntent.client_secret,
-      paymentIntentId: paymentIntent.id,
-      status: paymentIntent.status,
-      amount: dbPaymentIntent.amount,
-      currency: dbPaymentIntent.currency,
-      publishableKey: StripeService.getPublishableKey(),
+      sessionId: stripeSession.id,
+      url: stripeSession.url, // This is the URL to redirect to
+      status: stripeSession.status,
+      amount: dbSession.amountTotal,
+      currency: dbSession.currency,
+      expiresAt: stripeSession.expires_at,
     });
 
   } catch (error) {
-    console.error('[PAYMENT INTENT] Error creating payment intent:', {
+    console.error('[CHECKOUT SESSION] Error creating checkout session:', {
       error: error instanceof Error ? error.message : error,
       orderId: (await params).id,
       stack: error instanceof Error ? error.stack : undefined
@@ -283,20 +225,15 @@ export async function POST(
     if (error && typeof error === 'object' && 'type' in error) {
       const stripeError = error as any;
       switch (stripeError.type) {
-        case 'StripeCardError':
+        case 'StripeInvalidRequestError':
           return NextResponse.json(
-            { error: 'Card was declined', details: stripeError.message },
-            { status: 402 }
+            { error: 'Invalid checkout session request', details: stripeError.message },
+            { status: 400 }
           );
         case 'StripeRateLimitError':
           return NextResponse.json(
             { error: 'Too many requests, please try again later' },
             { status: 429 }
-          );
-        case 'StripeInvalidRequestError':
-          return NextResponse.json(
-            { error: 'Invalid payment request', details: stripeError.message },
-            { status: 400 }
           );
         case 'StripeAPIError':
           console.error('Stripe API Error:', stripeError.message);
@@ -320,7 +257,7 @@ export async function POST(
     }
 
     // Handle environment validation errors
-    if (error instanceof Error && error.message.includes('Stripe configuration invalid')) {
+    if (error instanceof Error && error.message.includes('configuration')) {
       console.error('Stripe environment validation failed:', error.message);
       return NextResponse.json(
         { error: 'Payment system not properly configured' },
@@ -331,7 +268,7 @@ export async function POST(
     // Generic error for unknown issues
     return NextResponse.json(
       { 
-        error: 'Failed to create payment intent', 
+        error: 'Failed to create checkout session', 
         message: error instanceof Error ? error.message : 'Unknown error' 
       },
       { status: 500 }

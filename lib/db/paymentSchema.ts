@@ -1,4 +1,5 @@
 import { pgTable, uuid, varchar, integer, timestamp, boolean, jsonb, pgEnum, text, index, unique } from 'drizzle-orm/pg-core';
+import { relations } from 'drizzle-orm';
 import { orders } from './orderSchema';
 import { accounts, users } from './schema';
 
@@ -425,5 +426,157 @@ export const paymentAuditLogs = pgTable('payment_audit_logs', {
   ipAddressIdx: index('idx_audit_ip').on(table.ipAddress),
 }));
 
+// Stripe Checkout Sessions table for tracking Checkout Sessions
+export const stripeCheckoutSessions = pgTable('stripe_checkout_sessions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  orderId: uuid('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
+  
+  // Stripe session identifiers
+  stripeSessionId: varchar('stripe_session_id', { length: 255 }).notNull().unique(),
+  status: varchar('status', { length: 50 }).notNull(), // open, complete, expired
+  mode: varchar('mode', { length: 20 }).notNull().default('payment'), // payment, subscription, setup
+  
+  // URLs for redirects
+  successUrl: text('success_url').notNull(),
+  cancelUrl: text('cancel_url').notNull(),
+  
+  // Customer details
+  customerEmail: varchar('customer_email', { length: 255 }),
+  
+  // Payment details
+  paymentIntentId: varchar('payment_intent_id', { length: 255 }), // Links to payment intent when completed
+  amountTotal: integer('amount_total').notNull(), // Amount in cents
+  currency: varchar('currency', { length: 3 }).notNull().default('USD'),
+  
+  // Metadata and tracking
+  metadata: jsonb('metadata'),
+  
+  // Expiration and timestamps
+  expiresAt: timestamp('expires_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  completedAt: timestamp('completed_at'), // When session was completed
+}, (table) => ({
+  orderIdIdx: index('idx_checkout_sessions_order_id').on(table.orderId),
+  stripeIdIdx: index('idx_checkout_sessions_stripe_id').on(table.stripeSessionId),
+  statusIdx: index('idx_checkout_sessions_status').on(table.status),
+  expiresAtIdx: index('idx_checkout_sessions_expires_at').on(table.expiresAt),
+}));
+
 export type PaymentAuditLog = typeof paymentAuditLogs.$inferSelect;
 export type NewPaymentAuditLog = typeof paymentAuditLogs.$inferInsert;
+export type StripeCheckoutSession = typeof stripeCheckoutSessions.$inferSelect;
+export type NewStripeCheckoutSession = typeof stripeCheckoutSessions.$inferInsert;
+
+// Relations
+export const paymentsRelations = relations(payments, ({ one, many }) => ({
+  order: one(orders, {
+    fields: [payments.orderId],
+    references: [orders.id],
+  }),
+  account: one(accounts, {
+    fields: [payments.accountId],
+    references: [accounts.id],
+  }),
+  recordedByUser: one(users, {
+    fields: [payments.recordedBy],
+    references: [users.id],
+  }),
+  invoices: many(invoices),
+  refunds: many(refunds),
+  paymentIntent: one(stripePaymentIntents, {
+    fields: [payments.id],
+    references: [stripePaymentIntents.paymentId],
+  }),
+}));
+
+export const invoicesRelations = relations(invoices, ({ one }) => ({
+  order: one(orders, {
+    fields: [invoices.orderId],
+    references: [orders.id],
+  }),
+  payment: one(payments, {
+    fields: [invoices.paymentId],
+    references: [payments.id],
+  }),
+}));
+
+export const stripePaymentIntentsRelations = relations(stripePaymentIntents, ({ one }) => ({
+  order: one(orders, {
+    fields: [stripePaymentIntents.orderId],
+    references: [orders.id],
+  }),
+  payment: one(payments, {
+    fields: [stripePaymentIntents.paymentId],
+    references: [payments.id],
+  }),
+}));
+
+export const stripeCustomersRelations = relations(stripeCustomers, ({ one }) => ({
+  account: one(accounts, {
+    fields: [stripeCustomers.accountId],
+    references: [accounts.id],
+  }),
+}));
+
+export const stripeWebhooksRelations = relations(stripeWebhooks, ({ one }) => ({
+  paymentIntent: one(stripePaymentIntents, {
+    fields: [stripeWebhooks.paymentIntentId],
+    references: [stripePaymentIntents.id],
+  }),
+  order: one(orders, {
+    fields: [stripeWebhooks.orderId],
+    references: [orders.id],
+  }),
+}));
+
+export const refundsRelations = relations(refunds, ({ one }) => ({
+  payment: one(payments, {
+    fields: [refunds.paymentId],
+    references: [payments.id],
+  }),
+  order: one(orders, {
+    fields: [refunds.orderId],
+    references: [orders.id],
+  }),
+  initiatedByUser: one(users, {
+    fields: [refunds.initiatedBy],
+    references: [users.id],
+  }),
+}));
+
+export const paymentRecoveryAttemptsRelations = relations(paymentRecoveryAttempts, ({ one }) => ({
+  paymentIntent: one(stripePaymentIntents, {
+    fields: [paymentRecoveryAttempts.paymentIntentId],
+    references: [stripePaymentIntents.id],
+  }),
+  order: one(orders, {
+    fields: [paymentRecoveryAttempts.orderId],
+    references: [orders.id],
+  }),
+}));
+
+export const invoiceRevisionsRelations = relations(invoiceRevisions, ({ one }) => ({
+  invoice: one(invoices, {
+    fields: [invoiceRevisions.invoiceId],
+    references: [invoices.id],
+  }),
+  createdByUser: one(users, {
+    fields: [invoiceRevisions.createdBy],
+    references: [users.id],
+  }),
+}));
+
+export const paymentAuditLogsRelations = relations(paymentAuditLogs, ({ one }) => ({
+  user: one(users, {
+    fields: [paymentAuditLogs.userId],
+    references: [users.id],
+  }),
+}));
+
+export const stripeCheckoutSessionsRelations = relations(stripeCheckoutSessions, ({ one }) => ({
+  order: one(orders, {
+    fields: [stripeCheckoutSessions.orderId],
+    references: [orders.id],
+  }),
+}));

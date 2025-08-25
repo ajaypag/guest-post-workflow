@@ -15,7 +15,8 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  Receipt
 } from 'lucide-react';
 
 interface Transaction {
@@ -28,6 +29,7 @@ interface Transaction {
   orderId?: string;
   invoiceUrl?: string;
   paymentMethod?: string;
+  receiptAvailable?: boolean;
 }
 
 export default function BillingHistoryPage() {
@@ -82,13 +84,48 @@ export default function BillingHistoryPage() {
     }
   };
 
-  const downloadInvoice = async (invoiceId: string) => {
+  const downloadInvoice = async (transaction: Transaction) => {
     try {
-      const response = await fetch(`/api/billing/invoice/${invoiceId}/download`, {
+      // For invoice transactions, the orderId is what we need
+      if (!transaction.orderId) {
+        alert('Order ID not available for this invoice');
+        return;
+      }
+
+      const response = await fetch(`/api/orders/${transaction.orderId}/invoice/download`, {
         credentials: 'include'
       });
 
       if (!response.ok) {
+        if (response.status === 400) {
+          // Invoice might not be generated yet, try to generate it first
+          const generateResponse = await fetch(`/api/orders/${transaction.orderId}/invoice`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ action: 'generate_invoice' })
+          });
+
+          if (generateResponse.ok) {
+            // Try downloading again
+            const retryResponse = await fetch(`/api/orders/${transaction.orderId}/invoice/download`, {
+              credentials: 'include'
+            });
+            
+            if (retryResponse.ok) {
+              const blob = await retryResponse.blob();
+              const url = window.URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `invoice-${transaction.orderId.substring(0, 8)}.pdf`;
+              document.body.appendChild(a);
+              a.click();
+              window.URL.revokeObjectURL(url);
+              document.body.removeChild(a);
+              return;
+            }
+          }
+        }
         throw new Error('Failed to download invoice');
       }
 
@@ -96,14 +133,38 @@ export default function BillingHistoryPage() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `invoice-${invoiceId}.pdf`;
+      a.download = `invoice-${transaction.orderId.substring(0, 8)}.pdf`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (error) {
       console.error('Error downloading invoice:', error);
-      alert('Failed to download invoice');
+      alert('Failed to download invoice. The invoice may need to be generated first.');
+    }
+  };
+
+  const viewReceipt = async (transactionId: string) => {
+    try {
+      const response = await fetch(`/api/billing/receipt/${transactionId}`, {
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch receipt');
+      }
+
+      const data = await response.json();
+      
+      if (data.receiptUrl) {
+        // Open Stripe receipt in new tab
+        window.open(data.receiptUrl, '_blank');
+      } else {
+        alert(data.message || 'Receipt not available');
+      }
+    } catch (error) {
+      console.error('Error fetching receipt:', error);
+      alert('Failed to fetch receipt');
     }
   };
 
@@ -337,9 +398,18 @@ export default function BillingHistoryPage() {
                                 View Order
                               </button>
                             )}
+                            {transaction.type === 'payment' && transaction.receiptAvailable && (
+                              <button
+                                onClick={() => viewReceipt(transaction.id)}
+                                className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                              >
+                                <Receipt className="w-4 h-4" />
+                                Receipt
+                              </button>
+                            )}
                             {transaction.invoiceUrl && (
                               <button
-                                onClick={() => downloadInvoice(transaction.id)}
+                                onClick={() => downloadInvoice(transaction)}
                                 className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
                               >
                                 <Download className="w-4 h-4" />

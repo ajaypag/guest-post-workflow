@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { db } from '@/lib/db/connection';
-import { payments, refunds } from '@/lib/db/paymentSchema';
+import { stripeCheckoutSessions } from '@/lib/db/paymentSchema';
 import { orders } from '@/lib/db/orderSchema';
-import { eq, and, gte, lte, desc, or } from 'drizzle-orm';
+import { eq, and, gte, lte, desc, sql } from 'drizzle-orm';
 
 // Helper function to validate date format (YYYY-MM-DD)
 function isValidDate(dateString: string): boolean {
@@ -60,26 +60,18 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Build date conditions
-    const dateConditions = [];
-    if (startDate) {
-      dateConditions.push(gte(payments.processedAt, new Date(startDate)));
-    }
-    if (endDate) {
-      const endOfDay = new Date(endDate);
-      endOfDay.setHours(23, 59, 59, 999);
-      dateConditions.push(lte(payments.processedAt, endOfDay));
-    }
-
     // Get orders for this account
-    const accountOrders = await db.query.orders.findMany({
-      where: eq(orders.accountId, session.userId),
-      columns: {
-        id: true,
-        totalRetail: true,
-        state: true
-      }
-    });
+    const accountOrders = await db
+      .select({
+        id: orders.id,
+        totalRetail: orders.totalRetail,
+        state: orders.state,
+        orderType: orders.orderType,
+        createdAt: orders.createdAt,
+        paidAt: orders.paidAt,
+      })
+      .from(orders)
+      .where(eq(orders.accountId, session.userId));
 
     const orderIds = accountOrders.map(o => o.id);
     
@@ -95,84 +87,84 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // Build date conditions for checkout sessions
+    const dateConditions = [];
+    if (startDate) {
+      dateConditions.push(gte(stripeCheckoutSessions.completedAt, new Date(startDate)));
+    }
+    if (endDate) {
+      const endOfDay = new Date(endDate);
+      endOfDay.setHours(23, 59, 59, 999);
+      dateConditions.push(lte(stripeCheckoutSessions.completedAt, endOfDay));
+    }
+
+    // Get completed checkout sessions (these are successful payments)
+    const checkoutSessions = await db
+      .select({
+        sessionId: stripeCheckoutSessions.id,
+        stripeSessionId: stripeCheckoutSessions.stripeSessionId,
+        orderId: stripeCheckoutSessions.orderId,
+        status: stripeCheckoutSessions.status,
+        amountTotal: stripeCheckoutSessions.amountTotal,
+        currency: stripeCheckoutSessions.currency,
+        completedAt: stripeCheckoutSessions.completedAt,
+        createdAt: stripeCheckoutSessions.createdAt,
+        paymentIntentId: stripeCheckoutSessions.paymentIntentId,
+      })
+      .from(stripeCheckoutSessions)
+      .where(
+        and(
+          sql`${stripeCheckoutSessions.orderId} = ANY(ARRAY[${sql.raw(orderIds.map(id => `'${id}'::uuid`).join(','))}])`,
+          eq(stripeCheckoutSessions.status, 'complete'),
+          ...(dateConditions.length > 0 ? dateConditions : [])
+        )
+      )
+      .orderBy(desc(stripeCheckoutSessions.completedAt));
+
     // Build transactions array
     const transactions: any[] = [];
 
-    // Get payments if not filtering for refunds only
-    if (filter === 'all' || filter === 'payments' || filter === 'invoices') {
-      const userPayments = await db.query.payments.findMany({
-        where: and(
-          or(...orderIds.map(id => eq(payments.orderId, id))),
-          eq(payments.status, 'completed'),
-          ...(dateConditions.length > 0 ? dateConditions : [])
-        ),
-        with: {
-          order: {
-            columns: {
-              id: true,
-              status: true,
-              state: true
-            }
-          }
-        },
-        orderBy: [desc(payments.processedAt)]
-      });
-
-      userPayments.forEach(payment => {
-        // Add payment transaction
-        if (filter === 'all' || filter === 'payments') {
-          transactions.push({
-            id: payment.id,
-            type: 'payment',
-            date: payment.processedAt?.toISOString() || payment.createdAt.toISOString(),
-            amount: payment.amount,
-            status: payment.status,
-            description: `Payment for Order #${payment.orderId.substring(0, 8)}`,
-            orderId: payment.orderId,
-            paymentMethod: payment.method || 'card'
-          });
-        }
-
-        // Add invoice transaction if payment is completed (invoice available)
-        if ((filter === 'all' || filter === 'invoices') && payment.status === 'completed') {
-          transactions.push({
-            id: `inv_${payment.id}`,
-            type: 'invoice',
-            date: payment.processedAt?.toISOString() || payment.createdAt.toISOString(),
-            amount: payment.amount,
-            status: 'available',
-            description: `Invoice for Order #${payment.orderId.substring(0, 8)}`,
-            orderId: payment.orderId,
-            invoiceUrl: `/api/orders/${payment.orderId}/invoice`
-          });
-        }
+    // Map completed checkout sessions to payment transactions
+    if (filter === 'all' || filter === 'payments') {
+      checkoutSessions.forEach(session => {
+        const order = accountOrders.find(o => o.id === session.orderId);
+        transactions.push({
+          id: session.sessionId,
+          type: 'payment',
+          date: session.completedAt?.toISOString() || session.createdAt.toISOString(),
+          amount: session.amountTotal,
+          status: 'completed',
+          description: `Payment for ${order?.orderType?.replace('_', ' ') || 'Order'} #${session.orderId.substring(0, 8)}`,
+          orderId: session.orderId,
+          paymentMethod: 'card',
+          stripePaymentIntentId: session.paymentIntentId,
+          stripeSessionId: session.stripeSessionId,
+          receiptAvailable: !!session.paymentIntentId,
+        });
       });
     }
 
-    // Get refunds if not filtering for payments/invoices only
-    if (filter === 'all' || filter === 'refunds') {
-      const userRefunds = await db.query.refunds.findMany({
-        where: and(
-          or(...orderIds.map(id => eq(refunds.orderId, id))),
-          ...(dateConditions.length > 0 ? [
-            gte(refunds.processedAt, startDate ? new Date(startDate) : new Date(0)),
-            lte(refunds.processedAt, endDate ? new Date(endDate + ' 23:59:59') : new Date())
-          ] : [])
-        ),
-        orderBy: [desc(refunds.processedAt)]
-      });
-
-      userRefunds.forEach(refund => {
+    // Add invoices for completed payments (if filtering for invoices)
+    if (filter === 'all' || filter === 'invoices') {
+      checkoutSessions.forEach(session => {
+        const order = accountOrders.find(o => o.id === session.orderId);
         transactions.push({
-          id: refund.id,
-          type: 'refund',
-          date: refund.processedAt?.toISOString() || refund.createdAt.toISOString(),
-          amount: refund.amount,
-          status: refund.status,
-          description: `Refund for Order #${refund.orderId.substring(0, 8)}${refund.reason ? ` - ${refund.reason}` : ''}`,
-          orderId: refund.orderId
+          id: `inv_${session.sessionId}`,
+          type: 'invoice',
+          date: session.completedAt?.toISOString() || session.createdAt.toISOString(),
+          amount: session.amountTotal,
+          status: 'available',
+          description: `Invoice for ${order?.orderType?.replace('_', ' ') || 'Order'} #${session.orderId.substring(0, 8)}`,
+          orderId: session.orderId,
+          invoiceUrl: `/api/orders/${session.orderId}/invoice`,
         });
       });
+    }
+
+    // Note: Refunds are not yet implemented in the new Stripe Checkout flow
+    // When refunds are implemented, they will be added here
+    if (filter === 'refunds') {
+      // Currently no refunds in the system
     }
 
     // Sort transactions by date
@@ -193,7 +185,7 @@ export async function GET(request: NextRequest) {
         totalPaid,
         totalRefunded,
         netAmount: totalPaid - totalRefunded,
-        transactionCount: transactions.length
+        transactionCount: transactions.filter(t => t.type === 'payment').length
       }
     });
 
