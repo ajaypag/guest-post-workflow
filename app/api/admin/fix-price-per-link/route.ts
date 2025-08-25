@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
 import { orders } from '@/lib/db/orderSchema';
 import { orderLineItems } from '@/lib/db/orderLineItemSchema';
-import { eq, isNull, or, and } from 'drizzle-orm';
+import { eq, isNull, or, and, sql } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
 
 export async function POST(request: NextRequest) {
@@ -27,9 +27,13 @@ export async function POST(request: NextRequest) {
     
     for (const order of ordersToFix) {
       try {
-        // Get line items for this order
+        // Get active line items for this order (exclude cancelled items from price calculations)
         const lineItems = await db.query.orderLineItems.findMany({
-          where: eq(orderLineItems.orderId, order.id)
+          where: and(
+            eq(orderLineItems.orderId, order.id),
+            sql`${orderLineItems.status} NOT IN ('cancelled', 'refunded')`,
+            sql`${orderLineItems.cancelledAt} IS NULL`
+          )
         });
 
         if (lineItems.length === 0) {

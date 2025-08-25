@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
 import { orders } from '@/lib/db/orderSchema';
 import { orderLineItems } from '@/lib/db/orderLineItemSchema';
-import { eq } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { EmailService } from '@/lib/services/emailService';
 import { SitesReadyForReviewEmail } from '@/lib/email/templates';
@@ -88,8 +88,13 @@ export async function POST(
         console.log(`[STATE_UPDATE] Sending sites ready email to ${updatedOrder.account.email} for order ${id}`);
         
         // Fetch the order items (sites) for this order - using the CORRECT table with AI data!
+        // IMPORTANT: Exclude cancelled/refunded line items from sites ready email
         const orderItems = await db.query.orderLineItems.findMany({
-          where: eq(orderLineItems.orderId, id),
+          where: and(
+            eq(orderLineItems.orderId, id),
+            sql`${orderLineItems.status} NOT IN ('cancelled', 'refunded')`,
+            sql`${orderLineItems.cancelledAt} IS NULL`
+          ),
         });
 
         // Format sites for email template with AI qualification data

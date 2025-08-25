@@ -55,7 +55,9 @@ export async function POST(
       where: and(
         eq(orderLineItems.orderId, orderId),
         inArray(orderLineItems.id, lineItemIds),
-        isNull(orderLineItems.assignedDomainId) // Only unassigned items
+        isNull(orderLineItems.assignedDomainId), // Only unassigned items
+        sql`${orderLineItems.status} NOT IN ('cancelled', 'refunded')`,
+        sql`${orderLineItems.cancelledAt} IS NULL`
       )
     });
     
@@ -231,8 +233,13 @@ export async function POST(
 
     // Recalculate order totals based on actual line item prices
     // This is important for review status where actual prices should be shown
+    // EXCLUDE cancelled items from total calculations
     const allOrderLineItems = await db.query.orderLineItems.findMany({
-      where: eq(orderLineItems.orderId, orderId)
+      where: and(
+        eq(orderLineItems.orderId, orderId),
+        sql`${orderLineItems.status} NOT IN ('cancelled', 'refunded')`,
+        sql`${orderLineItems.cancelledAt} IS NULL`
+      )
     });
     
     // Calculate new totals from line items (excluding cancelled/refunded)
