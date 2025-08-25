@@ -54,34 +54,26 @@ interface PublisherOnboardingData {
 
 export async function GET(request: NextRequest) {
   try {
-    // Get JWT token from cookie
-    const token = request.cookies.get('auth-token-publisher')?.value;
+    // Use session-based auth (same as other publisher APIs)
+    const { AuthServiceServer } = await import('@/lib/auth-server');
+    const session = await AuthServiceServer.getSession(request);
     
-    if (!token) {
+    if (!session) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
       );
     }
     
-    // Verify JWT token
-    let publisherId: string;
-    try {
-      const decoded = jwt.verify(token, process.env.NEXTAUTH_SECRET!) as any;
-      publisherId = decoded.publisherId || decoded.userId;
-      
-      if (decoded.userType !== 'publisher') {
-        return NextResponse.json(
-          { error: 'Publisher authentication required' },
-          { status: 403 }
-        );
-      }
-    } catch (jwtError) {
+    if (session.userType !== 'publisher') {
       return NextResponse.json(
-        { error: 'Invalid authentication token' },
-        { status: 401 }
+        { error: 'Publisher authentication required' },
+        { status: 403 }
       );
     }
+    
+    // Get publisher ID from session
+    const publisherId = session.publisherId || session.userId;
 
     // Get publisher data
     const [publisher] = await db
@@ -117,13 +109,31 @@ export async function GET(request: NextRequest) {
       .leftJoin(websites, eq(shadowPublisherWebsites.websiteId, websites.id))
       .where(eq(shadowPublisherWebsites.publisherId, publisherId));
 
+    // ALSO get regular publisher websites (for publishers with existing data)
+    const { publisherWebsites } = await import('@/lib/db/accountSchema');
+    const regularWebsites = await db
+      .select({
+        id: publisherWebsites.id,
+        websiteId: publisherWebsites.websiteId,
+        status: publisherWebsites.status,
+        addedAt: publisherWebsites.addedAt,
+        // Website details
+        domain: websites.domain,
+        guestPostCost: websites.guestPostCost,
+        domainRating: websites.domainRating,
+        totalTraffic: websites.totalTraffic,
+      })
+      .from(publisherWebsites)
+      .leftJoin(websites, eq(publisherWebsites.websiteId, websites.id))
+      .where(eq(publisherWebsites.publisherId, publisherId));
+
     // Get publisher offerings
     const offerings = await db
       .select()
       .from(publisherOfferings)
       .where(eq(publisherOfferings.publisherId, publisherId));
 
-    // Get publisher-website relationships
+    // Get publisher-website relationships with full website data
     const relationships = await db
       .select({
         id: publisherOfferingRelationships.id,
@@ -132,11 +142,38 @@ export async function GET(request: NextRequest) {
         isPrimary: publisherOfferingRelationships.isPrimary,
         relationshipType: publisherOfferingRelationships.relationshipType,
         verificationStatus: publisherOfferingRelationships.verificationStatus,
+        // Include all website data
         domain: websites.domain,
+        guestPostCost: websites.guestPostCost,
+        domainRating: websites.domainRating,
+        totalTraffic: websites.totalTraffic,
       })
       .from(publisherOfferingRelationships)
       .leftJoin(websites, eq(publisherOfferingRelationships.websiteId, websites.id))
       .where(eq(publisherOfferingRelationships.publisherId, publisherId));
+
+    // Filter out already migrated shadow websites
+    const activeShadowWebsites = shadowWebsites.filter(sw => 
+      sw.migrationStatus !== 'migrated' && sw.migrationStatus !== 'completed'
+    );
+    
+    // Convert regular publisher websites to shadow format for consistent UI
+    const regularWebsitesAsShadow = regularWebsites.map(rw => ({
+      id: rw.id,
+      websiteId: rw.websiteId,
+      domain: rw.domain,
+      confidence: 10, // Max confidence for existing data
+      source: 'publisher',
+      extractionMethod: 'existing',
+      verified: true,
+      migrationStatus: 'active', // These are already active
+      guestPostCost: rw.guestPostCost,
+      domainRating: rw.domainRating,
+      totalTraffic: rw.totalTraffic,
+    }));
+    
+    // Combine all websites (shadow + regular publisher websites)
+    const websitesData = [...activeShadowWebsites, ...regularWebsitesAsShadow];
 
     const response: PublisherOnboardingData = {
       publisher: {
@@ -146,7 +183,7 @@ export async function GET(request: NextRequest) {
         companyName: publisher.companyName || '',
         accountStatus: publisher.accountStatus || 'unknown',
       },
-      shadowWebsites: shadowWebsites.map(sw => ({
+      shadowWebsites: websitesData.map(sw => ({
         id: sw.id,
         websiteId: sw.websiteId,
         domain: sw.domain || 'Unknown domain',
@@ -161,8 +198,9 @@ export async function GET(request: NextRequest) {
       })),
       offerings: offerings.map(o => ({
         id: o.id,
+        websiteId: (o.attributes as any)?.websiteId || undefined, // Get websiteId from attributes if stored there
         offeringType: o.offeringType,
-        basePrice: o.basePrice,
+        basePrice: o.basePrice, // Keep in cents, frontend will convert
         currency: o.currency,
         turnaroundDays: o.turnaroundDays || undefined,
         offeringName: o.offeringName || undefined,

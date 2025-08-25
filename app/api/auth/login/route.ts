@@ -42,7 +42,6 @@ export async function POST(request: NextRequest) {
     // First try to find user in users table (internal team)
     let user = await UserService.verifyPassword(email, password);
     let userType = 'internal';
-    let token: string;
     let clientId: string | undefined;
     let companyName: string | undefined;
     
@@ -98,7 +97,8 @@ export async function POST(request: NextRequest) {
         accountId: user.id
       })
     };
-    token = await AuthServiceServer.createSession(userWithType);
+    // Create session and get session ID
+    const sessionId = await AuthServiceServer.createSession(userWithType, request);
     
     // Create response first
     const response = NextResponse.json({
@@ -120,9 +120,9 @@ export async function POST(request: NextRequest) {
     const isProduction = process.env.NODE_ENV === 'production';
     
     // Log environment for debugging
-    console.log('🔐 Setting cookie with:', {
-      name: 'auth-token',
-      value: token.substring(0, 20) + '...',
+    console.log('🔐 Setting session cookie with:', {
+      name: 'auth-session',
+      value: sessionId.substring(0, 20) + '...',
       httpOnly: true,
       secure: isProduction,
       nodeEnv: process.env.NODE_ENV,
@@ -132,8 +132,8 @@ export async function POST(request: NextRequest) {
     });
     
     response.cookies.set({
-      name: 'auth-token',
-      value: token,
+      name: 'auth-session',
+      value: sessionId,
       httpOnly: true,
       secure: isProduction,
       sameSite: 'lax',

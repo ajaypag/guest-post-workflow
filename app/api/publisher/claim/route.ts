@@ -232,20 +232,20 @@ export async function POST(request: NextRequest) {
         throw new Error('Failed to retrieve updated publisher data');
       }
       
-      // Create session data
-      const sessionData = {
-        userId: updatedPublisher.id,
+      // Create user object that SessionManager expects
+      const publisherUser = {
+        id: updatedPublisher.id,
         publisherId: updatedPublisher.id,
         email: updatedPublisher.email,
         name: updatedPublisher.contactName || updatedPublisher.companyName || 'Publisher User',
-        role: 'publisher' as any,
         userType: 'publisher' as const,
         companyName: updatedPublisher.companyName,
-        status: updatedPublisher.status
+        status: updatedPublisher.status,
+        role: 'publisher'
       };
       
-      // Create JWT token
-      const token = await AuthServiceServer.createPublisherToken(sessionData);
+      // Create session (will automatically use system user ID for FK)
+      const sessionId = await AuthServiceServer.createSession(publisherUser);
       
       // Include migration status in response
       const responseData: any = {
@@ -273,10 +273,10 @@ export async function POST(request: NextRequest) {
       
       const response = NextResponse.json(responseData);
       
-      // Set auth cookie
+      // Set auth-session cookie 
       response.cookies.set({
-        name: 'auth-token-publisher',
-        value: token,
+        name: 'auth-session',
+        value: sessionId,
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',

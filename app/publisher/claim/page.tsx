@@ -179,19 +179,19 @@ function ClaimForm() {
             </div>
             <h3 className="text-2xl font-bold text-gray-900 mb-2">Welcome to Linkio!</h3>
             <p className="text-gray-600 mb-6">
-              Your publisher account has been successfully activated. You're being redirected to your dashboard...
+              Your publisher account has been successfully activated. You're being redirected to complete your onboarding...
             </p>
             <div className="bg-blue-50 rounded-lg p-4 mb-6">
               <div className="flex items-center justify-center">
                 <Loader2 className="w-5 h-5 animate-spin text-blue-600 mr-2" />
-                <span className="text-blue-600 font-medium">Redirecting to dashboard...</span>
+                <span className="text-blue-600 font-medium">Redirecting to onboarding...</span>
               </div>
             </div>
             <Link
-              href="/publisher/dashboard"
+              href="/publisher/onboarding"
               className="text-blue-600 hover:text-blue-700 font-medium text-sm"
             >
-              Go to dashboard manually →
+              Go to onboarding manually →
             </Link>
           </div>
         </div>

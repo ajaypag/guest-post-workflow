@@ -7,6 +7,7 @@ import { type AuthSession } from '@/lib/auth';
 import { useState, useEffect } from 'react';
 import { User, LogOut, Users, Building2, Zap, Search, BarChart2, Globe, Mail, ShoppingCart, Package, Database, ChevronDown, Settings, CreditCard, HelpCircle, Menu, X, Shield, FileText } from 'lucide-react';
 import NotificationBell from '@/components/ui/NotificationBell';
+import ImpersonationBanner from '@/components/impersonation/ImpersonationBanner';
 
 export default function Header() {
   const router = useRouter();
@@ -17,7 +18,47 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    setSession(sessionStorage.getSession());
+    // Set localStorage session immediately for fast render
+    const localSession = sessionStorage.getSession();
+    if (localSession) {
+      setSession(localSession);
+    }
+
+    const fetchSession = async () => {
+      try {
+        const response = await fetch('/api/auth/session-state', {
+          credentials: 'include',
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.sessionState) {
+            // Update with server session state (includes impersonation data)
+            setSession({
+              userId: data.sessionState.currentUser.userId,
+              email: data.sessionState.currentUser.email,
+              userType: data.sessionState.currentUser.userType,
+              clientId: data.sessionState.currentUser.clientId,
+              isImpersonating: data.sessionState.impersonation?.isActive || false
+            });
+          } else if (!localSession) {
+            // Only fallback to localStorage if we didn't already set it
+            setSession(sessionStorage.getSession());
+          }
+        } else if (!localSession) {
+          // Only fallback to localStorage if we didn't already set it
+          setSession(sessionStorage.getSession());
+        }
+      } catch (error) {
+        console.error('Error fetching session state:', error);
+        // Only fallback to localStorage if we didn't already set it
+        if (!localSession) {
+          setSession(sessionStorage.getSession());
+        }
+      }
+    };
+
+    fetchSession();
   }, []);
 
   // Close dropdown when clicking outside
@@ -56,7 +97,8 @@ export default function Header() {
 
   return (
     <>
-    <header className="bg-white border-b border-gray-100 relative z-40">
+      <ImpersonationBanner />
+      <header className="bg-white border-b border-gray-100 relative z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo/Brand */}
@@ -198,16 +240,6 @@ export default function Header() {
                         <Users className="w-4 h-4 mr-2" />
                         Add Publisher
                       </Link>
-                      {session.role === 'admin' && (
-                        <Link
-                          href="/admin"
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center border-t border-gray-100 mt-1 pt-2"
-                          onClick={() => setInternalDropdownOpen(false)}
-                        >
-                          <Settings className="w-4 h-4 mr-2" />
-                          Full Admin Panel
-                        </Link>
-                      )}
                     </div>
                   )}
                 </div>

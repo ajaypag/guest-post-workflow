@@ -3,7 +3,8 @@ import { db } from '@/lib/db/connection';
 import { 
   stripePaymentIntents, 
   stripeCustomers, 
-  payments
+  payments,
+  stripeCheckoutSessions
 } from '@/lib/db/paymentSchema';
 import { orders } from '@/lib/db/orderSchema';
 import { accounts } from '@/lib/db/accountSchema';
@@ -342,6 +343,7 @@ export class StripeService {
       .update(orders)
       .set({
         state: 'payment_received',
+        status: 'paid', // Update the main status to paid
         paidAt: new Date(),
         updatedAt: new Date(),
       })
@@ -412,5 +414,301 @@ export class StripeService {
       throw new Error('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is not configured');
     }
     return publishableKey;
+  }
+
+  /**
+   * Create a new Checkout Session for hosted payment
+   */
+  static async createCheckoutSession(options: {
+    orderId: string;
+    accountId: string;
+    amount: number; // Amount in cents
+    currency?: string;
+    description?: string;
+    successUrl: string;
+    cancelUrl: string;
+    expiresAt?: Date;
+    metadata?: Record<string, string>;
+  }): Promise<{
+    session: Stripe.Checkout.Session;
+    dbSession: typeof stripeCheckoutSessions.$inferSelect;
+  }> {
+    const {
+      orderId,
+      accountId,
+      amount,
+      currency = 'USD',
+      description,
+      successUrl,
+      cancelUrl,
+      expiresAt,
+      metadata = {},
+    } = options;
+
+    // Validate order exists and belongs to account
+    const order = await db
+      .select()
+      .from(orders)
+      .where(
+        and(
+          eq(orders.id, orderId),
+          eq(orders.accountId, accountId)
+        )
+      )
+      .limit(1);
+
+    if (order.length === 0) {
+      throw new Error('Order not found or access denied');
+    }
+
+    const orderData = order[0];
+
+    // Get account information
+    const account = await db
+      .select()
+      .from(accounts)
+      .where(eq(accounts.id, accountId))
+      .limit(1);
+
+    if (account.length === 0) {
+      throw new Error('Account not found');
+    }
+
+    const accountData = account[0];
+
+    // Check if active session already exists for this order
+    const existingSessions = await db
+      .select()
+      .from(stripeCheckoutSessions)
+      .where(
+        and(
+          eq(stripeCheckoutSessions.orderId, orderId),
+          eq(stripeCheckoutSessions.status, 'open')
+        )
+      )
+      .limit(1);
+
+    if (existingSessions.length > 0) {
+      const existingSession = existingSessions[0];
+      // Retrieve the session from Stripe to ensure it still exists
+      try {
+        const stripeSession = await getStripeClient().checkout.sessions.retrieve(existingSession.stripeSessionId);
+        
+        if (stripeSession.status === 'open' && stripeSession.expires_at && stripeSession.expires_at > Math.floor(Date.now() / 1000)) {
+          return { session: stripeSession, dbSession: existingSession };
+        }
+      } catch (error) {
+        // Session doesn't exist in Stripe anymore, continue to create new one
+        console.warn(`Existing checkout session ${existingSession.stripeSessionId} not found in Stripe, creating new one`);
+      }
+    }
+
+    // Calculate expires_at timestamp (default 30 minutes from now)
+    const expiresAtTimestamp = expiresAt 
+      ? Math.floor(expiresAt.getTime() / 1000)
+      : Math.floor(Date.now() / 1000) + (30 * 60); // 30 minutes
+
+    // Create checkout session in Stripe
+    const session = await getStripeClient().checkout.sessions.create({
+      mode: 'payment',
+      customer_email: accountData.email,
+      line_items: [{
+        price_data: {
+          currency: currency.toLowerCase(),
+          product_data: {
+            name: description || `Guest Post Order #${orderId.substring(0, 8)}`,
+            description: `${orderData.orderType} - ${accountData.companyName || accountData.contactName}`,
+          },
+          unit_amount: amount,
+        },
+        quantity: 1,
+      }],
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+      expires_at: expiresAtTimestamp,
+      metadata: {
+        orderId,
+        accountId,
+        orderType: orderData.orderType,
+        ...metadata,
+      },
+      payment_intent_data: {
+        metadata: {
+          orderId,
+          accountId,
+          orderType: orderData.orderType,
+          ...metadata,
+        },
+      },
+      automatic_tax: {
+        enabled: false, // Can be enabled later if needed
+      },
+    });
+
+    // Save checkout session to database
+    const [dbSession] = await db
+      .insert(stripeCheckoutSessions)
+      .values({
+        orderId,
+        stripeSessionId: session.id,
+        status: session.status as string,
+        mode: session.mode as string,
+        successUrl,
+        cancelUrl,
+        customerEmail: accountData.email,
+        amountTotal: amount,
+        currency: currency.toUpperCase(),
+        metadata: {
+          orderId,
+          accountId,
+          orderType: orderData.orderType,
+          ...metadata,
+        },
+        expiresAt: new Date(expiresAtTimestamp * 1000),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+
+    return { session, dbSession };
+  }
+
+  /**
+   * Retrieve a Checkout Session by ID
+   */
+  static async retrieveCheckoutSession(sessionId: string): Promise<{
+    session: Stripe.Checkout.Session;
+    dbSession: typeof stripeCheckoutSessions.$inferSelect | null;
+  }> {
+    // Retrieve from Stripe
+    const session = await getStripeClient().checkout.sessions.retrieve(sessionId);
+
+    // Retrieve from database
+    const dbSession = await db
+      .select()
+      .from(stripeCheckoutSessions)
+      .where(eq(stripeCheckoutSessions.stripeSessionId, sessionId))
+      .limit(1);
+
+    return {
+      session,
+      dbSession: dbSession.length > 0 ? dbSession[0] : null,
+    };
+  }
+
+  /**
+   * Update checkout session status from webhook or manual call
+   */
+  static async updateCheckoutSessionFromWebhook(
+    sessionId: string,
+    session: Stripe.Checkout.Session,
+    eventId: string
+  ): Promise<void> {
+    // Find the checkout session in our database
+    const existingSession = await db
+      .select()
+      .from(stripeCheckoutSessions)
+      .where(eq(stripeCheckoutSessions.stripeSessionId, sessionId))
+      .limit(1);
+
+    if (existingSession.length === 0) {
+      console.warn(`Checkout session ${sessionId} not found in database`);
+      return;
+    }
+
+    const dbSession = existingSession[0];
+
+    // Update checkout session
+    await db
+      .update(stripeCheckoutSessions)
+      .set({
+        status: session.status || 'unknown',
+        paymentIntentId: session.payment_intent as string,
+        completedAt: session.status === 'complete' ? new Date() : null,
+        updatedAt: new Date(),
+      })
+      .where(eq(stripeCheckoutSessions.id, dbSession.id));
+
+    // Handle successful payment
+    if (session.status === 'complete' && session.payment_intent) {
+      await this.handleSuccessfulCheckoutSession(dbSession.orderId, session);
+    }
+  }
+
+  /**
+   * Handle successful checkout session by updating order status
+   */
+  private static async handleSuccessfulCheckoutSession(
+    orderId: string,
+    session: Stripe.Checkout.Session
+  ): Promise<void> {
+    // Create payment record
+    await db.insert(payments).values({
+      orderId,
+      accountId: session.metadata?.accountId!,
+      amount: session.amount_total || 0,
+      currency: session.currency?.toUpperCase() || 'USD',
+      status: 'completed',
+      method: 'stripe',
+      transactionId: session.payment_intent as string,
+      stripePaymentIntentId: session.payment_intent as string,
+      processorResponse: JSON.stringify(session),
+      processedAt: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    // Update order status to payment_received
+    await db
+      .update(orders)
+      .set({
+        state: 'payment_received',
+        status: 'paid', // Update the main status to paid
+        paidAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(orders.id, orderId));
+
+    console.log(`Order ${orderId} payment completed via checkout session ${session.id}`);
+  }
+
+  /**
+   * Expire a checkout session
+   */
+  static async expireCheckoutSession(sessionId: string): Promise<Stripe.Checkout.Session> {
+    const session = await getStripeClient().checkout.sessions.expire(sessionId);
+    
+    // Update in database
+    await db
+      .update(stripeCheckoutSessions)
+      .set({
+        status: session.status || 'unknown',
+        updatedAt: new Date(),
+      })
+      .where(eq(stripeCheckoutSessions.stripeSessionId, sessionId));
+
+    return session;
+  }
+
+  /**
+   * Get checkout session by order ID
+   */
+  static async getCheckoutSessionByOrder(orderId: string): Promise<{
+    session: Stripe.Checkout.Session | null;
+    dbSession: typeof stripeCheckoutSessions.$inferSelect | null;
+  }> {
+    const dbSession = await db
+      .select()
+      .from(stripeCheckoutSessions)
+      .where(eq(stripeCheckoutSessions.orderId, orderId))
+      .limit(1);
+
+    if (dbSession.length === 0) {
+      return { session: null, dbSession: null };
+    }
+
+    const session = await getStripeClient().checkout.sessions.retrieve(dbSession[0].stripeSessionId);
+
+    return { session, dbSession: dbSession[0] };
   }
 }

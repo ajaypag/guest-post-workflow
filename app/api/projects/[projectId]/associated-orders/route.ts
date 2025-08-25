@@ -5,7 +5,7 @@ import { orders } from '@/lib/db/orderSchema';
 import { orderLineItems } from '@/lib/db/orderLineItemSchema';
 import { targetPages } from '@/lib/db/schema';
 import { clients } from '@/lib/db/schema';
-import { eq, and, like, sql } from 'drizzle-orm';
+import { eq, and, like, sql, inArray } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
 
 export async function GET(
@@ -58,7 +58,7 @@ export async function GET(
       .leftJoin(orderLineItems, eq(orders.id, orderLineItems.orderId))
       .leftJoin(targetPages, eq(orderLineItems.targetPageId, targetPages.id))
       .leftJoin(clients, eq(orderLineItems.clientId, clients.id))
-      .where(sql`${orders.id} = ANY(ARRAY[${sql.raw(orderIds.map(id => `'${id}'`).join(','))}])`);
+      .where(inArray(orders.id, orderIds));
     
     // Group data by order and collect unique target pages
     const orderMap = new Map();

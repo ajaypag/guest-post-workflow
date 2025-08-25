@@ -54,6 +54,7 @@ export default function VerifyWebsitePage({ params }: { params: Promise<{ id: st
   const [verificationToken, setVerificationToken] = useState('');
   const [emailSent, setEmailSent] = useState(false);
   const [checkingVerification, setCheckingVerification] = useState(false);
+  const [customEmail, setCustomEmail] = useState('');
 
   const verificationMethods: VerificationMethod[] = [
     {
@@ -135,6 +136,16 @@ export default function VerifyWebsitePage({ params }: { params: Promise<{ id: st
   };
 
   const startEmailVerification = async () => {
+    if (!customEmail) {
+      setError('Please enter an email address');
+      return;
+    }
+    
+    if (!customEmail.includes('@')) {
+      setError('Please enter a valid email address');
+      return;
+    }
+    
     setVerifying(true);
     setError('');
     setSuccess('');
@@ -145,7 +156,8 @@ export default function VerifyWebsitePage({ params }: { params: Promise<{ id: st
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           method: 'email',
-          token: verificationToken
+          token: verificationToken,
+          emailAddress: customEmail // Include custom email if provided
         })
       });
 
@@ -211,22 +223,25 @@ export default function VerifyWebsitePage({ params }: { params: Promise<{ id: st
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Email Address
+                      Email Address <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="email"
-                      value={`admin@${website.domain}`}
-                      readOnly
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50"
+                      value={customEmail}
+                      onChange={(e) => setCustomEmail(e.target.value)}
+                      placeholder={`e.g., admin@${website.domain}`}
+                      required
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                     <p className="mt-1 text-xs text-gray-500">
-                      Make sure you have access to this email address
+                      Enter the email address where you want to receive the verification link. 
+                      Common options: admin@{website.domain}, webmaster@{website.domain}, or your personal email at the domain.
                     </p>
                   </div>
                   
                   <button
                     onClick={startEmailVerification}
-                    disabled={verifying}
+                    disabled={verifying || !customEmail}
                     className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                   >
                     {verifying ? (
@@ -246,7 +261,7 @@ export default function VerifyWebsitePage({ params }: { params: Promise<{ id: st
                 <div className="space-y-4">
                   <div className="flex items-center text-green-700">
                     <CheckCircle className="h-5 w-5 mr-2" />
-                    Email sent to admin@{website.domain}
+                    Email sent to {customEmail}
                   </div>
                   <p className="text-sm text-gray-600">
                     Please check your inbox and click the verification link. 

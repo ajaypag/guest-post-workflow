@@ -8,9 +8,10 @@ import { normalizeDomain } from '@/lib/utils/domainNormalizer';
 import { getPaginationParams, createPaginatedResponse } from '@/lib/utils/pagination';
 
 export async function GET(request: NextRequest) {
+  let session: any = null;
   try {
     // Verify publisher authentication
-    const session = await AuthServiceServer.getSession(request);
+    session = await AuthServiceServer.getSession(request);
     
     if (!session || session.userType !== 'publisher') {
       return NextResponse.json(
@@ -19,7 +20,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const publisherId = session.publisherId;
+    // During impersonation, the publisherId might be the userId itself for publishers
+    const publisherId = session.publisherId || (session.userType === 'publisher' ? session.userId : null);
+    
+    console.log('🔍 Publisher websites API:', {
+      sessionUserId: session.userId,
+      sessionPublisherId: session.publisherId,
+      sessionUserType: session.userType,
+      derivedPublisherId: publisherId
+    });
+    
     if (!publisherId) {
       return NextResponse.json(
         { error: 'Publisher ID not found' },
@@ -45,7 +55,7 @@ export async function GET(request: NextRequest) {
     const totalCount = Number(countResult[0]?.count || 0);
 
     // Get paginated websites associated with this publisher through relationships
-    const publisherWebsites = await db
+    const websiteResults = await db
       .select({
         id: websites.id,
         domain: websites.domain,
@@ -55,7 +65,6 @@ export async function GET(request: NextRequest) {
         createdAt: websites.createdAt,
         monthlyTraffic: sql<number>`NULL`, 
         domainAuthority: sql<number>`NULL`,
-        publisherOfferings: sql<any[]>`ARRAY[]::json[]`, // Empty array for now
       })
       .from(websites)
       .innerJoin(
@@ -64,10 +73,6 @@ export async function GET(request: NextRequest) {
           eq(publisherOfferingRelationships.websiteId, websites.id),
           eq(publisherOfferingRelationships.publisherId, publisherId)
         )
-      )
-      .leftJoin(
-        publisherOfferings,
-        eq(publisherOfferings.id, publisherOfferingRelationships.offeringId)
       )
       .groupBy(
         websites.id, 
@@ -79,6 +84,34 @@ export async function GET(request: NextRequest) {
       .orderBy(websites.createdAt)
       .limit(paginationParams.limit)
       .offset(paginationParams.offset);
+
+    // For each website, get its associated offerings
+    const publisherWebsites = await Promise.all(
+      websiteResults.map(async (website) => {
+        const offerings = await db
+          .select({
+            id: publisherOfferings.id,
+            offeringType: publisherOfferings.offeringType,
+            basePrice: publisherOfferings.basePrice,
+            isActive: publisherOfferings.isActive,
+          })
+          .from(publisherOfferings)
+          .innerJoin(
+            publisherOfferingRelationships,
+            and(
+              eq(publisherOfferingRelationships.offeringId, publisherOfferings.id),
+              eq(publisherOfferingRelationships.websiteId, website.id),
+              eq(publisherOfferingRelationships.publisherId, publisherId)
+            )
+          )
+          .where(eq(publisherOfferings.isActive, true));
+
+        return {
+          ...website,
+          publisherOfferings: offerings,
+        };
+      })
+    );
 
     // Create paginated response
     const response = createPaginatedResponse(
@@ -94,9 +127,19 @@ export async function GET(request: NextRequest) {
       links: response.links
     });
   } catch (error) {
-    console.error('Error fetching publisher websites:', error);
+    console.error('❌ Error fetching publisher websites:', {
+      error,
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      publisherId: session?.publisherId,
+      userId: session?.userId,
+      userType: session?.userType
+    });
     return NextResponse.json(
-      { error: 'Failed to fetch websites' },
+      { 
+        error: 'Failed to fetch websites',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }
@@ -114,7 +157,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const publisherId = session.publisherId;
+    // During impersonation, the publisherId might be the userId itself for publishers
+    const publisherId = session.publisherId || (session.userType === 'publisher' ? session.userId : null);
+    
+    console.log('🔍 Publisher websites API:', {
+      sessionUserId: session.userId,
+      sessionPublisherId: session.publisherId,
+      sessionUserType: session.userType,
+      derivedPublisherId: publisherId
+    });
+    
     if (!publisherId) {
       return NextResponse.json(
         { error: 'Publisher ID not found' },

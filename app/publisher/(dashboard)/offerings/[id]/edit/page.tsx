@@ -215,7 +215,7 @@ export default function EditOfferingPage({ params }: { params: Promise<{ id: str
           : null,
         expressDays: formData.expressAvailable ? parseInt(formData.expressDays) : null,
         isActive: formData.isActive,
-        websiteId: formData.websiteId || null,
+        // websiteId: Website assignment cannot be changed after creation
         niches: formData.niches.length > 0 ? formData.niches : null,
         languages: formData.languages.length > 0 ? formData.languages : ['en'],
         attributes: {
@@ -354,25 +354,20 @@ export default function EditOfferingPage({ params }: { params: Promise<{ id: str
                 </select>
               </div>
 
-              {/* Website Selection */}
+              {/* Website Display */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Website <span className="text-red-500">*</span>
+                  Website
                 </label>
-                <select
-                  value={formData.websiteId}
-                  onChange={(e) => setFormData({ ...formData, websiteId: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                  disabled={websites.length === 0}
-                >
-                  {offering?.website && (
-                    <option value={offering.website.id}>{offering.website.domain}</option>
-                  )}
-                  {websites.filter(w => w.id !== offering?.website?.id).map(website => (
-                    <option key={website.id} value={website.id}>{website.domain}</option>
-                  ))}
-                </select>
+                <div className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-50 flex items-center">
+                  <Globe className="h-4 w-4 text-gray-400 mr-2" />
+                  <span className="text-gray-700">
+                    {offering?.website?.domain || 'No website assigned'}
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-gray-500">
+                  Website assignment cannot be changed after creation
+                </p>
               </div>
 
               {/* Status Toggle */}

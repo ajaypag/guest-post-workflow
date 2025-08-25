@@ -5,12 +5,13 @@ export type AccountRole = 'viewer' | 'editor' | 'admin';
 export interface AuthSession {
   userId: string;
   email: string;
-  name: string;
-  role: UserRole;
+  name?: string;
+  role?: UserRole;
   userType: UserType;
   accountId?: string; // For account users, this is their account ID
   clientId?: string | null; // For account users, their primary client
   companyName?: string; // For account users, their company name
   publisherId?: string; // For publisher users, this is their publisher ID
   status?: string; // Account status for publisher/account users
+  isImpersonating?: boolean; // Whether this is an impersonation session
 }

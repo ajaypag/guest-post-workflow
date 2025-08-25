@@ -1,77 +1,67 @@
-const { Client } = require('pg');
+const { Pool } = require('pg');
 const fs = require('fs');
+const path = require('path');
+
+const pool = new Pool({
+  connectionString: 'postgresql://postgres:postgres@localhost:5432/guest_post_workflow'
+});
 
 async function runMigration() {
-  const client = new Client({
-    connectionString: 'postgresql://postgres:postgres@localhost:5434/guest_post_workflow?sslmode=disable'
-  });
-
   try {
-    await client.connect();
-    console.log('🔗 Connected to database');
-
-    // Check if tables exist
-    console.log('🔍 Checking existing tables...');
-    const existingTables = await client.query(`
-      SELECT tablename FROM pg_tables 
-      WHERE schemaname='public' AND tablename LIKE '%vetted%';
-    `);
+    const migrationPath = path.join(__dirname, 'migrations', '0071_session_store_system.sql');
+    const migrationSQL = fs.readFileSync(migrationPath, 'utf8');
     
-    console.log('Existing vetted tables:', existingTables.rows.map(r => r.tablename));
-
-    if (existingTables.rows.length === 0) {
-      console.log('📄 Reading migration file...');
-      const migrationSQL = fs.readFileSync('migrations/0068_add_vetted_sites_requests.sql', 'utf8');
-      
-      // Extract just the vetted sites part
-      const lines = migrationSQL.split('\n');
-      let vettedSQL = '';
-      let inVettedSection = false;
-      
-      for (const line of lines) {
-        if (line.includes('vetted_sites_requests') || line.includes('vetted_request_clients') || line.includes('vetted_request_projects')) {
-          inVettedSection = true;
-        } else if (line.trim() === '' || line.startsWith('--')) {
-          // Keep empty lines and comments
-        } else if (line.startsWith('CREATE TABLE') && !line.includes('vetted')) {
-          inVettedSection = false;
-        } else if (line.startsWith('CREATE INDEX') && !line.includes('vetted')) {
-          inVettedSection = false;
+    console.log('Running migration: 0071_session_store_system.sql');
+    console.log('==================================================');
+    
+    // Split by semicolons and execute each statement
+    const statements = migrationSQL
+      .split(';')
+      .map(s => s.trim())
+      .filter(s => s.length > 0);
+    
+    for (const statement of statements) {
+      try {
+        await pool.query(statement);
+        // Extract table name if it's a CREATE TABLE statement
+        const tableMatch = statement.match(/CREATE TABLE (?:IF NOT EXISTS )?(\w+)/i);
+        if (tableMatch) {
+          console.log('✅ Created table:', tableMatch[1]);
+        } else if (statement.includes('CREATE INDEX')) {
+          const indexMatch = statement.match(/CREATE (?:UNIQUE )?INDEX (?:IF NOT EXISTS )?(\w+)/i);
+          if (indexMatch) {
+            console.log('✅ Created index:', indexMatch[1]);
+          }
         }
-        
-        if (inVettedSection || line.trim() === '' || line.startsWith('--')) {
-          vettedSQL += line + '\n';
-        }
+      } catch (err) {
+        console.error('⚠️ Statement failed:', err.message);
+        // Continue with other statements
       }
-      
-      if (vettedSQL.trim()) {
-        console.log('🔧 Running vetted sites migration...');
-        console.log('SQL to execute (first 500 chars):', vettedSQL.substring(0, 500));
-        await client.query(vettedSQL);
-        console.log('✅ Migration completed successfully');
-      } else {
-        console.log('❌ No vetted sites SQL found in migration file');
-      }
-    } else {
-      console.log('✅ Vetted sites tables already exist');
     }
-
+    
     // Verify tables were created
-    const finalTables = await client.query(`
-      SELECT tablename FROM pg_tables 
-      WHERE schemaname='public' AND tablename LIKE '%vetted%';
+    const verify = await pool.query(`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public' 
+      AND table_name IN ('user_sessions', 'impersonation_logs', 'impersonation_actions')
+      ORDER BY table_name
     `);
     
-    console.log('📊 Final vetted tables:', finalTables.rows.map(r => r.tablename));
-
-  } catch (error) {
-    console.error('❌ Migration failed:', error.message);
-    if (error.stack) {
-      console.error('Stack:', error.stack);
+    console.log('\n=== Verification ===');
+    if (verify.rows.length === 3) {
+      console.log('✅ All 3 session store tables created successfully!');
+      verify.rows.forEach(row => {
+        console.log('  -', row.table_name);
+      });
+    } else {
+      console.log('⚠️ Only', verify.rows.length, 'of 3 tables created');
     }
+    
+  } catch (error) {
+    console.error('Migration failed:', error);
   } finally {
-    await client.end();
-    console.log('🏁 Migration script completed');
+    await pool.end();
   }
 }
 

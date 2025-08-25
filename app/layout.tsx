@@ -4,6 +4,7 @@ import "./globals.css";
 import { NotificationProvider } from "@/lib/contexts/NotificationContext";
 import { WebVitals } from "@/components/WebVitals";
 import { StructuredData, organizationSchema, websiteSchema } from "@/components/StructuredData";
+import { ImpersonationWrapper } from "@/components/ImpersonationWrapper";
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://linkio.com'),
@@ -75,7 +76,9 @@ export default function RootLayout({
       <body className="min-h-screen bg-gray-50">
         <WebVitals />
         <NotificationProvider>
-          {children}
+          <ImpersonationWrapper>
+            {children}
+          </ImpersonationWrapper>
         </NotificationProvider>
       </body>
     </html>

@@ -181,6 +181,14 @@ export default function AdminDashboard() {
       iconColor: 'text-indigo-600'
     },
     {
+      title: 'Impersonation Logs',
+      description: 'View impersonation sessions, audit trails, and action logs',
+      icon: Shield,
+      href: '/admin/impersonation-logs',
+      color: 'bg-purple-50 border-purple-200 text-purple-700',
+      iconColor: 'text-purple-600'
+    },
+    {
       title: 'Account Invitations',
       description: 'Manage account invitations and access',
       icon: Mail,
@@ -317,7 +325,7 @@ export default function AdminDashboard() {
 
           <div className="mt-8 pt-6 border-t border-gray-200">
             <div className="bg-gray-50 rounded-lg p-4">
-              <h3 className="font-semibold text-gray-900 mb-2">Tool Categories (32 Total)</h3>
+              <h3 className="font-semibold text-gray-900 mb-2">Tool Categories (33 Total)</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm text-gray-600">
                 <div>
                   <strong>AI & Diagnostics (9):</strong> Agent monitoring, health checks, and system diagnostics
@@ -326,7 +334,7 @@ export default function AdminDashboard() {
                   <strong>Database & Schema (10):</strong> Migrations, schema audits, and data integrity tools
                 </div>
                 <div>
-                  <strong>User Management (3):</strong> User accounts, invitations, and signup monitoring
+                  <strong>User Management (4):</strong> User accounts, invitations, impersonation, and signup monitoring
                 </div>
                 <div>
                   <strong>Payment & Financial (3):</strong> Payment processing, refunds, and Stripe management

@@ -57,6 +57,7 @@ export default function PublisherWebsitesPage() {
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
       verified: { label: 'Verified', color: 'bg-green-100 text-green-800', icon: CheckCircle },
+      claimed: { label: 'Pending Verification', color: 'bg-yellow-100 text-yellow-800', icon: Clock },
       pending: { label: 'Pending', color: 'bg-yellow-100 text-yellow-800', icon: Clock },
       failed: { label: 'Failed', color: 'bg-red-100 text-red-800', icon: AlertCircle },
     };

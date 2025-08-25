@@ -34,40 +34,46 @@ export default function PublisherInvoicesPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate loading invoices
-    setTimeout(() => {
-      setStats({
-        totalInvoices: 3,
-        pendingInvoices: 1,
-        approvedInvoices: 1,
-        paidInvoices: 1,
-        totalPaid: 25000
-      });
-      setInvoices([
-        {
-          id: '1',
-          invoice_number: 'INV-2024-001',
-          total_amount: 15000,
-          status: 'paid',
-          created_at: '2024-08-01'
-        },
-        {
-          id: '2',
-          invoice_number: 'INV-2024-002',
-          total_amount: 10000,
-          status: 'approved',
-          created_at: '2024-08-10'
-        },
-        {
-          id: '3',
-          invoice_number: 'INV-2024-003',
-          total_amount: 8000,
-          status: 'pending',
-          created_at: '2024-08-15'
+    const loadInvoices = async () => {
+      try {
+        const response = await fetch('/api/publisher/invoices');
+        if (response.ok) {
+          const data = await response.json();
+          setInvoices(data.invoices || []);
+          setStats(data.stats || {
+            totalInvoices: 0,
+            pendingInvoices: 0,
+            approvedInvoices: 0,
+            paidInvoices: 0,
+            totalPaid: 0
+          });
+        } else {
+          // No invoices or API not implemented yet
+          setInvoices([]);
+          setStats({
+            totalInvoices: 0,
+            pendingInvoices: 0,
+            approvedInvoices: 0,
+            paidInvoices: 0,
+            totalPaid: 0
+          });
         }
-      ]);
-      setLoading(false);
-    }, 1000);
+      } catch (error) {
+        console.log('Invoice API not implemented yet, showing empty state');
+        setInvoices([]);
+        setStats({
+          totalInvoices: 0,
+          pendingInvoices: 0,
+          approvedInvoices: 0,
+          paidInvoices: 0,
+          totalPaid: 0
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadInvoices();
   }, []);
 
   const formatCurrency = (cents: number) => {
