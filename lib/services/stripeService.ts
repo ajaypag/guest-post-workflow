@@ -343,6 +343,7 @@ export class StripeService {
       .update(orders)
       .set({
         state: 'payment_received',
+        status: 'paid', // Update the main status to paid
         paidAt: new Date(),
         updatedAt: new Date(),
       })
@@ -662,6 +663,7 @@ export class StripeService {
       .update(orders)
       .set({
         state: 'payment_received',
+        status: 'paid', // Update the main status to paid
         paidAt: new Date(),
         updatedAt: new Date(),
       })
