@@ -236,6 +236,7 @@ export default function OrderPaymentPage({ order, className }: OrderPaymentPageP
             
             <StripePaymentForm
               orderId={order.id}
+              amount={order.totalRetail}
               onSuccess={handlePaymentSuccess}
               onError={handlePaymentError}
               onProcessing={handleProcessing}

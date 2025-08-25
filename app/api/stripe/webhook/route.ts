@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { StripeService } from '@/lib/services/stripeService';
 import { db } from '@/lib/db/connection';
-import { stripeWebhooks, stripePaymentIntents, refunds, payments } from '@/lib/db/paymentSchema';
+import { stripeWebhooks, stripePaymentIntents, refunds, payments, stripeCheckoutSessions } from '@/lib/db/paymentSchema';
 import { orders } from '@/lib/db/orderSchema';
 import { accounts } from '@/lib/db/accountSchema';
 import { eq } from 'drizzle-orm';
@@ -265,6 +265,22 @@ async function processWebhookEvent(event: Stripe.Event, webhookRecordId: string)
 
     case 'payment_method.attached':
       await handlePaymentMethodAttached(event, webhookRecordId);
+      break;
+
+    case 'checkout.session.completed':
+      await handleCheckoutSessionCompleted(event, webhookRecordId);
+      break;
+
+    case 'checkout.session.expired':
+      await handleCheckoutSessionExpired(event, webhookRecordId);
+      break;
+
+    case 'checkout.session.async_payment_succeeded':
+      await handleCheckoutSessionAsyncPaymentSucceeded(event, webhookRecordId);
+      break;
+
+    case 'checkout.session.async_payment_failed':
+      await handleCheckoutSessionAsyncPaymentFailed(event, webhookRecordId);
       break;
 
     case 'customer.created':
@@ -798,5 +814,326 @@ async function sendRefundFailureNotification(orderId: string, failureReason?: st
     }
   } catch (error) {
     console.error('Error sending refund failure notification:', error);
+  }
+}
+
+/**
+ * Handle checkout session completed event
+ */
+async function handleCheckoutSessionCompleted(event: Stripe.Event, webhookRecordId: string): Promise<void> {
+  const session = event.data.object as Stripe.Checkout.Session;
+  
+  console.log(`Checkout session completed: ${session.id}`);
+
+  // Update our checkout session record and handle successful payment
+  await StripeService.updateCheckoutSessionFromWebhook(
+    session.id,
+    session,
+    event.id
+  );
+
+  // Update webhook record with related entities
+  await updateWebhookRelationsForCheckout(webhookRecordId, session.id);
+
+  // Send success email notification
+  await sendCheckoutSuccessNotification(session);
+}
+
+/**
+ * Handle checkout session expired event
+ */
+async function handleCheckoutSessionExpired(event: Stripe.Event, webhookRecordId: string): Promise<void> {
+  const session = event.data.object as Stripe.Checkout.Session;
+  
+  console.log(`Checkout session expired: ${session.id}`);
+
+  // Update our checkout session record
+  await StripeService.updateCheckoutSessionFromWebhook(
+    session.id,
+    session,
+    event.id
+  );
+
+  // Update webhook record with related entities
+  await updateWebhookRelationsForCheckout(webhookRecordId, session.id);
+
+  // Handle expired session (mark order as failed if no payment was made)
+  await handleExpiredCheckoutSession(session);
+}
+
+/**
+ * Handle checkout session async payment succeeded event
+ */
+async function handleCheckoutSessionAsyncPaymentSucceeded(event: Stripe.Event, webhookRecordId: string): Promise<void> {
+  const session = event.data.object as Stripe.Checkout.Session;
+  
+  console.log(`Checkout session async payment succeeded: ${session.id}`);
+
+  // Update our checkout session record and handle successful payment
+  await StripeService.updateCheckoutSessionFromWebhook(
+    session.id,
+    session,
+    event.id
+  );
+
+  // Update webhook record with related entities
+  await updateWebhookRelationsForCheckout(webhookRecordId, session.id);
+
+  // Send success email notification
+  await sendCheckoutSuccessNotification(session);
+}
+
+/**
+ * Handle checkout session async payment failed event
+ */
+async function handleCheckoutSessionAsyncPaymentFailed(event: Stripe.Event, webhookRecordId: string): Promise<void> {
+  const session = event.data.object as Stripe.Checkout.Session;
+  
+  console.log(`Checkout session async payment failed: ${session.id}`);
+
+  // Update our checkout session record
+  await StripeService.updateCheckoutSessionFromWebhook(
+    session.id,
+    session,
+    event.id
+  );
+
+  // Update webhook record with related entities
+  await updateWebhookRelationsForCheckout(webhookRecordId, session.id);
+
+  // Handle payment failure
+  await handleCheckoutPaymentFailure(session);
+}
+
+/**
+ * Update webhook relations for checkout session events
+ */
+async function updateWebhookRelationsForCheckout(webhookRecordId: string, sessionId: string): Promise<void> {
+  // Query our stripe_checkout_sessions table
+  const result = await db
+    .select()
+    .from(stripeCheckoutSessions)
+    .where(eq(stripeCheckoutSessions.stripeSessionId, sessionId))
+    .limit(1);
+
+  if (result.length > 0) {
+    const checkoutSession = result[0];
+    await db
+      .update(stripeWebhooks)
+      .set({
+        orderId: checkoutSession.orderId,
+        updatedAt: new Date(),
+      })
+      .where(eq(stripeWebhooks.id, webhookRecordId));
+  }
+}
+
+/**
+ * Send checkout success notification email
+ */
+async function sendCheckoutSuccessNotification(session: Stripe.Checkout.Session): Promise<void> {
+  try {
+    const orderId = session.metadata?.orderId;
+    if (!orderId) {
+      console.error('No order ID found in checkout session metadata');
+      return;
+    }
+
+    // Get order and account details
+    const orderResult = await db
+      .select()
+      .from(orders)
+      .where(eq(orders.id, orderId))
+      .limit(1);
+    
+    if (orderResult.length === 0) {
+      console.error(`Order ${orderId} not found for checkout success notification`);
+      return;
+    }
+
+    const order = orderResult[0];
+    
+    // Get account email
+    if (order.accountId) {
+      const accountResult = await db
+        .select()
+        .from(accounts)
+        .where(eq(accounts.id, order.accountId))
+        .limit(1);
+      
+      if (accountResult.length > 0) {
+        const accountEmail = accountResult[0].email;
+        
+        try {
+          console.log(`Sending checkout success notification to ${accountEmail}`);
+          
+          await EmailService.sendPaymentSuccessEmail({
+            to: accountEmail,
+            orderId: orderId,
+            amount: session.amount_total || 0,
+            paymentIntentId: session.payment_intent as string,
+            orderViewUrl: `${process.env.NEXTAUTH_URL || 'https://postflow.outreachlabs.net'}/orders/${orderId}`
+          });
+          
+          console.log(`Checkout success email sent to ${accountEmail}`);
+        } catch (emailError) {
+          console.error('Failed to send checkout success notification email:', emailError);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error sending checkout success notification:', error);
+  }
+}
+
+/**
+ * Handle expired checkout session
+ */
+async function handleExpiredCheckoutSession(session: Stripe.Checkout.Session): Promise<void> {
+  try {
+    const orderId = session.metadata?.orderId;
+    if (!orderId) {
+      console.error('No order ID found in checkout session metadata');
+      return;
+    }
+
+    // Get order details
+    const orderResult = await db
+      .select()
+      .from(orders)
+      .where(eq(orders.id, orderId))
+      .limit(1);
+    
+    const order = orderResult.length > 0 ? orderResult[0] : null;
+
+    // Only update order state if it's still in payment_pending
+    if (order && order.state === 'payment_pending') {
+      await db
+        .update(orders)
+        .set({
+          state: 'payment_expired',
+          updatedAt: new Date(),
+        })
+        .where(eq(orders.id, orderId));
+
+      console.log(`Order ${orderId} marked as payment_expired due to session expiration`);
+    }
+
+    // Send expiration notification email
+    if (order?.accountId) {
+      const accountResult = await db
+        .select()
+        .from(accounts)
+        .where(eq(accounts.id, order.accountId))
+        .limit(1);
+      
+      if (accountResult.length > 0) {
+        const accountEmail = accountResult[0].email;
+
+        try {
+          console.log(`Sending checkout expiration notification to ${accountEmail}`);
+          
+          await EmailService.send('notification', {
+            to: accountEmail,
+            subject: `Payment Session Expired - Order #${orderId.substring(0, 8)}`,
+            text: `Your payment session for Order #${orderId.substring(0, 8)} has expired. You can try payment again from your order page.`,
+            html: `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #f59e0b;">Payment Session Expired</h2>
+                <p>Your payment session for Order #${orderId.substring(0, 8)} has expired.</p>
+                <p>No charges were made to your account.</p>
+                <p>You can try payment again by visiting your order page:</p>
+                <p><a href="${process.env.NEXTAUTH_URL || 'https://postflow.outreachlabs.net'}/orders/${orderId}" style="color: #3b82f6;">View Order</a></p>
+                <p>Best regards,<br>The PostFlow Team</p>
+              </div>
+            `,
+          });
+        } catch (emailError) {
+          console.error('Failed to send checkout expiration notification email:', emailError);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error handling expired checkout session:', error);
+  }
+}
+
+/**
+ * Handle checkout payment failure
+ */
+async function handleCheckoutPaymentFailure(session: Stripe.Checkout.Session): Promise<void> {
+  try {
+    const orderId = session.metadata?.orderId;
+    if (!orderId) {
+      console.error('No order ID found in checkout session metadata');
+      return;
+    }
+
+    // Get order details
+    const orderResult = await db
+      .select()
+      .from(orders)
+      .where(eq(orders.id, orderId))
+      .limit(1);
+    
+    const order = orderResult.length > 0 ? orderResult[0] : null;
+
+    // Update order state to payment_failed
+    if (order && order.state === 'payment_pending') {
+      await db
+        .update(orders)
+        .set({
+          state: 'payment_failed',
+          updatedAt: new Date(),
+        })
+        .where(eq(orders.id, orderId));
+
+      console.log(`Order ${orderId} marked as payment_failed`);
+    }
+
+    // Send failure notification email
+    if (order?.accountId) {
+      const accountResult = await db
+        .select()
+        .from(accounts)
+        .where(eq(accounts.id, order.accountId))
+        .limit(1);
+      
+      if (accountResult.length > 0) {
+        const accountEmail = accountResult[0].email;
+
+        try {
+          console.log(`Sending checkout payment failed notification to ${accountEmail}`);
+          
+          await EmailService.sendPaymentFailedEmail({
+            to: accountEmail,
+            orderId: orderId,
+            errorMessage: 'Payment processing failed',
+            retryUrl: `${process.env.NEXTAUTH_URL || 'https://postflow.outreachlabs.net'}/orders/${orderId}`
+          });
+
+          // Also notify internal team
+          const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'info@linkio.com';
+          await EmailService.send('notification', {
+            to: adminEmail,
+            subject: `Checkout Payment Failed - Order ${orderId.substring(0, 8)}`,
+            text: `Checkout payment failed for Order ${orderId}. Customer: ${accountEmail}`,
+            html: `
+              <div style="font-family: Arial, sans-serif;">
+                <h3>Checkout Payment Failed</h3>
+                <p><strong>Order:</strong> ${orderId}</p>
+                <p><strong>Customer:</strong> ${accountEmail}</p>
+                <p><strong>Session:</strong> ${session.id}</p>
+                <p><strong>Amount:</strong> $${(session.amount_total || 0) / 100}</p>
+              </div>
+            `,
+          });
+        } catch (emailError) {
+          console.error('Failed to send checkout payment failure notification email:', emailError);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error handling checkout payment failure:', error);
   }
 }

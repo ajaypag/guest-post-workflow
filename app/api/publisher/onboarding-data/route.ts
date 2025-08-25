@@ -123,7 +123,7 @@ export async function GET(request: NextRequest) {
       .from(publisherOfferings)
       .where(eq(publisherOfferings.publisherId, publisherId));
 
-    // Get publisher-website relationships
+    // Get publisher-website relationships with full website data
     const relationships = await db
       .select({
         id: publisherOfferingRelationships.id,
@@ -132,11 +132,36 @@ export async function GET(request: NextRequest) {
         isPrimary: publisherOfferingRelationships.isPrimary,
         relationshipType: publisherOfferingRelationships.relationshipType,
         verificationStatus: publisherOfferingRelationships.verificationStatus,
+        // Include all website data
         domain: websites.domain,
+        guestPostCost: websites.guestPostCost,
+        domainRating: websites.domainRating,
+        totalTraffic: websites.totalTraffic,
       })
       .from(publisherOfferingRelationships)
       .leftJoin(websites, eq(publisherOfferingRelationships.websiteId, websites.id))
       .where(eq(publisherOfferingRelationships.publisherId, publisherId));
+
+    // Filter out already migrated shadow websites
+    const activeShadowWebsites = shadowWebsites.filter(sw => 
+      sw.migrationStatus !== 'migrated' && sw.migrationStatus !== 'completed'
+    );
+    
+    // If no active shadow websites but we have relationships, convert relationships to shadow format for UI
+    const websitesData = activeShadowWebsites.length > 0 ? activeShadowWebsites : 
+      relationships.map(rel => ({
+        id: rel.id,
+        websiteId: rel.websiteId,
+        domain: rel.domain,
+        confidence: 10, // Max confidence for migrated data
+        source: 'migrated',
+        extractionMethod: 'migration',
+        verified: true,
+        migrationStatus: 'completed',
+        guestPostCost: rel.guestPostCost,
+        domainRating: rel.domainRating,
+        totalTraffic: rel.totalTraffic,
+      }));
 
     const response: PublisherOnboardingData = {
       publisher: {
@@ -146,7 +171,7 @@ export async function GET(request: NextRequest) {
         companyName: publisher.companyName || '',
         accountStatus: publisher.accountStatus || 'unknown',
       },
-      shadowWebsites: shadowWebsites.map(sw => ({
+      shadowWebsites: websitesData.map(sw => ({
         id: sw.id,
         websiteId: sw.websiteId,
         domain: sw.domain || 'Unknown domain',
@@ -161,6 +186,7 @@ export async function GET(request: NextRequest) {
       })),
       offerings: offerings.map(o => ({
         id: o.id,
+        websiteId: (o.attributes as any)?.websiteId || undefined, // Get websiteId from attributes if stored there
         offeringType: o.offeringType,
         basePrice: o.basePrice,
         currency: o.currency,

@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
     const totalCount = Number(countResult[0]?.count || 0);
 
     // Get paginated websites associated with this publisher through relationships
-    const publisherWebsites = await db
+    const websiteResults = await db
       .select({
         id: websites.id,
         domain: websites.domain,
@@ -65,7 +65,6 @@ export async function GET(request: NextRequest) {
         createdAt: websites.createdAt,
         monthlyTraffic: sql<number>`NULL`, 
         domainAuthority: sql<number>`NULL`,
-        publisherOfferings: sql<any[]>`ARRAY[]::json[]`, // Empty array for now
       })
       .from(websites)
       .innerJoin(
@@ -74,10 +73,6 @@ export async function GET(request: NextRequest) {
           eq(publisherOfferingRelationships.websiteId, websites.id),
           eq(publisherOfferingRelationships.publisherId, publisherId)
         )
-      )
-      .leftJoin(
-        publisherOfferings,
-        eq(publisherOfferings.id, publisherOfferingRelationships.offeringId)
       )
       .groupBy(
         websites.id, 
@@ -89,6 +84,34 @@ export async function GET(request: NextRequest) {
       .orderBy(websites.createdAt)
       .limit(paginationParams.limit)
       .offset(paginationParams.offset);
+
+    // For each website, get its associated offerings
+    const publisherWebsites = await Promise.all(
+      websiteResults.map(async (website) => {
+        const offerings = await db
+          .select({
+            id: publisherOfferings.id,
+            offeringType: publisherOfferings.offeringType,
+            basePrice: publisherOfferings.basePrice,
+            isActive: publisherOfferings.isActive,
+          })
+          .from(publisherOfferings)
+          .innerJoin(
+            publisherOfferingRelationships,
+            and(
+              eq(publisherOfferingRelationships.offeringId, publisherOfferings.id),
+              eq(publisherOfferingRelationships.websiteId, website.id),
+              eq(publisherOfferingRelationships.publisherId, publisherId)
+            )
+          )
+          .where(eq(publisherOfferings.isActive, true));
+
+        return {
+          ...website,
+          publisherOfferings: offerings,
+        };
+      })
+    );
 
     // Create paginated response
     const response = createPaginatedResponse(

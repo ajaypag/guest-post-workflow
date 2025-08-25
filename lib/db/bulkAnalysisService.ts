@@ -145,7 +145,10 @@ export class BulkAnalysisService {
           .where(
             and(
               eq(targetPages.clientId, clientId),
-              inArray(targetPages.id, targetPageIds)
+              // Handle both UUID and URL inputs
+              targetPageIds[0] && targetPageIds[0].match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i) 
+                ? inArray(targetPages.id, targetPageIds)
+                : inArray(targetPages.url, targetPageIds)
             )
           );
 
@@ -410,7 +413,10 @@ export class BulkAnalysisService {
           .where(
             and(
               eq(targetPages.clientId, clientId),
-              inArray(targetPages.id, targetPageIds)
+              // Handle both UUID and URL inputs
+              targetPageIds[0] && targetPageIds[0].match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i) 
+                ? inArray(targetPages.id, targetPageIds)
+                : inArray(targetPages.url, targetPageIds)
             )
           );
         pages.forEach(page => {
@@ -953,7 +959,10 @@ export class BulkAnalysisService {
           .where(
             and(
               eq(targetPages.clientId, clientId),
-              inArray(targetPages.id, targetPageIds)
+              // Handle both UUID and URL inputs
+              targetPageIds[0] && targetPageIds[0].match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i) 
+                ? inArray(targetPages.id, targetPageIds)
+                : inArray(targetPages.url, targetPageIds)
             )
           );
 

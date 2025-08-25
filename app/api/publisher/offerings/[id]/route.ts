@@ -70,6 +70,7 @@ export async function GET(
     // Format the response
     const formattedOffering = {
       id: offering.id,
+      offeringName: offering.offeringName,
       offeringType: offering.offeringType,
       basePrice: offering.basePrice,
       currency: offering.currency,
@@ -160,6 +161,7 @@ export async function PUT(
     };
 
     // Only include fields that were provided in the request
+    if (body.offeringName !== undefined) updateData.offeringName = body.offeringName;
     if (body.offeringType !== undefined) updateData.offeringType = body.offeringType;
     if (body.basePrice !== undefined) updateData.basePrice = body.basePrice;
     if (body.currency !== undefined) updateData.currency = body.currency;

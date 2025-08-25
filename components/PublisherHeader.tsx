@@ -19,7 +19,6 @@ import {
   HelpCircle,
   Building2,
   DollarSign,
-  TrendingUp,
   Bell,
   Package,
   Zap
@@ -95,7 +94,6 @@ export default function PublisherHeader() {
     { href: '/publisher/offerings', label: 'Offerings', icon: Package },
     { href: '/publisher/orders', label: 'Orders', icon: ShoppingCart },
     { href: '/publisher/invoices', label: 'Invoices', icon: FileText },
-    { href: '/publisher/analytics', label: 'Analytics', icon: TrendingUp },
   ];
 
   if (!session) return null;
@@ -151,7 +149,6 @@ export default function PublisherHeader() {
               {/* Notification Bell */}
               <button className="hidden md:block p-2 rounded-lg hover:bg-gray-50 transition-colors relative">
                 <Bell className="w-5 h-5 text-gray-600" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
               </button>
 
               {/* Mobile menu button */}
@@ -283,12 +280,9 @@ export default function PublisherHeader() {
           <div className="flex-1 overflow-y-auto py-4">
             {/* Notifications */}
             <div className="px-4 pb-4 border-b border-gray-100 mb-4">
-              <button className="flex items-center justify-between w-full p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center">
-                  <Bell className="w-5 h-5 text-gray-600 mr-3" />
-                  <span className="text-sm font-medium">Notifications</span>
-                </div>
-                <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+              <button className="flex items-center w-full p-3 bg-gray-50 rounded-lg">
+                <Bell className="w-5 h-5 text-gray-600 mr-3" />
+                <span className="text-sm font-medium">Notifications</span>
               </button>
             </div>
 

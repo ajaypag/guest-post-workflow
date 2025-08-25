@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Save, Loader2, AlertCircle, Globe, DollarSign, Calendar, MapPin, Hash } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, AlertCircle, Globe, MapPin } from 'lucide-react';
 // PublisherAuthWrapper handled by layout.tsx
 // PublisherHeader handled by layout.tsx
 
@@ -11,20 +11,9 @@ interface Website {
   id: string;
   domain: string;
   categories: string[] | null;
-  monthlyTraffic: number | null;
-  domainAuthority: number | null;
   language: string | null;
   country: string | null;
   verificationStatus: string;
-  offering?: {
-    id: string;
-    basePrice: number;
-    turnaroundDays: number;
-    currentAvailability: string;
-    expressAvailable: boolean;
-    expressPrice: number | null;
-    expressDays: number | null;
-  };
 }
 
 export default function EditWebsitePage() {
@@ -39,16 +28,9 @@ export default function EditWebsitePage() {
   
   const [website, setWebsite] = useState<Website | null>(null);
   const [formData, setFormData] = useState({
-    monthlyTraffic: '',
-    domainAuthority: '',
     language: 'en',
     country: 'US',
-    category: '',
-    basePrice: '',
-    turnaroundDays: '',
-    expressAvailable: false,
-    expressPrice: '',
-    expressDays: ''
+    category: ''
   });
 
   useEffect(() => {
@@ -69,16 +51,9 @@ export default function EditWebsitePage() {
       
       // Populate form with existing data
       setFormData({
-        monthlyTraffic: data.website.monthlyTraffic?.toString() || '',
-        domainAuthority: data.website.domainAuthority?.toString() || '',
         language: data.website.language || 'en',
         country: data.website.country || 'US',
-        category: data.website.categories?.[0] || '',
-        basePrice: data.website.offering?.basePrice ? (data.website.offering.basePrice / 100).toString() : '',
-        turnaroundDays: data.website.offering?.turnaroundDays?.toString() || '',
-        expressAvailable: data.website.offering?.expressAvailable || false,
-        expressPrice: data.website.offering?.expressPrice ? (data.website.offering.expressPrice / 100).toString() : '',
-        expressDays: data.website.offering?.expressDays?.toString() || ''
+        category: data.website.categories?.[0] || ''
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load website');
@@ -98,16 +73,9 @@ export default function EditWebsitePage() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          monthlyTraffic: formData.monthlyTraffic ? parseInt(formData.monthlyTraffic) : null,
-          domainAuthority: formData.domainAuthority ? parseInt(formData.domainAuthority) : null,
           language: formData.language,
           country: formData.country,
-          category: formData.category,
-          basePrice: formData.basePrice ? Math.round(parseFloat(formData.basePrice) * 100) : null,
-          turnaroundDays: formData.turnaroundDays ? parseInt(formData.turnaroundDays) : null,
-          expressAvailable: formData.expressAvailable,
-          expressPrice: formData.expressPrice ? Math.round(parseFloat(formData.expressPrice) * 100) : null,
-          expressDays: formData.expressDays ? parseInt(formData.expressDays) : null
+          category: formData.category
         })
       });
 
@@ -228,34 +196,6 @@ export default function EditWebsitePage() {
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <Hash className="inline h-4 w-4 mr-1" />
-                    Monthly Traffic
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.monthlyTraffic}
-                    onChange={(e) => setFormData({ ...formData, monthlyTraffic: e.target.value })}
-                    placeholder="e.g., 50000"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Domain Authority (DA)
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.domainAuthority}
-                    onChange={(e) => setFormData({ ...formData, domainAuthority: e.target.value })}
-                    placeholder="e.g., 45"
-                    min="0"
-                    max="100"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -302,90 +242,6 @@ export default function EditWebsitePage() {
               </div>
             </div>
 
-            {/* Pricing Section */}
-            <div className="mb-8">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-                <DollarSign className="h-5 w-5 mr-2 text-green-600" />
-                Pricing & Availability
-              </h2>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Base Price (USD)
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.basePrice}
-                    onChange={(e) => setFormData({ ...formData, basePrice: e.target.value })}
-                    placeholder="e.g., 150"
-                    min="0"
-                    step="0.01"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <Calendar className="inline h-4 w-4 mr-1" />
-                    Turnaround Days
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.turnaroundDays}
-                    onChange={(e) => setFormData({ ...formData, turnaroundDays: e.target.value })}
-                    placeholder="e.g., 7"
-                    min="1"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={formData.expressAvailable}
-                      onChange={(e) => setFormData({ ...formData, expressAvailable: e.target.checked })}
-                      className="mr-2"
-                    />
-                    <span className="text-sm font-medium text-gray-700">Offer Express Service</span>
-                  </label>
-                </div>
-
-                {formData.expressAvailable && (
-                  <>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Express Price (USD)
-                      </label>
-                      <input
-                        type="number"
-                        value={formData.expressPrice}
-                        onChange={(e) => setFormData({ ...formData, expressPrice: e.target.value })}
-                        placeholder="e.g., 250"
-                        min="0"
-                        step="0.01"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Express Turnaround Days
-                      </label>
-                      <input
-                        type="number"
-                        value={formData.expressDays}
-                        onChange={(e) => setFormData({ ...formData, expressDays: e.target.value })}
-                        placeholder="e.g., 3"
-                        min="1"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
 
             {/* Buttons */}
             <div className="flex justify-end gap-4">

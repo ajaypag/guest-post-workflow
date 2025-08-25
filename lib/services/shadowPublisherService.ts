@@ -262,14 +262,12 @@ export class ShadowPublisherService {
       
       if (existing.length === 0) {
         await db.insert(shadowPublisherWebsites).values({
-          id: crypto.randomUUID(),
           publisherId,
           websiteId: website.id,
           confidence: websiteData.confidence.toFixed(2),
           source: 'email_extraction',
           extractionMethod: 'ai_extracted',
-          verified: false,
-          createdAt: new Date(),
+          verified: false
         });
       }
       

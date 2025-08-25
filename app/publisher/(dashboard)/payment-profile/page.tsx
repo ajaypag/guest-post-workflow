@@ -8,7 +8,9 @@ import {
   MapPin,
   Save,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  Globe,
+  Banknote
 } from 'lucide-react';
 // PublisherHeader handled by layout.tsx
 // PublisherAuthWrapper handled by layout.tsx
@@ -31,6 +33,13 @@ export default function PaymentProfilePage() {
     
     // PayPal Details
     paypalEmail: '',
+    
+    // Payoneer Details
+    payoneerEmail: '',
+    
+    // Wise Details  
+    wiseEmail: '',
+    wiseCurrency: 'USD',
     
     // Mailing Address (for checks)
     mailingAddress: '',
@@ -69,6 +78,14 @@ export default function PaymentProfilePage() {
       } else if (profileData.preferredMethod === 'paypal') {
         if (!profileData.paypalEmail) {
           throw new Error('PayPal email is required');
+        }
+      } else if (profileData.preferredMethod === 'payoneer') {
+        if (!profileData.payoneerEmail) {
+          throw new Error('Payoneer email is required');
+        }
+      } else if (profileData.preferredMethod === 'wise') {
+        if (!profileData.wiseEmail) {
+          throw new Error('Wise email is required');
         }
       } else if (profileData.preferredMethod === 'check') {
         if (!profileData.mailingAddress || !profileData.mailingCity) {
@@ -136,6 +153,32 @@ export default function PaymentProfilePage() {
                       />
                       <Mail className="h-5 w-5 text-gray-600 mr-2" />
                       <span>PayPal</span>
+                    </label>
+                    
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value="payoneer"
+                        checked={profileData.preferredMethod === 'payoneer'}
+                        onChange={(e) => handleInputChange('preferredMethod', e.target.value)}
+                        className="mr-3"
+                      />
+                      <Banknote className="h-5 w-5 text-gray-600 mr-2" />
+                      <span>Payoneer</span>
+                    </label>
+                    
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value="wise"
+                        checked={profileData.preferredMethod === 'wise'}
+                        onChange={(e) => handleInputChange('preferredMethod', e.target.value)}
+                        className="mr-3"
+                      />
+                      <Globe className="h-5 w-5 text-gray-600 mr-2" />
+                      <span>Wise (formerly TransferWise)</span>
                     </label>
                     
                     <label className="flex items-center">
@@ -230,6 +273,79 @@ export default function PaymentProfilePage() {
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         required
                       />
+                    </div>
+                  </div>
+                )}
+
+                {/* Payoneer Details */}
+                {profileData.preferredMethod === 'payoneer' && (
+                  <div className="bg-white rounded-lg shadow-md p-6">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Payoneer Details</h2>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Payoneer Account Email *
+                      </label>
+                      <input
+                        type="email"
+                        value={profileData.payoneerEmail}
+                        onChange={(e) => handleInputChange('payoneerEmail', e.target.value)}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="your-email@payoneer.com"
+                        required
+                      />
+                      <p className="mt-1 text-sm text-gray-500">
+                        Enter the email address associated with your Payoneer account
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Wise Details */}
+                {profileData.preferredMethod === 'wise' && (
+                  <div className="bg-white rounded-lg shadow-md p-6">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Wise Details</h2>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Wise Account Email *
+                        </label>
+                        <input
+                          type="email"
+                          value={profileData.wiseEmail}
+                          onChange={(e) => handleInputChange('wiseEmail', e.target.value)}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="your-email@wise.com"
+                          required
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Preferred Currency
+                        </label>
+                        <select
+                          value={profileData.wiseCurrency}
+                          onChange={(e) => handleInputChange('wiseCurrency', e.target.value)}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="USD">USD - US Dollar</option>
+                          <option value="EUR">EUR - Euro</option>
+                          <option value="GBP">GBP - British Pound</option>
+                          <option value="CAD">CAD - Canadian Dollar</option>
+                          <option value="AUD">AUD - Australian Dollar</option>
+                          <option value="CHF">CHF - Swiss Franc</option>
+                          <option value="JPY">JPY - Japanese Yen</option>
+                        </select>
+                      </div>
+                      
+                      <div className="bg-blue-50 p-3 rounded-lg">
+                        <p className="text-sm text-blue-800">
+                          💡 <strong>Wise Benefits:</strong> Lower fees and better exchange rates for international transfers. 
+                          Perfect for publishers outside the US.
+                        </p>
+                      </div>
                     </div>
                   </div>
                 )}
