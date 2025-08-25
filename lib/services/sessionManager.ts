@@ -66,10 +66,14 @@ export class SessionManager {
     };
     
     try {
+      // Use system user ID for non-internal users to satisfy foreign key constraint
+      const SYSTEM_USER_ID = '00000000-0000-0000-0000-000000000000';
+      const userIdForSession = user.userType === 'internal' ? user.id : SYSTEM_USER_ID;
+      
       await pool.query(`
         INSERT INTO user_sessions (id, user_id, session_data, expires_at, ip_address, user_agent)
         VALUES ($1, $2, $3, $4, $5, $6)
-      `, [sessionId, user.id, JSON.stringify(sessionState), expiresAt, ipAddress, userAgent]);
+      `, [sessionId, userIdForSession, JSON.stringify(sessionState), expiresAt, ipAddress, userAgent]);
       
       console.log('✅ SessionManager: Created session', { sessionId, userId: user.id, userType: user.userType });
       return sessionId;
