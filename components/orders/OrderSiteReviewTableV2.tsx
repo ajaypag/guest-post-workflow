@@ -24,20 +24,28 @@ interface FeedbackModalProps {
 }
 
 function FeedbackModal({ isOpen, siteDomain, onClose, onSubmit, userType }: FeedbackModalProps) {
-  const [selectedReason, setSelectedReason] = useState('');
+  const [selectedReason, setSelectedReason] = useState('Too Expensive'); // Default selection
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Reset selection when modal opens
+  React.useEffect(() => {
+    if (isOpen) {
+      setSelectedReason('Too Expensive');
+      setNotes('');
+    }
+  }, [isOpen]);
+
   const commonReasons = [
-    'Low Domain Rating/Authority',
-    'Irrelevant Niche/Industry',
-    'Poor Content Quality',
-    'Too Expensive',
-    'Site Appears Spammy',
-    'Not Accepting Guest Posts',
-    'Technical Issues (Site Down/Slow)',
-    'Competitor Site',
-    'Other'
+    { id: 'too_expensive', label: 'Too Expensive', icon: '💰', popular: true },
+    { id: 'low_authority', label: 'Low Domain Rating/Authority', icon: '📉', popular: true },
+    { id: 'irrelevant_niche', label: 'Irrelevant Niche/Industry', icon: '🎯', popular: true },
+    { id: 'poor_content', label: 'Poor Content Quality', icon: '📝', popular: false },
+    { id: 'site_spammy', label: 'Site Appears Spammy', icon: '🚫', popular: false },
+    { id: 'no_guest_posts', label: 'Not Accepting Guest Posts', icon: '✋', popular: false },
+    { id: 'technical_issues', label: 'Technical Issues (Site Down/Slow)', icon: '⚠️', popular: false },
+    { id: 'competitor', label: 'Competitor Site', icon: '🏢', popular: false },
+    { id: 'other', label: 'Other', icon: '❓', popular: false }
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -58,75 +66,121 @@ function FeedbackModal({ isOpen, siteDomain, onClose, onSubmit, userType }: Feed
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">
-            {userType === 'account' ? 'Why not interested?' : 'Rejection Reason'}
-          </h3>
+    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-auto transform transition-all">
+        <div className="flex items-center justify-between p-6 pb-4 border-b border-gray-100">
+          <div>
+            <h3 className="text-xl font-semibold text-gray-900">
+              {userType === 'account' ? '🤔 Why skip this site?' : 'Rejection Reason'}
+            </h3>
+            <p className="text-sm text-gray-500 mt-1">
+              <span className="font-medium text-gray-700">{siteDomain}</span> • Help us understand your preferences
+            </p>
+          </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-2 transition-colors"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="mb-4">
-          <p className="text-sm text-gray-600 mb-2">
-            Site: <span className="font-medium">{siteDomain}</span>
-          </p>
-        </div>
-
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              {userType === 'account' ? 'Primary reason:' : 'Rejection reason:'}
+        <form onSubmit={handleSubmit} className="p-6">
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-800 mb-4">
+              {userType === 'account' ? 'Most common reasons:' : 'Primary reason:'}
             </label>
-            <div className="space-y-2">
-              {commonReasons.map((reason) => (
-                <label key={reason} className="flex items-center">
+            
+            {/* Popular reasons first */}
+            <div className="space-y-3 mb-4">
+              {commonReasons.filter(r => r.popular).map((reason) => (
+                <label 
+                  key={reason.id} 
+                  className={`flex items-center p-3 rounded-lg border-2 cursor-pointer transition-all hover:bg-blue-50 hover:border-blue-200 ${
+                    selectedReason === reason.label 
+                      ? 'border-blue-500 bg-blue-50 text-blue-900' 
+                      : 'border-gray-200 bg-white text-gray-700'
+                  }`}
+                >
                   <input
                     type="radio"
                     name="reason"
-                    value={reason}
-                    checked={selectedReason === reason}
+                    value={reason.label}
+                    checked={selectedReason === reason.label}
                     onChange={(e) => setSelectedReason(e.target.value)}
-                    className="mr-2"
+                    className="sr-only"
                   />
-                  <span className="text-sm">{reason}</span>
+                  <span className="text-lg mr-3">{reason.icon}</span>
+                  <span className="font-medium">{reason.label}</span>
+                  {selectedReason === reason.label && (
+                    <CheckCircle className="h-5 w-5 text-blue-600 ml-auto" />
+                  )}
                 </label>
               ))}
             </div>
+            
+            {/* Other reasons */}
+            <details className="group">
+              <summary className="flex items-center justify-between p-3 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors">
+                <span className="text-sm font-medium text-gray-700">Other reasons</span>
+                <ChevronDown className="h-4 w-4 text-gray-400 group-open:rotate-180 transition-transform" />
+              </summary>
+              <div className="mt-3 space-y-2 pl-3">
+                {commonReasons.filter(r => !r.popular).map((reason) => (
+                  <label 
+                    key={reason.id} 
+                    className={`flex items-center p-2 rounded-md cursor-pointer transition-all hover:bg-gray-50 ${
+                      selectedReason === reason.label 
+                        ? 'bg-blue-50 text-blue-900' 
+                        : 'text-gray-600'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="reason"
+                      value={reason.label}
+                      checked={selectedReason === reason.label}
+                      onChange={(e) => setSelectedReason(e.target.value)}
+                      className="sr-only"
+                    />
+                    <span className="text-base mr-2">{reason.icon}</span>
+                    <span className="text-sm">{reason.label}</span>
+                    {selectedReason === reason.label && (
+                      <CheckCircle className="h-4 w-4 text-blue-600 ml-auto" />
+                    )}
+                  </label>
+                ))}
+              </div>
+            </details>
           </div>
 
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Additional notes (optional):
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-800 mb-2">
+              📝 Additional details <span className="text-gray-500 font-normal">(optional)</span>
             </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder={userType === 'account' 
-                ? "Any specific details that would help us find better sites..." 
-                : "Additional details about the rejection..."}
-              className="w-full p-2 border border-gray-300 rounded-md text-sm"
+                ? "e.g., 'Price is too high for our budget' or 'Looking for sites with higher traffic'..." 
+                : "Additional context about this rejection..."}
+              className="w-full p-3 border border-gray-300 rounded-lg text-sm resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               rows={3}
             />
           </div>
 
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
+              className="px-5 py-2.5 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={!selectedReason || isSubmitting}
-              className="px-4 py-2 bg-red-600 text-white text-sm rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-5 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white text-sm font-medium rounded-lg hover:from-red-600 hover:to-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md"
             >
               {isSubmitting ? (
                 <>
@@ -134,7 +188,9 @@ function FeedbackModal({ isOpen, siteDomain, onClose, onSubmit, userType }: Feed
                   {userType === 'account' ? 'Skipping...' : 'Rejecting...'}
                 </>
               ) : (
-                userType === 'account' ? 'Skip Site' : 'Reject Site'
+                <>
+                  {userType === 'account' ? '⏭️ Skip This Site' : '❌ Reject Site'}
+                </>
               )}
             </button>
           </div>

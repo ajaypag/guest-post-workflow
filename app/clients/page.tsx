@@ -492,23 +492,27 @@ function ClientsPageContent() {
                       {/* Actions */}
                       <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                         <Link
-                          href={`/clients/${client.id}/target-pages`}
+                          href={`/clients/${client.id}?tab=pages`}
                           className="flex-1 text-center px-2 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded"
                         >
                           Target URLs
                         </Link>
-                        <Link
-                          href={`/clients/${client.id}/bulk-analysis`}
-                          className="flex-1 text-center px-2 py-1.5 text-xs font-medium text-purple-700 bg-purple-100 hover:bg-purple-200 rounded"
-                        >
-                          Analysis
-                        </Link>
-                        <Link
-                          href={`/orders/new?clientId=${client.id}`}
-                          className="flex-1 text-center px-2 py-1.5 text-xs font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 rounded"
-                        >
-                          New Order
-                        </Link>
+                        {userType === 'internal' && (
+                          <Link
+                            href={`/clients/${client.id}/bulk-analysis`}
+                            className="flex-1 text-center px-2 py-1.5 text-xs font-medium text-purple-700 bg-purple-100 hover:bg-purple-200 rounded"
+                          >
+                            Analysis
+                          </Link>
+                        )}
+                        {userType === 'internal' && (
+                          <Link
+                            href={`/orders/new?clientId=${client.id}`}
+                            className="flex-1 text-center px-2 py-1.5 text-xs font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 rounded"
+                          >
+                            New Order
+                          </Link>
+                        )}
                       </div>
                     </div>
                   );
@@ -594,26 +598,30 @@ function ClientsPageContent() {
                           <td className="px-6 py-4 whitespace-nowrap text-sm" onClick={(e) => e.stopPropagation()}>
                             <div className="flex items-center space-x-2">
                               <Link
-                                href={`/clients/${client.id}/target-pages`}
+                                href={`/clients/${client.id}?tab=pages`}
                                 className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded"
                               >
                                 <Globe className="w-3 h-3 mr-1" />
                                 Target URLs
                               </Link>
-                              <Link
-                                href={`/clients/${client.id}/bulk-analysis`}
-                                className="inline-flex items-center px-2 py-1 text-xs font-medium text-purple-700 bg-purple-100 hover:bg-purple-200 rounded"
-                              >
-                                <BarChart2 className="w-3 h-3 mr-1" />
-                                Analysis
-                              </Link>
-                              <Link
-                                href={`/orders/new?clientId=${client.id}`}
-                                className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 rounded"
-                              >
-                                <Plus className="w-3 h-3 mr-1" />
-                                Order
-                              </Link>
+                              {userType === 'internal' && (
+                                <Link
+                                  href={`/clients/${client.id}/bulk-analysis`}
+                                  className="inline-flex items-center px-2 py-1 text-xs font-medium text-purple-700 bg-purple-100 hover:bg-purple-200 rounded"
+                                >
+                                  <BarChart2 className="w-3 h-3 mr-1" />
+                                  Analysis
+                                </Link>
+                              )}
+                              {userType === 'internal' && (
+                                <Link
+                                  href={`/orders/new?clientId=${client.id}`}
+                                  className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 rounded"
+                                >
+                                  <Plus className="w-3 h-3 mr-1" />
+                                  Order
+                                </Link>
+                              )}
                             </div>
                           </td>
                           <td className="px-4 py-4 whitespace-nowrap text-center text-sm" onClick={(e) => e.stopPropagation()}>

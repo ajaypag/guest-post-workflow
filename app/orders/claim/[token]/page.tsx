@@ -5,10 +5,10 @@ import { useParams, useRouter } from 'next/navigation';
 import { formatCurrency } from '@/lib/utils/formatting';
 import { 
   Loader2, CheckCircle, AlertCircle, Package, 
-  User, Mail, Lock, Building, ArrowRight, Globe, DollarSign, Target
+  User, Mail, Lock, Building, ArrowRight, Globe, DollarSign, Target, Zap
 } from 'lucide-react';
-import OrderSiteReviewTableV2 from '@/components/orders/OrderSiteReviewTableV2';
-import type { OrderGroup, SiteSubmission } from '@/components/orders/OrderSiteReviewTableV2';
+import LineItemsReviewTable from '@/components/orders/LineItemsReviewTable';
+import type { LineItem } from '@/components/orders/LineItemsReviewTable';
 import LinkioHeader from '@/components/LinkioHeader';
 import ProposalVideoEmbed from '@/components/ProposalVideoEmbed';
 
@@ -24,7 +24,8 @@ interface OrderData {
     companyName?: string;
     contactName?: string;
   };
-  orderGroups?: OrderGroup[];
+  orderGroups?: any[];
+  lineItems?: any[];
   shareExpiresAt?: string;
   proposalVideoUrl?: string;
   proposalMessage?: string;
@@ -36,16 +37,31 @@ export default function ClaimOrderPage() {
   const token = params.token as string;
   
   const [order, setOrder] = useState<OrderData | null>(null);
-  const [siteSubmissions, setSiteSubmissions] = useState<Record<string, SiteSubmission[]>>({});
+  const [lineItems, setLineItems] = useState<LineItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [claiming, setClaiming] = useState(false);
   const [showSignupForm, setShowSignupForm] = useState(false);
+  const [siteSubmissions, setSiteSubmissions] = useState<any>({});
   
   // Signup form fields (simplified to match main signup)
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [contactName, setContactName] = useState('');
+
+  // Scroll to signup form
+  const scrollToSignupForm = () => {
+    setShowSignupForm(true);
+    setTimeout(() => {
+      const signupElement = document.getElementById('signup-form');
+      if (signupElement) {
+        signupElement.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center' 
+        });
+      }
+    }, 100); // Small delay to ensure form is rendered
+  };
 
   useEffect(() => {
     loadOrderByToken();
@@ -69,9 +85,91 @@ export default function ClaimOrderPage() {
         setContactName(data.order.account.contactName);
       }
       
-      // Set site submissions from API response
+      // Store siteSubmissions for later use
       if (data.siteSubmissions) {
         setSiteSubmissions(data.siteSubmissions);
+        
+        // Transform data to LineItem format for the table with full domain details
+        const transformedLineItems: LineItem[] = [];
+        const allDomains = Object.values(data.siteSubmissions).flat() as any[];
+        
+        // Create line items ONLY from assigned domains (skip unassigned/marginal quality)
+        allDomains.forEach((domain: any) => {
+          // Find if this domain is assigned to a line item
+          const assignedLineItem = data.order?.lineItems?.find((li: any) => 
+            li.assignedDomainId === domain.id || domain.assignedToLineItemId === li.id
+          );
+          
+          // Skip unassigned domains - they were not selected for this order
+          if (!assignedLineItem) {
+            return; // Skip this domain
+          }
+          
+          // Create the enriched assigned domain object with all the data
+          const enrichedDomain = {
+            id: domain.id || domain.domainId,
+            domain: domain.domain || domain.url?.replace('https://', ''),
+            url: domain.url,
+            domainRating: domain.domainRating,
+            traffic: domain.traffic,
+            categories: domain.categories || [],
+            
+            // AI qualification data for the tags
+            qualificationStatus: domain.qualificationStatus,
+            overlapStatus: domain.overlapStatus,
+            authorityDirect: domain.authorityDirect,
+            authorityRelated: domain.authorityRelated,
+            topicScope: domain.topicScope,
+            keywordCount: domain.keywordCount,
+            
+            // Rich analysis data
+            aiQualificationReasoning: domain.aiQualificationReasoning || domain.qualificationReasoning,
+            topicReasoning: domain.topicReasoning,
+            evidence: domain.evidence,
+            notes: domain.notes,
+            
+            // Pricing
+            price: domain.price || domain.retailPrice,
+            wholesalePrice: domain.wholesalePrice,
+            
+            // For expanded details
+            hasDataForSeoResults: domain.hasDataForSeoResults,
+            qualityScore: domain.qualityScore || domain.domainRating,
+            topicScopeAnalysis: domain.topicScopeAnalysis || domain.qualificationStatus
+          };
+          
+          // This is an assigned domain - use the line item data
+          transformedLineItems.push({
+            id: assignedLineItem.id,
+            orderId: data.order.id,
+            clientId: assignedLineItem.clientId,
+            client: assignedLineItem.client,
+            targetPageUrl: assignedLineItem.targetPageUrl || domain.targetPageUrl || '',
+            targetPageId: assignedLineItem.targetPageId,
+            anchorText: assignedLineItem.anchorText || domain.anchorText || '',
+            status: assignedLineItem.status || 'pending',
+            assignedDomainId: domain.id,
+            assignedDomain: enrichedDomain,
+            estimatedPrice: assignedLineItem.estimatedPrice || domain.price || 0,
+            wholesalePrice: assignedLineItem.wholesalePrice || domain.wholesalePrice || 0,
+            workflowId: assignedLineItem.workflowId,
+            metadata: {
+              ...assignedLineItem.metadata,
+              inclusionStatus: domain.inclusionStatus || 'included'
+            }
+          });
+        });
+        
+        // Sort: assigned/included first, then available/excluded
+        transformedLineItems.sort((a, b) => {
+          const aIncluded = a.metadata?.inclusionStatus === 'included';
+          const bIncluded = b.metadata?.inclusionStatus === 'included';
+          if (aIncluded && !bIncluded) return -1;
+          if (!aIncluded && bIncluded) return 1;
+          return 0;
+        });
+        
+        setLineItems(transformedLineItems);
       }
       
     } catch (error: any) {
@@ -177,253 +275,309 @@ export default function ClaimOrderPage() {
     <>
       <LinkioHeader />
       <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold text-gray-900">Review & Claim Order</h1>
-              <p className="mt-1 text-sm text-gray-600">
-                Review the order details below and create an account to claim it
-              </p>
-            </div>
-            {timeRemaining !== null && timeRemaining > 0 && (
-              <div className="text-right">
-                <p className="text-xs text-orange-600">
-                  Link expires in {timeRemaining} {timeRemaining === 1 ? 'day' : 'days'}
+        {/* Hero Header with Clean Design */}
+        <div className="bg-white border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">Review Your Order</h1>
+                <p className="text-gray-600 text-lg">
+                  We've selected {lineItems.length} high-quality sites for your campaign
                 </p>
+              </div>
+              {timeRemaining !== null && timeRemaining > 0 && (
+                <div className="bg-orange-50 border border-orange-200 rounded-xl p-6 text-center min-w-[120px]">
+                  <div className="text-3xl font-bold mb-1 text-orange-600">{timeRemaining}</div>
+                  <div className="text-sm font-medium text-orange-600">
+                    {timeRemaining === 1 ? 'day left' : 'days left'}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="container mx-auto px-4 py-6 pb-32 max-w-none xl:max-w-[1600px] 2xl:max-w-[1920px]">
+          {/* Top Action Button */}
+          <div className="mb-8 text-center">
+            {!showSignupForm ? (
+              <button
+                onClick={scrollToSignupForm}
+                className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+              >
+                <Package className="mr-3 h-5 w-5" />
+                Create Account & Claim Order
+                <ArrowRight className="ml-3 h-5 w-5" />
+              </button>
+            ) : (
+              <div className="text-gray-600">
+                Complete the form below to claim your order
               </div>
             )}
           </div>
-        </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Personalized Video Proposal - Show if video URL exists */}
-        {order.proposalVideoUrl && (
-          <ProposalVideoEmbed 
-            videoUrl={order.proposalVideoUrl}
-            title="Your Personalized Proposal"
-            message={order.proposalMessage}
-          />
-        )}
+          {/* Personalized Video Proposal - Show if video URL exists */}
+          {order.proposalVideoUrl && (
+            <ProposalVideoEmbed 
+              videoUrl={order.proposalVideoUrl}
+              title="Your Personalized Proposal"
+              message={order.proposalMessage}
+            />
+          )}
         
-        {/* Order Analysis - Show detailed site analysis like internal review page */}
-        {order.orderGroups && order.orderGroups.length > 0 ? (
-          <div className="space-y-6">
-            {order.orderGroups.map((group: any) => {
-              const groupSubmissions = siteSubmissions[group.id] || [];
-              
-              if (groupSubmissions.length === 0) {
-                return (
-                  <div key={group.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      {group.client?.name || 'Unknown Client'}
-                    </h3>
-                    <p className="text-gray-600">
-                      Analysis in progress - {group.linkCount} {group.linkCount === 1 ? 'link' : 'links'} requested
-                    </p>
-                    {group.client?.website && (
-                      <p className="text-sm text-gray-500 mt-1">
-                        Website: {group.client.website}
-                      </p>
-                    )}
-                  </div>
-                );
-              }
-              
-              return (
-                <div key={group.id} className="bg-white rounded-lg shadow-sm border border-gray-200">
-                  <div className="px-6 py-4 border-b border-gray-200">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-medium text-gray-900">
-                        {group.client?.name || 'Unknown Client'}
-                      </h3>
-                      <span className="text-sm text-gray-500">
-                        {groupSubmissions.length} sites analyzed • {group.linkCount} links requested
-                      </span>
-                    </div>
-                    {group.client?.website && (
-                      <p className="text-sm text-gray-600 mt-1">
-                        Website: {group.client.website}
-                      </p>
-                    )}
-                  </div>
-                  
-                  <div className="p-0">
-                    <OrderSiteReviewTableV2
-                      orderId={order.id}
-                      orderGroups={[group]}
-                      siteSubmissions={{ [group.id]: groupSubmissions }}
-                      userType="account" // External users are account type
-                      permissions={{
-                        canChangeStatus: false,
-                        canApproveReject: false,
-                        canGenerateWorkflows: false,
-                        canMarkSitesReady: false,
-                        canAssignTargetPages: false,
-                        canViewInternalTools: false,
-                        canViewPricing: true,   // External users can see pricing column
-                        canEditPricing: false,  // External users cannot edit price overrides
-                        canEditDomainAssignments: false,
-                        canSetExclusionReason: false
-                      }}
-                      workflowStage="client_review"
-                      useStatusSystem={true}
-                      onApprove={async () => {}} // No-op for read-only
-                      onReject={async () => {}} // No-op for read-only
-                      onChangeInclusionStatus={async () => {}} // No-op for read-only
-                    />
-                  </div>
+          {/* Order Summary Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <div className="flex items-center">
+                <div className="p-3 rounded-lg bg-emerald-50">
+                  <CheckCircle className="h-6 w-6 text-emerald-600" />
                 </div>
-              );
-            })}
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">High Quality Sites</p>
+                  <p className="text-2xl font-bold text-gray-900">{lineItems.length}</p>
+                </div>
+              </div>
+            </div>
             
-            {/* Order Summary */}
-            <div className="bg-gray-50 rounded-lg p-6">
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="text-sm text-gray-600">Order Summary</p>
-                  <div className="flex items-center gap-4 mt-2">
-                    <span className="text-sm text-gray-700">
-                      Total Links: {order.orderGroups.reduce((sum: number, g: any) => sum + g.linkCount, 0)}
-                    </span>
-                    {order.includesClientReview && (
-                      <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">
-                        Includes Client Review
-                      </span>
-                    )}
-                    {order.rushDelivery && (
-                      <span className="text-xs px-2 py-1 bg-orange-100 text-orange-700 rounded">
-                        Rush Delivery
-                      </span>
-                    )}
-                  </div>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <div className="flex items-center">
+                <div className="p-3 rounded-lg bg-blue-50">
+                  <Target className="h-6 w-6 text-blue-600" />
                 </div>
-                <div className="text-right">
-                  <p className="text-sm text-gray-600">Sites Analyzed</p>
-                  <p className="text-2xl font-semibold text-gray-900">
-                    {Object.values(siteSubmissions).reduce((total, submissions) => total + submissions.length, 0)}
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Avg. DR / Traffic</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {Math.round(lineItems.filter(li => li.assignedDomain?.domainRating)
+                      .reduce((sum, li) => sum + (li.assignedDomain?.domainRating || 0), 0) / 
+                      lineItems.filter(li => li.assignedDomain?.domainRating).length) || 0}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Avg Traffic: {lineItems.filter(li => li.assignedDomain?.traffic)
+                      .reduce((sum, li) => sum + (li.assignedDomain?.traffic || 0), 0) > 1000000 
+                      ? Math.round(lineItems.filter(li => li.assignedDomain?.traffic)
+                          .reduce((sum, li) => sum + (li.assignedDomain?.traffic || 0), 0) / 
+                          lineItems.filter(li => li.assignedDomain?.traffic).length / 1000000 * 10) / 10 + 'M'
+                      : Math.round(lineItems.filter(li => li.assignedDomain?.traffic)
+                          .reduce((sum, li) => sum + (li.assignedDomain?.traffic || 0), 0) / 
+                          lineItems.filter(li => li.assignedDomain?.traffic).length / 1000) + 'K'
+                    }
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <div className="flex items-center">
+                <div className="p-3 rounded-lg bg-purple-50">
+                  <DollarSign className="h-6 w-6 text-purple-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Price Per Link</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {formatCurrency(Math.round(order.totalPrice / lineItems.length))}
                   </p>
                 </div>
               </div>
             </div>
           </div>
-        ) : (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
-            <p className="text-gray-500">No order analysis available yet</p>
-          </div>
-        )}
 
-        {/* Claim Section */}
-        {!showSignupForm ? (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
-            <Package className="h-12 w-12 text-blue-600 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              Ready to Claim This Order?
-            </h3>
-            <p className="text-gray-600 mb-6">
-              Create a free account to manage this order and track its progress
-            </p>
-            <button
-              onClick={() => setShowSignupForm(true)}
-              className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700"
-            >
-              Create Account & Claim Order
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </button>
-          </div>
-        ) : (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-            <h3 className="text-xl font-semibold text-gray-900 mb-6">
-              Create Your Account
-            </h3>
-            
-            {error && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start">
-                <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 mr-3" />
-                <p className="text-sm text-red-800">{error}</p>
-              </div>
-            )}
-            
-            <form onSubmit={handleClaimOrder} className="space-y-6">
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <Mail className="inline h-4 w-4 mr-1" />
-                    Email Address *
-                  </label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <User className="inline h-4 w-4 mr-1" />
-                    Full Name *
-                  </label>
-                  <input
-                    type="text"
-                    value={contactName}
-                    onChange={(e) => setContactName(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Your full name"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <Lock className="inline h-4 w-4 mr-1" />
-                    Password *
-                  </label>
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Minimum 8 characters"
-                    required
-                  />
+          {/* Order Analysis - Show detailed site analysis with expandable rows */}
+          {lineItems.length > 0 && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+              <div className="px-6 py-5 border-b border-gray-100">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-900">
+                      Selected Sites for Your Campaign
+                    </h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      Each site has been carefully vetted and matched to your target audience
+                    </p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-50 text-blue-700">
+                      {lineItems.length} sites
+                    </span>
+                  </div>
                 </div>
               </div>
               
-              <div className="flex gap-4">
+              <div className="p-0">
+                <LineItemsReviewTable
+                  orderId={order.id}
+                  lineItems={lineItems}
+                  userType="account"
+                  permissions={{
+                    canApproveReject: false,
+                    canViewPricing: true,
+                    canEditPricing: false,
+                    canViewInternalTools: false,
+                    canChangeStatus: false, // Read-only for claim page
+                    canAssignTargetPages: false,
+                    canGenerateWorkflows: false,
+                    canMarkSitesReady: false,
+                    canEditDomainAssignments: false,
+                    canSetExclusionReason: false
+                  }}
+                  workflowStage="client_review"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Claim Section */}
+          {!showSignupForm ? (
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 text-center">
+              <div className="max-w-2xl mx-auto">
+                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Package className="h-8 w-8 text-blue-600" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                  Ready to Get Started?
+                </h3>
+                <p className="text-gray-600 text-lg mb-8 leading-relaxed">
+                  Create your free account to claim this order and start tracking your campaign progress.
+                  You'll get full access to performance analytics, content drafts, and direct communication with our team.
+                </p>
                 <button
-                  type="button"
-                  onClick={() => setShowSignupForm(false)}
-                  className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50"
-                  disabled={claiming}
+                  onClick={scrollToSignupForm}
+                  className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
                 >
-                  Back
-                </button>
-                <button
-                  type="submit"
-                  disabled={claiming}
-                  className="flex-1 px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                >
-                  {claiming ? (
-                    <>
-                      <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                      Creating Account...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle className="h-5 w-5 mr-2" />
-                      Create Account & Claim
-                    </>
-                  )}
+                  Create Account & Claim Order
+                  <ArrowRight className="ml-3 h-5 w-5" />
                 </button>
               </div>
-            </form>
-          </div>
+            </div>
+          ) : (
+            <div id="signup-form" className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 max-w-2xl mx-auto">
+              <div className="text-center mb-8">
+                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <User className="w-8 h-8 text-blue-600" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                  Create Your Account
+                </h3>
+                <p className="text-gray-600">
+                  Just a few details to get started with your campaign
+                </p>
+              </div>
+              
+              {error && (
+                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start">
+                  <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 mr-3" />
+                  <p className="text-sm text-red-800">{error}</p>
+                </div>
+              )}
+              
+              <form onSubmit={handleClaimOrder} className="space-y-6">
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      <Mail className="inline h-4 w-4 mr-2" />
+                      Email Address *
+                    </label>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      <User className="inline h-4 w-4 mr-2" />
+                      Full Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={contactName}
+                      onChange={(e) => setContactName(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      placeholder="Your full name"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      <Lock className="inline h-4 w-4 mr-2" />
+                      Password *
+                    </label>
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      placeholder="Minimum 8 characters with letters and numbers"
+                      required
+                    />
+                  </div>
+                </div>
+                
+                <div className="flex gap-4 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowSignupForm(false)}
+                    className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors"
+                    disabled={claiming}
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={claiming}
+                    className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-all duration-200"
+                  >
+                    {claiming ? (
+                      <>
+                        <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                        Creating Account...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="h-5 w-5 mr-2" />
+                        Create Account & Claim
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+              
+              <div className="mt-8 p-4 bg-blue-50 rounded-xl">
+                <p className="text-sm text-blue-800 text-center">
+                  🔒 Your information is secure and will only be used to manage your order
+                </p>
+              </div>
+            </div>
         )}
       </div>
+
+      {/* Footer */}
+      <footer className="bg-white border-t border-gray-200 mt-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <div className="flex items-center space-x-3 mb-4 md:mb-0">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <Zap className="h-5 w-5 text-white" />
+              </div>
+              <span className="text-xl font-bold text-gray-900">Linkio</span>
+            </div>
+            
+            <div className="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-8 text-sm text-gray-600">
+              <div className="text-center md:text-left">
+                <p>© 2025 Linkio. All rights reserved.</p>
+              </div>
+              <div className="flex space-x-6">
+                <a href="/privacy" className="hover:text-gray-900 transition-colors">Privacy Policy</a>
+                <a href="/terms" className="hover:text-gray-900 transition-colors">Terms of Service</a>
+                <a href="/contact" className="hover:text-gray-900 transition-colors">Contact</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
     </>
   );

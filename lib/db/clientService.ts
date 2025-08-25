@@ -504,7 +504,8 @@ export class ClientService {
   // Get order statistics for a client
   static async getClientOrderStats(clientId: string) {
     try {
-      const orderStatsQuery = await db
+      // Get stats from orderGroups (legacy system)
+      const orderGroupsStatsQuery = await db
         .select({
           orderCount: count(orders.id),
           totalRevenue: sum(orders.totalRetail),
@@ -516,14 +517,33 @@ export class ClientService {
         .leftJoin(orders, eq(orderGroups.orderId, orders.id))
         .where(eq(orderGroups.clientId, clientId));
 
-      const stats = orderStatsQuery[0];
+      // Get stats from lineItems (new system)
+      const { orderLineItems } = await import('@/lib/db/orderLineItemSchema');
+      const lineItemsStatsQuery = await db
+        .select({
+          orderCount: sql<number>`COUNT(DISTINCT ${orders.id})`,
+          totalRevenue: sql<number>`SUM(DISTINCT ${orders.totalRetail})`,
+          recentOrderDate: sql<string>`MAX(${orders.createdAt})`,
+          activeOrders: sql<number>`COUNT(DISTINCT CASE WHEN ${orders.status} NOT IN ('completed', 'cancelled', 'refunded') THEN ${orders.id} END)`,
+          completedOrders: sql<number>`COUNT(DISTINCT CASE WHEN ${orders.status} = 'completed' THEN ${orders.id} END)`
+        })
+        .from(orderLineItems)
+        .leftJoin(orders, eq(orderLineItems.orderId, orders.id))
+        .where(eq(orderLineItems.clientId, clientId));
+
+      const orderGroupsStats = orderGroupsStatsQuery[0];
+      const lineItemsStats = lineItemsStatsQuery[0];
       
+      // Combine stats from both systems
       return {
-        orderCount: Number(stats.orderCount) || 0,
-        totalRevenue: Number(stats.totalRevenue) || 0,
-        recentOrderDate: stats.recentOrderDate,
-        activeOrders: Number(stats.activeOrders) || 0,
-        completedOrders: Number(stats.completedOrders) || 0
+        orderCount: Number(orderGroupsStats.orderCount || 0) + Number(lineItemsStats.orderCount || 0),
+        totalRevenue: Number(orderGroupsStats.totalRevenue || 0) + Number(lineItemsStats.totalRevenue || 0),
+        recentOrderDate: [orderGroupsStats.recentOrderDate, lineItemsStats.recentOrderDate]
+          .filter(Boolean)
+          .sort()
+          .pop() || null,
+        activeOrders: Number(orderGroupsStats.activeOrders || 0) + Number(lineItemsStats.activeOrders || 0),
+        completedOrders: Number(orderGroupsStats.completedOrders || 0) + Number(lineItemsStats.completedOrders || 0)
       };
     } catch (error) {
       console.error('Error getting client order stats:', error);

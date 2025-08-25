@@ -1002,7 +1002,7 @@ export default function InternalOrderManagementPage() {
     }
   };
 
-  const handleGenerateInvoice = async () => {
+  const handleGenerateInvoice = async (cancelUnusedItems = false) => {
     if (!order) return;
     
     setActionLoading(prev => ({ ...prev, generate_invoice: true }));
@@ -1010,18 +1010,45 @@ export default function InternalOrderManagementPage() {
       const response = await fetch(`/api/orders/${orderId}/invoice`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'generate_invoice' })
+        body: JSON.stringify({ 
+          action: 'generate_invoice',
+          cancelUnusedItems 
+        })
       });
       
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to generate invoice');
+      const result = await response.json();
+      
+      // Handle warning about unused line items
+      if (response.status === 422 && result.warning === 'unused_line_items') {
+        const confirmed = confirm(
+          `⚠️ Invoice Generation Warning\n\n` +
+          `This order has ${result.totalRequested} requested links, but only ${result.totalAssigned} sites have been assigned.\n\n` +
+          `Unused line items (${result.unusedCount}):\n` +
+          result.unusedItems.map((item: any, index: number) => 
+            `• Link #${index + result.totalAssigned + 1} - ${item.targetPageUrl ? `${item.targetPageUrl} - ` : ''}${item.hasAssignedDomain ? 'Pending review' : 'No site assigned'}`
+          ).join('\n') +
+          `\n\nOptions:\n` +
+          `• Cancel: Go back to review\n` +
+          `• OK: Cancel unused items and generate invoice with ${result.totalAssigned} sites\n\n` +
+          `Note: Cancelled items can be restored later if needed.`
+        );
+        
+        if (confirmed) {
+          // Retry with cancelUnusedItems flag
+          return handleGenerateInvoice(true);
+        } else {
+          setActionLoading(prev => ({ ...prev, generate_invoice: false }));
+          return;
+        }
       }
       
-      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to generate invoice');
+      }
+      
       setMessage({
         type: 'success',
-        text: `Invoice generated successfully for ${result.approvedSites} approved sites`
+        text: `Invoice generated successfully for ${result.approvedSites} approved sites${result.unusedCount ? ` (${result.unusedCount} unused items cancelled)` : ''}`
       });
       
       // Reload order data
@@ -2418,7 +2445,7 @@ export default function InternalOrderManagementPage() {
                     {/* Generate Invoice - after sites are approved */}
                     {order.status === 'confirmed' && !order.invoicedAt && (
                       <button
-                        onClick={handleGenerateInvoice}
+                        onClick={() => handleGenerateInvoice()}
                         disabled={actionLoading.generate_invoice}
                         className="w-full px-3 py-2 bg-orange-600 text-white text-sm rounded-md hover:bg-orange-700 disabled:opacity-50"
                       >

@@ -143,13 +143,24 @@ export default function OrderPaymentPage({ order, className }: OrderPaymentPageP
                 <span className="capitalize font-medium text-blue-600">{order.state?.replace('_', ' ') || 'Unknown'}</span>
               </div>
               
-              {/* Show approved/estimated links count */}
-              {order.estimatedLinksCount && (
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Links:</span>
-                  <span>{order.estimatedLinksCount}</span>
-                </div>
-              )}
+              {/* Show actual/estimated links count */}
+              {(() => {
+                // Use invoice data if available (actual invoiced items), otherwise estimated count
+                const actualLinkCount = order.invoiceData?.items?.length;
+                const displayCount = actualLinkCount || order.estimatedLinksCount;
+                
+                return displayCount ? (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Links:</span>
+                    <span>
+                      {displayCount}
+                      {actualLinkCount && (
+                        <span className="text-xs text-gray-500 ml-1">(invoiced)</span>
+                      )}
+                    </span>
+                  </div>
+                ) : null;
+              })()}
             </div>
 
             <div className="border-t border-gray-200 mt-4 pt-4">

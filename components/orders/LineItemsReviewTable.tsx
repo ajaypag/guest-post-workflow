@@ -144,7 +144,7 @@ interface LineItemsReviewTableProps {
   workflowStage?: string;
   benchmarkData?: any;
   // Event handlers
-  onChangeStatus?: (itemId: string, status: 'included' | 'excluded' | 'saved_for_later', reason?: string) => Promise<void>;
+  onChangeStatus?: (itemId: string, status: 'included' | 'excluded', reason?: string) => Promise<void>;
   onEditItem?: (itemId: string, updates: any) => Promise<void>;
   onRemoveItem?: (itemId: string) => Promise<void>;
   onApprove?: (itemId: string, clientId: string) => Promise<void>;
@@ -164,20 +164,28 @@ interface FeedbackModalProps {
 }
 
 function FeedbackModal({ isOpen, siteDomain, onClose, onSubmit, userType }: FeedbackModalProps) {
-  const [selectedReason, setSelectedReason] = useState('');
+  const [selectedReason, setSelectedReason] = useState('Too Expensive'); // Default selection
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Reset selection when modal opens
+  React.useEffect(() => {
+    if (isOpen) {
+      setSelectedReason('Too Expensive');
+      setNotes('');
+    }
+  }, [isOpen]);
+
   const commonReasons = [
-    'Low Domain Rating/Authority',
-    'Irrelevant Niche/Industry',
-    'Poor Content Quality',
-    'Too Expensive',
-    'Site Appears Spammy',
-    'Not Accepting Guest Posts',
-    'Technical Issues (Site Down/Slow)',
-    'Competitor Site',
-    'Other'
+    { id: 'too_expensive', label: 'Too Expensive', icon: '💰', popular: true },
+    { id: 'low_authority', label: 'Low Domain Rating/Authority', icon: '📉', popular: true },
+    { id: 'irrelevant_niche', label: 'Irrelevant Niche/Industry', icon: '🎯', popular: true },
+    { id: 'poor_content', label: 'Poor Content Quality', icon: '📝', popular: false },
+    { id: 'site_spammy', label: 'Site Appears Spammy', icon: '🚫', popular: false },
+    { id: 'no_guest_posts', label: 'Not Accepting Guest Posts', icon: '✋', popular: false },
+    { id: 'technical_issues', label: 'Technical Issues (Site Down/Slow)', icon: '⚠️', popular: false },
+    { id: 'competitor', label: 'Competitor Site', icon: '🏢', popular: false },
+    { id: 'other', label: 'Other', icon: '❓', popular: false }
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -198,61 +206,132 @@ function FeedbackModal({ isOpen, siteDomain, onClose, onSubmit, userType }: Feed
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg max-w-md w-full p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold">
-            {userType === 'internal' ? 'Exclude Domain' : 'Why are you rejecting this site?'}
-          </h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-auto transform transition-all">
+        <div className="flex items-center justify-between p-6 pb-4 border-b border-gray-100">
+          <div>
+            <h3 className="text-xl font-semibold text-gray-900">
+              {userType === 'account' ? '🤔 Why skip this site?' : 'Rejection Reason'}
+            </h3>
+            <p className="text-sm text-gray-500 mt-1">
+              <span className="font-medium text-gray-700">{siteDomain}</span> • Help us understand your preferences
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-2 transition-colors"
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <p className="text-sm text-gray-600 mb-4">Domain: {siteDomain}</p>
-
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-3 mb-4">
-            {commonReasons.map(reason => (
-              <label key={reason} className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="reason"
-                  value={reason}
-                  checked={selectedReason === reason}
-                  onChange={(e) => setSelectedReason(e.target.value)}
-                  className="text-blue-600"
-                />
-                <span className="text-sm">{reason}</span>
-              </label>
-            ))}
+        <form onSubmit={handleSubmit} className="p-6">
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-800 mb-4">
+              {userType === 'account' ? 'Most common reasons:' : 'Primary reason:'}
+            </label>
+            
+            {/* Popular reasons first */}
+            <div className="space-y-3 mb-4">
+              {commonReasons.filter(r => r.popular).map((reason) => (
+                <label 
+                  key={reason.id} 
+                  className={`flex items-center p-3 rounded-lg border-2 cursor-pointer transition-all hover:bg-blue-50 hover:border-blue-200 ${
+                    selectedReason === reason.label 
+                      ? 'border-blue-500 bg-blue-50 text-blue-900' 
+                      : 'border-gray-200 bg-white text-gray-700'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="reason"
+                    value={reason.label}
+                    checked={selectedReason === reason.label}
+                    onChange={(e) => setSelectedReason(e.target.value)}
+                    className="sr-only"
+                  />
+                  <span className="text-lg mr-3">{reason.icon}</span>
+                  <span className="font-medium">{reason.label}</span>
+                  {selectedReason === reason.label && (
+                    <CheckCircle className="h-5 w-5 text-blue-600 ml-auto" />
+                  )}
+                </label>
+              ))}
+            </div>
+            
+            {/* Other reasons */}
+            <details className="group">
+              <summary className="flex items-center justify-between p-3 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors">
+                <span className="text-sm font-medium text-gray-700">Other reasons</span>
+                <ChevronDown className="h-4 w-4 text-gray-400 group-open:rotate-180 transition-transform" />
+              </summary>
+              <div className="mt-3 space-y-2 pl-3">
+                {commonReasons.filter(r => !r.popular).map((reason) => (
+                  <label 
+                    key={reason.id} 
+                    className={`flex items-center p-2 rounded-md cursor-pointer transition-all hover:bg-gray-50 ${
+                      selectedReason === reason.label 
+                        ? 'bg-blue-50 text-blue-900' 
+                        : 'text-gray-600'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="reason"
+                      value={reason.label}
+                      checked={selectedReason === reason.label}
+                      onChange={(e) => setSelectedReason(e.target.value)}
+                      className="sr-only"
+                    />
+                    <span className="text-base mr-2">{reason.icon}</span>
+                    <span className="text-sm">{reason.label}</span>
+                    {selectedReason === reason.label && (
+                      <CheckCircle className="h-4 w-4 text-blue-600 ml-auto" />
+                    )}
+                  </label>
+                ))}
+              </div>
+            </details>
           </div>
 
-          {selectedReason === 'Other' && (
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-800 mb-2">
+              📝 Additional details <span className="text-gray-500 font-normal">(optional)</span>
+            </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Please specify..."
-              className="w-full px-3 py-2 border rounded-lg text-sm mb-4"
+              placeholder={userType === 'account' 
+                ? "e.g., 'Price is too high for our budget' or 'Looking for sites with higher traffic'..." 
+                : "Additional context about this rejection..."}
+              className="w-full p-3 border border-gray-300 rounded-lg text-sm resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               rows={3}
-              required
             />
-          )}
+          </div>
 
-          <div className="flex gap-3">
+          <div className="flex justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+              className="px-5 py-2.5 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={!selectedReason || isSubmitting}
-              className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+              className="px-5 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white text-sm font-medium rounded-lg hover:from-red-600 hover:to-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md"
             >
-              {userType === 'internal' ? 'Exclude' : 'Reject Site'}
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin inline" />
+                  {userType === 'account' ? 'Skipping...' : 'Rejecting...'}
+                </>
+              ) : (
+                <>
+                  {userType === 'account' ? '⏭️ Skip This Site' : '❌ Reject Site'}
+                </>
+              )}
             </button>
           </div>
         </form>
@@ -541,11 +620,10 @@ export default function LineItemsReviewTable({
         return targetA.localeCompare(targetB);
       
       case 'status':
-        // Sort by inclusion status with logical order: included -> saved_for_later -> excluded
+        // Sort by inclusion status with logical order: included -> excluded
         const statusOrder: Record<string, number> = {
           'included': 1,
-          'saved_for_later': 2,
-          'excluded': 3
+          'excluded': 2
         };
         const statusA = a.metadata?.inclusionStatus || 'included';
         const statusB = b.metadata?.inclusionStatus || 'included';
@@ -703,7 +781,7 @@ export default function LineItemsReviewTable({
       
       // Show success message
       const actionText = newStatus === 'included' ? 'included' : 
-                        newStatus === 'excluded' ? 'excluded' : 'saved for later';
+                        newStatus === 'excluded' ? 'excluded' : 'included';
       setSuccessMessage(`Successfully ${actionText} ${selectedItems.size} items`);
       setTimeout(() => setSuccessMessage(null), 3000);
       
@@ -753,8 +831,9 @@ export default function LineItemsReviewTable({
 
   return (
     <div className="space-y-4">
-      {/* Filter Bar */}
-      <div className="bg-white rounded-lg p-4 shadow-sm">
+      {/* Filter Bar - Hide for client review (claim page) */}
+      {workflowStage !== 'client_review' && (
+        <div className="bg-white rounded-lg p-4 shadow-sm">
         <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
           <div className="w-full md:flex-1">
             <div className="relative">
@@ -793,7 +872,6 @@ export default function LineItemsReviewTable({
               <option value="all">All Status</option>
               <option value="included">Included</option>
               <option value="excluded">Excluded</option>
-              <option value="saved_for_later">Saved for Later</option>
             </select>
 
             <button
@@ -878,7 +956,8 @@ export default function LineItemsReviewTable({
             </div>
           </div>
         )}
-      </div>
+        </div>
+      )}
 
       {/* Success Message */}
       {successMessage && (
@@ -912,13 +991,6 @@ export default function LineItemsReviewTable({
               Include All
             </button>
             <button
-              onClick={() => handleBulkStatusChange('saved_for_later')}
-              disabled={bulkActionLoading}
-              className="px-3 py-1 bg-yellow-600 text-white rounded text-sm hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Save for Later
-            </button>
-            <button
               onClick={() => handleBulkStatusChange('excluded')}
               disabled={bulkActionLoading}
               className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -942,7 +1014,7 @@ export default function LineItemsReviewTable({
         const assignedCount = group.items.filter(i => i.assignedDomainId).length;
         const includedCount = group.items.filter(i => getItemStatus(i) === 'included').length;
         const excludedCount = group.items.filter(i => getItemStatus(i) === 'excluded').length;
-        const savedCount = group.items.filter(i => getItemStatus(i) === 'saved_for_later').length;
+        const savedCount = 0; // Site bank concept removed
         
         return (
           <div key={clientId} className="bg-white rounded-lg shadow-sm overflow-hidden">
@@ -952,10 +1024,15 @@ export default function LineItemsReviewTable({
                 <div>
                   <h3 className="font-semibold text-gray-900">{group.client.name}</h3>
                   <p className="text-sm text-gray-600">
-                    {group.items.length} links requested • 
-                    <span className="text-green-600"> {includedCount} included</span> • 
-                    <span className="text-yellow-600"> {savedCount} saved</span> • 
-                    <span className="text-red-600"> {excludedCount} excluded</span>
+                    {workflowStage === 'client_review' ? (
+                      `${group.items.length} high-quality sites selected for your campaign`
+                    ) : (
+                      <>
+                        {group.items.length} links requested • 
+                        <span className="text-green-600"> {includedCount} included</span> • 
+                        <span className="text-red-600"> {excludedCount} excluded</span>
+                      </>
+                    )}
                   </p>
                 </div>
                 {permissions.canApproveReject && onRequestMoreSites && (
@@ -1080,14 +1157,11 @@ export default function LineItemsReviewTable({
                                     ? 'bg-green-100 text-green-700 border-green-200' 
                                     : itemStatus === 'excluded'
                                     ? 'bg-red-100 text-red-700 border-red-200'
-                                    : itemStatus === 'saved_for_later'
-                                    ? 'bg-yellow-100 text-yellow-700 border-yellow-200'
                                     : 'bg-gray-100 text-gray-700 border-gray-200'
                                 }`}
                               >
                                 <option value="included">Included</option>
                                 <option value="excluded">Excluded</option>
-                                <option value="saved_for_later">Saved for Later</option>
                               </select>
                             </td>
                           )}
@@ -1270,8 +1344,6 @@ export default function LineItemsReviewTable({
                               ? 'bg-green-100 text-green-700' 
                               : itemStatus === 'excluded'
                               ? 'bg-red-100 text-red-700'
-                              : itemStatus === 'saved_for_later'
-                              ? 'bg-yellow-100 text-yellow-700'
                               : 'bg-gray-100 text-gray-700'
                           }`}
                         >

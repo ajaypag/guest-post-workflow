@@ -36,10 +36,17 @@ export default function BulkAnalysisPage() {
     // Get user type from session
     const session = sessionStorage.getSession();
     if (session) {
-      setUserType(session.userType || 'internal');
+      const userType = session.userType || 'internal';
+      setUserType(userType);
+      
+      // Block account users from accessing bulk analysis
+      if (userType === 'account') {
+        router.push('/vetted-sites');
+        return;
+      }
     }
     loadClient();
-  }, [params.id]);
+  }, [params.id, router]);
 
   useEffect(() => {
     if (client) {
@@ -178,6 +185,31 @@ export default function BulkAnalysisPage() {
           <Header />
           <div className="max-w-7xl mx-auto px-4 py-8">
             <div>Loading...</div>
+          </div>
+        </div>
+      </AuthWrapper>
+    );
+  }
+
+  // Block account users from accessing bulk analysis page
+  if (userType === 'account') {
+    return (
+      <AuthWrapper>
+        <div className="min-h-screen bg-gray-50">
+          <Header />
+          <div className="max-w-7xl mx-auto px-4 py-8">
+            <div className="text-center py-12">
+              <div className="max-w-md mx-auto">
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">Access Restricted</h2>
+                <p className="text-gray-600 mb-6">This page is only available to internal users. Account users should use the Vetted Sites page for domain analysis.</p>
+                <Link
+                  href="/vetted-sites"
+                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700"
+                >
+                  Go to Vetted Sites
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </AuthWrapper>

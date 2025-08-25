@@ -89,36 +89,103 @@ export async function POST(
         // Use line items system
         console.log('[INVOICE] Using line items system for invoice generation');
         
-        // Check for unassigned line items
+        // Check for unassigned or pending line items
         const unassignedItems = lineItemsList.filter(item => !item.assignedDomainId);
-        if (unassignedItems.length > 0) {
-          return NextResponse.json({ 
-            error: 'Cannot generate invoice - some line items have no assigned domains',
-            unassignedCount: unassignedItems.length 
-          }, { status: 400 });
-        }
-        
-        // Check for pending line items
         const pendingItems = lineItemsList.filter(item => 
           item.status === 'pending' || item.status === 'draft'
         );
-        pendingCount = pendingItems.length;
+        const unusedItems = [...new Set([...unassignedItems, ...pendingItems])]; // Remove duplicates
         
-        if (pendingCount > 0) {
-          return NextResponse.json({ 
-            error: 'Cannot generate invoice - line items review not complete',
-            pendingCount 
-          }, { status: 400 });
+        // If there are unused items, check if user wants to auto-cancel them
+        if (unusedItems.length > 0) {
+          const { cancelUnusedItems } = body;
+          
+          if (!cancelUnusedItems) {
+            // Return warning with unused items details for user decision
+            return NextResponse.json({ 
+              warning: 'unused_line_items',
+              message: 'This order has unused line items that need to be cancelled before generating invoice',
+              unusedItems: unusedItems.map(item => ({
+                id: item.id,
+                status: item.status,
+                hasAssignedDomain: !!item.assignedDomainId,
+                targetPageUrl: item.targetPageUrl,
+                clientName: item.client?.name
+              })),
+              totalRequested: lineItemsList.length,
+              totalAssigned: lineItemsList.length - unusedItems.length,
+              unusedCount: unusedItems.length
+            }, { status: 422 }); // 422 = Unprocessable Entity (needs user decision)
+          }
+          
+          // User chose to cancel unused items - soft delete them
+          console.log(`[INVOICE] Auto-cancelling ${unusedItems.length} unused line items`);
+          const batchId = crypto.randomUUID();
+          
+          for (const item of unusedItems) {
+            await db.update(orderLineItems)
+              .set({
+                status: 'cancelled',
+                cancelledAt: new Date(),
+                cancelledBy: session.userId,
+                cancellationReason: `Auto-cancelled during invoice generation: ${!item.assignedDomainId ? 'No site assigned' : 'Pending review'}`,
+                metadata: {
+                  ...(item.metadata as any || {}),
+                  autoCancelledForInvoice: true,
+                  originalStatus: item.status
+                },
+                modifiedAt: new Date(),
+                modifiedBy: session.userId
+              })
+              .where(eq(orderLineItems.id, item.id));
+          }
+          
+          // Refresh line items list after cancellation
+          lineItemsList = await db.query.orderLineItems.findMany({
+            where: and(
+              eq(orderLineItems.orderId, orderId),
+              sql`${orderLineItems.status} NOT IN ('cancelled', 'refunded')`,
+              sql`${orderLineItems.cancelledAt} IS NULL`
+            ),
+            with: {
+              client: true
+            }
+          });
+          
+          console.log(`[INVOICE] After cancellation: ${lineItemsList.length} active line items remaining`);
         }
         
         // Get approved/assigned line items (including already invoiced items for regeneration)
-        approvedItems = lineItemsList.filter(item => 
-          item.status === 'approved' || 
-          item.status === 'assigned' || 
-          item.status === 'confirmed' ||
-          item.status === 'invoiced' || // Allow invoiced items for regeneration
-          (item.assignedDomainId && item.metadata?.inclusionStatus === 'included') // Also check metadata
-        );
+        // EXCLUDE any items that are explicitly excluded by the client
+        console.log(`[INVOICE] Found ${lineItemsList.length} total line items for invoice generation`);
+        lineItemsList.forEach(item => {
+          console.log(`[INVOICE] Item ${item.id.slice(0,8)}: status=${item.status}, inclusionStatus=${item.metadata?.inclusionStatus}, assignedDomainId=${!!item.assignedDomainId}`);
+        });
+        
+        approvedItems = lineItemsList.filter(item => {
+          // First check if item is explicitly excluded
+          if (item.metadata?.inclusionStatus === 'excluded') {
+            console.log(`[INVOICE] Excluding item ${item.id.slice(0,8)} - marked as excluded`);
+            return false;
+          }
+          
+          // Then check if item qualifies for invoice
+          const qualifies = (
+            item.status === 'approved' || 
+            item.status === 'assigned' || 
+            item.status === 'confirmed' ||
+            item.status === 'invoiced' || // Allow invoiced items for regeneration
+            (item.assignedDomainId && item.metadata?.inclusionStatus === 'included') // Also check metadata
+          );
+          
+          if (qualifies) {
+            console.log(`[INVOICE] Including item ${item.id.slice(0,8)} - status: ${item.status}, inclusion: ${item.metadata?.inclusionStatus}`);
+          }
+          
+          return qualifies;
+        });
+        
+        console.log(`[INVOICE] After filtering: ${approvedItems.length} approved items for invoice`);
         
         if (approvedItems.length === 0) {
           return NextResponse.json({ 
@@ -165,8 +232,12 @@ export async function POST(
           }, { status: 400 });
         }
 
-        // Check for approved items using all status systems
+        // Check for approved items using all status systems - EXCLUDE explicitly excluded items
         approvedItems = allSubmissions.filter(s => {
+          // First check if explicitly excluded
+          if (s.inclusionStatus === 'excluded') return false;
+          
+          // Then check approval status
           // New system: explicit inclusion
           if (s.inclusionStatus === 'included') return true;
           // Legacy system: primary pool = included
