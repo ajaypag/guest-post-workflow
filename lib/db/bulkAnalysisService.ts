@@ -295,10 +295,25 @@ export class BulkAnalysisService {
    */
   static async getTargetPageKeywords(targetPageIds: string[]): Promise<string[]> {
     try {
+      // Validate that all IDs are valid UUIDs before querying
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const validIds = targetPageIds.filter(id => {
+        const isValid = uuidRegex.test(id);
+        if (!isValid) {
+          console.warn(`⚠️ BulkAnalysisService: Skipping invalid UUID for target page: ${id}`);
+        }
+        return isValid;
+      });
+
+      if (validIds.length === 0) {
+        console.log('ℹ️ No valid target page UUIDs provided, returning empty keywords array');
+        return [];
+      }
+
       const pages = await db
         .select({ keywords: targetPages.keywords })
         .from(targetPages)
-        .where(inArray(targetPages.id, targetPageIds));
+        .where(inArray(targetPages.id, validIds));
 
       // Aggregate and dedupe keywords
       const allKeywords = new Set<string>();

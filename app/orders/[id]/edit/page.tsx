@@ -175,7 +175,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
   const loadClients = useCallback(async () => {
     try {
       setLoadingClients(true);
-      const url = isAccountUser ? '/api/account/clients' : '/api/clients';
+      const url = isAccountUser ? '/api/account/clients' : '/api/clients?limit=1000';
       const response = await fetch(url);
       
       if (response.ok) {
@@ -457,7 +457,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
       
       // Load clients first
       setLoadingClients(true);
-      const url = isAccountUser ? '/api/account/clients' : '/api/clients';
+      const url = isAccountUser ? '/api/account/clients' : '/api/clients?limit=1000';
       const response = await fetch(url);
       
       if (response.ok) {
