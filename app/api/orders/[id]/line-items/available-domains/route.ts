@@ -3,7 +3,7 @@ import { db } from '@/lib/db/connection';
 import { orders } from '@/lib/db/orderSchema';
 import { orderLineItems } from '@/lib/db/orderLineItemSchema';
 import { bulkAnalysisDomains, bulkAnalysisProjects } from '@/lib/db/bulkAnalysisSchema';
-import { eq, and, inArray, isNull, or } from 'drizzle-orm';
+import { eq, and, inArray, isNull, or, sql } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
 
 /**
@@ -42,9 +42,13 @@ export async function GET(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Get line items with client info
+    // Get active line items with client info (exclude cancelled items from domain assignment)
     const lineItems = await db.query.orderLineItems.findMany({
-      where: eq(orderLineItems.orderId, orderId),
+      where: and(
+        eq(orderLineItems.orderId, orderId),
+        sql`${orderLineItems.status} NOT IN ('cancelled', 'refunded')`,
+        sql`${orderLineItems.cancelledAt} IS NULL`
+      ),
       with: {
         client: true
       }
@@ -63,7 +67,6 @@ export async function GET(
 
     // Find bulk analysis projects associated with this order
     // In the new line items system, projects are associated via tags: `order:${orderId}`
-    const { sql } = await import('drizzle-orm');
     
     const projectsForOrder = await db.query.bulkAnalysisProjects.findMany({
       where: and(

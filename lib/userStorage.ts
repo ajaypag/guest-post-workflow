@@ -174,7 +174,8 @@ export const clientStorage = {
   async getAllClients(): Promise<Client[]> {
     if (typeof window === 'undefined') return [];
     try {
-      const response = await fetch('/api/clients');
+      // Fetch with high limit to get all clients for dropdowns
+      const response = await fetch('/api/clients?limit=1000');
       if (!response.ok) return [];
       
       const { clients } = await response.json();

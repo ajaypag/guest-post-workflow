@@ -41,11 +41,13 @@ export class WorkflowGenerationService {
       // Import line items schema
       const { orderLineItems } = await import('@/lib/db/orderLineItemSchema');
       
-      // Get all line items with assigned domains for this order
+      // Get all line items with assigned domains for this order - EXCLUDE cancelled items
       const lineItems = await db.query.orderLineItems.findMany({
         where: and(
           eq(orderLineItems.orderId, orderId),
-          sql`assigned_domain_id IS NOT NULL`
+          sql`assigned_domain_id IS NOT NULL`,
+          sql`${orderLineItems.status} NOT IN ('cancelled', 'refunded')`,
+          sql`${orderLineItems.cancelledAt} IS NULL`
         ),
         with: {
           client: true

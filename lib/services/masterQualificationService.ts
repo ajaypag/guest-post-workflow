@@ -55,6 +55,56 @@ export class MasterQualificationService {
   private static domainLimiter = pLimit(this.DOMAIN_CONCURRENT_LIMIT);
 
   /**
+   * Resolve mixed UUID/URL targetPageIds to proper UUIDs by looking up URLs in target_pages table
+   */
+  private static async resolveTargetPageIds(targetPageIds: string[]): Promise<string[]> {
+    if (!targetPageIds || targetPageIds.length === 0) {
+      return [];
+    }
+
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const resolvedIds: string[] = [];
+    const urlsToLookup: string[] = [];
+
+    // Separate UUIDs from URLs
+    for (const id of targetPageIds) {
+      if (uuidRegex.test(id)) {
+        resolvedIds.push(id);
+      } else {
+        urlsToLookup.push(id);
+        console.log(`🔍 Need to resolve URL to UUID: ${id}`);
+      }
+    }
+
+    // Look up UUIDs for URLs
+    if (urlsToLookup.length > 0) {
+      try {
+        const targetPageRecords = await db
+          .select({ id: targetPages.id, url: targetPages.url })
+          .from(targetPages)
+          .where(inArray(targetPages.url, urlsToLookup));
+
+        for (const record of targetPageRecords) {
+          resolvedIds.push(record.id);
+          console.log(`✅ Resolved URL ${record.url} → UUID ${record.id}`);
+        }
+
+        // Log any URLs that couldn't be resolved
+        const resolvedUrls = targetPageRecords.map(r => r.url);
+        const unresolvedUrls = urlsToLookup.filter(url => !resolvedUrls.includes(url));
+        for (const url of unresolvedUrls) {
+          console.warn(`⚠️ Could not find target page record for URL: ${url}`);
+        }
+      } catch (error) {
+        console.error('Error resolving target page URLs to UUIDs:', error);
+      }
+    }
+
+    console.log(`📊 Resolved ${targetPageIds.length} input IDs → ${resolvedIds.length} valid UUIDs`);
+    return resolvedIds;
+  }
+
+  /**
    * Master qualification with intelligent batching and high concurrency
    */
   static async qualifyDomains(
@@ -248,7 +298,10 @@ export class MasterQualificationService {
           try {
             options.onProgress?.(progress);
             
-            const keywords = await BulkAnalysisService.getTargetPageKeywords(domain.targetPageIds as string[]);
+            // Handle mixed UUID/URL targetPageIds by mapping URLs to UUIDs
+            const resolvedTargetPageIds = await this.resolveTargetPageIds(domain.targetPageIds as string[]);
+            
+            const keywords = await BulkAnalysisService.getTargetPageKeywords(resolvedTargetPageIds);
             const result = await DataForSeoService.analyzeDomainWithCache(
               domain.id,
               domain.domain,

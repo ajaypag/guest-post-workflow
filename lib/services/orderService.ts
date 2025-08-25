@@ -460,7 +460,11 @@ export class OrderService {
       accountOrders.map(async (order) => {
         // Get line items count (excluding cancelled and refunded)
         const lineItems = await db.query.orderLineItems.findMany({
-          where: eq(orderLineItems.orderId, order.id),
+          where: and(
+            eq(orderLineItems.orderId, order.id),
+            sql`${orderLineItems.status} NOT IN ('cancelled', 'refunded')`,
+            sql`${orderLineItems.cancelledAt} IS NULL`
+          ),
         });
         
         const activeLineItems = lineItems.filter(item => 
@@ -549,7 +553,11 @@ export class OrderService {
       statusOrders.map(async (order) => {
         // Get line items count (excluding cancelled and refunded)
         const lineItems = await db.query.orderLineItems.findMany({
-          where: eq(orderLineItems.orderId, order.id),
+          where: and(
+            eq(orderLineItems.orderId, order.id),
+            sql`${orderLineItems.status} NOT IN ('cancelled', 'refunded')`,
+            sql`${orderLineItems.cancelledAt} IS NULL`
+          ),
         });
         
         const activeLineItems = lineItems.filter(item => 
@@ -644,9 +652,13 @@ export class OrderService {
     // Transform and fetch additional data
     const ordersWithDetails = await Promise.all(
       allOrders.map(async ({ order, account }) => {
-        // Get ALL line items for the order
+        // Get ALL active line items for the order (exclude cancelled)
         const allLineItems = await db.query.orderLineItems.findMany({
-          where: eq(orderLineItems.orderId, order.id),
+          where: and(
+            eq(orderLineItems.orderId, order.id),
+            sql`${orderLineItems.status} NOT IN ('cancelled', 'refunded')`,
+            sql`${orderLineItems.cancelledAt} IS NULL`
+          ),
         });
 
         // Get line items specifically for this client

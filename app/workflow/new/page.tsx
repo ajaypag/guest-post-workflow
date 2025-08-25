@@ -11,6 +11,7 @@ import { storage } from '@/lib/storage';
 import { clientStorage, sessionStorage } from '@/lib/userStorage';
 import { AuthService } from '@/lib/auth';
 import { Client } from '@/types/user';
+import ClientSelector from '@/components/ClientSelector';
 
 // Safe UUID generator
 function generateUUID(): string {
@@ -56,8 +57,16 @@ function NewWorkflowContent() {
     if (!session) return;
 
     try {
-      const allClients = await clientStorage.getAllClients();
-      setClients(allClients);
+      // Fetch with additional data for rich display
+      const response = await fetch('/api/clients?limit=1000&includeStats=true');
+      if (response.ok) {
+        const data = await response.json();
+        setClients(data.clients || []);
+      } else {
+        // Fallback to storage method
+        const allClients = await clientStorage.getAllClients();
+        setClients(allClients);
+      }
     } catch (error) {
       console.error('Error loading clients:', error);
       setClients([]); // Fallback to empty array on error
@@ -155,27 +164,16 @@ function NewWorkflowContent() {
               {clients.length > 0 && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Select Client (Optional)
+                    Select Client
                   </label>
-                  <select
-                    value={selectedClient?.id || ''}
-                    onChange={(e) => {
-                      const client = e.target.value 
-                        ? clients.find(c => c.id === e.target.value) || null
-                        : null;
-                      handleClientSelect(client);
-                    }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="">Manual Entry</option>
-                    {clients.map(client => (
-                      <option key={client.id} value={client.id}>
-                        {client.name} ({client.website})
-                      </option>
-                    ))}
-                  </select>
+                  <ClientSelector
+                    clients={clients}
+                    selectedClient={selectedClient}
+                    onChange={handleClientSelect}
+                    placeholder="Search or select a client..."
+                  />
                   <p className="text-xs text-gray-500 mt-1">
-                    Choose from existing clients to auto-fill data, or enter manually
+                    Choose from existing clients to auto-fill data, or select "Manual Entry" to enter details manually
                   </p>
                 </div>
               )}

@@ -6,7 +6,7 @@ import { orderGroups } from '@/lib/db/orderGroupSchema';
 import { orderLineItems } from '@/lib/db/orderLineItemSchema';
 import { accounts } from '@/lib/db/accountSchema';
 import { bulkAnalysisDomains } from '@/lib/db/bulkAnalysisSchema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { isLineItemsSystemEnabled } from '@/lib/config/featureFlags';
 import { PRICING_CONFIG } from '@/lib/config/pricing';
@@ -64,9 +64,13 @@ export async function POST(
       let useLineItems = true; // FORCED: Migration to lineItems in progress
       let lineItemsList: any[] = [];
       
-      // Always use line items system
+      // Always use line items system - EXCLUDE cancelled/refunded items from invoices
       lineItemsList = await db.query.orderLineItems.findMany({
-        where: eq(orderLineItems.orderId, orderId),
+        where: and(
+          eq(orderLineItems.orderId, orderId),
+          sql`${orderLineItems.status} NOT IN ('cancelled', 'refunded')`,
+          sql`${orderLineItems.cancelledAt} IS NULL`
+        ),
         with: {
           client: true
         }
@@ -328,9 +332,13 @@ export async function POST(
 
       // If using line items, update their status to invoiced
       if (useLineItems) {
-        // Get existing line items to preserve metadata
+        // Get existing line items to preserve metadata - EXCLUDE cancelled items from invoicing
         const existingLineItems = await db.query.orderLineItems.findMany({
-          where: eq(orderLineItems.orderId, orderId)
+          where: and(
+            eq(orderLineItems.orderId, orderId),
+            sql`${orderLineItems.status} NOT IN ('cancelled', 'refunded')`,
+            sql`${orderLineItems.cancelledAt} IS NULL`
+          )
         });
         
         // Update each line item with merged metadata

@@ -11,6 +11,7 @@ interface Props {
 export const ImpersonationWrapper: React.FC<Props> = ({ children }) => {
   const [sessionState, setSessionState] = useState<SessionState | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isInternalUser, setIsInternalUser] = useState(false);
 
   const fetchSessionState = async () => {
     try {
@@ -21,27 +22,34 @@ export const ImpersonationWrapper: React.FC<Props> = ({ children }) => {
       if (response.ok) {
         const data = await response.json();
         setSessionState(data.sessionState || null);
-        console.log('🔄 ImpersonationWrapper: Session state updated', {
-          isImpersonating: !!data.sessionState?.impersonation?.isActive,
-          targetUser: data.sessionState?.impersonation?.targetUser?.name
-        });
+        // Check if this is an internal user who can actually impersonate
+        setIsInternalUser(data.sessionState?.userType === 'internal');
       } else {
         setSessionState(null);
+        setIsInternalUser(false);
       }
     } catch (error) {
       console.error('Error fetching session state:', error);
       setSessionState(null);
+      setIsInternalUser(false);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    // Initial check to determine user type
     fetchSessionState();
+  }, []);
+
+  useEffect(() => {
+    // Only set up listeners if this is an internal user
+    if (!isInternalUser) {
+      return;
+    }
 
     // Listen for impersonation state changes
     const handleImpersonationChange = () => {
-      console.log('🔄 Detected impersonation state change, refetching session...');
       fetchSessionState();
     };
 
@@ -52,16 +60,12 @@ export const ImpersonationWrapper: React.FC<Props> = ({ children }) => {
     window.addEventListener('impersonationStart', handleImpersonationChange);
     window.addEventListener('impersonationEnd', handleImpersonationChange);
 
-    // Poll session state every 60 seconds to catch changes
-    const pollInterval = setInterval(fetchSessionState, 60000);
-
     return () => {
       window.removeEventListener('storage', handleImpersonationChange);
       window.removeEventListener('impersonationStart', handleImpersonationChange);
       window.removeEventListener('impersonationEnd', handleImpersonationChange);
-      clearInterval(pollInterval);
     };
-  }, []);
+  }, [isInternalUser]);
 
   // Don't render until we have checked for session
   if (loading) {

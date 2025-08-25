@@ -8,6 +8,7 @@ import Header from '@/components/Header';
 import { clientStorage, sessionStorage } from '@/lib/userStorage';
 import { Client } from '@/types/user';
 import { Building2, Plus, Users, Globe, CheckCircle, XCircle, Clock, Edit, Archive, ArchiveRestore, X, BarChart2, AlertCircle, ArrowLeft, Search, Filter, ChevronDown, Package, TrendingUp } from 'lucide-react';
+import AccountMultiSelectFilter from '@/components/AccountMultiSelectFilter';
 
 function ClientsPageContent() {
   const router = useRouter();
@@ -20,6 +21,9 @@ function ClientsPageContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'client' | 'prospect'>('all');
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
+  const [accounts, setAccounts] = useState<any[]>([]);
+  const [accountsWithCounts, setAccountsWithCounts] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState({
     total: 0,
@@ -41,8 +45,47 @@ function ClientsPageContent() {
       setUserType(session.userType || 'internal');
     }
     
+    // Load accounts list for filter (internal users only)
+    if (session?.userType === 'internal') {
+      loadAccounts();
+    }
+    
     loadClients();
-  }, [searchParams, showArchived, searchQuery, filterType, currentPage]);
+  }, [searchParams, showArchived, searchQuery, filterType, selectedAccountIds, currentPage]);
+
+  const loadAccounts = async () => {
+    try {
+      const response = await fetch('/api/accounts');
+      if (response.ok) {
+        const data = await response.json();
+        const accountsList = data.accounts || [];
+        setAccounts(accountsList);
+        
+        // Get client counts for each account
+        const accountsWithClientCounts = await Promise.all(
+          accountsList.map(async (account: any) => {
+            try {
+              const clientsResponse = await fetch(`/api/clients?accountId=${account.id}&limit=1`);
+              if (clientsResponse.ok) {
+                const clientsData = await clientsResponse.json();
+                return {
+                  ...account,
+                  clientCount: clientsData.pagination?.total || 0
+                };
+              }
+            } catch (e) {
+              console.error(`Error getting client count for account ${account.id}:`, e);
+            }
+            return { ...account, clientCount: 0 };
+          })
+        );
+        
+        setAccountsWithCounts(accountsWithClientCounts);
+      }
+    } catch (error) {
+      console.error('Error loading accounts:', error);
+    }
+  };
 
   const loadClients = async (page: number = currentPage) => {
     const session = sessionStorage.getSession();
@@ -55,9 +98,9 @@ function ClientsPageContent() {
         limit: '12',
         ...(showArchived && { includeArchived: 'true' }),
         ...(searchQuery && { search: searchQuery }),
-        ...(userType === 'internal' && filterType !== 'all' && { filterType })
+        ...(userType === 'internal' && filterType !== 'all' && { filterType }),
+        ...(selectedAccountIds.length > 0 && { accountIds: selectedAccountIds.join(',') })
       });
-      
       const response = await fetch(`/api/clients?${params}`);
       if (response.ok) {
         const data = await response.json();
@@ -77,7 +120,7 @@ function ClientsPageContent() {
             const accountsData = await accountsResponse.json();
             const accountMap: { [key: string]: string } = {};
             accountsData.accounts?.forEach((account: any) => {
-              accountMap[account.id] = account.name || account.email;
+              accountMap[account.id] = account.companyName || account.name || account.email;
             });
             setAccountName(accountMap);
           }
@@ -205,12 +248,12 @@ function ClientsPageContent() {
                 Back to Dashboard
               </button>
             )}
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
                   {userType === 'account' ? 'Your Brands' : 'Client Management'}
                 </h1>
-                <p className="text-gray-600 mt-1">
+                <p className="text-sm sm:text-base text-gray-600 mt-1">
                   {userType === 'account' 
                     ? `${pagination.total || clients.length} brands in your portfolio`
                     : `${pagination.total || clients.length} clients • ${clients.filter(c => !c.archivedAt).length} active`}
@@ -220,17 +263,18 @@ function ClientsPageContent() {
                 {userType === 'internal' && (
                   <Link
                     href="/admin/orphaned-clients"
-                    className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-200 border border-gray-300"
+                    className="inline-flex items-center px-3 sm:px-4 py-2 bg-gray-100 text-gray-700 text-xs sm:text-sm font-medium rounded-md hover:bg-gray-200 border border-gray-300"
                   >
-                    <AlertCircle className="w-4 h-4 mr-2" />
-                    Orphaned
+                    <AlertCircle className="w-4 h-4 mr-1 sm:mr-2" />
+                    <span className="hidden sm:inline">Orphaned</span>
+                    <span className="sm:hidden">Orphan</span>
                   </Link>
                 )}
                 <Link
                   href="/clients/new"
-                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700"
+                  className="inline-flex items-center px-3 sm:px-4 py-2 bg-blue-600 text-white text-xs sm:text-sm font-medium rounded-md hover:bg-blue-700"
                 >
-                  <Plus className="w-4 h-4 mr-2" />
+                  <Plus className="w-4 h-4 mr-1 sm:mr-2" />
                   {userType === 'account' ? 'New Brand' : 'New Client'}
                 </Link>
               </div>
@@ -261,51 +305,25 @@ function ClientsPageContent() {
                   </div>
                 </div>
 
-                {/* Filters */}
-                <div className="flex gap-2">
+                {/* Filters - Mobile Responsive */}
+                <div className="flex flex-col sm:flex-row gap-2">
                   {userType === 'internal' && (
-                    <div className="relative">
-                      <button
-                        onClick={() => setShowFilters(!showFilters)}
-                        className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
-                      >
-                        <Filter className="w-4 h-4 mr-2" />
-                        Type: {filterType === 'all' ? 'All' : filterType === 'client' ? 'Clients' : 'Prospects'}
-                        <ChevronDown className="w-4 h-4 ml-2" />
-                      </button>
-                      {showFilters && (
-                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
-                          <button
-                            onClick={() => { setFilterType('all'); setShowFilters(false); }}
-                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          >
-                            All Types
-                          </button>
-                          <button
-                            onClick={() => { setFilterType('client'); setShowFilters(false); }}
-                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          >
-                            Clients Only
-                          </button>
-                          <button
-                            onClick={() => { setFilterType('prospect'); setShowFilters(false); }}
-                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          >
-                            Prospects Only
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                    <AccountMultiSelectFilter
+                      accounts={accountsWithCounts}
+                      selectedAccountIds={selectedAccountIds}
+                      onChange={setSelectedAccountIds}
+                      className="w-full sm:w-auto"
+                    />
                   )}
                   
-                  <label className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md bg-white">
+                  <label className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md bg-white cursor-pointer hover:bg-gray-50 w-full sm:w-auto">
                     <input
                       type="checkbox"
                       checked={showArchived}
                       onChange={(e) => setShowArchived(e.target.checked)}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
-                    <span className="ml-2 text-sm text-gray-700">Show Archived</span>
+                    <span className="ml-2 text-sm text-gray-700 whitespace-nowrap">Show Archived</span>
                   </label>
                 </div>
               </div>
@@ -387,164 +405,319 @@ function ClientsPageContent() {
             </div>
           )}
 
-          {/* Clients Grid */}
+          {/* Clients Display */}
           {isLoading ? (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
               <p className="text-gray-600">Loading clients...</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {clients.map((client) => {
-              const stats = getStatusCounts(client);
-              const orderStats = (client as any).orderStats || { orderCount: 0, totalRevenue: 0, recentOrderDate: null, activeOrders: 0, completedOrders: 0 };
-              const isArchived = !!(client as any).archivedAt;
-              return (
-                <div key={client.id} className={`bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200 ${isArchived ? 'opacity-75' : ''}`}>
-                  <div className="p-5">
-                    {/* Header with actions */}
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <Link href={`/clients/${client.id}`}>
-                          <h3 className="text-xl font-semibold text-gray-900 hover:text-blue-600 cursor-pointer transition-colors leading-tight">
+            <>
+              {/* Mobile Cards View */}
+              <div className="block md:hidden space-y-4">
+                {clients.map((client) => {
+                  const stats = getStatusCounts(client);
+                  const orderStats = (client as any).orderStats || { orderCount: 0, totalRevenue: 0, recentOrderDate: null, activeOrders: 0, completedOrders: 0 };
+                  const isArchived = !!(client as any).archivedAt;
+                  return (
+                    <div 
+                      key={client.id} 
+                      className={`bg-white rounded-lg shadow p-4 ${isArchived ? 'opacity-60' : ''}`}
+                      onClick={() => router.push(`/clients/${client.id}`)}
+                    >
+                      {/* Header */}
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-sm font-semibold text-gray-900 truncate">
                             {client.name}
                           </h3>
-                        </Link>
-                        <div className="mt-2 flex flex-col gap-1">
                           <a
                             href={client.website}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-800 text-sm flex items-center"
+                            className="text-xs text-blue-600 flex items-center truncate"
+                            onClick={(e) => e.stopPropagation()}
                           >
-                            <Globe className="w-3 h-3 mr-1" />
-                            {client.website?.replace(/^https?:\/\//, '').replace(/^www\./, '') || client.website}
+                            <Globe className="w-3 h-3 mr-1 flex-shrink-0" />
+                            <span className="truncate">{client.website?.replace(/^https?:\/\//, '').replace(/^www\./, '')}</span>
                           </a>
-                          
-                          {/* Status badges */}
-                          <div className="flex items-center gap-2 mt-1">
-                            {userType === 'internal' && (
-                              <>
-                                <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded ${
-                                  (client as any).clientType === 'prospect' 
-                                    ? 'bg-yellow-100 text-yellow-800' 
-                                    : 'bg-green-100 text-green-800'
-                                }`}>
-                                  {(client as any).clientType === 'prospect' ? 'Prospect' : 'Client'}
-                                </span>
-                                {(client as any).accountId && (
-                                  <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium text-blue-700 bg-blue-100 rounded">
-                                    <Users className="w-3 h-3 mr-1" />
-                                    {accountName[(client as any).accountId] || 'Account'}
-                                  </span>
-                                )}
-                              </>
-                            )}
-                            {isArchived && (
-                              <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium text-gray-600 bg-gray-200 rounded">
-                                <Archive className="w-3 h-3 mr-1" />
-                                Archived
-                              </span>
-                            )}
-                          </div>
+                          {userType === 'internal' && (client as any).accountId && (
+                            <div className="text-xs text-gray-500 mt-1 flex items-center">
+                              <Users className="w-3 h-3 mr-1" />
+                              {accountName[(client as any).accountId] || 'Account'}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex space-x-1" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={() => startEditClient(client)}
+                            className="text-gray-400 hover:text-gray-600 p-1"
+                          >
+                            <Edit className="w-3 h-3" />
+                          </button>
+                          {isArchived ? (
+                            <button
+                              onClick={() => handleRestoreClient(client)}
+                              className="text-gray-400 hover:text-green-600 p-1"
+                            >
+                              <ArchiveRestore className="w-3 h-3" />
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleArchiveClient(client)}
+                              className="text-gray-400 hover:text-red-600 p-1"
+                            >
+                              <Archive className="w-3 h-3" />
+                            </button>
+                          )}
                         </div>
                       </div>
-                      <div className="flex space-x-1 ml-3">
-                        <button
-                          onClick={() => startEditClient(client)}
-                          className="text-gray-400 hover:text-gray-600 transition-colors p-1"
-                          title="Edit client"
+
+                      {/* Stats */}
+                      <div className="grid grid-cols-3 gap-2 mb-3 text-center">
+                        <div className="bg-gray-50 rounded p-2">
+                          <div className="text-xs text-gray-500">Pages</div>
+                          <div className="text-sm font-semibold">{stats.active}</div>
+                        </div>
+                        <div className="bg-gray-50 rounded p-2">
+                          <div className="text-xs text-gray-500">Active</div>
+                          <div className="text-sm font-semibold text-blue-600">{orderStats.activeOrders}</div>
+                        </div>
+                        <div className="bg-gray-50 rounded p-2">
+                          <div className="text-xs text-gray-500">Complete</div>
+                          <div className="text-sm font-semibold text-green-600">{orderStats.completedOrders}</div>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                        <Link
+                          href={`/clients/${client.id}/target-pages`}
+                          className="flex-1 text-center px-2 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded"
                         >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        {isArchived ? (
-                          <button
-                            onClick={() => handleRestoreClient(client)}
-                            className="text-gray-400 hover:text-green-600 transition-colors p-1"
-                            title="Restore client"
-                          >
-                            <ArchiveRestore className="w-4 h-4" />
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleArchiveClient(client)}
-                            className="text-gray-400 hover:text-red-500 transition-colors p-1"
-                            title="Archive client"
-                          >
-                            <Archive className="w-4 h-4" />
-                          </button>
-                        )}
+                          Target URLs
+                        </Link>
+                        <Link
+                          href={`/clients/${client.id}/bulk-analysis`}
+                          className="flex-1 text-center px-2 py-1.5 text-xs font-medium text-purple-700 bg-purple-100 hover:bg-purple-200 rounded"
+                        >
+                          Analysis
+                        </Link>
+                        <Link
+                          href={`/orders/new?clientId=${client.id}`}
+                          className="flex-1 text-center px-2 py-1.5 text-xs font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 rounded"
+                        >
+                          New Order
+                        </Link>
                       </div>
                     </div>
+                  );
+                })}
+              </div>
 
-                    {/* Key Metrics */}
-                    <div className="mb-4">
-                      <div className="grid grid-cols-3 gap-3 text-center">
-                        <div className="bg-gray-50 rounded-lg p-3">
-                          <div className="text-lg font-semibold text-gray-900">{stats.active}</div>
-                          <div className="text-xs text-gray-600 font-medium">Active Pages</div>
-                        </div>
-                        <div className="bg-gray-50 rounded-lg p-3">
-                          <div className="text-lg font-semibold text-gray-900">{orderStats.activeOrders}</div>
-                          <div className="text-xs text-gray-600 font-medium">Active Orders</div>
-                        </div>
-                        <div className="bg-gray-50 rounded-lg p-3">
-                          <div className="text-lg font-semibold text-gray-900">{orderStats.completedOrders}</div>
-                          <div className="text-xs text-gray-600 font-medium">Completed</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="space-y-2">
-                      <Link
-                        href={`/orders/new?clientId=${client.id}`}
-                        className="w-full inline-flex justify-center items-center px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
-                      >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Create Order
-                      </Link>
-                      <Link
-                        href={`/clients/${client.id}`}
-                        className="w-full inline-flex justify-center items-center px-4 py-2 text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
-                      >
-                        {userType === 'account' ? 'Manage Brand' : 'Manage Client'}
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              );
-              })}
+              {/* Desktop Table View */}
+              <div className="hidden md:block bg-white rounded-lg shadow overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {userType === 'account' ? 'Brand' : 'Client'}
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Target Pages
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Orders
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Quick Actions
+                      </th>
+                      <th scope="col" className="relative px-6 py-3">
+                        <span className="sr-only">More</span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {clients.map((client) => {
+                      const stats = getStatusCounts(client);
+                      const orderStats = (client as any).orderStats || { orderCount: 0, totalRevenue: 0, recentOrderDate: null, activeOrders: 0, completedOrders: 0 };
+                      const isArchived = !!(client as any).archivedAt;
+                      return (
+                        <tr 
+                          key={client.id} 
+                          className={`hover:bg-gray-50 cursor-pointer ${isArchived ? 'opacity-60' : ''}`}
+                          onClick={() => router.push(`/clients/${client.id}`)}
+                        >
+                          <td className="px-6 py-4">
+                            <div className="flex items-center">
+                              <div className="flex-1 min-w-0">
+                                <div className="text-sm font-medium text-gray-900 truncate">
+                                  {client.name}
+                                </div>
+                                <a
+                                  href={client.website}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-blue-600 hover:text-blue-800 flex items-center truncate"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <Globe className="w-3 h-3 mr-1 flex-shrink-0" />
+                                  <span className="truncate">{client.website?.replace(/^https?:\/\//, '').replace(/^www\./, '')}</span>
+                                </a>
+                                {userType === 'internal' && (client as any).accountId && (
+                                  <div className="text-xs text-gray-500 mt-1 flex items-center truncate">
+                                    <Users className="w-3 h-3 mr-1 flex-shrink-0" />
+                                    <span className="truncate">{accountName[(client as any).accountId] || 'Account'}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-center">
+                            <Link
+                              href={`/clients/${client.id}/target-pages`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="text-sm font-medium text-blue-600 hover:text-blue-800"
+                            >
+                              {stats.active > 0 ? stats.active : '0'}
+                            </Link>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-center">
+                            <div className="text-sm">
+                              <span className="font-medium text-blue-600">{orderStats.activeOrders}</span>
+                              <span className="text-gray-400 mx-1">/</span>
+                              <span className="text-gray-600">{orderStats.completedOrders}</span>
+                            </div>
+                            <div className="text-xs text-gray-500">active / complete</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center space-x-2">
+                              <Link
+                                href={`/clients/${client.id}/target-pages`}
+                                className="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded"
+                              >
+                                <Globe className="w-3 h-3 mr-1" />
+                                Target URLs
+                              </Link>
+                              <Link
+                                href={`/clients/${client.id}/bulk-analysis`}
+                                className="inline-flex items-center px-2 py-1 text-xs font-medium text-purple-700 bg-purple-100 hover:bg-purple-200 rounded"
+                              >
+                                <BarChart2 className="w-3 h-3 mr-1" />
+                                Analysis
+                              </Link>
+                              <Link
+                                href={`/orders/new?clientId=${client.id}`}
+                                className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 rounded"
+                              >
+                                <Plus className="w-3 h-3 mr-1" />
+                                Order
+                              </Link>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-center text-sm" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center justify-center space-x-1">
+                              <button
+                                onClick={() => startEditClient(client)}
+                                className="text-gray-400 hover:text-gray-600 p-1"
+                                title="Edit"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
+                              {isArchived ? (
+                                <button
+                                  onClick={() => handleRestoreClient(client)}
+                                  className="text-gray-400 hover:text-green-600 p-1"
+                                  title="Restore"
+                                >
+                                  <ArchiveRestore className="w-4 h-4" />
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleArchiveClient(client)}
+                                  className="text-gray-400 hover:text-red-600 p-1"
+                                  title="Archive"
+                                >
+                                  <Archive className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
+            </>
           )}
 
           {/* Empty State */}
           {!isLoading && clients.length === 0 && (
-            <div className="text-center py-12">
-              <Building2 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                {searchQuery || filterType !== 'all' ? 
-                  'No results found' : 
-                  (userType === 'account' ? 'No brands yet' : 'No clients yet')
-                }
-              </h3>
-              <p className="text-gray-600 mb-4">
-                {searchQuery || filterType !== 'all' ? 
-                  'Try adjusting your search or filters' :
-                  (userType === 'account' 
-                    ? 'Add your first brand to start creating guest post orders.'
-                    : 'Get started by creating your first client.')
-                }
-              </p>
-              {!searchQuery && filterType === 'all' && (
-                <Link
-                  href="/clients/new"
-                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  {userType === 'account' ? 'Add Your First Brand' : 'Create First Client'}
-                </Link>
-              )}
+            <div className="bg-white rounded-lg shadow overflow-hidden">
+              <div className="text-center py-16 px-4">
+                {searchQuery || (filterType !== 'all' && userType === 'internal') || selectedAccountIds.length > 0 ? (
+                  <>
+                    <Search className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      No results found
+                    </h3>
+                    <p className="text-gray-600 mb-4 max-w-md mx-auto">
+                      Try adjusting your search or filters to find what you're looking for.
+                    </p>
+                    <button
+                      onClick={() => {
+                        setSearchQuery('');
+                        setFilterType('all');
+                        setSelectedAccountIds([]);
+                      }}
+                      className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-md hover:bg-gray-200"
+                    >
+                      Clear Filters
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-20 h-20 mx-auto mb-6 bg-blue-50 rounded-full flex items-center justify-center">
+                      <Plus className="w-10 h-10 text-blue-600" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                      {userType === 'account' ? 'Add your first brand' : 'Add your first client'}
+                    </h3>
+                    <p className="text-gray-600 mb-8 max-w-md mx-auto">
+                      {userType === 'account' 
+                        ? 'Get started by adding your brand. You\'ll be able to create orders, add target pages, and track all your guest post campaigns in one place.'
+                        : 'Start managing guest post campaigns by adding your first client. Track orders, monitor progress, and manage all campaign details.'}
+                    </p>
+                    <Link
+                      href="/clients/new"
+                      className="inline-flex items-center px-6 py-3 bg-blue-600 text-white text-base font-medium rounded-lg hover:bg-blue-700 shadow-sm transition-colors"
+                    >
+                      <Plus className="w-5 h-5 mr-2" />
+                      {userType === 'account' ? 'Add Brand' : 'Add Client'}
+                    </Link>
+                    <div className="mt-8 pt-8 border-t border-gray-200">
+                      <p className="text-sm text-gray-500 mb-2">What you can do after adding:</p>
+                      <div className="flex justify-center gap-6 text-xs text-gray-600">
+                        <span className="flex items-center">
+                          <CheckCircle className="w-3 h-3 mr-1 text-green-500" />
+                          Create orders
+                        </span>
+                        <span className="flex items-center">
+                          <CheckCircle className="w-3 h-3 mr-1 text-green-500" />
+                          Add target pages
+                        </span>
+                        <span className="flex items-center">
+                          <CheckCircle className="w-3 h-3 mr-1 text-green-500" />
+                          Track campaigns
+                        </span>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           )}
 

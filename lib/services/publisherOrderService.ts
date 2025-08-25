@@ -487,7 +487,7 @@ export class PublisherOrderService {
     paidEarnings: number;
   }> {
     try {
-      // Get order counts
+      // Get order counts - exclude cancelled items from publisher stats
       const orderStats = await db
         .select({
           totalOrders: sql<number>`COUNT(*)`,
@@ -495,7 +495,11 @@ export class PublisherOrderService {
           completedOrders: sql<number>`COUNT(*) FILTER (WHERE publisher_status = 'completed')`
         })
         .from(orderLineItems)
-        .where(eq(orderLineItems.publisherId, publisherId));
+        .where(and(
+          eq(orderLineItems.publisherId, publisherId),
+          sql`${orderLineItems.status} NOT IN ('cancelled', 'refunded')`,
+          sql`${orderLineItems.cancelledAt} IS NULL`
+        ));
 
       // Get earnings stats
       const earningsStats = await db

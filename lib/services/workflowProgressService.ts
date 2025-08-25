@@ -11,7 +11,7 @@
  * - Performance tracking and analytics
  */
 
-import { eq } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { db } from '../db/connection';
 import { workflows, orders } from '../db/schema';
 import { orderLineItems } from '../db/orderLineItemSchema';
@@ -303,9 +303,13 @@ export class WorkflowProgressService {
    */
   private static async getWorkflowsForOrder(orderId: string): Promise<GuestPostWorkflow[]> {
     try {
-      // Get line items for this order that have workflows
+      // Get line items for this order that have workflows - EXCLUDE cancelled items
       const lineItemsWithWorkflows = await db.query.orderLineItems.findMany({
-        where: eq(orderLineItems.orderId, orderId),
+        where: and(
+          eq(orderLineItems.orderId, orderId),
+          sql`${orderLineItems.status} NOT IN ('cancelled', 'refunded')`,
+          sql`${orderLineItems.cancelledAt} IS NULL`
+        ),
         columns: {
           workflowId: true
         }
