@@ -722,6 +722,7 @@ async function handleRefundUpdated(event: Stripe.Event, webhookRecordId: string)
       await db.update(orders)
         .set({
           state: 'payment_received', // Revert to paid state
+          status: 'paid', // Also update the main status
           updatedAt: new Date()
         })
         .where(eq(orders.id, existingRefund.orderId));
