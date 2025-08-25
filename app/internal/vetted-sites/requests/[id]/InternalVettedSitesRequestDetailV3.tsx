@@ -425,19 +425,12 @@ export default function InternalVettedSitesRequestDetailV3({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-100">
+      {/* Page Header */}
+      <div className="bg-white border-b border-gray-200 mb-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between py-4">
             <div className="flex items-center space-x-4">
-              <Link
-                href="/internal/vetted-sites/requests"
-                className="flex items-center text-gray-600 hover:text-gray-900"
-              >
-                <ChevronLeft className="h-5 w-5 mr-1" />
-                Back to Requests
-              </Link>
-              <h1 className="text-lg font-medium text-gray-900">Request Detail</h1>
+              <h1 className="text-xl font-semibold text-gray-900">Request Detail</h1>
               <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${statusData.color}`}>
                 <StatusIcon className="h-4 w-4 mr-1.5" />
                 {statusData.label}

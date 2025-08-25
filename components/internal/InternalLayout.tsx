@@ -25,6 +25,7 @@ import {
   Wrench
 } from 'lucide-react';
 import { AuthSession } from '@/lib/types/auth';
+import Header from '@/components/Header';
 
 interface InternalLayoutProps {
   children: React.ReactNode;
@@ -76,62 +77,58 @@ export default function InternalLayout({ children, session }: InternalLayoutProp
   const breadcrumbs = generateBreadcrumbs();
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo and Desktop Nav Toggle */}
-            <div className="flex items-center">
+    <>
+      {/* Use standard Header component */}
+      <Header />
+      
+      <div className="min-h-screen bg-gray-50">
+        {/* Breadcrumbs and mobile sidebar toggle */}
+        <div className="bg-white shadow-sm border-b border-gray-200">
+          <div className="px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center h-12">
+              {/* Mobile sidebar toggle */}
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100"
+                className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 mr-4"
               >
-                {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </button>
               
-              <Link href="/internal" className="flex items-center ml-2 lg:ml-0">
-                <div className="p-2 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg">
-                  <Shield className="h-6 w-6 text-white" />
-                </div>
-                <div className="ml-3">
-                  <span className="text-xl font-semibold text-gray-900">
-                    Internal Portal
-                  </span>
-                  <span className="block text-xs text-gray-500">
-                    Website & Publisher Management
-                  </span>
-                </div>
-              </Link>
-            </div>
-
-            {/* Right side - User info and actions */}
-            <div className="flex items-center space-x-4">
-              {/* Quick Search */}
-              <button className="p-2 text-gray-400 hover:text-gray-500 hover:bg-gray-100 rounded-lg">
-                <Search className="h-5 w-5" />
-              </button>
-
-              {/* User Menu */}
-              <div className="flex items-center space-x-3">
-                <div className="text-right hidden md:block">
-                  <p className="text-sm font-medium text-gray-900">{session.name}</p>
-                  <p className="text-xs text-gray-500">
-                    {session.role === 'admin' ? 'Administrator' : 'Team Member'}
-                  </p>
-                </div>
-                <button
-                  onClick={handleLogout}
-                  className="p-2 text-gray-400 hover:text-gray-500 hover:bg-gray-100 rounded-lg"
-                  title="Logout"
-                >
-                  <LogOut className="h-5 w-5" />
-                </button>
-              </div>
+              {/* Breadcrumbs */}
+              <nav className="flex" aria-label="Breadcrumb">
+                <ol className="flex items-center space-x-4">
+                  <li>
+                    <div>
+                      <Link href="/internal" className="text-gray-400 hover:text-gray-500">
+                        <Shield className="h-4 w-4" />
+                        <span className="sr-only">Internal Portal</span>
+                      </Link>
+                    </div>
+                  </li>
+                  {breadcrumbs.slice(1).map((breadcrumb) => (
+                    <li key={breadcrumb.href}>
+                      <div className="flex items-center">
+                        <ChevronRight className="h-4 w-4 text-gray-400" />
+                        {breadcrumb.current ? (
+                          <span className="ml-4 text-sm font-medium text-gray-900">
+                            {breadcrumb.name}
+                          </span>
+                        ) : (
+                          <Link
+                            href={breadcrumb.href}
+                            className="ml-4 text-sm font-medium text-gray-500 hover:text-gray-700"
+                          >
+                            {breadcrumb.name}
+                          </Link>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              </nav>
             </div>
           </div>
         </div>
-      </header>
 
       <div className="flex">
         {/* Desktop Sidebar */}
@@ -271,5 +268,6 @@ export default function InternalLayout({ children, session }: InternalLayoutProp
         </main>
       </div>
     </div>
+    </>
   );
 }
