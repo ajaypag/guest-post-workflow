@@ -329,8 +329,8 @@ export default function PublisherOnboardingPage() {
       // Clear saved draft
       localStorage.removeItem('publisher-onboarding-draft');
       
-      // Redirect to dashboard
-      router.push('/publisher/dashboard');
+      // Redirect to publisher home
+      router.push('/publisher/');
     } catch (error) {
       console.error('Failed to complete onboarding:', error);
       alert('Failed to save your information. Please try again.');

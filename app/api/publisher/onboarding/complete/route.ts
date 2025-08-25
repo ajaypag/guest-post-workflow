@@ -12,34 +12,26 @@ import { v4 as uuidv4 } from 'uuid';
 
 export async function POST(request: NextRequest) {
   try {
-    // Get JWT token from cookie
-    const token = request.cookies.get('auth-token-publisher')?.value;
+    // Use session-based auth (same as other publisher APIs)
+    const { AuthServiceServer } = await import('@/lib/auth-server');
+    const session = await AuthServiceServer.getSession(request);
     
-    if (!token) {
+    if (!session) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
       );
     }
     
-    // Verify JWT token
-    let publisherId: string;
-    try {
-      const decoded = jwt.verify(token, process.env.NEXTAUTH_SECRET!) as any;
-      publisherId = decoded.publisherId || decoded.userId;
-      
-      if (decoded.userType !== 'publisher') {
-        return NextResponse.json(
-          { error: 'Publisher authentication required' },
-          { status: 403 }
-        );
-      }
-    } catch (jwtError) {
+    if (session.userType !== 'publisher') {
       return NextResponse.json(
-        { error: 'Invalid authentication token' },
-        { status: 401 }
+        { error: 'Publisher authentication required' },
+        { status: 403 }
       );
     }
+    
+    // Get publisher ID from session
+    const publisherId = session.publisherId || session.userId;
 
     // Parse request body
     const formData = await request.json();
@@ -87,7 +79,7 @@ export async function POST(request: NextRequest) {
             .update(publisherOfferings)
             .set({
               offeringType: offering.offeringType,
-              basePrice: offering.basePrice,
+              basePrice: Math.round(offering.basePrice * 100), // Convert dollars to cents
               currency: offering.currency,
               turnaroundDays: offering.turnaroundDays,
               minWordCount: offering.offeringType === 'guest_post' ? offering.minWordCount : null,
@@ -118,7 +110,7 @@ export async function POST(request: NextRequest) {
               id: newOfferingId,
               publisherId: publisherId,
               offeringType: offering.offeringType || 'guest_post',
-              basePrice: offering.basePrice,
+              basePrice: Math.round(offering.basePrice * 100), // Convert dollars to cents
               currency: offering.currency || 'USD',
               turnaroundDays: offering.turnaroundDays || 7,
               minWordCount: offering.offeringType === 'guest_post' ? (offering.minWordCount || 500) : null,
