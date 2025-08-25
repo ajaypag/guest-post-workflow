@@ -423,7 +423,7 @@ function NewClientContent() {
               )}
               
               {selectedPath === 'existing_account' && userType === 'internal' && (
-                <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+                <div className="bg-white rounded-lg shadow-sm p-6 mb-6 relative overflow-hidden">
                   <h2 className="text-xl font-semibold mb-4">Select Account</h2>
                   
                   <div className="mb-4">
@@ -441,7 +441,7 @@ function NewClientContent() {
                       <Loader2 className="h-6 w-6 animate-spin mx-auto text-gray-400" />
                     </div>
                   ) : (
-                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                    <div className="space-y-2 max-h-64 overflow-y-auto relative">
                       {filteredAccounts.map(account => (
                         <label
                           key={account.id}
@@ -455,7 +455,8 @@ function NewClientContent() {
                             value={account.id}
                             checked={selectedAccountId === account.id}
                             onChange={(e) => setSelectedAccountId(e.target.value)}
-                            className="sr-only"
+                            className="absolute opacity-0 pointer-events-none"
+                            style={{ position: 'absolute', width: '1px', height: '1px', margin: '-1px' }}
                           />
                           <div>
                             <div className="font-medium">{account.name || account.contactName}</div>
@@ -508,7 +509,8 @@ function NewClientContent() {
                 </div>
               )}
               
-              {/* Brand Information */}
+              {/* Brand Information - Show after account selection or for other paths */}
+              {(selectedPath && (selectedPath !== 'existing_account' || selectedAccountId || userType === 'account')) && (
               <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="p-2 bg-gray-100 rounded-lg">
@@ -568,8 +570,10 @@ function NewClientContent() {
                   </div>
                 </div>
               </div>
+              )}
               
-              {/* Target Pages */}
+              {/* Target Pages - Show after account selection or for other paths */}
+              {(selectedPath && (selectedPath !== 'existing_account' || selectedAccountId || userType === 'account')) && (
               <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="p-2 bg-gray-100 rounded-lg">
@@ -597,6 +601,7 @@ function NewClientContent() {
                   </p>
                 </div>
               </div>
+              )}
               
               {/* Actions */}
               <div className="flex justify-end gap-4 pt-6">

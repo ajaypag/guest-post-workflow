@@ -1,10 +1,10 @@
 'use client';
 
 import { FC } from 'react';
-import { Activity, Target, ShoppingCart, Brain, Settings } from 'lucide-react';
+import { Activity, Target, ShoppingCart, Brain, Settings, BarChart2 } from 'lucide-react';
 
 interface Tab {
-  id: 'overview' | 'pages' | 'orders' | 'brand' | 'settings';
+  id: 'overview' | 'pages' | 'orders' | 'brand' | 'settings' | 'bulk-analysis';
   label: string;
   icon: FC<{ className?: string }>;
   badge?: number | string;
@@ -12,8 +12,8 @@ interface Tab {
 }
 
 interface ClientDetailTabsProps {
-  activeTab: 'overview' | 'pages' | 'orders' | 'brand' | 'settings';
-  onTabChange: (tab: 'overview' | 'pages' | 'orders' | 'brand' | 'settings') => void;
+  activeTab: 'overview' | 'pages' | 'orders' | 'brand' | 'settings' | 'bulk-analysis';
+  onTabChange: (tab: 'overview' | 'pages' | 'orders' | 'brand' | 'settings' | 'bulk-analysis') => void;
   stats?: {
     total: number;
     active: number;
@@ -32,6 +32,7 @@ export function ClientDetailTabs({
   const tabs: Tab[] = [
     { id: 'overview', label: 'Overview', icon: Activity },
     { id: 'pages', label: 'Target Pages', icon: Target, badge: stats?.total },
+    { id: 'bulk-analysis', label: 'Bulk Analysis', icon: BarChart2 },
     { id: 'orders', label: 'Orders', icon: ShoppingCart },
     { id: 'brand', label: 'Brand & Content', icon: Brain },
     { id: 'settings', label: 'Settings', icon: Settings },

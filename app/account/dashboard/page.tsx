@@ -28,8 +28,11 @@ import {
   ArrowRight,
   Zap,
   Users,
-  ChevronRight
+  ChevronRight,
+  Database,
+  ChevronDown
 } from 'lucide-react';
+import QuickVettedSitesRequest from '@/components/dashboard/QuickVettedSitesRequest';
 
 interface Order {
   id: string;
@@ -65,14 +68,7 @@ export default function AccountDashboard() {
       {(authUser: any) => (
         <>
           <Header />
-          <AccountLayout 
-            title={`Welcome back, ${authUser?.name}`}
-            subtitle="Manage your guest post orders and track your campaigns"
-            showBreadcrumbs={false}
-            sidebarContent={<SidebarNotifications />}
-          >
-            <AccountDashboardContent user={authUser} />
-          </AccountLayout>
+          <ConditionalAccountLayout user={authUser} />
         </>
       )}
     </AccountAuthWrapper>
@@ -150,6 +146,8 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
   const [loading, setLoading] = useState(true);
   const [orders, setOrders] = useState<Order[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
+  const [vettedSitesRequests, setVettedSitesRequests] = useState<any[]>([]);
+  const [showRequestForm, setShowRequestForm] = useState(false);
   const [stats, setStats] = useState({
     totalOrders: 0,
     activeOrders: 0,
@@ -197,6 +195,15 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
       if (clientResponse.ok) {
         const { clients: clientData, totalBrands } = await clientResponse.json();
         setClients(clientData || []);
+        
+        // Fetch vetted sites requests
+        const requestsResponse = await fetch('/api/vetted-sites/requests', {
+          credentials: 'include'
+        });
+        if (requestsResponse.ok) {
+          const { requests: requestData } = await requestsResponse.json();
+          setVettedSitesRequests(requestData || []);
+        }
         setStats(prev => ({
           ...prev,
           totalBrands: totalBrands || 0,
@@ -208,6 +215,21 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
       console.error('Error loading dashboard data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const refreshVettedSitesRequests = async () => {
+    try {
+      const requestsResponse = await fetch('/api/vetted-sites/requests', {
+        credentials: 'include',
+      });
+      
+      if (requestsResponse.ok) {
+        const { requests: requestData } = await requestsResponse.json();
+        setVettedSitesRequests(requestData || []);
+      }
+    } catch (error) {
+      console.error('Error refreshing vetted sites requests:', error);
     }
   };
 
@@ -258,66 +280,49 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
     );
   }
 
-  // Check if this is a brand new user (no orders, no brands)
-  const isNewUser = orders.length === 0 && clients.length === 0;
+  // Check if this is a brand new user (no orders, no brands, no vetted sites requests)
+  const isNewUser = orders.length === 0 && clients.length === 0 && vettedSitesRequests.length === 0;
 
   // Show special onboarding for new users
   if (isNewUser) {
     return (
       <div className="space-y-8">
-        {/* Welcome Hero */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-8 text-white">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-4">
-                <Sparkles className="h-6 w-6" />
-                <span className="text-sm font-medium bg-white/20 px-3 py-1 rounded-full">
-                  Welcome to Linkio!
-                </span>
+        {/* Main Request Form */}
+        <QuickVettedSitesRequest />
+
+        {/* Alternative Options */}
+        <div className="bg-gray-50 rounded-xl p-6">
+          <h3 className="text-sm font-semibold text-gray-700 mb-4">Other ways to get started:</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <button
+              onClick={() => router.push('/clients/new')}
+              className="bg-white rounded-lg p-4 text-left hover:shadow-md transition-shadow border border-gray-200"
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Building className="h-5 w-5 text-blue-600" />
+                </div>
+                <span className="font-medium text-gray-900">Add Brand First</span>
               </div>
-              <h1 className="text-3xl font-bold mb-3">
-                Ready to Get Your Brand Cited by AI?
-              </h1>
-              <p className="text-lg text-white/90 mb-6 max-w-2xl">
-                Start your first guest post campaign and see your brand mentioned in ChatGPT, Claude, and Perplexity responses within 48 hours.
+              <p className="text-sm text-gray-600">
+                Set up your brand details and target pages first
               </p>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <button
-                  onClick={() => router.push('/get-started')}
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white text-blue-600 font-semibold rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <Zap className="h-5 w-5" />
-                  Quick Start (3 Steps)
-                  <ArrowRight className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => router.push('/clients/new')}
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white/10 backdrop-blur border border-white/20 text-white font-semibold rounded-lg hover:bg-white/20 transition-colors"
-                >
-                  <Building className="h-5 w-5" />
-                  Add Brand First
-                </button>
+            </button>
+
+            <button
+              onClick={() => router.push('/orders/new')}
+              className="bg-white rounded-lg p-4 text-left hover:shadow-md transition-shadow border border-gray-200"
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <Package className="h-5 w-5 text-green-600" />
+                </div>
+                <span className="font-medium text-gray-900">Create Order</span>
               </div>
-            </div>
-            <div className="hidden lg:block">
-              <div className="bg-white/10 backdrop-blur rounded-xl p-6 ml-8">
-                <h3 className="font-semibold mb-3 text-white/90">How it works:</h3>
-                <ol className="space-y-2 text-sm text-white/80">
-                  <li className="flex items-start gap-2">
-                    <span className="bg-white/20 rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 text-xs font-bold">1</span>
-                    <span>Enter your target page URL</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="bg-white/20 rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 text-xs font-bold">2</span>
-                    <span>Set your preferences & budget</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="bg-white/20 rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 text-xs font-bold">3</span>
-                    <span>We handle everything else</span>
-                  </li>
-                </ol>
-              </div>
-            </div>
+              <p className="text-sm text-gray-600">
+                Jump straight to placing a guest post order
+              </p>
+            </button>
           </div>
         </div>
 
@@ -541,6 +546,86 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
         </div>
       )}
 
+      {/* Vetted Sites Requests Section */}
+      {vettedSitesRequests.length > 0 && (
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Vetted Sites Requests</h2>
+              <p className="text-sm text-gray-600">
+                You have {vettedSitesRequests.length} vetted sites {vettedSitesRequests.length === 1 ? 'request' : 'requests'}
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowRequestForm(!showRequestForm)}
+                className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Request More Sites
+                <ChevronDown className={`h-4 w-4 ml-1 transition-transform ${showRequestForm ? 'rotate-180' : ''}`} />
+              </button>
+              <button
+                onClick={() => router.push('/vetted-sites/requests')}
+                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium text-gray-700"
+              >
+                View All Requests
+                <ExternalLink className="h-4 w-4 ml-2" />
+              </button>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {vettedSitesRequests.slice(0, 3).map((request) => (
+              <div key={request.id} className="border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${
+                    request.status === 'submitted' ? 'bg-yellow-100 text-yellow-800' :
+                    request.status === 'reviewing' ? 'bg-blue-100 text-blue-800' :
+                    request.status === 'approved' ? 'bg-green-100 text-green-800' :
+                    request.status === 'in_progress' ? 'bg-blue-100 text-blue-800' :
+                    request.status === 'fulfilled' ? 'bg-green-100 text-green-800' :
+                    'bg-red-100 text-red-800'
+                  }`}>
+                    {request.status === 'submitted' ? 'Pending Review' :
+                     request.status === 'reviewing' ? 'Under Review' :
+                     request.status === 'approved' ? 'Approved' :
+                     request.status === 'in_progress' ? 'In Progress' :
+                     request.status === 'fulfilled' ? 'Fulfilled' :
+                     'Rejected'}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 mb-2">
+                  {request.targetUrls?.length || 0} target URLs
+                </p>
+                <p className="text-xs text-gray-400">
+                  Created {new Date(request.createdAt).toLocaleDateString()}
+                </p>
+              </div>
+            ))}
+            {vettedSitesRequests.length > 3 && (
+              <div className="border border-gray-200 rounded-lg p-4 flex items-center justify-center">
+                <p className="text-sm text-gray-600">
+                  +{vettedSitesRequests.length - 3} more {vettedSitesRequests.length - 3 === 1 ? 'request' : 'requests'}
+                </p>
+              </div>
+            )}
+          </div>
+          
+          {/* Collapsible Request Form */}
+          {showRequestForm && (
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <QuickVettedSitesRequest 
+                onSuccess={() => {
+                  setShowRequestForm(false);
+                  refreshVettedSitesRequests();
+                }}
+                compact={true}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <button
@@ -599,6 +684,24 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
                 {orders.length > 0 
                   ? 'Track all your guest post orders' 
                   : 'Your order history will appear here'}
+              </p>
+        </button>
+
+        <button
+          onClick={() => router.push('/vetted-sites')}
+          className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow text-left"
+        >
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-indigo-100 rounded-lg">
+                  <Database className="h-6 w-6 text-indigo-600" />
+                </div>
+                <ExternalLink className="h-5 w-5 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">Vetted Sites</h3>
+              <p className="text-sm text-gray-600">
+                {vettedSitesRequests.length > 0 
+                  ? 'Browse qualified sites and manage requests' 
+                  : 'Discover high-quality guest post opportunities'}
               </p>
         </button>
       </div>
@@ -840,5 +943,81 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
         </div>
       </div>
     </div>
+  );
+}
+
+function ConditionalAccountLayout({ user }: { user: any }) {
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [vettedSitesRequests, setVettedSitesRequests] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      loadBasicData();
+    }
+  }, [user]);
+
+  const loadBasicData = async () => {
+    try {
+      setLoading(true);
+      
+      // Load just enough data to check if user is new
+      const ordersResponse = await fetch('/api/orders', {
+        credentials: 'include',
+      });
+      
+      if (ordersResponse.ok) {
+        const { orders: orderData } = await ordersResponse.json();
+        setOrders(orderData || []);
+      }
+      
+      const clientResponse = await fetch('/api/accounts/client', {
+        credentials: 'include',
+      });
+      
+      if (clientResponse.ok) {
+        const { clients: clientData } = await clientResponse.json();
+        setClients(clientData || []);
+      }
+      
+      // Load vetted sites requests
+      const requestsResponse = await fetch('/api/vetted-sites/requests', {
+        credentials: 'include',
+      });
+      
+      if (requestsResponse.ok) {
+        const { requests: requestData } = await requestsResponse.json();
+        setVettedSitesRequests(requestData || []);
+      }
+      
+    } catch (error) {
+      console.error('Error loading basic data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
+
+  // Check if this is a brand new user (no orders, no brands, no vetted sites requests)
+  const isNewUser = orders.length === 0 && clients.length === 0 && vettedSitesRequests.length === 0;
+
+  return (
+    <AccountLayout 
+      title={`Welcome back, ${user?.name}`}
+      subtitle="Get cited by AI and ranked by Google with strategic guest posts"
+      showBreadcrumbs={false}
+      sidebarContent={!isNewUser ? <SidebarNotifications /> : undefined}
+      hideSidebar={isNewUser}
+    >
+      <AccountDashboardContent user={user} />
+    </AccountLayout>
   );
 }

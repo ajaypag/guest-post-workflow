@@ -20,6 +20,7 @@ interface AccountLayoutProps {
   subtitle?: string;
   showBreadcrumbs?: boolean;
   sidebarContent?: React.ReactNode;
+  hideSidebar?: boolean;
 }
 
 const navigationItems = [
@@ -72,7 +73,8 @@ export default function AccountLayout({
   title, 
   subtitle,
   showBreadcrumbs = true,
-  sidebarContent
+  sidebarContent,
+  hideSidebar = false
 }: AccountLayoutProps) {
   const pathname = usePathname();
 
@@ -132,53 +134,55 @@ export default function AccountLayout({
   return (
     <div className="bg-gray-50 min-h-[calc(100vh-4rem)]">
       <div className="max-w-7xl mx-auto py-8">
-        <div className="lg:grid lg:grid-cols-12 lg:gap-8">
+        <div className={hideSidebar ? "" : "lg:grid lg:grid-cols-12 lg:gap-8"}>
           {/* Sidebar */}
-          <div className="hidden lg:block lg:col-span-3 xl:col-span-2">
-            <nav className="sticky top-8 space-y-1 bg-white rounded-lg shadow-sm p-6">
-              {/* Priority sidebar content - shown first for attention */}
-              {sidebarContent && (
-                <div className="mb-6">
-                  {sidebarContent}
-                </div>
-              )}
-              
-              <div className="mb-8">
-                <h2 className="text-lg font-semibold text-gray-900">Account</h2>
-                <p className="text-sm text-gray-600 mt-1">Manage your settings and preferences</p>
-              </div>
-              
-              {navigationItems.map((item) => {
-                const isActive = pathname === item.href || 
-                  (item.href === '/vetted-sites' && pathname.startsWith('/vetted-sites')) ||
-                  (item.href === '/billing' && pathname.startsWith('/billing')) ||
-                  (item.href === '/support' && pathname.startsWith('/support'));
+          {!hideSidebar && (
+            <div className="hidden lg:block lg:col-span-3 xl:col-span-2">
+              <nav className="sticky top-8 space-y-1 bg-white rounded-lg shadow-sm p-6">
+                {/* Priority sidebar content - shown first for attention */}
+                {sidebarContent && (
+                  <div className="mb-6">
+                    {sidebarContent}
+                  </div>
+                )}
                 
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className={`group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                      isActive
-                        ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-500'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                    }`}
-                  >
-                    <item.icon
-                      className={`flex-shrink-0 w-5 h-5 mr-3 ${
-                        isActive ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500'
+                <div className="mb-8">
+                  <h2 className="text-lg font-semibold text-gray-900">Account</h2>
+                  <p className="text-sm text-gray-600 mt-1">Manage your settings and preferences</p>
+                </div>
+                
+                {navigationItems.map((item) => {
+                  const isActive = pathname === item.href || 
+                    (item.href === '/vetted-sites' && pathname.startsWith('/vetted-sites')) ||
+                    (item.href === '/billing' && pathname.startsWith('/billing')) ||
+                    (item.href === '/support' && pathname.startsWith('/support'));
+                  
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      className={`group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                        isActive
+                          ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-500'
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                       }`}
-                    />
-                    {item.name}
-                  </Link>
-                );
-              })}
-            </nav>
-          </div>
+                    >
+                      <item.icon
+                        className={`flex-shrink-0 w-5 h-5 mr-3 ${
+                          isActive ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500'
+                        }`}
+                      />
+                      {item.name}
+                    </Link>
+                  );
+                })}
+              </nav>
+            </div>
+          )}
 
           {/* Main content */}
-          <div className="lg:col-span-9 xl:col-span-10">
-            <div className="px-4 sm:px-6 lg:px-0">
+          <div className={hideSidebar ? "w-full" : "lg:col-span-9 xl:col-span-10"}>
+            <div className={hideSidebar ? "px-4 sm:px-6 lg:px-8" : "px-4 sm:px-6 lg:px-0"}>
               {/* Mobile navigation */}
               <div className="lg:hidden mb-6">
                 <div className="bg-white rounded-lg shadow-sm p-4">
