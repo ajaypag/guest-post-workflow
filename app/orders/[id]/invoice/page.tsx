@@ -227,10 +227,15 @@ export default function InvoicePage() {
               {invoice.items.map((item, index) => (
                 <div key={index} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                   <div className="flex justify-between items-start mb-2">
-                    <h4 className="font-medium text-gray-900 flex-1 pr-2">{item.description}</h4>
-                    <span className="text-lg font-semibold text-gray-900">{formatCurrency(item.total)}</span>
+                    <div className="flex items-start gap-3 flex-1">
+                      <span className="inline-flex items-center justify-center w-6 h-6 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full flex-shrink-0 mt-0.5">
+                        {index + 1}
+                      </span>
+                      <h4 className="font-medium text-gray-900 flex-1">{item.description}</h4>
+                    </div>
+                    <span className="text-lg font-semibold text-gray-900 ml-2">{formatCurrency(item.total)}</span>
                   </div>
-                  <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                  <div className="grid grid-cols-2 gap-4 text-sm text-gray-600 ml-9">
                     <div>
                       <span className="font-medium">Quantity:</span> {item.quantity}
                     </div>
@@ -247,6 +252,7 @@ export default function InvoicePage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200">
+                    <th className="text-left py-3 text-sm font-semibold text-gray-900 w-12">#</th>
                     <th className="text-left py-3 text-sm font-semibold text-gray-900">Description</th>
                     <th className="text-right py-3 text-sm font-semibold text-gray-900">Qty</th>
                     <th className="text-right py-3 text-sm font-semibold text-gray-900">Unit Price</th>
@@ -256,6 +262,11 @@ export default function InvoicePage() {
                 <tbody>
                   {invoice.items.map((item, index) => (
                     <tr key={index} className="border-b border-gray-100">
+                      <td className="py-3">
+                        <span className="inline-flex items-center justify-center w-6 h-6 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full">
+                          {index + 1}
+                        </span>
+                      </td>
                       <td className="py-3 text-gray-600">{item.description}</td>
                       <td className="py-3 text-right text-gray-600">{item.quantity}</td>
                       <td className="py-3 text-right text-gray-600">{formatCurrency(item.unitPrice)}</td>

@@ -114,6 +114,7 @@ export async function POST(
           accountId: accountId,
           shareToken: null, // Revoke the share token after claiming
           shareExpiresAt: null,
+          state: 'sites_ready', // Set state to sites_ready for proper UI display
           updatedAt: new Date(),
           accountNotes: `Order claimed via share link on ${new Date().toISOString()}`
         })
@@ -122,11 +123,18 @@ export async function POST(
       
       // Copy associated clients and target pages to the new account
       // This ensures the new account has full access to all order-related data
+      // Check for both orderGroups (legacy) and lineItems (new system)
       const orderGroupsData = await tx.select().from(orderGroups).where(eq(orderGroups.orderId, order.id));
       
-      // Track client ID mappings (old -> new) for updating order groups
+      // Get unique client IDs from lineItems if no orderGroups found
+      const { orderLineItems } = await import('@/lib/db/orderLineItemSchema');
+      const lineItemsData = await tx.select().from(orderLineItems).where(eq(orderLineItems.orderId, order.id));
+      const lineItemClientIds = [...new Set(lineItemsData.map(item => item.clientId))];
+      
+      // Track client ID mappings (old -> new) for updating order groups and line items
       const clientIdMap = new Map<string, string>();
       
+      // Copy clients from orderGroups (legacy)
       for (const group of orderGroupsData) {
         if (group.clientId && !clientIdMap.has(group.clientId)) {
           // Get the original client
@@ -171,6 +179,51 @@ export async function POST(
         }
       }
       
+      // Copy clients from lineItems if no orderGroups were found
+      for (const clientId of lineItemClientIds) {
+        if (!clientIdMap.has(clientId)) {
+          // Get the original client
+          const [originalClient] = await tx.select().from(clients).where(eq(clients.id, clientId));
+          
+          if (originalClient) {
+            // Create a copy of the client for the new account
+            const newClientId = uuidv4();
+            const [newClient] = await tx.insert(clients).values({
+              id: newClientId,
+              accountId: accountId, // Owned by new account
+              name: originalClient.name,
+              website: originalClient.website,
+              description: originalClient.description || '',
+              clientType: originalClient.clientType || 'client',
+              createdBy: originalClient.createdBy, // Keep original creator (users.id)
+              defaultRequirements: originalClient.defaultRequirements || '{}',
+              createdAt: new Date(),
+              updatedAt: new Date()
+            }).returning();
+            
+            clientIdMap.set(clientId, newClientId);
+            
+            // Copy target pages for this client
+            const originalTargetPages = await tx.select().from(targetPages).where(eq(targetPages.clientId, clientId));
+            
+            for (const page of originalTargetPages) {
+              await tx.insert(targetPages).values({
+                id: uuidv4(),
+                clientId: newClientId, // Reference the new client
+                url: page.url,
+                normalizedUrl: page.normalizedUrl,
+                domain: page.domain,
+                keywords: page.keywords,
+                description: page.description,
+                status: page.status || 'active',
+                addedAt: new Date(),
+                completedAt: page.completedAt
+              });
+            }
+          }
+        }
+      }
+      
       // Update order groups to reference the new client IDs
       for (const group of orderGroupsData) {
         if (group.clientId && clientIdMap.has(group.clientId)) {
@@ -180,6 +233,18 @@ export async function POST(
               updatedAt: new Date()
             })
             .where(eq(orderGroups.id, group.id));
+        }
+      }
+
+      // Update line items to reference the new client IDs
+      for (const lineItem of lineItemsData) {
+        if (lineItem.clientId && clientIdMap.has(lineItem.clientId)) {
+          await tx.update(orderLineItems)
+            .set({
+              clientId: clientIdMap.get(lineItem.clientId),
+              modifiedAt: new Date()
+            })
+            .where(eq(orderLineItems.id, lineItem.id));
         }
       }
 
