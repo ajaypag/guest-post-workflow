@@ -221,6 +221,13 @@ export default function InternalWebsitesList({
         
         <div className="flex items-center space-x-3">
           <Link
+            href="/internal/vetted-sites/requests"
+            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-sm"
+          >
+            <Package className="h-4 w-4 mr-2" />
+            Vetted Requests
+          </Link>
+          <Link
             href="/internal/import"
             className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-sm"
           >

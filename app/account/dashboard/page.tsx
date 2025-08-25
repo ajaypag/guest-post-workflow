@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import AccountAuthWrapper from '@/components/AccountAuthWrapper';
 import Header from '@/components/Header';
 import AccountLayout from '@/components/AccountLayout';
+import QuickVettedSitesRequest from '@/components/dashboard/QuickVettedSitesRequest';
 import { formatCurrency } from '@/lib/utils/formatting';
 import { getStateDisplay } from '@/components/orders/OrderProgressSteps';
 import { useNotifications } from '@/lib/contexts/NotificationContext';
@@ -265,132 +266,61 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
   if (isNewUser) {
     return (
       <div className="space-y-8">
-        {/* Welcome Hero */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-8 text-white">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-4">
-                <Sparkles className="h-6 w-6" />
-                <span className="text-sm font-medium bg-white/20 px-3 py-1 rounded-full">
-                  Welcome to Linkio!
-                </span>
+        {/* Main Request Form */}
+        <QuickVettedSitesRequest />
+
+        {/* Alternative Options */}
+        <div className="bg-gray-50 rounded-xl p-6">
+          <h3 className="text-sm font-semibold text-gray-700 mb-4">Other ways to get started:</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <button
+              onClick={() => router.push('/vetted-sites')}
+              className="bg-white rounded-lg p-4 text-left hover:shadow-md transition-shadow border border-gray-200"
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <Sparkles className="h-5 w-5 text-purple-600" />
+                </div>
+                <span className="font-medium text-gray-900">Browse Vetted Sites</span>
               </div>
-              <h1 className="text-3xl font-bold mb-3">
-                Ready to Get Your Brand Cited by AI?
-              </h1>
-              <p className="text-lg text-white/90 mb-6 max-w-2xl">
-                Start your first guest post campaign and see your brand mentioned in ChatGPT, Claude, and Perplexity responses within 48 hours.
+              <p className="text-sm text-gray-600">
+                Explore our pre-vetted database of high-quality sites
               </p>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <button
-                  onClick={() => router.push('/get-started')}
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white text-blue-600 font-semibold rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <Zap className="h-5 w-5" />
-                  Quick Start (3 Steps)
-                  <ArrowRight className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => router.push('/clients/new')}
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white/10 backdrop-blur border border-white/20 text-white font-semibold rounded-lg hover:bg-white/20 transition-colors"
-                >
-                  <Building className="h-5 w-5" />
-                  Add Brand First
-                </button>
+            </button>
+
+            <button
+              onClick={() => router.push('/clients/new')}
+              className="bg-white rounded-lg p-4 text-left hover:shadow-md transition-shadow border border-gray-200"
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Building className="h-5 w-5 text-blue-600" />
+                </div>
+                <span className="font-medium text-gray-900">Add Brand First</span>
               </div>
-            </div>
-            <div className="hidden lg:block">
-              <div className="bg-white/10 backdrop-blur rounded-xl p-6 ml-8">
-                <h3 className="font-semibold mb-3 text-white/90">How it works:</h3>
-                <ol className="space-y-2 text-sm text-white/80">
-                  <li className="flex items-start gap-2">
-                    <span className="bg-white/20 rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 text-xs font-bold">1</span>
-                    <span>Enter your target page URL</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="bg-white/20 rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 text-xs font-bold">2</span>
-                    <span>Set your preferences & budget</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="bg-white/20 rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 text-xs font-bold">3</span>
-                    <span>We handle everything else</span>
-                  </li>
-                </ol>
+              <p className="text-sm text-gray-600">
+                Set up your brand details for more control
+              </p>
+            </button>
+
+            <button
+              onClick={() => router.push('/guest-posting-sites')}
+              className="bg-white rounded-lg p-4 text-left hover:shadow-md transition-shadow border border-gray-200"
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <Users className="h-5 w-5 text-green-600" />
+                </div>
+                <span className="font-medium text-gray-900">Browse All Sites</span>
               </div>
-            </div>
+              <p className="text-sm text-gray-600">
+                Explore 13,000+ sites across 100+ niches
+              </p>
+            </button>
           </div>
         </div>
 
-        {/* Getting Started Steps */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white rounded-lg shadow-md p-6 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-blue-50 rounded-bl-full"></div>
-            <div className="relative">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-                <span className="text-2xl font-bold text-blue-600">1</span>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Quick Start Flow
-              </h3>
-              <p className="text-sm text-gray-600 mb-4">
-                The fastest way to get started. Just enter a URL and we'll handle the rest.
-              </p>
-              <button
-                onClick={() => router.push('/get-started')}
-                className="text-blue-600 hover:text-blue-700 font-medium text-sm inline-flex items-center gap-1"
-              >
-                Start now
-                <ArrowRight className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-md p-6 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-purple-50 rounded-bl-full"></div>
-            <div className="relative">
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
-                <span className="text-2xl font-bold text-purple-600">2</span>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Traditional Setup
-              </h3>
-              <p className="text-sm text-gray-600 mb-4">
-                Add your brand details first, then create orders with full control.
-              </p>
-              <button
-                onClick={() => router.push('/clients/new')}
-                className="text-purple-600 hover:text-purple-700 font-medium text-sm inline-flex items-center gap-1"
-              >
-                Add brand
-                <ArrowRight className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-md p-6 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-green-50 rounded-bl-full"></div>
-            <div className="relative">
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
-                <span className="text-2xl font-bold text-green-600">3</span>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Browse Sites
-              </h3>
-              <p className="text-sm text-gray-600 mb-4">
-                Explore our database of 13,000+ authority sites across 100+ niches.
-              </p>
-              <button
-                onClick={() => router.push('/guest-posting-sites')}
-                className="text-green-600 hover:text-green-700 font-medium text-sm inline-flex items-center gap-1"
-              >
-                View sites
-                <ArrowRight className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Empty Stats */}
+        {/* Empty Stats - Keep minimal */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
             { icon: Building, label: 'Active Brands', value: 0, color: 'purple' },
@@ -398,14 +328,14 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
             { icon: Clock, label: 'In Progress', value: 0, color: 'yellow' },
             { icon: CheckCircle, label: 'Completed', value: 0, color: 'green' },
           ].map((stat, index) => (
-            <div key={index} className="bg-white rounded-lg shadow-md p-6 opacity-50">
-              <div className="flex items-center justify-between mb-4">
-                <div className={`p-3 bg-gray-100 rounded-lg`}>
-                  <stat.icon className="h-6 w-6 text-gray-400" />
+            <div key={index} className="bg-white rounded-lg shadow-sm p-4 opacity-50">
+              <div className="flex items-center justify-between mb-2">
+                <div className={`p-2 bg-gray-100 rounded-lg`}>
+                  <stat.icon className="h-5 w-5 text-gray-400" />
                 </div>
               </div>
-              <div className="text-2xl font-bold text-gray-400">{stat.value}</div>
-              <p className="text-sm text-gray-500">{stat.label}</p>
+              <div className="text-xl font-bold text-gray-400">{stat.value}</div>
+              <p className="text-xs text-gray-500">{stat.label}</p>
             </div>
           ))}
         </div>

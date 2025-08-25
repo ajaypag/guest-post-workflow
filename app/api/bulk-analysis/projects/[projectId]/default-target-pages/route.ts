@@ -20,11 +20,16 @@ export async function GET(
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
     
-    // Extract target page IDs from tags
-    const tags = project.tags as string[] || [];
-    const targetPageIds = tags
-      .filter(tag => tag.startsWith('target-page:'))
-      .map(tag => tag.replace('target-page:', ''));
+    // Get target page IDs from defaultTargetPageIds field (new) or tags (legacy)
+    let targetPageIds = project.defaultTargetPageIds as string[] || [];
+    
+    // Fallback to tags for backward compatibility
+    if (targetPageIds.length === 0) {
+      const tags = project.tags as string[] || [];
+      targetPageIds = tags
+        .filter(tag => tag.startsWith('target-page:'))
+        .map(tag => tag.replace('target-page:', ''));
+    }
     
     return NextResponse.json({
       projectId,

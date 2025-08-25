@@ -22,6 +22,11 @@ export const bulkAnalysisProjects = pgTable('bulk_analysis_projects', {
   workflowCount: integer('workflow_count').default(0),
   lastActivityAt: timestamp('last_activity_at'),
   
+  // Request tracking fields
+  sourceRequestId: uuid('source_request_id'), // References vetted_sites_requests.id
+  isFromRequest: boolean('is_from_request').default(false), // True if created from a vetted sites request
+  defaultTargetPageIds: jsonb('default_target_page_ids').notNull().default([]), // Target pages to pre-select when adding domains
+  
   // Metadata
   createdBy: uuid('created_by').references(() => users.id),
   createdAt: timestamp('created_at').notNull().defaultNow(),
@@ -62,6 +67,7 @@ export const bulkAnalysisDomains = pgTable('bulk_analysis_domains', {
   topicScope: varchar('topic_scope', { length: 20 }), // 'short_tail' | 'long_tail' | 'ultra_long_tail'
   topicReasoning: text('topic_reasoning'), // Modifier guidance for topic creation
   evidence: jsonb('evidence'), // { direct_count, direct_median_position, related_count, related_median_position }
+  qualificationData: jsonb('qualification_data'), // { evidence: { direct_keywords: string[], related_keywords: string[] } }
   manuallyQualifiedBy: uuid('manually_qualified_by').references(() => users.id),
   manuallyQualifiedAt: timestamp('manually_qualified_at'),
   // Human verification tracking
@@ -82,6 +88,16 @@ export const bulkAnalysisDomains = pgTable('bulk_analysis_domains', {
   suggestedTargetUrl: text('suggested_target_url'), // AI's top target URL recommendation
   targetMatchData: jsonb('target_match_data'), // Complete AI target URL analysis results
   targetMatchedAt: timestamp('target_matched_at'), // When target URL matching was performed
+  // User curation fields for Vetted Sites feature
+  userBookmarked: boolean('user_bookmarked').default(false), // User has marked this domain as a favorite
+  userHidden: boolean('user_hidden').default(false), // User has hidden this domain from their view
+  userBookmarkedAt: timestamp('user_bookmarked_at'), // When domain was bookmarked
+  userHiddenAt: timestamp('user_hidden_at'), // When domain was hidden
+  userBookmarkedBy: uuid('user_bookmarked_by').references(() => users.id), // User who bookmarked
+  userHiddenBy: uuid('user_hidden_by').references(() => users.id), // User who hid domain
+  // Request tracking fields
+  sourceRequestId: uuid('source_request_id'), // References vetted_sites_requests.id
+  addedFromRequestAt: timestamp('added_from_request_at'), // When domain was added from a request
   createdAt: timestamp('created_at').notNull(),
   updatedAt: timestamp('updated_at').notNull(),
 }, (table) => {
@@ -93,6 +109,13 @@ export const bulkAnalysisDomains = pgTable('bulk_analysis_domains', {
     // Target URL matching indexes (added in migration 0060_add_target_url_matching.sql)
     suggestedTargetIdx: index('idx_bulk_domains_suggested_target').on(table.suggestedTargetUrl),
     targetMatchedAtIdx: index('idx_bulk_domains_target_matched_at').on(table.targetMatchedAt),
+    // User curation indexes (added in migration 0067_add_user_curation_to_bulk_analysis.sql)
+    userBookmarkedIdx: index('idx_bulk_analysis_user_bookmarked').on(table.userBookmarked),
+    userHiddenIdx: index('idx_bulk_analysis_user_hidden').on(table.userHidden),
+    userActionsIdx: index('idx_bulk_analysis_user_actions').on(table.userBookmarkedBy, table.userBookmarked, table.userHidden),
+    userActivityIdx: index('idx_bulk_analysis_user_activity').on(table.userBookmarkedAt, table.userHiddenAt),
+    // Request tracking index
+    sourceRequestIdx: index('idx_bulk_domains_request').on(table.sourceRequestId),
   };
 });
 

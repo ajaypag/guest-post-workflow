@@ -1,7 +1,7 @@
 import { AuthServiceServer } from '@/lib/auth-server';
 import { redirect } from 'next/navigation';
 import { db } from '@/lib/db/connection';
-import { websites, publishers, publisherOfferingRelationships, publisherOfferings } from '@/lib/db/schema';
+import { websites, publishers, publisherOfferingRelationships } from '@/lib/db/schema';
 import { sql, eq, desc, isNotNull } from 'drizzle-orm';
 import InternalDashboard from '@/components/internal/InternalDashboard';
 
@@ -36,10 +36,7 @@ export default async function InternalPortalPage() {
     db.select({
       total: sql<number>`count(*)`,
       verified: sql<number>`count(case when ${publisherOfferingRelationships.verificationStatus} = 'verified' then 1 end)`,
-      withOfferings: sql<number>`count(distinct case when exists (
-        select 1 from ${publisherOfferings} po 
-        where po.publisher_relationship_id = ${publisherOfferingRelationships.id}
-      ) then ${publisherOfferingRelationships.id} end)`
+      withOfferings: sql<number>`count(distinct case when ${publisherOfferingRelationships.offeringId} is not null then ${publisherOfferingRelationships.id} end)`
     }).from(publisherOfferingRelationships),
 
     // Recent websites

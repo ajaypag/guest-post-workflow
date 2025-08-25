@@ -55,9 +55,12 @@ export default function LineItemsDisplay({
   const totalItems = lineItems.length;
 
   // Determine what to show based on order status/state
-  const showSites = orderState === 'sites_ready' || orderState === 'client_reviewing' || 
-                    orderState === 'payment_pending' || orderState === 'in_progress' ||
-                    orderStatus === 'completed';
+  // Show sites if they've been assigned, regardless of state (for transparency)
+  const showSites = orderState === 'awaiting_review' || orderState === 'sites_ready' || 
+                    orderState === 'client_reviewing' || orderState === 'payment_pending' || 
+                    orderState === 'in_progress' || orderStatus === 'completed' ||
+                    // Also show if any line item has an assigned domain
+                    lineItems.some(item => item.assignedDomain);
   const showPublishedLinks = orderStatus === 'completed';
 
   return (
@@ -119,7 +122,9 @@ export default function LineItemsDisplay({
                     Published Link
                   </th>
                 )}
-                {userType === 'internal' && (
+                {/* Show price for internal users OR for account users with priced items */}
+                {(userType === 'internal' || 
+                  (lineItems.some(item => item.price > 0) && lineItems.some(item => item.assignedDomain))) && (
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Price
                   </th>
@@ -174,7 +179,9 @@ export default function LineItemsDisplay({
                       {showSites && (
                         <td className="px-6 py-4">
                           {item.assignedDomain ? (
-                            <span className="text-sm text-gray-900">{item.assignedDomain}</span>
+                            <span className="text-sm text-gray-900">
+                              {typeof item.assignedDomain === 'string' ? item.assignedDomain : (item.assignedDomain as any)?.domain || 'Domain assigned'}
+                            </span>
                           ) : (
                             <span className="text-sm text-gray-400 italic">Pending</span>
                           )}
@@ -196,7 +203,9 @@ export default function LineItemsDisplay({
                           )}
                         </td>
                       )}
-                      {userType === 'internal' && (
+                      {/* Show price for internal users OR for account users with priced items */}
+                      {(userType === 'internal' || 
+                        (lineItems.some(item => item.price > 0) && lineItems.some(item => item.assignedDomain))) && (
                         <td className="px-6 py-4 text-right">
                           <span className="text-sm font-medium text-gray-900">
                             {item.price > 0 ? formatCurrency(item.price) : '-'}

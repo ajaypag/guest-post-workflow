@@ -2,9 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Bell, AlertCircle, Clock, ChevronRight, RefreshCw, Users, Building, Package, DollarSign } from 'lucide-react';
+import { Bell, AlertCircle, Clock, ChevronRight } from 'lucide-react';
 import { useNotifications } from '@/lib/contexts/NotificationContext';
-import { formatCurrency } from '@/lib/utils/formatting';
 
 export default function NotificationBell() {
   const { notifications, loading, refreshNotifications } = useNotifications();
@@ -22,7 +21,6 @@ export default function NotificationBell() {
 
   const hasActionRequired = notifications.actionRequiredCount > 0;
   const hasRecentUpdates = notifications.recentUpdatesCount > 0;
-  const hasMoreSuggestionsNeeded = (notifications.moreSuggestionsCount || 0) > 0;
   const totalNotifications = notifications.actionRequiredCount;
 
   return (
@@ -34,7 +32,7 @@ export default function NotificationBell() {
             refreshNotifications(); // Refresh when opening
           }
         }}
-        className="relative p-2 text-gray-600 hover:text-gray-900 rounded-full hover:bg-gray-100 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+        className="relative p-2 text-gray-600 hover:text-gray-900 rounded-full hover:bg-gray-100 transition-colors"
       >
         <Bell className={`h-5 w-5 ${hasActionRequired ? 'text-red-600' : ''}`} />
         
@@ -53,7 +51,7 @@ export default function NotificationBell() {
 
       {/* Dropdown */}
       {showDropdown && (
-        <div className="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-96 overflow-hidden">
+        <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-96 overflow-hidden">
           {/* Header */}
           <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
             <div className="flex items-center justify-between">
@@ -70,120 +68,34 @@ export default function NotificationBell() {
 
           {/* Content */}
           <div className="max-h-80 overflow-y-auto">
-            {/* More Suggestions Needed Section - High Priority */}
-            {hasMoreSuggestionsNeeded && (
-              <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-purple-100">
-                <div className="flex items-center gap-2 mb-3">
-                  <RefreshCw className="h-4 w-4 text-purple-600" />
-                  <span className="font-semibold text-purple-900">
-                    {notifications.moreSuggestionsCount} client{notifications.moreSuggestionsCount !== 1 ? 's' : ''} need{notifications.moreSuggestionsCount === 1 ? 's' : ''} more sites
-                  </span>
-                  <span className="px-2 py-1 bg-purple-200 text-purple-800 text-xs rounded-full font-medium">
-                    HIGH PRIORITY
-                  </span>
-                </div>
-                
-                <div className="space-y-2">
-                  {notifications.urgentOrders
-                    .filter(order => order.message.includes('more sit') || order.message.includes('suggestions'))
-                    .map(order => (
-                    <Link
-                      key={order.id}
-                      href={`/orders/${order.id}/internal`}
-                      onClick={() => setShowDropdown(false)}
-                      className="block p-4 bg-purple-100 hover:bg-purple-200 rounded-lg border border-purple-300 transition-colors group"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Building className="h-4 w-4 text-purple-600" />
-                            <span className="font-semibold text-purple-900 text-sm">
-                              {order.accountName}
-                            </span>
-                            <span className="text-purple-700 text-xs">
-                              #{order.shortId}
-                            </span>
-                          </div>
-                          
-                          <div className="grid grid-cols-2 gap-3 mb-2">
-                            <div className="flex items-center gap-1">
-                              <Package className="h-3 w-3 text-purple-600" />
-                              <span className="text-xs text-purple-800">
-                                {order.lineItemCount} links
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <DollarSign className="h-3 w-3 text-purple-600" />
-                              <span className="text-xs text-purple-800">
-                                {formatCurrency(order.totalRetail)}
-                              </span>
-                            </div>
-                          </div>
-                          
-                          <div className="text-purple-800 text-xs">
-                            {order.message}
-                          </div>
-                        </div>
-                        <ChevronRight className="h-4 w-4 text-purple-700 group-hover:translate-x-1 transition-transform mt-1" />
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* Action Required Section */}
-            {hasActionRequired && (notifications.actionRequiredCount - (notifications.moreSuggestionsCount || 0)) > 0 && (
+            {hasActionRequired && (
               <div className="p-4 border-b border-gray-100">
                 <div className="flex items-center gap-2 mb-3">
                   <AlertCircle className="h-4 w-4 text-red-600" />
                   <span className="font-medium text-red-900">
-                    {notifications.actionRequiredCount - (notifications.moreSuggestionsCount || 0)} other order{(notifications.actionRequiredCount - (notifications.moreSuggestionsCount || 0)) !== 1 ? 's' : ''} need{(notifications.actionRequiredCount - (notifications.moreSuggestionsCount || 0)) === 1 ? 's' : ''} attention
+                    {notifications.actionRequiredCount} order{notifications.actionRequiredCount !== 1 ? 's' : ''} need{notifications.actionRequiredCount === 1 ? 's' : ''} attention
                   </span>
                 </div>
                 
                 <div className="space-y-2">
-                  {notifications.urgentOrders
-                    .filter(order => !(order.message.includes('more sit') || order.message.includes('suggestions')))
-                    .map(order => (
+                  {notifications.urgentOrders.map(order => (
                     <Link
                       key={order.id}
                       href={`/orders/${order.id}`}
                       onClick={() => setShowDropdown(false)}
-                      className="block p-4 bg-red-50 hover:bg-red-100 rounded-lg border border-red-200 transition-colors group"
+                      className="block p-3 bg-red-50 hover:bg-red-100 rounded-lg border border-red-200 transition-colors group"
                     >
-                      <div className="flex items-start justify-between">
+                      <div className="flex items-center justify-between">
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Building className="h-4 w-4 text-red-600" />
-                            <span className="font-semibold text-red-900 text-sm">
-                              {order.accountName}
-                            </span>
-                            <span className="text-red-700 text-xs">
-                              #{order.shortId}
-                            </span>
+                          <div className="font-medium text-red-900 text-sm">
+                            Order #{order.shortId}
                           </div>
-                          
-                          <div className="grid grid-cols-2 gap-3 mb-2">
-                            <div className="flex items-center gap-1">
-                              <Package className="h-3 w-3 text-red-600" />
-                              <span className="text-xs text-red-800">
-                                {order.lineItemCount} links
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <DollarSign className="h-3 w-3 text-red-600" />
-                              <span className="text-xs text-red-800">
-                                {formatCurrency(order.totalRetail)}
-                              </span>
-                            </div>
-                          </div>
-                          
-                          <div className="text-red-700 text-xs">
+                          <div className="text-red-700 text-xs mt-1">
                             {order.message}
                           </div>
                         </div>
-                        <ChevronRight className="h-4 w-4 text-red-600 group-hover:translate-x-1 transition-transform mt-1" />
+                        <ChevronRight className="h-4 w-4 text-red-600 group-hover:translate-x-1 transition-transform" />
                       </div>
                     </Link>
                   ))}
@@ -207,7 +119,7 @@ export default function NotificationBell() {
             )}
 
             {/* Empty State */}
-            {!hasActionRequired && !hasRecentUpdates && !hasMoreSuggestionsNeeded && (
+            {!hasActionRequired && !hasRecentUpdates && (
               <div className="p-6 text-center">
                 <Bell className="h-8 w-8 text-gray-300 mx-auto mb-3" />
                 <p className="text-gray-500 text-sm">No new notifications</p>
