@@ -22,6 +22,8 @@ interface Account {
   canUseAiKeywords?: boolean;
   canUseAiDescriptions?: boolean;
   canUseAiContentGeneration?: boolean;
+  createdAt?: string;
+  lastLoginAt?: string | null;
 }
 
 export default function WorkingAccountsPage() {
@@ -34,6 +36,36 @@ export default function WorkingAccountsPage() {
     message: string;
   } | null>(null);
   const router = useRouter();
+
+  // Helper function to format dates
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString) return 'Never';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+    
+    if (diffInDays === 0) {
+      const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+      if (diffInHours === 0) {
+        const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+        return `${diffInMinutes}m ago`;
+      }
+      return `${diffInHours}h ago`;
+    } else if (diffInDays === 1) {
+      return 'Yesterday';
+    } else if (diffInDays < 7) {
+      return `${diffInDays}d ago`;
+    } else if (diffInDays < 30) {
+      const weeks = Math.floor(diffInDays / 7);
+      return `${weeks}w ago`;
+    } else if (diffInDays < 365) {
+      const months = Math.floor(diffInDays / 30);
+      return `${months}mo ago`;
+    } else {
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+  };
 
   useEffect(() => {
     const loadAccounts = async () => {
@@ -186,8 +218,126 @@ export default function WorkingAccountsPage() {
               <span className="ml-2 text-gray-600">Loading accounts...</span>
             </div>
           ) : (
-            <div className="bg-white shadow-sm rounded-lg overflow-hidden">
-              <table className="min-w-full divide-y divide-gray-200">
+            <>
+              {/* Mobile Card View */}
+              <div className="block lg:hidden space-y-4">
+                {accounts.map((account) => (
+                  <div key={account.id} className="bg-white shadow rounded-lg p-4">
+                    {/* Header with status */}
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex-1">
+                        <h3 className="text-sm font-semibold text-gray-900">{account.contactName}</h3>
+                        <p className="text-xs text-gray-600">{account.companyName}</p>
+                        <p className="text-xs text-gray-500">{account.email}</p>
+                      </div>
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        account.status === 'active' ? 'bg-green-100 text-green-800' :
+                        account.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {account.status}
+                      </span>
+                    </div>
+
+                    {/* Activity Info */}
+                    <div className="border-t border-gray-200 pt-3 mb-3">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-gray-500">Joined: <span className="font-medium text-gray-700">{formatDate(account.createdAt)}</span></span>
+                        <span className="text-gray-500">Last seen: <span className={account.lastLoginAt ? 'text-gray-600' : 'text-gray-400 italic'}>{formatDate(account.lastLoginAt)}</span></span>
+                      </div>
+                    </div>
+
+                    {/* Stats */}
+                    <div className="grid grid-cols-3 gap-2 mb-3">
+                      <div className="text-center">
+                        <div className="text-xs text-gray-500">Client</div>
+                        <div className="text-xs font-medium text-gray-900 truncate">
+                          {account.primaryClient ? account.primaryClient.name : 'None'}
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-xs text-gray-500">Orders</div>
+                        <div className="text-sm font-medium text-gray-900">{account.orderCount || 0}</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-xs text-gray-500">Revenue</div>
+                        <div className="text-sm font-medium text-gray-900">${((account.totalRevenue || 0) / 100).toFixed(0)}</div>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex justify-around border-t border-gray-200 pt-3">
+                      {account.primaryClient && (
+                        <a
+                          href={`/clients/${account.primaryClient.id}`}
+                          className="text-indigo-600 hover:text-indigo-900"
+                          title="View Client"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </a>
+                      )}
+                      <button
+                        onClick={() => resetPassword(account.id, account.email)}
+                        disabled={resettingPassword === account.id}
+                        className="text-blue-600 hover:text-blue-900 disabled:opacity-50"
+                        title="Reset Password"
+                      >
+                        {resettingPassword === account.id ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                        ) : (
+                          <Key className="w-4 h-4" />
+                        )}
+                      </button>
+                      <button
+                        onClick={() => alert('AI Permissions modal not implemented yet')}
+                        className="text-purple-600 hover:text-purple-900"
+                        title="AI Permissions"
+                      >
+                        <Wand2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => startImpersonation(account)}
+                        className="text-green-600 hover:text-green-900"
+                        title="Impersonate"
+                      >
+                        <UserCheck className="w-4 h-4" />
+                      </button>
+                      {account.status === 'pending' && (
+                        <button
+                          onClick={() => updateAccountStatus(account.id, 'active')}
+                          className="text-green-600 hover:text-green-900"
+                          title="Activate"
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                        </button>
+                      )}
+                      {account.status === 'active' && (
+                        <button
+                          onClick={() => updateAccountStatus(account.id, 'suspended')}
+                          className="text-red-600 hover:text-red-900"
+                          title="Suspend"
+                        >
+                          <Ban className="w-4 h-4" />
+                        </button>
+                      )}
+                      {account.status === 'suspended' && (
+                        <button
+                          onClick={() => updateAccountStatus(account.id, 'active')}
+                          className="text-green-600 hover:text-green-900"
+                          title="Reactivate"
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden lg:block bg-white shadow-sm rounded-lg overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -198,6 +348,9 @@ export default function WorkingAccountsPage() {
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Activity
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Orders
@@ -248,6 +401,23 @@ export default function WorkingAccountsPage() {
                         }`}>
                           {account.status}
                         </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <div className="flex flex-col space-y-1">
+                          <div className="flex items-center space-x-2">
+                            <span className="text-xs text-gray-500">Joined:</span>
+                            <span className="font-medium text-gray-700" title={account.createdAt ? new Date(account.createdAt).toLocaleString() : undefined}>
+                              {formatDate(account.createdAt)}
+                            </span>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-xs text-gray-500">Last seen:</span>
+                            <span className={`text-xs ${account.lastLoginAt ? 'text-gray-600' : 'text-gray-400 italic'}`} 
+                                  title={account.lastLoginAt ? new Date(account.lastLoginAt).toLocaleString() : 'User has never logged in'}>
+                              {formatDate(account.lastLoginAt)}
+                            </span>
+                          </div>
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {account.orderCount || 0}
@@ -334,14 +504,16 @@ export default function WorkingAccountsPage() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+                  </table>
+                </div>
+              </div>
               
               {accounts.length === 0 && (
-                <div className="text-center py-12">
+                <div className="text-center py-12 bg-white rounded-lg">
                   <p className="text-gray-500">No accounts found.</p>
                 </div>
               )}
-            </div>
+            </>
           )}
         </main>
       </div>

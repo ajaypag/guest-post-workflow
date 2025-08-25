@@ -15,7 +15,12 @@ import {
   AlertCircle
 } from 'lucide-react';
 
-export default function QuickVettedSitesRequest() {
+interface QuickVettedSitesRequestProps {
+  onSuccess?: () => void;
+  compact?: boolean;
+}
+
+export default function QuickVettedSitesRequest({ onSuccess, compact = false }: QuickVettedSitesRequestProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -80,10 +85,16 @@ export default function QuickVettedSitesRequest() {
 
       if (response.ok) {
         setSuccess(true);
-        // Redirect after a brief success message
-        setTimeout(() => {
-          router.push('/vetted-sites/requests');
-        }, 2000);
+        // Handle success callback or redirect
+        if (onSuccess) {
+          setTimeout(() => {
+            onSuccess();
+          }, 1500);
+        } else {
+          setTimeout(() => {
+            router.push('/vetted-sites/requests');
+          }, 2000);
+        }
       } else {
         const data = await response.json();
         throw new Error(data.error || 'Failed to create request');
@@ -96,12 +107,12 @@ export default function QuickVettedSitesRequest() {
 
   if (success) {
     return (
-      <div className="bg-white rounded-xl shadow-lg p-8">
-        <div className="text-center py-8">
-          <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-            <CheckCircle className="h-8 w-8 text-green-600" />
+      <div className={`bg-white ${compact ? 'rounded-lg p-6' : 'rounded-xl shadow-lg p-8'}`}>
+        <div className={`text-center ${compact ? 'py-4' : 'py-8'}`}>
+          <div className={`mx-auto ${compact ? 'w-12 h-12' : 'w-16 h-16'} bg-green-100 rounded-full flex items-center justify-center mb-4`}>
+            <CheckCircle className={`${compact ? 'h-6 w-6' : 'h-8 w-8'} text-green-600`} />
           </div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">
+          <h3 className={`${compact ? 'text-lg' : 'text-xl'} font-semibold text-gray-900 mb-2`}>
             Request Submitted Successfully!
           </h3>
           <p className="text-gray-600 mb-4">
@@ -109,7 +120,7 @@ export default function QuickVettedSitesRequest() {
           </p>
           <div className="inline-flex items-center text-sm text-gray-500">
             <Loader2 className="h-4 w-4 animate-spin mr-2" />
-            Redirecting to your requests...
+            {onSuccess ? 'Updating dashboard...' : 'Redirecting to your requests...'}
           </div>
         </div>
       </div>
@@ -117,25 +128,39 @@ export default function QuickVettedSitesRequest() {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-6">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="p-2 bg-white/20 backdrop-blur rounded-lg">
-            <Sparkles className="h-5 w-5 text-white" />
-          </div>
-          <span className="text-white/90 font-medium">Quick Start</span>
+    <div className="space-y-6">
+      {/* Friendly intro - styled as info box (hidden in compact mode) */}
+      {!compact && (
+        <div className="mb-6 p-6 bg-blue-50 border border-blue-200 rounded-lg">
+          <h2 className="text-xl font-semibold text-blue-900 mb-3 flex items-center gap-2">
+            <Globe className="h-5 w-5" />
+            What is Linkio?
+          </h2>
+          <p className="text-blue-800 leading-relaxed">
+            We help you get mentioned in ChatGPT, Claude, AI Overviews, and Google searches through strategic guest posts. Instead of picking random high-authority sites, we find websites that already rank for topics related to your business—boosting your AI visibility while improving your traditional search rankings.
+          </p>
         </div>
-        <h2 className="text-2xl font-bold text-white mb-2">
-          Get AI-Optimized Website Recommendations
-        </h2>
-        <p className="text-white/90">
-          Enter your target URLs and we'll find vetted sites that will boost your visibility in ChatGPT, Claude, Perplexity, and AI search results
-        </p>
-      </div>
+      )}
 
-      {/* Form */}
-      <form onSubmit={handleSubmit} className="p-8">
+      {/* Call to action */}
+      {!compact && (
+        <div className="mb-6">
+          <p className="text-gray-900 font-medium text-lg">
+            Want to see which sites match your keywords? Enter your target URLs below:
+          </p>
+        </div>
+      )}
+
+      {/* Form - Clean, dashboard-style */}
+      <div className={`bg-white border border-gray-200 rounded-lg ${compact ? 'shadow-sm' : 'shadow-sm'}`}>
+        <form onSubmit={handleSubmit} className={compact ? "p-6" : "p-8"}>
+        {compact && (
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">Request More Vetted Sites</h3>
+            <p className="text-sm text-gray-600">Enter your target URLs to find relevant guest post opportunities</p>
+          </div>
+        )}
+        
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
             <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
@@ -158,9 +183,10 @@ export default function QuickVettedSitesRequest() {
           <Textarea
             value={targetUrls}
             onChange={(e) => setTargetUrls(e.target.value)}
-            placeholder="https://yoursite.com/product"
+            placeholder="https://yoursite.com/product
+https://yoursite.com/another-page"
             rows={4}
-            className="font-mono text-sm"
+            className="font-mono text-sm border-gray-300 focus:border-gray-400 focus:ring-0 focus:ring-gray-400/20"
             required
           />
           <p className="mt-2 text-xs text-gray-500">
@@ -258,52 +284,62 @@ export default function QuickVettedSitesRequest() {
           )}
         </div>
 
-        {/* How it works */}
-        <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-          <h4 className="text-sm font-semibold text-blue-900 mb-2">What happens next:</h4>
-          <ol className="space-y-1 text-sm text-blue-800">
-            <li className="flex items-start gap-2">
-              <span className="font-semibold">1.</span>
-              <span>We analyze your target URLs to understand your content</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="font-semibold">2.</span>
-              <span>Our AI finds websites already ranking for similar topics</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="font-semibold">3.</span>
-              <span>You receive personalized recommendations within 24 hours</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="font-semibold">4.</span>
-              <span>Choose which sites to order guest posts from</span>
-            </li>
-          </ol>
+
+        {/* Submit Button - Clean and focused */}
+        <div className="flex gap-3">
+          <Button
+            type="submit"
+            disabled={loading || !targetUrls.trim()}
+            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                Analyzing...
+              </>
+            ) : (
+              <>
+                Get Vetted Sites & Analysis
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </>
+            )}
+          </Button>
         </div>
 
-        {/* Submit Button */}
-        <Button
-          type="submit"
-          disabled={loading || !targetUrls.trim()}
-          className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3"
-        >
-          {loading ? (
-            <>
-              <Loader2 className="h-5 w-5 animate-spin mr-2" />
-              Submitting Request...
-            </>
-          ) : (
-            <>
-              Get Vetted Sites Recommendations
-              <ArrowRight className="h-5 w-5 ml-2" />
-            </>
-          )}
-        </Button>
-
-        <p className="mt-4 text-xs text-center text-gray-500">
-          No commitment required • Results in 24 hours • 100% tailored to your content
+        
+        <p className="mt-3 text-xs text-gray-500 text-center">
+          Results in 24 hours • No commitment required
         </p>
       </form>
+      </div>
+
+      {/* What you'll get - moved outside with better spacing */}
+      <div className="mt-12">
+        <p className="text-base font-medium text-gray-900 mb-6 text-center">What you'll receive:</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+              <Globe className="h-8 w-8 text-gray-600" />
+            </div>
+            <h3 className="font-semibold text-gray-900 text-base mb-2">Keyword Overlap Analysis</h3>
+            <p className="text-sm text-gray-600 leading-relaxed">See which keywords each site ranks for vs. yours</p>
+          </div>
+          <div className="text-center">
+            <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+              <Sparkles className="h-8 w-8 text-gray-600" />
+            </div>
+            <h3 className="font-semibold text-gray-900 text-base mb-2">Target Relevance Scores</h3>
+            <p className="text-sm text-gray-600 leading-relaxed">AI analysis of why each site matches your content</p>
+          </div>
+          <div className="text-center">
+            <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="h-8 w-8 text-gray-600" />
+            </div>
+            <h3 className="font-semibold text-gray-900 text-base mb-2">Fair Pricing</h3>
+            <p className="text-sm text-gray-600 leading-relaxed">Wholesale cost + $79 admin fee (no markups)</p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

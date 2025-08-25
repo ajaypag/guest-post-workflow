@@ -134,18 +134,18 @@ export default function Header() {
                   Brands
                 </Link>
                 <Link
-                  href="/orders"
-                  className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
-                >
-                  <ShoppingCart className="w-4 h-4 mr-1.5" />
-                  My Orders
-                </Link>
-                <Link
                   href="/vetted-sites"
                   className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
                 >
                   <Database className="w-4 h-4 mr-1.5" />
                   Vetted Sites
+                </Link>
+                <Link
+                  href="/orders"
+                  className="text-gray-600 hover:text-gray-900 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
+                >
+                  <ShoppingCart className="w-4 h-4 mr-1.5" />
+                  My Orders
                 </Link>
               </>
             ) : (
@@ -532,20 +532,20 @@ export default function Header() {
                   <span className="text-base font-medium">Brands</span>
                 </Link>
                 <Link
-                  href="/orders"
-                  className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors min-h-[44px]"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <ShoppingCart className="w-5 h-5" />
-                  <span className="text-base font-medium">My Orders</span>
-                </Link>
-                <Link
                   href="/vetted-sites"
                   className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors min-h-[44px]"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <Database className="w-5 h-5" />
                   <span className="text-base font-medium">Vetted Sites</span>
+                </Link>
+                <Link
+                  href="/orders"
+                  className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors min-h-[44px]"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <ShoppingCart className="w-5 h-5" />
+                  <span className="text-base font-medium">My Orders</span>
                 </Link>
                 
                 <div className="border-t border-gray-100 my-4"></div>

@@ -49,11 +49,16 @@ export default function ClientDetailPage() {
   });
   
   // Tab state with URL parameter support
-  const currentTab = (searchParams.get('tab') as 'overview' | 'pages' | 'orders' | 'brand' | 'settings') || 'overview';
-  const [activeTab, setActiveTab] = useState<'overview' | 'pages' | 'orders' | 'brand' | 'settings'>(currentTab);
+  const currentTab = (searchParams.get('tab') as 'overview' | 'pages' | 'orders' | 'brand' | 'settings' | 'bulk-analysis') || 'overview';
+  const [activeTab, setActiveTab] = useState<'overview' | 'pages' | 'orders' | 'brand' | 'settings' | 'bulk-analysis'>(currentTab);
   
   // Update tab and URL when tab changes
-  const handleTabChange = (tab: 'overview' | 'pages' | 'orders' | 'brand' | 'settings') => {
+  const handleTabChange = (tab: 'overview' | 'pages' | 'orders' | 'brand' | 'settings' | 'bulk-analysis') => {
+    // Redirect to bulk-analysis page if that tab is selected
+    if (tab === 'bulk-analysis') {
+      router.push(`/clients/${params.id}/bulk-analysis`);
+      return;
+    }
     setActiveTab(tab);
     const newSearchParams = new URLSearchParams(searchParams.toString());
     if (tab === 'overview') {

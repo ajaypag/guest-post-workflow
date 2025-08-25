@@ -27,7 +27,7 @@ export const vettedSitesRequests = pgTable('vetted_sites_requests', {
   accountId: uuid('account_id').references(() => accounts.id, { onDelete: 'cascade' }),
   
   // Request details
-  targetUrls: jsonb('target_urls').notNull().default([]),
+  targetUrls: text('target_urls').array().notNull(),
   filters: jsonb('filters').$type<{
     minDa?: number;
     maxCost?: number;

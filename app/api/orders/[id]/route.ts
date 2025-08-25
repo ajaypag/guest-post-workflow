@@ -404,7 +404,7 @@ export async function PUT(
         // Apply same cancellation logic as GET request
         const url = new URL(request.url);
         const includeCancelledItems = url.searchParams.get('includeCancelled') === 'true';
-        const shouldIncludeCancelled = includeCancelledItems || updatedOrder.status === 'draft';
+        const shouldIncludeCancelled = includeCancelledItems || updatedOrder?.status === 'draft';
         
         const lineItemsWhere = shouldIncludeCancelled 
           ? eq(orderLineItems.orderId, id)

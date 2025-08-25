@@ -183,7 +183,7 @@ export async function POST(request: NextRequest) {
     const newRequest = {
       id: requestId,
       accountId: session.userType === 'account' ? session.userId : null,
-      targetUrls: validatedData.target_urls, // This should be a JS array for jsonb
+      targetUrls: validatedData.target_urls, // JS array for jsonb column
       filters: transformedFilters,
       notes: validatedData.notes,
       status: 'submitted' as const,

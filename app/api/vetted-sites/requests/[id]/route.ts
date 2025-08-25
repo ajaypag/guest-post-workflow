@@ -3,10 +3,12 @@ import { AuthServiceServer } from '@/lib/auth-server';
 import { db } from '@/lib/db/connection';
 import { vettedSitesRequests, vettedRequestProjects } from '@/lib/db/vettedSitesRequestSchema';
 import { bulkAnalysisProjects } from '@/lib/db/bulkAnalysisSchema';
+import { clients, targetPages } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { z } from 'zod';
+import { v4 as uuidv4 } from 'uuid';
 
-// Update request validation schema
+// Update request validation schema (internal users)
 const UpdateVettedSitesRequestSchema = z.object({
   status: z.enum(['submitted', 'reviewing', 'approved', 'in_progress', 'fulfilled', 'rejected']).optional(),
   reviewNotes: z.string().optional(),
@@ -18,6 +20,12 @@ const UpdateVettedSitesRequestSchema = z.object({
     excludeDomains: z.array(z.string()).optional(),
     includeOnlyDomains: z.array(z.string()).optional(),
   }).optional(),
+  notes: z.string().optional(),
+});
+
+// Account user edit validation schema
+const AccountEditRequestSchema = z.object({
+  target_urls: z.array(z.string().url()).min(1, 'At least one target URL is required'),
   notes: z.string().optional(),
 });
 
@@ -184,6 +192,70 @@ export async function PATCH(
       } else if (validatedData.status === 'approved') {
         updateData.approvedBy = session.userId;
         updateData.approvedAt = new Date();
+        
+        // Auto-create client and target pages to combat spam
+        try {
+          const currentRequest = await db
+            .select({
+              accountId: vettedSitesRequests.accountId,
+              targetUrls: vettedSitesRequests.targetUrls
+            })
+            .from(vettedSitesRequests)
+            .where(eq(vettedSitesRequests.id, requestId))
+            .limit(1);
+          
+          if (currentRequest.length > 0) {
+            const { accountId, targetUrls } = currentRequest[0];
+            
+            // Group URLs by domain to create clients
+            const urlsByDomain = new Map<string, string[]>();
+            for (const url of targetUrls) {
+              try {
+                const domain = new URL(url).hostname.replace(/^www\./, '');
+                if (!urlsByDomain.has(domain)) {
+                  urlsByDomain.set(domain, []);
+                }
+                urlsByDomain.get(domain)!.push(url);
+              } catch (e) {
+                console.warn('Invalid URL in vetted sites request:', url);
+              }
+            }
+            
+            // Create client and target pages for each domain
+            for (const [domain, urls] of urlsByDomain) {
+              const clientId = uuidv4();
+              const now = new Date();
+              
+              // Create client
+              await db.insert(clients).values({
+                id: clientId,
+                name: domain.charAt(0).toUpperCase() + domain.slice(1),
+                website: `https://${domain}`,
+                description: `Auto-created from vetted sites request`,
+                clientType: 'client',
+                createdBy: session.userId,
+                accountId: accountId,
+                createdAt: now,
+                updatedAt: now,
+              });
+              
+              // Create target pages for this domain
+              for (const url of urls) {
+                await db.insert(targetPages).values({
+                  id: uuidv4(),
+                  clientId: clientId,
+                  url: url,
+                  domain: domain,
+                  status: 'active',
+                  addedAt: now,
+                });
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error auto-creating client/target pages:', error);
+          // Don't fail the approval if client creation fails
+        }
       } else if (validatedData.status === 'fulfilled') {
         updateData.fulfilledBy = session.userId;
         updateData.fulfilledAt = new Date();
@@ -265,6 +337,85 @@ export async function DELETE(
 
   } catch (error) {
     console.error('Error deleting vetted sites request:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
+
+// PUT /api/vetted-sites/requests/[id] - Update request (account users for their own requests)
+export async function PUT(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await AuthServiceServer.getSession();
+    if (!session || session.userType !== 'account') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const params = await context.params;
+    const requestId = params.id;
+    const body = await request.json();
+    const validatedData = AccountEditRequestSchema.parse(body);
+
+    // Check if request exists and user owns it
+    const existingRequest = await db
+      .select({ 
+        id: vettedSitesRequests.id, 
+        status: vettedSitesRequests.status,
+        accountId: vettedSitesRequests.accountId 
+      })
+      .from(vettedSitesRequests)
+      .where(eq(vettedSitesRequests.id, requestId))
+      .limit(1);
+
+    if (existingRequest.length === 0) {
+      return NextResponse.json({ error: 'Request not found' }, { status: 404 });
+    }
+
+    const requestData = existingRequest[0];
+
+    // Check ownership
+    if (requestData.accountId !== session.userId) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    // Check if request is still editable (only submitted requests can be edited)
+    if (requestData.status !== 'submitted') {
+      return NextResponse.json({ 
+        error: 'Request cannot be edited after it has been reviewed' 
+      }, { status: 400 });
+    }
+
+    // Update the request
+    const [updatedRequest] = await db
+      .update(vettedSitesRequests)
+      .set({
+        targetUrls: validatedData.target_urls,
+        notes: validatedData.notes,
+        updatedAt: new Date(),
+      })
+      .where(eq(vettedSitesRequests.id, requestId))
+      .returning();
+
+    return NextResponse.json({ 
+      message: 'Request updated successfully',
+      request: {
+        id: updatedRequest.id,
+        targetUrls: updatedRequest.targetUrls,
+        notes: updatedRequest.notes,
+        updatedAt: updatedRequest.updatedAt
+      }
+    });
+
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ 
+        error: 'Validation error',
+        details: error.errors 
+      }, { status: 400 });
+    }
+
+    console.error('Error updating vetted sites request:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
