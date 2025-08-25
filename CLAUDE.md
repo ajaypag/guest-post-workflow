@@ -15,6 +15,13 @@ Production-ready workflow system with PostgreSQL, multi-user auth, and AI agent 
 6. **SQL Migrations** - Now using standard SQL migration files (no admin pages needed)
 
 ### Recent Changes (Keep in Mind)
+- ✅ Vetted Sites Request Fulfillment System (2025-08-24) - COMPLETE
+  - Full workflow: submitted → approved → in_progress → fulfilled → rejected
+  - Creates bulk analysis projects (one per client/brand)
+  - Links projects to original requests via junction table
+  - Target URLs available for selection in bulk analysis interface
+  - Users manually add domains to analyze (correct behavior - no auto-domains)
+  - See: `/internal/vetted-sites/requests` and [Vetted Sites Implementation](#vetted-sites-system)
 - ✅ All Database Migrations Complete (2025-08-22)
   - Publisher system, domain normalization, target URL matching, inclusion status - all done
   - Now using SQL migration files directly (no admin pages)

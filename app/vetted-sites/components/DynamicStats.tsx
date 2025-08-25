@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { Plus } from 'lucide-react';
 
 interface StatsData {
   totalQualified: number;
@@ -87,12 +89,19 @@ export default function DynamicStats({ initialStats, total }: DynamicStatsProps)
             </span>
           )}
         </h2>
-        <div className="text-sm text-gray-600">
+        <div className="flex items-center gap-3">
           {loading && (
-            <span className="mr-2 text-blue-600">
+            <span className="text-blue-600">
               <div className="inline-block animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
             </span>
           )}
+          <Link
+            href="/vetted-sites/requests/new"
+            className="inline-flex items-center px-3 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            Request More
+          </Link>
         </div>
       </div>
       

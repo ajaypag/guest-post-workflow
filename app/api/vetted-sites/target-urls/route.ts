@@ -18,14 +18,25 @@ export async function GET(request: NextRequest) {
 
     // Build conditions for permission filtering
     const conditions = [];
+    let userClientIds: string[] = [];
     
     // Apply permission filters based on user type
     if (session.userType === 'account') {
-      // Account users can only see their target URLs
-      const userClientIds = session.clientId ? [session.clientId] : [];
+      // Account users can only see target URLs from their clients
+      // Get all client IDs for this account
+      const accountClients = await db.query.clients.findMany({
+        where: eq(clients.accountId, session.userId),
+        columns: {
+          id: true,
+        },
+      });
+      
+      userClientIds = accountClients.map(c => c.id);
       if (userClientIds.length === 0) {
+        console.log('🔍 Account user has no clients:', session.userId);
         return NextResponse.json({ targetUrls: [] });
       }
+      console.log('🔍 Account user client IDs:', userClientIds);
       conditions.push(inArray(targetPages.clientId, userClientIds));
     }
 
@@ -71,7 +82,7 @@ export async function GET(request: NextRequest) {
         sql`${bulkAnalysisDomains.suggestedTargetUrl} IS NOT NULL`,
         ...(conditions.length > 0 ? [
           session.userType === 'account' ? 
-            inArray(bulkAnalysisDomains.clientId, session.clientId ? [session.clientId] : []) :
+            inArray(bulkAnalysisDomains.clientId, userClientIds) :
             clientIds && clientIds.length > 0 ? 
               inArray(bulkAnalysisDomains.clientId, clientIds) : 
               sql`1=1`
@@ -115,7 +126,7 @@ export async function GET(request: NextRequest) {
         sql`jsonb_typeof(${bulkAnalysisDomains.targetMatchData}) = 'object'`,
         ...(conditions.length > 0 ? [
           session.userType === 'account' ? 
-            inArray(bulkAnalysisDomains.clientId, session.clientId ? [session.clientId] : []) :
+            inArray(bulkAnalysisDomains.clientId, userClientIds) :
             clientIds && clientIds.length > 0 ? 
               inArray(bulkAnalysisDomains.clientId, clientIds) : 
               sql`1=1`

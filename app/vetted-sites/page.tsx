@@ -6,11 +6,13 @@ import { clients, bulkAnalysisProjects, bulkAnalysisDomains, accounts, targetPag
 import { guestPostItems } from '@/lib/db/orderSchema';
 import { orderLineItems } from '@/lib/db/orderLineItemSchema';
 import { websites } from '@/lib/db/websiteSchema';
+import { vettedSitesRequests, vettedRequestProjects, vettedRequestClients } from '@/lib/db/vettedSitesRequestSchema';
 import { eq, inArray, and, or, ilike, desc, asc, isNull, sql } from 'drizzle-orm';
 import VettedSitesTable from './components/VettedSitesTable';
 import VettedSitesFiltersCompact from './components/VettedSitesFiltersCompact';
 import VettedSitesWrapper from './VettedSitesWrapper';
 import DynamicStats from './components/DynamicStats';
+import VettedSitesClient from './components/VettedSitesClient';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,6 +21,7 @@ interface PageProps {
     clientId?: string;
     projectId?: string;
     accountId?: string;
+    requestId?: string;
     status?: string;
     view?: string;
     available?: string;
@@ -116,13 +119,14 @@ async function getInitialData(session: any, searchParams: any) {
   } catch (err) {
     console.error('Error fetching projects:', err);
   }
-
-  // Parse filters with defaults (handle undefined searchParams)
+  
+  // Parse filters with defaults (handle undefined searchParams) - moved earlier
   console.log('Parsing filters from searchParams:', params);
   
   const filters = {
     clientId: params.clientId ? params.clientId.split(',').filter(Boolean) : undefined,
     projectId: params.projectId,
+    requestId: params.requestId,
     accountId: params.accountId ? params.accountId.split(',').filter(Boolean) : undefined,
     status: params.status ? params.status.split(',').filter(Boolean) : ['high_quality', 'good_quality'],
     view: params.view || 'all',
@@ -133,6 +137,176 @@ async function getInitialData(session: any, searchParams: any) {
     sortOrder: params.sortOrder || 'desc',
   };
   console.log('Parsed filters:', filters);
+  
+  // Get available vetted sites requests for filter
+  let availableRequests: any[] = [];
+  
+  try {
+    // Build conditions based on current filters
+    const requestConditions = [];
+    
+    // Filter by selected accounts if any
+    if (filters.accountId && filters.accountId.length > 0) {
+      requestConditions.push(inArray(vettedSitesRequests.accountId, filters.accountId));
+    }
+    
+    // Filter by selected clients if any
+    if (filters.clientId && filters.clientId.length > 0) {
+      // Get requests linked to these clients through vettedRequestClients
+      const clientRequestIds = await db
+        .select({ requestId: vettedRequestClients.requestId })
+        .from(vettedRequestClients)
+        .where(inArray(vettedRequestClients.clientId, filters.clientId));
+      
+      if (clientRequestIds.length > 0) {
+        const requestIds = clientRequestIds.map(r => r.requestId);
+        requestConditions.push(inArray(vettedSitesRequests.id, requestIds));
+      }
+    }
+    
+    if (session.userType === 'internal') {
+      // Internal users see all requests (filtered by selections)
+      let requestsQuery;
+      
+      if (requestConditions.length > 0) {
+        requestsQuery = await db
+          .select({
+            id: vettedSitesRequests.id,
+            accountId: vettedSitesRequests.accountId,
+            accountName: accounts.contactName,
+            accountEmail: accounts.email,
+            status: vettedSitesRequests.status,
+            createdAt: vettedSitesRequests.createdAt,
+            targetUrls: vettedSitesRequests.targetUrls,
+            domainCount: vettedSitesRequests.domainCount,
+            qualifiedDomainCount: vettedSitesRequests.qualifiedDomainCount,
+          })
+          .from(vettedSitesRequests)
+          .leftJoin(accounts, eq(vettedSitesRequests.accountId, accounts.id))
+          .where(and(...requestConditions))
+          .orderBy(desc(vettedSitesRequests.createdAt));
+      } else {
+        requestsQuery = await db
+          .select({
+            id: vettedSitesRequests.id,
+            accountId: vettedSitesRequests.accountId,
+            accountName: accounts.contactName,
+            accountEmail: accounts.email,
+            status: vettedSitesRequests.status,
+            createdAt: vettedSitesRequests.createdAt,
+            targetUrls: vettedSitesRequests.targetUrls,
+            domainCount: vettedSitesRequests.domainCount,
+            qualifiedDomainCount: vettedSitesRequests.qualifiedDomainCount,
+          })
+          .from(vettedSitesRequests)
+          .leftJoin(accounts, eq(vettedSitesRequests.accountId, accounts.id))
+          .orderBy(desc(vettedSitesRequests.createdAt));
+      }
+      
+      // Get linked clients for each request
+      const requestsWithClients = await Promise.all(requestsQuery.map(async (r) => {
+        const linkedClients = await db
+          .select({
+            clientName: clients.name,
+          })
+          .from(vettedRequestClients)
+          .leftJoin(clients, eq(vettedRequestClients.clientId, clients.id))
+          .where(eq(vettedRequestClients.requestId, r.id));
+        
+        // Get linked projects count
+        const linkedProjects = await db
+          .select({ count: sql<number>`count(*)::int` })
+          .from(vettedRequestProjects)
+          .where(eq(vettedRequestProjects.requestId, r.id));
+        
+        // Get actual domain counts from bulk_analysis_domains
+        const domainCounts = await db
+          .select({
+            totalCount: sql<number>`count(*)::int`,
+            qualifiedCount: sql<number>`count(*) filter (where qualification_status in ('high_quality', 'good_quality'))::int`
+          })
+          .from(bulkAnalysisDomains)
+          .where(eq(bulkAnalysisDomains.sourceRequestId, r.id));
+        
+        return {
+          id: r.id,
+          name: r.accountName || `Request from ${new Date(r.createdAt).toLocaleDateString()}`,
+          accountName: r.accountName,
+          accountEmail: r.accountEmail,
+          clientNames: linkedClients.map(c => c.clientName).filter(Boolean),
+          status: r.status,
+          createdAt: r.createdAt,
+          domainCount: domainCounts[0]?.totalCount || 0,
+          qualifiedDomainCount: domainCounts[0]?.qualifiedCount || 0,
+          projectCount: linkedProjects[0]?.count || 0,
+        };
+      }));
+      
+      availableRequests = requestsWithClients;
+    } else if (session.userType === 'account') {
+      // Account users see requests for their account
+      const requestsQuery = await db
+        .select({
+          id: vettedSitesRequests.id,
+          accountId: vettedSitesRequests.accountId,
+          accountName: accounts.contactName,
+          accountEmail: accounts.email,
+          status: vettedSitesRequests.status,
+          createdAt: vettedSitesRequests.createdAt,
+          targetUrls: vettedSitesRequests.targetUrls,
+          domainCount: vettedSitesRequests.domainCount,
+          qualifiedDomainCount: vettedSitesRequests.qualifiedDomainCount,
+        })
+        .from(vettedSitesRequests)
+        .leftJoin(accounts, eq(vettedSitesRequests.accountId, accounts.id))
+        .where(eq(vettedSitesRequests.accountId, session.userId))
+        .orderBy(desc(vettedSitesRequests.createdAt));
+      
+      // Get linked clients for each request
+      const requestsWithClients = await Promise.all(requestsQuery.map(async (r) => {
+        const linkedClients = await db
+          .select({
+            clientName: clients.name,
+          })
+          .from(vettedRequestClients)
+          .leftJoin(clients, eq(vettedRequestClients.clientId, clients.id))
+          .where(eq(vettedRequestClients.requestId, r.id));
+        
+        // Get linked projects count
+        const linkedProjects = await db
+          .select({ count: sql<number>`count(*)::int` })
+          .from(vettedRequestProjects)
+          .where(eq(vettedRequestProjects.requestId, r.id));
+        
+        // Get actual domain counts from bulk_analysis_domains
+        const domainCounts = await db
+          .select({
+            totalCount: sql<number>`count(*)::int`,
+            qualifiedCount: sql<number>`count(*) filter (where qualification_status in ('high_quality', 'good_quality'))::int`
+          })
+          .from(bulkAnalysisDomains)
+          .where(eq(bulkAnalysisDomains.sourceRequestId, r.id));
+        
+        return {
+          id: r.id,
+          name: r.accountName || `Request from ${new Date(r.createdAt).toLocaleDateString()}`,
+          accountName: r.accountName,
+          accountEmail: r.accountEmail,
+          clientNames: linkedClients.map(c => c.clientName).filter(Boolean),
+          status: r.status,
+          createdAt: r.createdAt,
+          domainCount: domainCounts[0]?.totalCount || 0,
+          qualifiedDomainCount: domainCounts[0]?.qualifiedCount || 0,
+          projectCount: linkedProjects[0]?.count || 0,
+        };
+      }));
+      
+      availableRequests = requestsWithClients;
+    }
+    console.log('Available vetted sites requests:', availableRequests.length, 'for userType:', session.userType);
+  } catch (err) {
+    console.error('Error fetching vetted sites requests:', err);
+  }
 
   try {
     // Build query
@@ -256,6 +430,7 @@ async function getInitialData(session: any, searchParams: any) {
           availableClients,
           availableAccounts,
           availableProjects,
+          availableRequests,
         };
       }
       
@@ -272,6 +447,25 @@ async function getInitialData(session: any, searchParams: any) {
     }
     if (filters.projectId) {
       conditions.push(eq(bulkAnalysisDomains.projectId, filters.projectId));
+    }
+    
+    // Filter by vetted sites request if specified
+    if (filters.requestId) {
+      // Get all project IDs linked to this request
+      const linkedProjects = await db
+        .select({ projectId: vettedRequestProjects.projectId })
+        .from(vettedRequestProjects)
+        .where(eq(vettedRequestProjects.requestId, filters.requestId));
+      
+      if (linkedProjects.length > 0) {
+        const linkedProjectIds = linkedProjects.map(p => p.projectId);
+        conditions.push(inArray(bulkAnalysisDomains.projectId, linkedProjectIds));
+        console.log('Filtering domains by request projects:', linkedProjectIds);
+      } else {
+        // No projects linked to this request, return empty results
+        console.log('No projects linked to request:', filters.requestId);
+        conditions.push(sql`FALSE`); // Force empty result
+      }
     }
     if (filters.status && filters.status.length > 0) {
       conditions.push(inArray(bulkAnalysisDomains.qualificationStatus, filters.status));
@@ -447,6 +641,7 @@ async function getInitialData(session: any, searchParams: any) {
       availableClients: Array.isArray(availableClients) ? availableClients : [],
       availableAccounts: Array.isArray(availableAccounts) ? availableAccounts : [],
       availableProjects: Array.isArray(availableProjects) ? availableProjects : [],
+      availableRequests: Array.isArray(availableRequests) ? availableRequests : [],
     };
   } catch (error) {
     console.error('Error fetching initial data:', error);
@@ -473,6 +668,7 @@ async function getInitialData(session: any, searchParams: any) {
       availableClients: Array.isArray(availableClients) ? availableClients : [],
       availableAccounts: Array.isArray(availableAccounts) ? availableAccounts : [],
       availableProjects: Array.isArray(availableProjects) ? availableProjects : [],
+      availableRequests: Array.isArray(availableRequests) ? availableRequests : [],
     };
   }
 }
@@ -492,89 +688,17 @@ export default async function VettedSitesPage({ searchParams: searchParamsPromis
 
   const initialData = await getInitialData(session, searchParams);
 
-  // Wrap content in appropriate layout based on user type
-  const content = (
-    <div className="container mx-auto px-4 py-6 pb-32 max-w-none xl:max-w-[1600px] 2xl:max-w-[1920px]">
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Vetted Sites</h1>
-            <p className="mt-1 text-sm text-gray-500">
-              Browse and manage your qualified domain inventory
-            </p>
-          </div>
-          
-        </div>
-      </div>
-
-      <div className="grid grid-cols-12 gap-6">
-        {/* Filters Sidebar */}
-        <div className="col-span-12 lg:col-span-3 xl:col-span-2">
-          <div className="sticky top-4">
-            <Suspense fallback={
-              <div className="bg-white rounded-lg border p-4">
-                <div className="animate-pulse space-y-4">
-                  <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                  <div className="h-8 bg-gray-200 rounded"></div>
-                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                  <div className="h-6 bg-gray-200 rounded"></div>
-                </div>
-              </div>
-            }>
-              <VettedSitesFiltersCompact 
-                availableClients={initialData.availableClients}
-                availableAccounts={initialData.availableAccounts}
-                availableProjects={initialData.availableProjects}
-                currentFilters={searchParams}
-                userType={session.userType}
-              />
-            </Suspense>
-          </div>
-        </div>
-
-        {/* Main Content */}
-        <div className="col-span-12 lg:col-span-9 xl:col-span-10">
-          <div className="space-y-6">
-            <DynamicStats 
-              initialStats={initialData.stats} 
-              total={initialData.total} 
-            />
-            
-            <Suspense fallback={
-              <div className="bg-white rounded-lg border">
-                <div className="p-4 border-b">
-                  <div className="animate-pulse flex items-center justify-between">
-                    <div className="h-4 bg-gray-200 rounded w-48"></div>
-                    <div className="h-8 bg-gray-200 rounded w-32"></div>
-                  </div>
-                </div>
-                <div className="p-4">
-                  <div className="animate-pulse space-y-3">
-                    {Array.from({ length: 10 }).map((_, i) => (
-                      <div key={i} className="h-12 bg-gray-200 rounded"></div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            }>
-              <VettedSitesTable
-                initialData={initialData}
-                initialFilters={searchParams}
-                userType={session.userType}
-              />
-            </Suspense>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  );
-
-  // Return with wrapper like orders page
+  // Return with client component that handles view switching
   return (
     <VettedSitesWrapper>
-      {content}
+      <VettedSitesClient
+        initialData={initialData}
+        session={{
+          userType: session.userType as 'internal' | 'account',
+          userId: session.userId
+        }}
+        searchParams={searchParams}
+      />
     </VettedSitesWrapper>
   );
 }

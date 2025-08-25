@@ -7,7 +7,7 @@ export interface SelectedDomain {
   id: string;
   domain: string;
   clientId: string;
-  clientName: string;
+  clientName: string | null;
   price: number; // In dollars (calculated from guestPostCost)
   targetPageIds?: string[]; // From targetPages array
   targetPages?: Array<{
@@ -83,7 +83,7 @@ export function useSelection(userType: 'internal' | 'account' | 'publisher' = 'i
     id: string;
     domain: string;
     clientId: string;
-    clientName: string;
+    clientName: string | null;
     guestPostCost: string | null;
     targetPages?: Array<{ id: string; url: string; keywords: string | null; }>;
     qualificationStatus: string;
@@ -176,7 +176,7 @@ export function useSelection(userType: 'internal' | 'account' | 'publisher' = 'i
     id: string;
     domain: string;
     clientId: string;
-    clientName: string;
+    clientName: string | null;
     guestPostCost: string | null;
     targetPages?: Array<{ id: string; url: string; keywords: string | null; }>;
     qualificationStatus: string;
@@ -208,7 +208,7 @@ export function useSelection(userType: 'internal' | 'account' | 'publisher' = 'i
     id: string;
     domain: string;
     clientId: string;
-    clientName: string;
+    clientName: string | null;
     guestPostCost: string | null;
     targetPages?: Array<{ id: string; url: string; keywords: string | null; }>;
     qualificationStatus: string;

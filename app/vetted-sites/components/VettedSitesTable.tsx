@@ -66,7 +66,7 @@ interface Domain {
   
   // Project context
   clientId: string;
-  clientName: string;
+  clientName: string | null;
   projectId: string | null;
   projectName: string | null;
   
@@ -109,8 +109,9 @@ interface VettedSitesTableProps {
       hidden: number;
     };
   };
-  initialFilters: any;
-  userType: string;
+  initialFilters?: any;
+  userType?: string;
+  isPublicView?: boolean;
   onDataUpdate?: (data: {
     stats: {
       totalQualified: number;
@@ -123,7 +124,7 @@ interface VettedSitesTableProps {
   }) => void;
 }
 
-export default function VettedSitesTable({ initialData, initialFilters, userType, onDataUpdate }: VettedSitesTableProps) {
+export default function VettedSitesTable({ initialData, initialFilters, userType = 'account', isPublicView = false, onDataUpdate }: VettedSitesTableProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -131,6 +132,11 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
   const [data, setData] = useState(initialData);
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState<Set<string>>(new Set());
+  
+  // Update data when initialData changes (e.g., when filters are applied)
+  useEffect(() => {
+    setData(initialData);
+  }, [initialData]);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [expandedSections, setExpandedSections] = useState<Map<string, string>>(new Map());
   const [showOrderModal, setShowOrderModal] = useState(false);
@@ -532,48 +538,52 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
         <table className="min-w-full divide-y divide-gray-200 table-fixed xl:table-auto xl:w-full">
           <thead className="bg-gray-50">
             <tr>
-              <th scope="col" className="px-3 xl:px-4 py-3 text-left">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-all"
-                  checked={selectedCount > 0 && selectedCount === data.domains.length}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      selectAll(data.domains);
-                    } else {
-                      clearSelection();
-                    }
-                  }}
-                  aria-label="Select all domains"
-                />
-              </th>
+              {!isPublicView && (
+                <th scope="col" className="px-3 xl:px-4 py-3 text-left">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-all"
+                    checked={selectedCount > 0 && selectedCount === data.domains.length}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        selectAll(data.domains);
+                      } else {
+                        clearSelection();
+                      }
+                    }}
+                    aria-label="Select all domains"
+                  />
+                </th>
+              )}
               <th 
                 scope="col" 
-                className="px-3 xl:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 w-48 xl:w-auto"
+                className="px-3 xl:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 w-36 xl:w-auto"
                 onClick={() => handleSort('domain')}
               >
                 Domain
               </th>
-              {userType === 'internal' && (
-                <th scope="col" className="px-3 xl:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32 xl:w-auto">
-                  Client
-                </th>
-              )}
-              <th scope="col" className="px-3 xl:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48 xl:w-auto">
+              <th scope="col" className="px-3 xl:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-56 xl:w-auto">
                 Qualification & Evidence
               </th>
               <th scope="col" className="px-3 xl:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48 xl:w-auto">
                 Target Match
               </th>
+              {userType === 'internal' && (
+                <th scope="col" className="px-3 xl:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28 xl:w-auto">
+                  Client
+                </th>
+              )}
               <th scope="col" className="px-3 xl:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24 xl:w-auto">
                 Price
               </th>
               <th scope="col" className="px-3 xl:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32 xl:w-auto">
                 Availability
               </th>
-              <th scope="col" className="px-3 xl:px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
+              {!isPublicView && (
+                <th scope="col" className="px-3 xl:px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              )}
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -583,21 +593,23 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
               <tr 
                 className={`hover:bg-gray-50 ${isSelected(domain.id) ? 'bg-blue-50' : ''}`}
               >
-                <td className="px-3 xl:px-4 py-4">
-                  <input
-                    type="checkbox"
-                    className="h-4 w-4 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 border-gray-300 rounded transition-all"
-                    checked={isSelected(domain.id)}
-                    onChange={() => {
-                      const result = toggleDomain(domain, (error) => {
-                        alert(error); // Simple error display for now
-                      });
-                    }}
-                    disabled={domain.activeLineItemsCount > 0}
-                  />
-                </td>
+                {!isPublicView && (
+                  <td className="px-3 xl:px-4 py-4">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 border-gray-300 rounded transition-all"
+                      checked={isSelected(domain.id)}
+                      onChange={() => {
+                        const result = toggleDomain(domain, (error) => {
+                          alert(error); // Simple error display for now
+                        });
+                      }}
+                      disabled={domain.activeLineItemsCount > 0}
+                    />
+                  </td>
+                )}
                 
-                <td className="px-3 xl:px-4 py-4 whitespace-nowrap">
+                <td className="px-3 xl:px-4 py-4">
                   <div className="flex items-center">
                     <button
                       onClick={() => toggleRowExpansion(domain.id)}
@@ -618,14 +630,14 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
                       <StarIconSolid className="h-4 w-4 text-yellow-400 mr-1" />
                     )}
                     <div>
-                      <div className="text-sm font-medium text-gray-900">{domain.domain}</div>
+                      <div className="text-sm font-medium text-gray-900 break-words">{domain.domain}</div>
                       {(domain.domainRating || domain.traffic) && (
                         <div className="text-xs text-gray-500 mt-1">
                           DR {domain.domainRating || 'N/A'} • {formatTraffic(domain.traffic)}
                         </div>
                       )}
                       {domain.suggestedTargetUrl && (
-                        <div className="text-xs text-gray-500 mt-1">
+                        <div className="text-xs text-gray-500 mt-1 break-words">
                           AI Target: {new URL(domain.suggestedTargetUrl).pathname}
                         </div>
                       )}
@@ -637,19 +649,6 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
                     </div>
                   </div>
                 </td>
-
-                {userType === 'internal' && (
-                  <td className="px-3 xl:px-4 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900 truncate" title={domain.clientName}>
-                      {domain.clientName}
-                    </div>
-                    {domain.projectName && (
-                      <div className="text-xs text-gray-500 truncate" title={domain.projectName}>
-                        {domain.projectName}
-                      </div>
-                    )}
-                  </td>
-                )}
 
                 {/* Qualification & Evidence Column */}
                 <td className="px-3 xl:px-4 py-4">
@@ -717,32 +716,30 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
                           const qualityColor = qualityColors[quality as keyof typeof qualityColors] || 'text-gray-400';
                           
                           return (
-                            <div>
-                              <div className="text-sm text-gray-900 truncate" title={domain.suggestedTargetUrl}>
+                            <div className="space-y-1">
+                              <div className="text-xs text-gray-900 break-words" title={domain.suggestedTargetUrl}>
                                 {new URL(domain.suggestedTargetUrl).pathname || '/'}
                               </div>
-                              <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
+                              <div className="text-xs">
                                 <span className={qualityColor}>● {quality}</span>
                                 {(directCount > 0 || relatedCount > 0) && (
-                                  <span>{directCount + relatedCount} matches</span>
+                                  <span className="text-gray-500"> • {directCount + relatedCount} matches</span>
                                 )}
                               </div>
+                              {domain.targetMatchData.target_analysis.length > 1 && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleRowExpansion(domain.id, 'targetMatch');
+                                  }}
+                                  className="text-xs text-blue-600 hover:text-blue-800 block"
+                                >
+                                  +{domain.targetMatchData.target_analysis.length - 1} more targets
+                                </button>
+                              )}
                             </div>
                           );
                         })()
-                      )}
-                      
-                      {/* Link to see all targets */}
-                      {domain.targetMatchData.target_analysis.length > 1 && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleRowExpansion(domain.id, 'targetMatch');
-                          }}
-                          className="text-xs text-blue-600 hover:text-blue-800"
-                        >
-                          +{domain.targetMatchData.target_analysis.length - 1} more targets
-                        </button>
                       )}
                     </div>
                   ) : (
@@ -750,7 +747,7 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
                       {domain.suggestedTargetUrl ? (
                         <div className="text-sm text-gray-900 flex items-center gap-1">
                           🎯 
-                          <span className="truncate" title={domain.suggestedTargetUrl}>
+                          <span className="break-words text-xs" title={domain.suggestedTargetUrl}>
                             {new URL(domain.suggestedTargetUrl).pathname || '/'}
                           </span>
                         </div>
@@ -760,6 +757,19 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
                     </div>
                   )}
                 </td>
+
+                {userType === 'internal' && (
+                  <td className="px-3 xl:px-4 py-4">
+                    <div className="text-sm text-gray-900 break-words" title={domain.clientName || undefined}>
+                      {domain.clientName || 'Unknown Client'}
+                    </div>
+                    {domain.projectName && (
+                      <div className="text-xs text-gray-500 break-words" title={domain.projectName}>
+                        {domain.projectName}
+                      </div>
+                    )}
+                  </td>
+                )}
 
                 {/* Price Column */}
                 <td className="px-3 xl:px-4 py-4">
@@ -790,31 +800,32 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
                   )}
                 </td>
 
-                <td className="px-3 xl:px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <div className="flex items-center justify-end space-x-2">
-                    <button
-                      onClick={() => handleUserAction(
-                        domain.id, 
-                        domain.userBookmarked ? 'unbookmark' : 'bookmark'
-                      )}
-                      disabled={actionLoading.has(domain.id)}
-                      className={`transition-all duration-200 transform hover:scale-110 ${
-                        domain.userBookmarked 
-                          ? 'text-yellow-500' 
-                          : 'text-gray-400 hover:text-yellow-500'
-                      } disabled:opacity-50`}
-                      title={domain.userBookmarked ? 'Remove bookmark' : 'Bookmark'}
-                    >
-                      {domain.userBookmarked ? (
-                        <StarIconSolid className="h-4 w-4" />
-                      ) : (
-                        <StarIcon className="h-4 w-4" />
-                      )}
-                    </button>
-                    
-                    <button
-                      onClick={() => handleUserAction(
-                        domain.id, 
+                {!isPublicView && (
+                  <td className="px-3 xl:px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <div className="flex items-center justify-end space-x-2">
+                      <button
+                        onClick={() => handleUserAction(
+                          domain.id, 
+                          domain.userBookmarked ? 'unbookmark' : 'bookmark'
+                        )}
+                        disabled={actionLoading.has(domain.id)}
+                        className={`transition-all duration-200 transform hover:scale-110 ${
+                          domain.userBookmarked 
+                            ? 'text-yellow-500' 
+                            : 'text-gray-400 hover:text-yellow-500'
+                        } disabled:opacity-50`}
+                        title={domain.userBookmarked ? 'Remove bookmark' : 'Bookmark'}
+                      >
+                        {domain.userBookmarked ? (
+                          <StarIconSolid className="h-4 w-4" />
+                        ) : (
+                          <StarIcon className="h-4 w-4" />
+                        )}
+                      </button>
+                      
+                      <button
+                        onClick={() => handleUserAction(
+                          domain.id, 
                         domain.userHidden ? 'unhide' : 'hide'
                       )}
                       disabled={actionLoading.has(domain.id)}
@@ -833,6 +844,7 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
                     </button>
                   </div>
                 </td>
+                )}
               </tr>
               
               {/* Expandable Row Details */}
@@ -910,17 +922,19 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
       )}
 
       {/* Selection Summary Bar */}
-      <SelectionSummary
-        selectedCount={selectedCount}
-        totalPrice={totalPrice}
-        selectedDomains={getSelectedDomains()}
-        onClearSelection={clearSelection}
-        onRemoveDomain={removeDomain}
-        onCreateOrder={() => setShowOrderModal(true)}
-        onExport={handleExport}
-        onAddToOrder={() => setShowAddToOrderModal(true)}
-        userType={userType as 'internal' | 'account' | 'publisher'}
-      />
+      {!isPublicView && (
+        <SelectionSummary
+          selectedCount={selectedCount}
+          totalPrice={totalPrice}
+          selectedDomains={getSelectedDomains()}
+          onClearSelection={clearSelection}
+          onRemoveDomain={removeDomain}
+          onCreateOrder={() => setShowOrderModal(true)}
+          onExport={handleExport}
+          onAddToOrder={() => setShowAddToOrderModal(true)}
+          userType={userType as 'internal' | 'account' | 'publisher'}
+        />
+      )}
 
       {/* Quick Order Modal */}
       <QuickOrderModal
