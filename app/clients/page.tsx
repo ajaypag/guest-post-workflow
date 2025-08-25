@@ -8,6 +8,7 @@ import Header from '@/components/Header';
 import { clientStorage, sessionStorage } from '@/lib/userStorage';
 import { Client } from '@/types/user';
 import { Building2, Plus, Users, Globe, CheckCircle, XCircle, Clock, Edit, Archive, ArchiveRestore, X, BarChart2, AlertCircle, ArrowLeft, Search, Filter, ChevronDown, Package, TrendingUp } from 'lucide-react';
+import AccountMultiSelectFilter from '@/components/AccountMultiSelectFilter';
 
 function ClientsPageContent() {
   const router = useRouter();
@@ -20,6 +21,9 @@ function ClientsPageContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'client' | 'prospect'>('all');
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
+  const [accounts, setAccounts] = useState<any[]>([]);
+  const [accountsWithCounts, setAccountsWithCounts] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState({
     total: 0,
@@ -41,8 +45,47 @@ function ClientsPageContent() {
       setUserType(session.userType || 'internal');
     }
     
+    // Load accounts list for filter (internal users only)
+    if (session?.userType === 'internal') {
+      loadAccounts();
+    }
+    
     loadClients();
-  }, [searchParams, showArchived, searchQuery, filterType, currentPage]);
+  }, [searchParams, showArchived, searchQuery, filterType, selectedAccountIds, currentPage]);
+
+  const loadAccounts = async () => {
+    try {
+      const response = await fetch('/api/accounts');
+      if (response.ok) {
+        const data = await response.json();
+        const accountsList = data.accounts || [];
+        setAccounts(accountsList);
+        
+        // Get client counts for each account
+        const accountsWithClientCounts = await Promise.all(
+          accountsList.map(async (account: any) => {
+            try {
+              const clientsResponse = await fetch(`/api/clients?accountId=${account.id}&limit=1`);
+              if (clientsResponse.ok) {
+                const clientsData = await clientsResponse.json();
+                return {
+                  ...account,
+                  clientCount: clientsData.pagination?.total || 0
+                };
+              }
+            } catch (e) {
+              console.error(`Error getting client count for account ${account.id}:`, e);
+            }
+            return { ...account, clientCount: 0 };
+          })
+        );
+        
+        setAccountsWithCounts(accountsWithClientCounts);
+      }
+    } catch (error) {
+      console.error('Error loading accounts:', error);
+    }
+  };
 
   const loadClients = async (page: number = currentPage) => {
     const session = sessionStorage.getSession();
@@ -55,9 +98,9 @@ function ClientsPageContent() {
         limit: '12',
         ...(showArchived && { includeArchived: 'true' }),
         ...(searchQuery && { search: searchQuery }),
-        ...(userType === 'internal' && filterType !== 'all' && { filterType })
+        ...(userType === 'internal' && filterType !== 'all' && { filterType }),
+        ...(selectedAccountIds.length > 0 && { accountIds: selectedAccountIds.join(',') })
       });
-      
       const response = await fetch(`/api/clients?${params}`);
       if (response.ok) {
         const data = await response.json();
@@ -77,7 +120,7 @@ function ClientsPageContent() {
             const accountsData = await accountsResponse.json();
             const accountMap: { [key: string]: string } = {};
             accountsData.accounts?.forEach((account: any) => {
-              accountMap[account.id] = account.name || account.email;
+              accountMap[account.id] = account.companyName || account.name || account.email;
             });
             setAccountName(accountMap);
           }
@@ -264,38 +307,48 @@ function ClientsPageContent() {
                 {/* Filters */}
                 <div className="flex gap-2">
                   {userType === 'internal' && (
-                    <div className="relative">
-                      <button
-                        onClick={() => setShowFilters(!showFilters)}
-                        className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
-                      >
-                        <Filter className="w-4 h-4 mr-2" />
-                        Type: {filterType === 'all' ? 'All' : filterType === 'client' ? 'Clients' : 'Prospects'}
-                        <ChevronDown className="w-4 h-4 ml-2" />
-                      </button>
-                      {showFilters && (
-                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
-                          <button
-                            onClick={() => { setFilterType('all'); setShowFilters(false); }}
-                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          >
-                            All Types
-                          </button>
-                          <button
-                            onClick={() => { setFilterType('client'); setShowFilters(false); }}
-                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          >
-                            Clients Only
-                          </button>
-                          <button
-                            onClick={() => { setFilterType('prospect'); setShowFilters(false); }}
-                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          >
-                            Prospects Only
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                    <>
+                      {/* Account Multi-Select Filter */}
+                      <AccountMultiSelectFilter
+                        accounts={accountsWithCounts}
+                        selectedAccountIds={selectedAccountIds}
+                        onChange={setSelectedAccountIds}
+                      />
+
+                      {/* Type Filter */}
+                      <div className="relative">
+                        <button
+                          onClick={() => setShowFilters(!showFilters)}
+                          className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+                        >
+                          <Filter className="w-4 h-4 mr-2" />
+                          Type: {filterType === 'all' ? 'All' : filterType === 'client' ? 'Clients' : 'Prospects'}
+                          <ChevronDown className="w-4 h-4 ml-2" />
+                        </button>
+                        {showFilters && (
+                          <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
+                            <button
+                              onClick={() => { setFilterType('all'); setShowFilters(false); }}
+                              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            >
+                              All Types
+                            </button>
+                            <button
+                              onClick={() => { setFilterType('client'); setShowFilters(false); }}
+                              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            >
+                              Clients Only
+                            </button>
+                            <button
+                              onClick={() => { setFilterType('prospect'); setShowFilters(false); }}
+                              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            >
+                              Prospects Only
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </>
                   )}
                   
                   <label className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md bg-white">

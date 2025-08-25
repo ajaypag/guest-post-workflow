@@ -22,9 +22,22 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '12');
     const search = searchParams.get('search') || '';
     const filterType = searchParams.get('filterType') || 'all';
+    const filterAccountId = searchParams.get('accountId') || '';
+    const filterAccountIds = searchParams.get('accountIds') || '';
     
     // Use pagination for performance
-    const accountId = session.userType === 'account' ? session.userId : undefined;
+    // For account users, always filter by their own account
+    // For internal users, optionally filter by the selected account(s)
+    let accountId: string | string[] | undefined;
+    if (session.userType === 'account') {
+      accountId = session.userId;
+    } else if (filterAccountIds) {
+      // Multiple account IDs passed as comma-separated values
+      accountId = filterAccountIds.split(',').filter(id => id);
+    } else if (filterAccountId) {
+      // Single account ID (backward compatibility)
+      accountId = filterAccountId;
+    }
     const result = await ClientService.getPaginatedClients({
       page,
       limit,

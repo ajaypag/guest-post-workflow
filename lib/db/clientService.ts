@@ -1,4 +1,4 @@
-import { eq, and, isNull, desc, count, sum, sql, like, or } from 'drizzle-orm';
+import { eq, and, isNull, desc, count, sum, sql, like, or, inArray } from 'drizzle-orm';
 import * as crypto from 'crypto';
 import { db } from './connection';
 import { clients, clientAssignments, targetPages, type Client, type NewClient, type TargetPage, type NewTargetPage } from './schema';
@@ -544,7 +544,7 @@ export class ClientService {
     search?: string;
     filterType?: string;
     includeArchived?: boolean;
-    accountId?: string; // For account users
+    accountId?: string | string[]; // For account users - can be single or multiple
   }) {
     try {
       const { page, limit, search = '', filterType = 'all', includeArchived = false, accountId } = options;
@@ -560,7 +560,15 @@ export class ClientService {
       
       // Account filter (for account users)
       if (accountId) {
-        whereConditions.push(eq(clients.accountId as any, accountId));
+        if (Array.isArray(accountId)) {
+          // Multiple account IDs - use IN clause
+          if (accountId.length > 0) {
+            whereConditions.push(inArray(clients.accountId as any, accountId));
+          }
+        } else {
+          // Single account ID
+          whereConditions.push(eq(clients.accountId as any, accountId));
+        }
       }
       
       // Search filter
