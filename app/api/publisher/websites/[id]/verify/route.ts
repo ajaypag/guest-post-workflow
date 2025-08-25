@@ -81,8 +81,9 @@ export async function POST(
     switch (method) {
       case 'email':
         // Create email claim record
+        const emailClaimId = uuidv4();
         await db.insert(publisherEmailClaims).values({
-          id: uuidv4(),
+          id: emailClaimId,
           publisherId: session.publisherId,
           websiteId: websiteId,
           emailDomain: website.domain,
@@ -95,9 +96,55 @@ export async function POST(
           updatedAt: new Date()
         });
 
-        // In production, send actual email
-        // For now, we'll simulate it
-        console.log(`Sending verification email to admin@${website.domain} with token: ${token}`);
+        // Send actual verification email
+        try {
+          const { sendWebsiteVerificationEmail } = await import('@/lib/email/templates/websiteVerification');
+          
+          // Get publisher details for the email
+          const { publishers } = await import('@/lib/db/accountSchema');
+          const [publisher] = await db
+            .select()
+            .from(publishers)
+            .where(eq(publishers.id, session.publisherId))
+            .limit(1);
+          
+          const verificationUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/publisher/websites/verify-click?token=${token}&websiteId=${websiteId}&publisherId=${session.publisherId}`;
+          
+          // Parse email address from request body - REQUIRED
+          const { emailAddress } = body;
+          
+          if (!emailAddress || !emailAddress.includes('@')) {
+            return NextResponse.json(
+              { error: 'Please specify an email address to send the verification to' },
+              { status: 400 }
+            );
+          }
+          
+          // Only send to the specific email address the user provided
+          const emailsToSend = [emailAddress];
+          
+          for (const email of emailsToSend) {
+            try {
+              await sendWebsiteVerificationEmail(email as string, {
+                publisherName: publisher?.contactName || publisher?.companyName || 'Publisher',
+                websiteDomain: website.domain,
+                verificationToken: token,
+                verificationUrl,
+                publisherId: session.publisherId,
+                websiteId: websiteId
+              });
+            } catch (emailError) {
+              console.error(`Failed to send to ${email}:`, emailError);
+              // Continue with other emails even if one fails
+            }
+          }
+          
+          console.log(`✅ Verification emails sent for ${website.domain}`);
+        } catch (emailError) {
+          console.error('Failed to send verification email:', emailError);
+          // Don't fail the whole process if email fails
+          console.log(`Fallback: Verification token for ${website.domain}: ${token}`);
+        }
         
         // Update relationship status to pending
         await db.update(publisherOfferingRelationships)
