@@ -284,7 +284,7 @@ export default function ClientSelector({
                           </div>
                         </div>
                         <div className="ml-4 flex flex-col items-end text-xs text-gray-500">
-                          {client.targetPageCount > 0 && (
+                          {client.targetPageCount && client.targetPageCount > 0 && (
                             <span className="whitespace-nowrap">
                               {client.targetPageCount} target page{client.targetPageCount !== 1 ? 's' : ''}
                             </span>
