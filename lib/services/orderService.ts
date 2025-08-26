@@ -12,6 +12,7 @@ import {
   type NewOrderItem,
   type PricingRule
 } from '@/lib/db/orderSchema';
+import { orderLineItems } from '@/lib/db/orderLineItemSchema';
 import { bulkAnalysisDomains } from '@/lib/db/bulkAnalysisSchema';
 import { websites } from '@/lib/db/websiteSchema';
 import { workflows } from '@/lib/db/schema';
@@ -65,6 +66,7 @@ export class OrderService {
       clientReviewFee: input.includesClientReview ? 50000 : 0, // $500 in cents
       rushDelivery: input.rushDelivery || false,
       rushFee: input.rushDelivery ? 100000 : 0, // $1000 in cents
+      expectedDeliveryDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days default
       createdAt: now,
       updatedAt: now,
     }).returning();
@@ -73,6 +75,36 @@ export class OrderService {
     await this.logStatusChange(orderId, null, 'draft', input.createdBy);
 
     return order;
+  }
+
+  /**
+   * Update order delivery deadline
+   */
+  static async updateOrderDeadline(
+    orderId: string, 
+    newDeadline: Date, 
+    cascadeToLineItems: boolean = false,
+    updatedBy: string
+  ): Promise<void> {
+    const now = new Date();
+    
+    // Update the order
+    await db.update(orders)
+      .set({ 
+        expectedDeliveryDate: newDeadline,
+        updatedAt: now 
+      })
+      .where(eq(orders.id, orderId));
+
+    // Optionally cascade to line items
+    if (cascadeToLineItems) {
+      await db.update(orderLineItems)
+        .set({ 
+          modifiedAt: now,
+          modifiedBy: updatedBy
+        })
+        .where(eq(orderLineItems.orderId, orderId));
+    }
   }
 
   /**
