@@ -863,7 +863,6 @@ export class OrderService {
    */
   static async getOrdersWithItemCounts(): Promise<any[]> {
     const { orderLineItems } = await import('@/lib/db/orderLineItemSchema');
-    const { projectOrderAssociations } = await import('@/lib/db/projectOrderAssociationsSchema');
     const { and, sql } = await import('drizzle-orm');
     
     // First get all orders with line item counts and account info
@@ -900,8 +899,8 @@ export class OrderService {
         cancellationReason: orders.cancellationReason,
         createdAt: orders.createdAt,
         updatedAt: orders.updatedAt,
-        // Count active line items (exclude cancelled, refunded, and excluded)
-        lineItemCount: sql<number>`cast(count(case when ${orderLineItems.status} not in ('cancelled', 'refunded') and (${projectOrderAssociations.inclusionStatus} != 'excluded' or ${projectOrderAssociations.inclusionStatus} is null) then 1 end) as int)`,
+        // Count active line items (exclude cancelled and refunded)
+        lineItemCount: sql<number>`cast(count(case when ${orderLineItems.status} not in ('cancelled', 'refunded') then 1 end) as int)`,
         // Also count old orderItems for backward compatibility
         oldItemCount: sql<number>`cast(count(${orderItems.id}) as int)`,
         // Account data - select individual fields
@@ -911,10 +910,6 @@ export class OrderService {
       })
       .from(orders)
       .leftJoin(orderLineItems, eq(orders.id, orderLineItems.orderId))
-      .leftJoin(projectOrderAssociations, and(
-        eq(projectOrderAssociations.orderId, orders.id),
-        eq(projectOrderAssociations.orderLineItemId, orderLineItems.id)
-      ))
       .leftJoin(orderItems, eq(orders.id, orderItems.orderId))
       .leftJoin(accounts, eq(orders.accountId, accounts.id))
       .groupBy(
