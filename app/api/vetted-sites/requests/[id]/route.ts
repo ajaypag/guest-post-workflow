@@ -7,6 +7,7 @@ import { clients, targetPages } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
+import { getRootDomain } from '@/lib/utils/domainNormalizer';
 
 // Update request validation schema (internal users)
 const UpdateVettedSitesRequestSchema = z.object({
@@ -207,15 +208,15 @@ export async function PATCH(
           if (currentRequest.length > 0) {
             const { accountId, targetUrls } = currentRequest[0];
             
-            // Group URLs by domain to create clients
+            // Group URLs by root domain to create clients
             const urlsByDomain = new Map<string, string[]>();
             for (const url of targetUrls) {
               try {
-                const domain = new URL(url).hostname.replace(/^www\./, '');
-                if (!urlsByDomain.has(domain)) {
-                  urlsByDomain.set(domain, []);
+                const rootDomain = getRootDomain(url);
+                if (!urlsByDomain.has(rootDomain)) {
+                  urlsByDomain.set(rootDomain, []);
                 }
-                urlsByDomain.get(domain)!.push(url);
+                urlsByDomain.get(rootDomain)!.push(url);
               } catch (e) {
                 console.warn('Invalid URL in vetted sites request:', url);
               }
@@ -239,16 +240,21 @@ export async function PATCH(
                 updatedAt: now,
               });
               
-              // Create target pages for this domain
+              // Create target pages for this root domain
               for (const url of urls) {
-                await db.insert(targetPages).values({
-                  id: uuidv4(),
-                  clientId: clientId,
-                  url: url,
-                  domain: domain,
-                  status: 'active',
-                  addedAt: now,
-                });
+                try {
+                  const urlDomain = new URL(url).hostname.replace(/^www\./, '');
+                  await db.insert(targetPages).values({
+                    id: uuidv4(),
+                    clientId: clientId,
+                    url: url,
+                    domain: urlDomain,
+                    status: 'active',
+                    addedAt: now,
+                  });
+                } catch (e) {
+                  console.warn('Failed to create target page for URL:', url);
+                }
               }
             }
           }
