@@ -2,8 +2,8 @@ import { redirect } from 'next/navigation';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { taskService } from '@/lib/services/taskService';
 import { db } from '@/lib/db/connection';
-import { users } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { users, orders, workflows } from '@/lib/db/schema';
+import { eq, sql } from 'drizzle-orm';
 import TasksPageClient from './TasksPageClient';
 import type { TasksResponse } from '@/lib/types/tasks';
 
@@ -15,16 +15,64 @@ export default async function InternalTasksPage() {
     redirect('/login');
   }
 
-  // Fetch internal users for assignment dropdown
-  const internalUsers = await db
+  // Fetch internal users for assignment dropdown (admin and user roles - internal team has 'user' role)
+  const internalUsersBase = await db
     .select({
       id: users.id,
       name: users.name,
       email: users.email
     })
     .from(users)
-    .where(eq(users.role, 'internal'))
+    .where(sql`${users.role} IN ('admin', 'user')`)
     .orderBy(users.name);
+  
+  // Fetch task counts for each user
+  const taskCountsQuery = await db.execute(sql`
+    WITH order_counts AS (
+      SELECT 
+        assigned_to as user_id,
+        COUNT(*) as total_count,
+        COUNT(CASE WHEN status = 'in_progress' THEN 1 END) as active_count
+      FROM orders
+      WHERE assigned_to IS NOT NULL
+        AND status NOT IN ('completed', 'cancelled')
+      GROUP BY assigned_to
+    ),
+    workflow_counts AS (
+      SELECT 
+        assigned_user_id as user_id,
+        COUNT(*) as total_count,
+        COUNT(CASE WHEN completion_percentage < 100 THEN 1 END) as active_count
+      FROM workflows
+      WHERE assigned_user_id IS NOT NULL
+        AND status != 'completed'
+      GROUP BY assigned_user_id
+    ),
+    combined_counts AS (
+      SELECT 
+        COALESCE(o.user_id, w.user_id) as user_id,
+        COALESCE(o.total_count, 0) + COALESCE(w.total_count, 0) as total_tasks,
+        COALESCE(o.active_count, 0) + COALESCE(w.active_count, 0) as active_tasks
+      FROM order_counts o
+      FULL OUTER JOIN workflow_counts w ON o.user_id = w.user_id
+    )
+    SELECT * FROM combined_counts
+  `);
+  
+  // Map task counts to users
+  const taskCountsMap = new Map(
+    taskCountsQuery.rows.map((row: any) => [
+      row.user_id, 
+      { total: Number(row.total_tasks) || 0, active: Number(row.active_tasks) || 0 }
+    ])
+  );
+  
+  // Enrich users with task counts
+  const internalUsers = internalUsersBase.map(user => ({
+    ...user,
+    taskCount: taskCountsMap.get(user.id)?.total || 0,
+    activeTaskCount: taskCountsMap.get(user.id)?.active || 0
+  }));
   
   // Initial data load for the current user
   let initialData: TasksResponse;

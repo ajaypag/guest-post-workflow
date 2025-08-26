@@ -39,6 +39,8 @@ interface InternalUser {
   id: string;
   name: string | null;
   email: string;
+  taskCount?: number;
+  activeTaskCount?: number;
 }
 
 interface TasksPageClientProps {
@@ -689,11 +691,29 @@ export default function TasksPageClient({
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   >
                     <option value="">Select user...</option>
-                    {internalUsers.map(user => (
-                      <option key={user.id} value={user.id}>
-                        {user.name || user.email}
-                      </option>
-                    ))}
+                    {internalUsers
+                      .sort((a, b) => {
+                        // Sort by workload - least busy first for better assignment distribution
+                        return (a.taskCount || 0) - (b.taskCount || 0);
+                      })
+                      .map(user => {
+                        const name = user.name || user.email.split('@')[0];
+                        const workloadIndicator = 
+                          !user.taskCount ? '✅' :
+                          user.taskCount <= 3 ? '🟢' :
+                          user.taskCount <= 6 ? '🟡' :
+                          '🔴';
+                        const taskInfo = user.taskCount 
+                          ? ` (${user.activeTaskCount || 0} active, ${user.taskCount} total)`
+                          : ' (Available)';
+                        
+                        return (
+                          <option key={user.id} value={user.id}>
+                            {workloadIndicator} {name}{taskInfo}
+                          </option>
+                        );
+                      })
+                    }
                   </select>
                 </div>
                 
@@ -820,16 +840,50 @@ export default function TasksPageClient({
 
               {/* Filter controls - organized in rows on mobile, inline on desktop */}
               <div className="w-full sm:w-auto flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-                {/* User filter */}
-                <select
-                  value={selectedUser}
-                  onChange={(e) => setSelectedUser(e.target.value)}
-                  className="w-full sm:w-auto px-3 py-2 border border-gray-200 rounded-lg text-sm hover:border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                >
-                  <option value={currentUserId}>My Tasks</option>
-                  <option value="all">All Tasks</option>
-                  <option value="unassigned">Unassigned</option>
-                </select>
+                {/* Enhanced User filter with task counts */}
+                <div className="relative w-full sm:w-auto">
+                  <select
+                    value={selectedUser}
+                    onChange={(e) => setSelectedUser(e.target.value)}
+                    className="w-full sm:w-auto px-3 py-2 pr-8 border border-gray-200 rounded-lg text-sm hover:border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none bg-white"
+                  >
+                    <option value={currentUserId}>
+                      📋 My Tasks {(() => {
+                        const myUser = internalUsers.find(u => u.id === currentUserId);
+                        return myUser?.taskCount ? `(${myUser.taskCount})` : '';
+                      })()}
+                    </option>
+                    <option value="all">👥 All Tasks</option>
+                    <option value="unassigned">📭 Unassigned</option>
+                    <optgroup label="──────── Team Members ────────">
+                      {internalUsers
+                        .filter(user => user.id !== currentUserId)
+                        .sort((a, b) => {
+                          // Sort by active task count first, then total tasks
+                          if (b.activeTaskCount !== a.activeTaskCount) {
+                            return (b.activeTaskCount || 0) - (a.activeTaskCount || 0);
+                          }
+                          return (b.taskCount || 0) - (a.taskCount || 0);
+                        })
+                        .map(user => {
+                          const name = user.name || user.email.split('@')[0];
+                          const hasActiveTasks = (user.activeTaskCount || 0) > 0;
+                          const indicator = hasActiveTasks ? '🔴' : '⚪';
+                          const taskInfo = user.taskCount 
+                            ? ` (${user.activeTaskCount || 0}/${user.taskCount})`
+                            : '';
+                          
+                          return (
+                            <option key={user.id} value={user.id}>
+                              {indicator} {name}{taskInfo}
+                            </option>
+                          );
+                        })
+                      }
+                    </optgroup>
+                  </select>
+                  <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                </div>
 
                 {/* Type filter with multi-select */}
                 <div className="relative w-full sm:w-auto">
