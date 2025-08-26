@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { KeywordPreferencesSelector } from '@/components/ui/KeywordPreferencesSelector';
 import { getClientKeywordPreferences, setClientKeywordPreferences, KeywordPreferences, KEYWORD_DESCRIPTIONS } from '@/types/keywordPreferences';
+import { getClientOutlinePreferences, setClientOutlinePreferences, OutlinePreferences, generateOutlineEnhancement } from '@/types/outlinePreferences';
 import { KeywordGenerationButton } from '@/components/ui/KeywordGenerationButton';
 import { KeywordDisplay } from '@/components/ui/KeywordDisplay';
 import { DescriptionGenerationButton } from '@/components/ui/DescriptionGenerationButton';
@@ -36,6 +37,9 @@ export default function ClientDetailPage() {
   const [newPages, setNewPages] = useState('');
   const [filter, setFilter] = useState<'all' | 'active' | 'inactive' | 'completed'>('all');
   const [showKeywordPrefs, setShowKeywordPrefs] = useState(false);
+  const [showOutlinePrefs, setShowOutlinePrefs] = useState(false);
+  const [outlinePreferences, setOutlinePreferences] = useState<OutlinePreferences | null>(null);
+  const [outlineMessage, setOutlineMessage] = useState('');
   const [keywordMessage, setKeywordMessage] = useState('');
   const [descriptionMessage, setDescriptionMessage] = useState('');
   const [showKeywordPrompt, setShowKeywordPrompt] = useState(false);
@@ -106,6 +110,7 @@ export default function ClientDetailPage() {
       }
     }
     loadClient();
+    loadOutlinePreferences();
   }, [params.id]);
 
   useEffect(() => {
@@ -257,6 +262,44 @@ export default function ClientDetailPage() {
     } catch (error: any) {
       console.error('Error updating topic preferences:', error);
       alert('Error updating topic preferences: ' + error.message);
+    }
+  };
+
+  const loadOutlinePreferences = async () => {
+    if (!params.id) return;
+    try {
+      const response = await fetch(`/api/clients/${params.id}/outline-preferences`);
+      if (response.ok) {
+        const data = await response.json();
+        setOutlinePreferences(data.preferences);
+      }
+    } catch (error) {
+      console.error('Error loading outline preferences:', error);
+    }
+  };
+
+  const handleOutlinePreferencesUpdate = async (preferences: OutlinePreferences) => {
+    if (!params.id) return;
+    try {
+      const response = await fetch(`/api/clients/${params.id}/outline-preferences`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ preferences })
+      });
+      
+      if (response.ok) {
+        setOutlinePreferences(preferences);
+        setOutlineMessage('✅ Outline preferences updated successfully!');
+        setTimeout(() => setOutlineMessage(''), 3000);
+      } else {
+        const error = await response.json();
+        setOutlineMessage(`❌ Failed to update: ${error.error}`);
+        setTimeout(() => setOutlineMessage(''), 5000);
+      }
+    } catch (error: any) {
+      setOutlineMessage(`❌ Error: ${error.message}`);
+      setTimeout(() => setOutlineMessage(''), 5000);
     }
   };
 
@@ -1306,6 +1349,221 @@ export default function ClientDetailPage() {
                       {userType === 'internal' ? 'Open Brand Intelligence' : 'View Brand Intelligence'}
                     </Link>
                   </div>
+                </div>
+              </div>
+
+              {/* Outline Preferences Message */}
+              {outlineMessage && (
+                <div className={`p-4 rounded-lg ${
+                  outlineMessage.includes('✅') 
+                    ? 'bg-green-50 border border-green-200 text-green-800'
+                    : 'bg-red-50 border border-red-200 text-red-800'
+                }`}>
+                  {outlineMessage}
+                </div>
+              )}
+
+              {/* Research Preferences */}
+              <div className="bg-white rounded-lg shadow">
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">Research Preferences</h3>
+                      <p className="text-sm text-gray-600">
+                        Configure research guidelines that will be automatically applied when we do deep research for outline generation.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setShowOutlinePrefs(!showOutlinePrefs)}
+                      className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                    >
+                      {showOutlinePrefs ? 'Hide' : 'Edit'}
+                    </button>
+                  </div>
+                  {showOutlinePrefs ? (
+                    <div className="space-y-6">
+                      {/* Exclude Competitors Section */}
+                      <div className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-center mb-3">
+                          <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center mr-3">
+                            <span className="text-red-600 text-sm font-bold">×</span>
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-900">Exclude Competitors</h4>
+                            <p className="text-xs text-gray-500">Skip mentioning these competitors during research</p>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          {(outlinePreferences?.excludeCompetitors || ['']).map((competitor, index) => (
+                            <div key={index} className="flex items-center space-x-2">
+                              <input
+                                type="text"
+                                value={competitor}
+                                onChange={(e) => {
+                                  const newCompetitors = [...(outlinePreferences?.excludeCompetitors || [''])];
+                                  newCompetitors[index] = e.target.value;
+                                  
+                                  // Auto-add new empty field if user is typing in the last field
+                                  if (e.target.value.trim() && index === newCompetitors.length - 1) {
+                                    newCompetitors.push('');
+                                  }
+                                  
+                                  setOutlinePreferences({
+                                    ...outlinePreferences,
+                                    excludeCompetitors: newCompetitors,
+                                    version: 1,
+                                    lastUpdated: new Date(),
+                                    updatedBy: 'user'
+                                  });
+                                }}
+                                placeholder="competitor.com or Company Name"
+                                className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              />
+                              {index > 0 && (
+                                <button
+                                  onClick={() => {
+                                    const newCompetitors = (outlinePreferences?.excludeCompetitors || []).filter((_, i) => i !== index);
+                                    setOutlinePreferences({
+                                      ...outlinePreferences,
+                                      excludeCompetitors: newCompetitors,
+                                      version: 1,
+                                      lastUpdated: new Date(),
+                                      updatedBy: 'user'
+                                    });
+                                  }}
+                                  className="text-red-600 hover:text-red-800 p-1"
+                                >
+                                  <span className="w-4 h-4">×</span>
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                          <button
+                            onClick={() => {
+                              const newCompetitors = [...(outlinePreferences?.excludeCompetitors || []), ''];
+                              setOutlinePreferences({
+                                ...outlinePreferences,
+                                excludeCompetitors: newCompetitors,
+                                version: 1,
+                                lastUpdated: new Date(),
+                                updatedBy: 'user'
+                              });
+                            }}
+                            className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                          >
+                            + Add another competitor
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Custom Instructions Section */}
+                      <div className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-center mb-3">
+                          <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                            <FileText className="w-3 h-3 text-blue-600" />
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-900">Custom Instructions</h4>
+                            <p className="text-xs text-gray-500">When we do deep research outline, if there's anything particularly unique you want us to add to the end of the research prompt, you can paste it here.</p>
+                          </div>
+                        </div>
+                        <textarea
+                          value={outlinePreferences?.customInstructions || ''}
+                          onChange={(e) => {
+                            setOutlinePreferences({
+                              ...outlinePreferences,
+                              customInstructions: e.target.value,
+                              version: 1,
+                              lastUpdated: new Date(),
+                              updatedBy: 'user'
+                            });
+                          }}
+                          className="w-full px-3 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-vertical"
+                          rows={4}
+                          maxLength={1000}
+                          placeholder="Enter any custom research instructions...&#10;&#10;Example: Always emphasize cost-effectiveness and ROI when researching solutions."
+                        />
+                        <div className="flex justify-between mt-2">
+                          <p className="text-xs text-gray-500">
+                            Custom instructions will be added to the research prompt
+                          </p>
+                          <span className="text-xs text-gray-500">
+                            {outlinePreferences?.customInstructions?.length || 0}/1000
+                          </span>
+                        </div>
+                      </div>
+                      <div className="pt-4 border-t flex justify-end space-x-3">
+                        <button
+                          onClick={() => {
+                            setShowOutlinePrefs(false);
+                            loadOutlinePreferences(); // Reset to saved values
+                          }}
+                          className="px-4 py-2 bg-gray-200 text-gray-800 text-sm font-medium rounded-md hover:bg-gray-300"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (outlinePreferences) {
+                              // Generate final prompt and set enabled flag based on content
+                              const hasContent = (outlinePreferences.excludeCompetitors?.some(c => c.trim()) || outlinePreferences.customInstructions?.trim());
+                              const finalPrefs = {
+                                ...outlinePreferences,
+                                enabled: hasContent ? true : false,
+                                outlineInstructions: hasContent ? generateOutlineEnhancement(outlinePreferences) : '',
+                                lastUpdated: new Date(),
+                                updatedBy: 'user'
+                              };
+                              handleOutlinePreferencesUpdate(finalPrefs);
+                              setShowOutlinePrefs(false);
+                            }
+                          }}
+                          className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700"
+                        >
+                          Save Preferences
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-sm text-gray-600">
+                      {(outlinePreferences?.excludeCompetitors?.some(c => c.trim()) || outlinePreferences?.customInstructions?.trim()) ? (
+                        <div className="bg-gray-50 p-4 rounded-lg space-y-3">
+                          <p className="font-medium text-gray-800">Current Research Preferences:</p>
+                          
+                          {outlinePreferences.excludeCompetitors?.some(c => c.trim()) && (
+                            <div>
+                              <p className="text-xs font-medium text-gray-700 mb-1">Excluded Competitors:</p>
+                              <div className="flex flex-wrap gap-2">
+                                {outlinePreferences.excludeCompetitors
+                                  .filter(c => c.trim())
+                                  .map((competitor, index) => (
+                                    <span key={index} className="inline-flex items-center px-2 py-1 text-xs bg-red-100 text-red-800 rounded">
+                                      {competitor}
+                                    </span>
+                                  ))
+                                }
+                              </div>
+                            </div>
+                          )}
+                          
+                          {outlinePreferences.customInstructions?.trim() && (
+                            <div>
+                              <p className="text-xs font-medium text-gray-700 mb-1">Custom Instructions:</p>
+                              <div className="text-sm text-gray-800 bg-white p-2 rounded border">
+                                {outlinePreferences.customInstructions}
+                              </div>
+                            </div>
+                          )}
+                          
+                          <div className="pt-2 border-t border-gray-200 text-xs text-gray-500">
+                            These preferences are automatically applied during deep research for outline generation
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-gray-500 italic">No research preferences set. Click Edit to configure competitor exclusions and custom research instructions.</p>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
