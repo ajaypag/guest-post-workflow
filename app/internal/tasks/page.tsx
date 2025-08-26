@@ -35,7 +35,7 @@ export default async function InternalTasksPage() {
         COUNT(CASE WHEN status = 'in_progress' THEN 1 END) as active_count
       FROM orders
       WHERE assigned_to IS NOT NULL
-        AND status NOT IN ('completed', 'cancelled')
+        AND status NOT IN ('completed', 'cancelled', 'refunded')
       GROUP BY assigned_to
     ),
     workflow_counts AS (
@@ -45,7 +45,7 @@ export default async function InternalTasksPage() {
         COUNT(CASE WHEN completion_percentage < 100 THEN 1 END) as active_count
       FROM workflows
       WHERE assigned_user_id IS NOT NULL
-        AND status != 'completed'
+        AND status NOT IN ('published', 'archived')
       GROUP BY assigned_user_id
     ),
     combined_counts AS (
