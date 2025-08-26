@@ -133,6 +133,9 @@ export default function ContentMarketingStrategyEcommercePage() {
             <p className="text-teal-700 font-medium">📱 Digital Gadgets</p>
           </div>
           <div className="bg-white p-3 rounded text-center">
+            <p className="text-teal-700 font-medium"><a href="https://deltaremedys.com/collections/delta-10-products/delta-10-gummies" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline">🍃 Delta 10 Gummies</a></p>
+          </div>
+          <div className="bg-white p-3 rounded text-center">
             <p className="text-teal-700 font-medium">🐕 Pet Accessories</p>
           </div>
         </div>
@@ -1133,7 +1136,7 @@ export default function ContentMarketingStrategyEcommercePage() {
             <div className="bg-white p-3 rounded">
               <h5 className="font-semibold text-purple-700 text-sm mb-2">🤝 Partnership Approach:</h5>
               <p className="text-purple-600 text-xs">
-                Partnering with UGC creators can help brands build trust and extend their message through authentic, relatable content.
+                Partnering with <a href="https://influee.co/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline">UGC creators</a> can help brands build trust and extend their message through authentic, relatable content. Additionally, using <a href="https://niftypm.com/blog/marketing-planning-software/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline">marketing planning software</a> can help coordinate these partnerships and track their performance as part of your broader content marketing strategy.
               </p>
             </div>
           </div>

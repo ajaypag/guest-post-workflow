@@ -671,7 +671,7 @@ export default function LinkProspectingPage() {
         </p>
 
         <p className="text-gray-700 mb-6">
-          Do a reverse image search to check if someone has re-posted your pics and forgot to link to the original.
+          Do a <a href="https://imagetotext.me/reverse-image-search" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline">reverse image search</a> to check if someone has re-posted your pics and forgot to link to the original. Using professional reverse image search tools can make this process more efficient and comprehensive.
         </p>
 
         <p className="text-gray-700 mb-6">
