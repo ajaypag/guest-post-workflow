@@ -91,6 +91,7 @@ export interface TaskFilters {
   statuses?: TaskStatus[];
   priorities?: TaskPriority[];
   clients?: string[]; // Client IDs
+  accounts?: string[]; // Account IDs for hierarchical filtering
   orders?: string[]; // Order IDs
   dateRange?: {
     start?: Date;

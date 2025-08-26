@@ -162,6 +162,11 @@ export class TaskService {
       conditions.push(inArray(orders.accountId, filters.clients));
     }
 
+    if (filters?.accounts?.length) {
+      // Filter by account IDs
+      conditions.push(inArray(orders.accountId, filters.accounts));
+    }
+
     if (filters?.dateRange) {
       if (filters.dateRange.start) {
         conditions.push(gte(orders.expectedDeliveryDate, filters.dateRange.start));
@@ -203,6 +208,7 @@ export class TaskService {
         companyName: row.account.companyName
       } : null,
       status: this.mapOrderStatus(row.order.status),
+      state: row.order.state,
       priority: row.order.rushDelivery ? 'high' : 'normal',
       lineItemCount: Number(row.lineItemCount) || 0,
       completedLineItems: Number(row.completedLineItems) || 0,
@@ -251,6 +257,11 @@ export class TaskService {
       conditions.push(inArray(workflows.clientId, filters.clients));
     }
 
+    if (filters?.accounts?.length) {
+      // Filter by account IDs via client relationship
+      conditions.push(inArray(clients.accountId, filters.accounts));
+    }
+
     if (filters?.dateRange) {
       // Use estimatedCompletionDate for workflows
       if (filters.dateRange.start || filters.dateRange.end) {
@@ -282,33 +293,85 @@ export class TaskService {
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
     const results = await (whereClause ? query.where(whereClause) : query);
 
-    return results.map(row => ({
-      id: `workflow-${row.workflow.id}`,
-      type: 'workflow' as const,
-      workflowId: row.workflow.id,
-      workflowTitle: row.workflow.title || 'Untitled Workflow',
-      title: row.workflow.title || 'Untitled Workflow',
-      description: null, // Field doesn't exist in current schema
-      deadline: row.workflow.estimatedCompletionDate,
-      assignedTo: row.assignedUser ? {
-        id: row.assignedUser.id,
-        name: row.assignedUser.name,
-        email: row.assignedUser.email
-      } : null,
-      client: row.client ? {
-        id: row.client.id,
-        name: row.client.name
-      } : null,
-      status: this.mapWorkflowStatus(row.workflow.status),
-      priority: 'normal' as const,
-      completionPercentage: Number(row.workflow.completionPercentage) || 0,
-      estimatedCompletionDate: row.workflow.estimatedCompletionDate,
-      publishDeadline: null, // Field doesn't exist in current schema
-      publisher: row.workflow.publisherEmail,
-      createdAt: row.workflow.createdAt,
-      updatedAt: row.workflow.updatedAt,
-      action: `/workflows/${row.workflow.id}`
-    }));
+    return results.map((row, index) => {
+      // Parse workflow content to extract rich data
+      const workflowContent = row.workflow.content as any;
+      
+      
+      // Extract rich data from workflow content based on ACTUAL API response structure
+      const steps = workflowContent?.steps || [];
+      
+      // Extract guest post site from domain-selection step (step 0)
+      let guestPostSite = null;
+      const domainSelectionStep = steps.find((step: any) => step.id === 'domain-selection');
+      if (domainSelectionStep?.outputs?.domain) {
+        guestPostSite = domainSelectionStep.outputs.domain;
+      }
+      
+      // Extract client info from root workflow content (already working)
+      const clientSite = (workflowContent?.clientUrl && workflowContent.clientUrl.trim()) || null;
+      const clientName = (workflowContent?.clientName && workflowContent.clientName.trim()) || null;
+      
+      // Extract article title from topic-generation step (step 2)
+      let articleTitle = null;
+      const topicGenerationStep = steps.find((step: any) => step.id === 'topic-generation');
+      if (topicGenerationStep?.outputs?.postTitle) {
+        articleTitle = topicGenerationStep.outputs.postTitle;
+      }
+      
+      // Try to find published article URL from final steps
+      let publishedArticleUrl = null;
+      const contentAuditStep = steps.find((step: any) => step.id === 'content-audit');
+      if (contentAuditStep?.outputs?.publishedUrl) {
+        publishedArticleUrl = contentAuditStep.outputs.publishedUrl;
+      }
+      
+      // Find Google URL from steps if available
+      let googleUrl = null;
+      for (const step of steps) {
+        if (step.outputs?.googleUrl) {
+          googleUrl = step.outputs.googleUrl;
+          break;
+          // For now, skip this complexity
+        }
+      }
+      
+      return {
+        id: `workflow-${row.workflow.id}`,
+        type: 'workflow' as const,
+        workflowId: row.workflow.id,
+        workflowTitle: row.workflow.title || 'Untitled Workflow',
+        title: row.workflow.title || 'Untitled Workflow',
+        description: articleTitle || null,
+        deadline: row.workflow.estimatedCompletionDate,
+        assignedTo: row.assignedUser ? {
+          id: row.assignedUser.id,
+          name: row.assignedUser.name,
+          email: row.assignedUser.email
+        } : null,
+        client: row.client ? {
+          id: row.client.id,
+          name: row.client.name
+        } : null,
+        status: this.mapWorkflowStatus(row.workflow.status),
+        priority: 'normal' as const,
+        completionPercentage: Number(row.workflow.completionPercentage) || 0,
+        estimatedCompletionDate: row.workflow.estimatedCompletionDate,
+        publishDeadline: null,
+        publisher: row.workflow.publisherEmail,
+        // Enhanced workflow-specific fields
+        guestPostSite: guestPostSite,
+        clientSite: clientSite,
+        clientName: clientName,
+        articleTitle: articleTitle,
+        publishedArticleUrl: publishedArticleUrl,
+        workflowContent: workflowContent, // Include full content for additional data
+        
+        createdAt: row.workflow.createdAt,
+        updatedAt: row.workflow.updatedAt,
+        action: `/workflow/${row.workflow.id}`
+      };
+    });
   }
 
   /**
@@ -331,6 +394,7 @@ export class TaskService {
 
     // Apply filters
     const conditions = [];
+    
 
     if (filters?.assignedTo?.length) {
       if (filters.assignedTo.includes('unassigned')) {
@@ -341,11 +405,20 @@ export class TaskService {
     }
 
     if (filters?.statuses?.length) {
-      conditions.push(inArray(orderLineItems.status, filters.statuses as any));
+      // Map task statuses to line item statuses
+      const lineItemStatuses = this.getLineItemStatusesForTaskStatuses(filters.statuses);
+      if (lineItemStatuses.length > 0) {
+        conditions.push(inArray(orderLineItems.status, lineItemStatuses as any));
+      }
     }
 
     if (filters?.clients?.length) {
       conditions.push(inArray(orderLineItems.clientId, filters.clients));
+    }
+
+    if (filters?.accounts?.length) {
+      // Filter by account IDs via client relationship
+      conditions.push(inArray(clients.accountId, filters.accounts));
     }
 
     if (filters?.orders?.length) {
@@ -490,6 +563,27 @@ export class TaskService {
   }
 
   /**
+   * Get line item statuses that map to given task statuses
+   */
+  private getLineItemStatusesForTaskStatuses(taskStatuses: TaskStatus[]): string[] {
+    const reverseMap: Record<TaskStatus, string[]> = {
+      'pending': ['draft', 'pending', 'pending_selection', 'selected'],
+      'in_progress': ['assigned', 'invoiced', 'approved', 'in_progress'],
+      'completed': ['delivered', 'completed'],
+      'blocked': ['disputed'],
+      'cancelled': ['cancelled', 'refunded']
+    };
+    
+    const lineItemStatuses = new Set<string>();
+    for (const taskStatus of taskStatuses) {
+      const mapped = reverseMap[taskStatus] || [];
+      mapped.forEach(s => lineItemStatuses.add(s));
+    }
+    
+    return Array.from(lineItemStatuses);
+  }
+
+  /**
    * Map line item status to task status
    */
   private mapLineItemStatus(lineItemStatus: string | null): TaskStatus {
@@ -549,6 +643,9 @@ export class TaskService {
         if (lineItemTask.targetUrl?.toLowerCase().includes(query)) return true;
         if (lineItemTask.assignedDomain?.toLowerCase().includes(query)) return true;
         if (lineItemTask.anchorText?.toLowerCase().includes(query)) return true;
+        // Also search by parent order ID
+        if (lineItemTask.parentOrderId?.toLowerCase().includes(query)) return true;
+        if (lineItemTask.parentOrderNumber?.toLowerCase().includes(query)) return true;
       }
       
       return false;

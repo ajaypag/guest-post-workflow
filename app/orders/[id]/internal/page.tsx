@@ -273,6 +273,9 @@ export default function InternalOrderManagementPage() {
   const [showStatusActions, setShowStatusActions] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [showUserAssignmentModal, setShowUserAssignmentModal] = useState(false);
+  const [showDeadlineEditor, setShowDeadlineEditor] = useState(false);
+  const [newDeadline, setNewDeadline] = useState('');
+  const [cascadeDeadline, setCascadeDeadline] = useState(true);
   const [targetPageStatuses, setTargetPageStatuses] = useState<TargetPageStatus[]>([]);
   const [selectedPages, setSelectedPages] = useState<Set<string>>(new Set());
   const [generatingKeywords, setGeneratingKeywords] = useState(false);
@@ -1296,6 +1299,46 @@ export default function InternalOrderManagementPage() {
     }
   };
 
+  const handleUpdateDeadline = async () => {
+    if (!order || !newDeadline) return;
+    
+    try {
+      const response = await fetch(`/api/orders/${orderId}/deadline`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          deadline: newDeadline,
+          cascadeToLineItems: cascadeDeadline
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update deadline');
+      }
+
+      const result = await response.json();
+      setMessage({
+        type: 'success',
+        text: result.message
+      });
+      
+      // Reset form
+      setShowDeadlineEditor(false);
+      setNewDeadline('');
+      
+      // Refresh order data
+      window.location.reload();
+      
+    } catch (error: any) {
+      setMessage({
+        type: 'error',
+        text: error.message || 'Failed to update deadline'
+      });
+    }
+  };
+
   const handleStatusRollback = async (targetStatus: string) => {
     if (!confirm(`Are you sure you want to rollback the order status to "${targetStatus}"? This action may have consequences.`)) {
       return;
@@ -2220,6 +2263,72 @@ export default function InternalOrderManagementPage() {
                         )}
                       </div>
                         </>
+                      )}
+                    </div>
+
+                    {/* Delivery Deadline Editor */}
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      <button
+                        onClick={() => setShowDeadlineEditor(!showDeadlineEditor)}
+                        className="flex items-center gap-2 text-xs text-gray-600 hover:text-gray-800 mb-2"
+                      >
+                        <ChevronRight className={`h-3 w-3 transition-transform ${showDeadlineEditor ? 'rotate-90' : ''}`} />
+                        Set Delivery Deadline
+                      </button>
+
+                      {showDeadlineEditor && (
+                        <div className="space-y-3 mt-3">
+                          <div className="p-2 bg-white rounded text-xs">
+                            <div className="flex justify-between items-center mb-2">
+                              <span className="text-gray-600">Current Deadline:</span>
+                              <span className="font-medium text-blue-700">
+                                No deadline set
+                              </span>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-xs text-gray-600 mb-1">New Deadline</label>
+                            <input
+                              type="datetime-local"
+                              value={newDeadline}
+                              onChange={(e) => setNewDeadline(e.target.value)}
+                              className="w-full px-2 py-1 text-xs border rounded focus:ring-1 focus:ring-blue-500"
+                            />
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              id="cascade-deadline"
+                              checked={cascadeDeadline}
+                              onChange={(e) => setCascadeDeadline(e.target.checked)}
+                              className="rounded text-indigo-600 h-3 w-3"
+                            />
+                            <label htmlFor="cascade-deadline" className="text-xs text-gray-600">
+                              Update all associated line items
+                            </label>
+                          </div>
+
+                          <div className="flex gap-2">
+                            <button
+                              onClick={handleUpdateDeadline}
+                              disabled={!newDeadline}
+                              className="flex-1 px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 disabled:opacity-50"
+                            >
+                              Update Deadline
+                            </button>
+                            <button
+                              onClick={() => {
+                                setShowDeadlineEditor(false);
+                                setNewDeadline('');
+                              }}
+                              className="px-2 py-1 bg-gray-500 text-white text-xs rounded hover:bg-gray-600"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
                       )}
                     </div>
                     

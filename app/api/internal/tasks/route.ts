@@ -60,10 +60,16 @@ export async function GET(request: NextRequest) {
       filters.priorities = priorityParam.split(',').filter(Boolean) as TaskPriority[];
     }
 
-    // Client filter
-    const clientParam = searchParams.get('clientId');
+    // Client filter - handle both clientId (legacy) and clientIds (new)
+    const clientParam = searchParams.get('clientId') || searchParams.get('clientIds');
     if (clientParam) {
       filters.clients = clientParam.split(',').filter(Boolean);
+    }
+
+    // Account filter - hierarchical filtering by account
+    const accountParam = searchParams.get('accountIds');
+    if (accountParam) {
+      filters.accounts = accountParam.split(',').filter(Boolean);
     }
 
     // Order filter
