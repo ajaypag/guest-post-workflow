@@ -229,6 +229,14 @@ export default function Header() {
                         <Users className="w-4 h-4 mr-2" />
                         Publishers
                       </Link>
+                      <Link
+                        href="/internal/tasks"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+                        onClick={() => setInternalDropdownOpen(false)}
+                      >
+                        <FileText className="w-4 h-4 mr-2" />
+                        Tasks
+                      </Link>
                       <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100 border-t mt-1 pt-2">
                         Quick Actions
                       </div>
@@ -473,7 +481,7 @@ export default function Header() {
     )}
 
     {/* Mobile Menu Drawer */}
-    <div className={`fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-white z-50 transform transition-transform duration-300 ease-in-out md:hidden ${
+    <div className={`fixed top-0 right-0 h-full w-72 max-w-[80vw] sm:w-80 sm:max-w-[85vw] bg-white z-50 transform transition-transform duration-300 ease-in-out md:hidden ${
       mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
     }`}>
       <div className="flex flex-col h-full">
@@ -648,6 +656,14 @@ export default function Header() {
                 >
                   <Users className="w-5 h-5" />
                   <span className="text-base font-medium">Publishers</span>
+                </Link>
+                <Link
+                  href="/internal/tasks"
+                  className="flex items-center space-x-3 px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors min-h-[44px]"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <FileText className="w-5 h-5" />
+                  <span className="text-base font-medium">Tasks</span>
                 </Link>
                 <Link
                   href="/internal/publishers/new"

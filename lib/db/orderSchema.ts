@@ -108,6 +108,7 @@ export const orders = pgTable('orders', {
   internalNotes: text('internal_notes'),
   accountNotes: text('account_notes'),
   cancellationReason: text('cancellation_reason'),
+  expectedDeliveryDate: timestamp('expected_delivery_date'),
   
   // Workflow completion tracking (added in migration 0065)
   totalWorkflows: integer('total_workflows').default(0),
