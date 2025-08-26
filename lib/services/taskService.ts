@@ -410,7 +410,7 @@ export class TaskService {
   private getWorkflowStatusesForTaskStatuses(taskStatuses: TaskStatus[]): string[] {
     const reverseMap: Record<TaskStatus, string[]> = {
       'pending': ['draft'],
-      'in_progress': ['in_progress', 'review', 'approved'],
+      'in_progress': ['active', 'in_progress', 'review', 'approved'],
       'completed': ['published', 'completed'],
       'blocked': ['rejected'],
       'cancelled': ['cancelled', 'deleted']
@@ -477,6 +477,7 @@ export class TaskService {
     
     const statusMap: Record<string, TaskStatus> = {
       'draft': 'pending',
+      'active': 'in_progress',
       'in_progress': 'in_progress',
       'review': 'in_progress',
       'approved': 'in_progress',

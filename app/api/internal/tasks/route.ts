@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
 
     // User filter (defaults to current user unless 'all' is specified)
     const assignedToParam = searchParams.get('assignedTo');
+    
     if (assignedToParam === 'all') {
       // Show all tasks (no filter)
     } else if (assignedToParam === 'unassigned') {
