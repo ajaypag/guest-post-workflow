@@ -395,6 +395,18 @@ export default function TasksPageClient({
     }
   };
 
+  // Get task type display info
+  const getTaskTypeInfo = (task: UnifiedTask) => {
+    switch (task.type) {
+      case 'order':
+        return { label: 'Order', color: 'bg-blue-50 text-blue-700 border-blue-200' };
+      case 'workflow':
+        return { label: 'Workflow', color: 'bg-green-50 text-green-700 border-green-200' };
+      case 'line_item':
+        return { label: 'Line Item', color: 'bg-purple-50 text-purple-700 border-purple-200' };
+    }
+  };
+
   // Handle task selection
   const handleTaskSelect = (taskId: string, checked: boolean) => {
     const newSelected = new Set(selectedTasks);
@@ -553,6 +565,9 @@ export default function TasksPageClient({
               <div className="flex items-center gap-2 mb-2">
                 {getTaskIcon(task)}
                 <h3 className="font-medium text-gray-900">{task.title}</h3>
+                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${getTaskTypeInfo(task).color}`}>
+                  {getTaskTypeInfo(task).label}
+                </span>
                 <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${getStatusColor(task.status)}`}>
                   {task.status.replace('_', ' ')}
                 </span>
