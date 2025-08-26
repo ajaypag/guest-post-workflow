@@ -2437,6 +2437,20 @@ export default function BestLinkBuildingServicesPage() {
             </div>
           </div>
       </div>
-    </BlogPostTemplate>
+    
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <h3 className="text-xl font-bold text-gray-900 mb-4">
+            <a href="https://jeenaminfotech.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline">
+              Jeenam
+            </a>
+          </h3>
+          <p className="text-gray-700 mb-4">
+            Jeenam is a link-building agency that has been around since 2020 and provides long-term solutions to 50+ different companies and organizations throughout the world. With 20 link building experts, each with 5+ years of experience in Digital Marketing, website building, and marketing, they specialize in driving online business growth through effective link-building strategies.
+          </p>
+          <p className="text-gray-700">
+            They offer a broad spectrum of expertise, from digital marketing to website development, established as a reliable partner in the digital world with a history of successful outcomes.
+          </p>
+        </div>
+      </BlogPostTemplate>
   );
 }

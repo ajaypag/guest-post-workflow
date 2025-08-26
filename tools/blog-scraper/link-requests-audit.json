@@ -1,0 +1,91 @@
+{
+  "existingPages": [
+    {
+      "slug": "how-to-create-a-content-marketing-strategy-for-ecommerce",
+      "requests": [
+        {
+          "pageUrl": "https://www.linkio.com/how-to-create-a-content-marketing-strategy-for-ecommerce/",
+          "anchor": "Anchor: Marketing planning software",
+          "targetUrl": "https://niftypm.com/blog/marketing-planning-software/",
+          "modification": "",
+          "status": "Requested",
+          "requester": "susan"
+        }
+      ]
+    },
+    {
+      "slug": "social-media-link-building",
+      "requests": [
+        {
+          "pageUrl": "https://www.linkio.com/social-media-link-building/",
+          "anchor": "Anchor: free reminder app",
+          "targetUrl": "https://niftypm.com/blog/best-free-reminder-apps",
+          "modification": "",
+          "status": "Requested",
+          "requester": "susan"
+        }
+      ]
+    },
+    {
+      "slug": "link-prospecting",
+      "requests": [
+        {
+          "pageUrl": "https://www.linkio.com/link-prospecting/",
+          "anchor": "reverse image search",
+          "targetUrl": "https://imagetotext.me/reverse-image-search",
+          "modification": "",
+          "status": "Requested",
+          "requester": "susan"
+        }
+      ]
+    },
+    {
+      "slug": "how-to-use-seo-to-improve-conversion-rate",
+      "requests": [
+        {
+          "pageUrl": "https://www.linkio.com/how-to-use-seo-to-improve-conversion-rate",
+          "anchor": "specialized healthcare information",
+          "targetUrl": "https://www.medesk.net/en/blog/who-owns-patients-medical-records/",
+          "modification": "",
+          "status": "Requested",
+          "requester": "mahvish"
+        }
+      ]
+    },
+    {
+      "slug": "best-link-building-services",
+      "requests": []
+    },
+    {
+      "slug": "best-blogger-outreach-services",
+      "requests": []
+    },
+    {
+      "slug": "why-every-business-needs-a-website",
+      "requests": [
+        {
+          "pageUrl": "https://www.linkio.com/why-every-business-needs-a-website/",
+          "anchor": "mentoring software",
+          "targetUrl": "https://www.qooper.io/mentoring-software",
+          "modification": "",
+          "status": "Requested",
+          "requester": "susan"
+        }
+      ]
+    },
+    {
+      "slug": "how-to-increase-domain-authority",
+      "requests": []
+    },
+    {
+      "slug": "top-10-link-building-techniques",
+      "requests": []
+    }
+  ],
+  "missingPages": [
+    {
+      "slug": "best-blogs/finance-blogs-to-follow",
+      "requests": []
+    }
+  ]
+}

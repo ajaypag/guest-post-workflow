@@ -377,7 +377,7 @@ export default function HowToIncreaseDomainAuthorityPage() {
         </p>
 
         <p className="text-gray-700 mb-6">
-          There are other metrics that can be measured, such as page authority, domain citation flow, and domain trust flow. You should also check these metrics regularly and try to improve them. In software testing, regularly checking website performance and reliability goes hand in hand with monitoring key SEO metrics.
+          There are other metrics that can be measured, such as page authority, domain citation flow, and domain trust flow. You should also check these metrics regularly and try to improve them. In software testing, regularly checking website performance and reliability goes hand in hand with monitoring key SEO metrics. At the same time, working with <a href="https://www.tecla.io/network/hire-nearshore-frontend-developers" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline">nearshore frontend developers</a> can help you implement the technical improvements needed to boost site performance and support stronger SEO outcomes.
         </p>
 
         <p className="text-gray-700 mb-6">
