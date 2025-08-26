@@ -334,9 +334,7 @@ export default function MarketingHomepage() {
           </p>
           
           <Link
-            href="https://www.outreachlabs.com/link-building-service/"
-            target="_blank"
-            rel="noopener noreferrer"
+            href="/case-studies"
             className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
           >
             <Star className="w-5 h-5" />
