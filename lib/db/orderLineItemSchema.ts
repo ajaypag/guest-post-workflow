@@ -29,6 +29,10 @@ export const orderLineItems = pgTable('order_line_items', {
   assignedAt: timestamp('assigned_at'),
   assignedBy: uuid('assigned_by').references(() => users.id),
   
+  // User Assignment (for workload distribution)
+  assignedTo: uuid('assigned_to').references(() => users.id),
+  assignmentNotes: text('assignment_notes'),
+  
   // Pricing (locked at approval)
   estimatedPrice: integer('estimated_price'), // In cents
   approvedPrice: integer('approved_price'), // Locked when client approves
@@ -99,6 +103,8 @@ export const orderLineItems = pgTable('order_line_items', {
   clientIdIdx: index('line_items_client_id_idx').on(table.clientId),
   statusIdx: index('line_items_status_idx').on(table.status),
   assignedDomainIdx: index('line_items_assigned_domain_idx').on(table.assignedDomainId),
+  assignedToIdx: index('line_items_assigned_to_idx').on(table.assignedTo),
+  assignedStatusIdx: index('line_items_assigned_status_idx').on(table.assignedTo, table.status),
 }));
 
 /**
@@ -175,6 +181,10 @@ export const orderLineItemsRelations = relations(orderLineItems, ({ one, many })
   }),
   addedByUser: one(users, {
     fields: [orderLineItems.addedBy],
+    references: [users.id],
+  }),
+  assignedToUser: one(users, {
+    fields: [orderLineItems.assignedTo],
     references: [users.id],
   }),
   changes: many(lineItemChanges),

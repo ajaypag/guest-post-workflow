@@ -987,40 +987,44 @@ Need help? Contact info@linkio.com
     verificationUrl: string;
   }): Promise<{ success: boolean; id?: string; error?: string }> {
     const html = `
-      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-        <h2>Verify Your Email Address</h2>
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto;">
+        <h2>Verify Your Email to Start Your Vetted Sites Analysis</h2>
         <p>Hi ${data.name},</p>
         
-        <p>Thank you for signing up for Linkio! Please verify your email address to activate your account.</p>
+        <p>Thanks for requesting a vetted sites analysis! We need to verify your email before we can start finding the perfect guest post sites for your target URL.</p>
         
         <div style="margin: 30px 0;">
           <a href="${data.verificationUrl}" style="display: inline-block; padding: 12px 30px; background-color: #2563eb; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
-            Verify Email Address
+            Verify Email & Start Analysis
           </a>
         </div>
         
-        <p>Or copy and paste this link into your browser:</p>
-        <p style="background: #f5f5f5; padding: 10px; border-radius: 5px; word-break: break-all;">
-          ${data.verificationUrl}
-        </p>
+        <p><strong>Once verified, here's what happens next:</strong></p>
+        <ul>
+          <li>We'll analyze your target URL to understand your keywords and topic</li>
+          <li>Our system will search through vetted sites to find ones that already rank for similar topics</li>
+          <li>You'll receive sites with keyword overlap analysis showing exactly why each one matches</li>
+          <li>Results delivered within 24 hours</li>
+        </ul>
+        
+        <p><strong>Why this approach works:</strong> Instead of random high-authority sites, you get mentioned on sites that already rank for your topics—boosting your visibility in ChatGPT, Claude, and Google searches.</p>
         
         <p style="color: #666; font-size: 14px;">
-          This link will expire in 24 hours. If you didn't create an account, you can safely ignore this email.
+          Can't click the button? Copy and paste this link:<br>
+          <span style="background: #f5f5f5; padding: 5px; word-break: break-all;">${data.verificationUrl}</span>
         </p>
         
-        <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-        
         <p style="color: #999; font-size: 12px;">
-          © ${new Date().getFullYear()} Linkio. All rights reserved.
+          This link expires in 24 hours. If you didn't request this, you can safely ignore this email.
         </p>
       </div>
     `;
 
     return this.send('notification', {
       to: data.email,
-      subject: 'Verify Your Email - Linkio',
+      subject: 'Verify Your Email to Get Your Vetted Sites - Linkio',
       html,
-      text: `Hi ${data.name}, Please verify your email address by visiting: ${data.verificationUrl}. This link will expire in 24 hours.`,
+      text: `Hi ${data.name}, Thanks for requesting a vetted sites analysis! Click here to verify your email and start the process: ${data.verificationUrl}. Once verified, we'll analyze your target URL and find guest post sites that already rank for your topics. Results delivered within 24 hours.`,
     });
   }
 

@@ -127,7 +127,7 @@ export default function WebsiteEditForm({ website }: WebsiteEditFormProps) {
       {/* Basic Information */}
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-xl font-semibold mb-4">Basic Information</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div>
             <label htmlFor="domain" className="block text-sm font-medium text-gray-700 mb-1">
               Domain *
@@ -228,7 +228,7 @@ export default function WebsiteEditForm({ website }: WebsiteEditFormProps) {
       {/* Categories and Types */}
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-xl font-semibold mb-4">Categories & Types</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div className="md:col-span-2">
             <label htmlFor="categories" className="block text-sm font-medium text-gray-700 mb-1">
               Categories (comma-separated)
@@ -279,7 +279,7 @@ export default function WebsiteEditForm({ website }: WebsiteEditFormProps) {
       {/* Publishing Options */}
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-xl font-semibold mb-4">Publishing Options</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div className="flex items-center">
             <input
               type="checkbox"
@@ -371,7 +371,7 @@ export default function WebsiteEditForm({ website }: WebsiteEditFormProps) {
       {/* Publisher Information */}
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-xl font-semibold mb-4">Publisher Information</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div>
             <label htmlFor="publisherTier" className="block text-sm font-medium text-gray-700 mb-1">
               Publisher Tier
@@ -453,7 +453,7 @@ export default function WebsiteEditForm({ website }: WebsiteEditFormProps) {
       {/* Performance Metrics */}
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-xl font-semibold mb-4">Performance Metrics</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div>
             <label htmlFor="avgResponseTimeHours" className="block text-sm font-medium text-gray-700 mb-1">
               Avg Response Time (hours)
@@ -506,7 +506,7 @@ export default function WebsiteEditForm({ website }: WebsiteEditFormProps) {
       {/* Internal Notes */}
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-xl font-semibold mb-4">Internal Information</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div>
             <label htmlFor="internalQualityScore" className="block text-sm font-medium text-gray-700 mb-1">
               Internal Quality Score (0-100)
@@ -543,7 +543,7 @@ export default function WebsiteEditForm({ website }: WebsiteEditFormProps) {
       {/* URLs */}
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-xl font-semibold mb-4">Resource URLs</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div>
             <label htmlFor="editorialCalendarUrl" className="block text-sm font-medium text-gray-700 mb-1">
               Editorial Calendar URL
@@ -575,7 +575,7 @@ export default function WebsiteEditForm({ website }: WebsiteEditFormProps) {
       </div>
 
       {/* Form Actions */}
-      <div className="flex justify-end space-x-4">
+      <div className="flex flex-col sm:flex-row justify-end gap-3">
         <button
           type="button"
           onClick={() => router.push('/internal/websites')}

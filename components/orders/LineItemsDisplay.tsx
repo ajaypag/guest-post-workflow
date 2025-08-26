@@ -151,7 +151,7 @@ export default function LineItemsDisplay({
                   {/* Line Items for this Client */}
                   {group.items.map((item, idx) => (
                     <tr key={item.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-6 py-4 max-w-0">
                         <div className="flex items-start gap-2">
                           <LinkIcon className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
                           <div className="min-w-0 flex-1">
@@ -160,7 +160,7 @@ export default function LineItemsDisplay({
                                 href={item.targetPageUrl} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
-                                className="text-sm text-blue-600 hover:text-blue-800 truncate block max-w-xs"
+                                className="text-sm text-blue-600 hover:text-blue-800 break-all block"
                                 title={item.targetPageUrl}
                               >
                                 {item.targetPageUrl}
@@ -171,10 +171,10 @@ export default function LineItemsDisplay({
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
-                        <span className="text-sm text-gray-900">
+                      <td className="px-6 py-4 max-w-0">
+                        <div className="text-sm text-gray-900 break-words">
                           {item.anchorText || <span className="text-gray-400 italic">Not specified</span>}
-                        </span>
+                        </div>
                       </td>
                       {showSites && (
                         <td className="px-6 py-4">

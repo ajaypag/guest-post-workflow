@@ -22,7 +22,8 @@ import {
   DollarSign,
   FileText,
   Search,
-  Wrench
+  Wrench,
+  ListTodo
 } from 'lucide-react';
 import { AuthSession } from '@/lib/types/auth';
 import Header from '@/components/Header';
@@ -34,6 +35,7 @@ interface InternalLayoutProps {
 
 const navigation = [
   { name: 'Dashboard', href: '/internal', icon: Home },
+  { name: 'Tasks', href: '/internal/tasks', icon: ListTodo },
   { name: 'Websites', href: '/internal/websites', icon: Globe },
   { name: 'Publishers', href: '/internal/publishers', icon: Users },
   { name: 'Publisher Tools', href: '/internal/publishers/tools', icon: Wrench },
