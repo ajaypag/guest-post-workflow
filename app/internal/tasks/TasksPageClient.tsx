@@ -66,6 +66,13 @@ interface FilterState {
 
 const FILTER_STORAGE_KEY = 'internal-tasks-filters';
 
+// Task type display constants
+const TASK_TYPE_INFO = {
+  order: { label: 'Order', color: 'bg-blue-50 text-blue-700 border-blue-200' },
+  workflow: { label: 'Workflow', color: 'bg-green-50 text-green-700 border-green-200' },
+  line_item: { label: 'Line Item', color: 'bg-purple-50 text-purple-700 border-purple-200' }
+} as const;
+
 export default function TasksPageClient({
   initialData,
   currentUserId,
@@ -397,14 +404,7 @@ export default function TasksPageClient({
 
   // Get task type display info
   const getTaskTypeInfo = (task: UnifiedTask) => {
-    switch (task.type) {
-      case 'order':
-        return { label: 'Order', color: 'bg-blue-50 text-blue-700 border-blue-200' };
-      case 'workflow':
-        return { label: 'Workflow', color: 'bg-green-50 text-green-700 border-green-200' };
-      case 'line_item':
-        return { label: 'Line Item', color: 'bg-purple-50 text-purple-700 border-purple-200' };
-    }
+    return TASK_TYPE_INFO[task.type];
   };
 
   // Handle task selection
