@@ -246,10 +246,10 @@ export default function InternalWebsitesList({
 
       {/* Filters Bar */}
       <div className="bg-white rounded-lg shadow-md p-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-4 flex-1">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 mb-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 flex-1 w-full">
             {/* Search */}
-            <div className="relative flex-1 max-w-md">
+            <div className="relative flex-1 w-full sm:max-w-md">
               <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
               <input
                 type="text"
@@ -261,54 +261,57 @@ export default function InternalWebsitesList({
               />
             </div>
 
-            {/* Sort */}
-            <select
-              value={sort}
-              onChange={(e) => setSort(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            >
-              <option value="created_desc">Newest First</option>
-              <option value="created_asc">Oldest First</option>
-              <option value="domain_asc">Domain A-Z</option>
-              <option value="domain_desc">Domain Z-A</option>
-              <option value="dr_desc">Highest DR</option>
-              <option value="dr_asc">Lowest DR</option>
-              <option value="traffic_desc">Most Traffic</option>
-            </select>
-
-            {/* Filter Toggle */}
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className={`inline-flex items-center px-4 py-2 border rounded-lg font-medium text-sm ${
-                showFilters ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'border-gray-300 hover:bg-gray-50'
-              }`}
-            >
-              <Filter className="h-4 w-4 mr-2" />
-              Filters
-            </button>
-
-            {/* Apply/Clear */}
-            <button
-              onClick={applyFilters}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium text-sm"
-            >
-              Apply
-            </button>
-            
-            {(search || minDR || maxDR || hasPublisher || verified) && (
-              <button
-                onClick={clearFilters}
-                className="px-4 py-2 text-gray-600 hover:text-gray-900 font-medium text-sm"
+            {/* Sort and Filter Controls */}
+            <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+              {/* Sort */}
+              <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value)}
+                className="flex-1 sm:flex-initial px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               >
-                Clear
+                <option value="created_desc">Newest First</option>
+                <option value="created_asc">Oldest First</option>
+                <option value="domain_asc">Domain A-Z</option>
+                <option value="domain_desc">Domain Z-A</option>
+                <option value="dr_desc">Highest DR</option>
+                <option value="dr_asc">Lowest DR</option>
+                <option value="traffic_desc">Most Traffic</option>
+              </select>
+
+              {/* Filter Toggle */}
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className={`inline-flex items-center px-4 py-2 border rounded-lg font-medium text-sm ${
+                  showFilters ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                <Filter className="h-4 w-4 mr-2" />
+                Filters
               </button>
-            )}
+
+              {/* Apply/Clear */}
+              <button
+                onClick={applyFilters}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium text-sm"
+              >
+                Apply
+              </button>
+              
+              {(search || minDR || maxDR || hasPublisher || verified) && (
+                <button
+                  onClick={clearFilters}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-900 font-medium text-sm"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Advanced Filters */}
         {showFilters && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-gray-200">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-gray-200">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Min DR</label>
               <input
@@ -396,11 +399,11 @@ export default function InternalWebsitesList({
       {/* Bulk Actions */}
       {selectedWebsites.length > 0 && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <span className="text-sm font-medium text-blue-900">
               {selectedWebsites.length} website{selectedWebsites.length !== 1 ? 's' : ''} selected
             </span>
-            <div className="flex items-center space-x-3">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 onClick={() => router.push(`/internal/relationships/assign?websites=${selectedWebsites.join(',')}`)}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-sm"
@@ -421,7 +424,7 @@ export default function InternalWebsitesList({
       {/* Websites Table */}
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
+          <table className="min-w-full divide-y divide-gray-200" style={{minWidth: '900px'}}>
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left">

@@ -1,0 +1,363 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - alert [ref=e2]
+  - generic [ref=e7] [cursor=pointer]:
+    - button "Open Next.js Dev Tools" [ref=e8] [cursor=pointer]:
+      - img [ref=e9] [cursor=pointer]
+    - generic [ref=e13] [cursor=pointer]:
+      - button "Open issues overlay" [ref=e14] [cursor=pointer]:
+        - generic [ref=e15] [cursor=pointer]:
+          - generic [ref=e16] [cursor=pointer]: "0"
+          - generic [ref=e17] [cursor=pointer]: "1"
+        - generic [ref=e18] [cursor=pointer]: Issue
+      - button "Collapse issues badge" [ref=e19] [cursor=pointer]:
+        - img [ref=e20] [cursor=pointer]
+  - generic [ref=e22]:
+    - banner [ref=e23]:
+      - generic [ref=e25]:
+        - link "Linkio" [ref=e27] [cursor=pointer]:
+          - /url: /
+          - img [ref=e29] [cursor=pointer]
+          - generic [ref=e31] [cursor=pointer]: Linkio
+        - generic [ref=e32]:
+          - button "Industries" [ref=e34]:
+            - text: Industries
+            - img [ref=e35]
+          - link "How It Works" [ref=e37] [cursor=pointer]:
+            - /url: /how-it-works
+          - link "Case Studies" [ref=e38] [cursor=pointer]:
+            - /url: /case-studies
+          - link "Browse Sites" [ref=e39] [cursor=pointer]:
+            - /url: /guest-posting-sites
+          - link "Blog" [ref=e40] [cursor=pointer]:
+            - /url: /blog
+          - link "Sign In" [ref=e41] [cursor=pointer]:
+            - /url: https://www.linkio.com/login
+          - link "Get Started" [ref=e42] [cursor=pointer]:
+            - /url: /signup
+            - text: Get Started
+            - img [ref=e43] [cursor=pointer]
+    - generic [ref=e48]:
+      - generic [ref=e50]:
+        - heading "We help you get mentioned in ChatGPT, Claude, AI Overviews, and Google searches through strategic guest posts." [level=1] [ref=e51]:
+          - text: We help you get mentioned in
+          - strong [ref=e52]: ChatGPT, Claude, AI Overviews,
+          - text: and Google searches through strategic guest posts.
+        - paragraph [ref=e53]:
+          - text: Instead of picking random high-authority sites, we find websites that already rank for topics related to your business—
+          - strong [ref=e54]: boosting your AI visibility while improving your traditional search rankings.
+      - generic [ref=e56]:
+        - generic [ref=e58]: Free Analysis
+        - generic [ref=e60]:
+          - generic [ref=e61]: "1"
+          - generic [ref=e63]: "2"
+        - generic [ref=e64]:
+          - generic [ref=e65]:
+            - generic [ref=e66]: Enter Your Target URL
+            - paragraph [ref=e67]: The page you want mentioned in guest posts and AI responses
+            - textbox "https://yoursite.com/page-to-promote" [active] [ref=e68]
+          - generic [ref=e69]:
+            - paragraph [ref=e70]: "You'll receive:"
+            - generic [ref=e71]:
+              - generic [ref=e72]: • See which keywords each site ranks for vs. yours
+              - generic [ref=e73]: • AI analysis of why each site matches your content
+              - generic [ref=e74]: • Wholesale cost + $79 admin fee (no markups)
+          - button "Get Vetted Sites & Analysis" [ref=e75]:
+            - text: Get Vetted Sites & Analysis
+            - img [ref=e76]
+          - generic [ref=e79]:
+            - generic [ref=e80]: Results in 24 hours
+            - generic [ref=e81]: •
+            - generic [ref=e82]: No commitment required
+          - paragraph [ref=e84]:
+            - text: Already have an account?
+            - link "Sign in" [ref=e85] [cursor=pointer]:
+              - /url: /login
+    - generic [ref=e87]:
+      - generic [ref=e88]:
+        - heading "Everyone Gets Links. Only We Get You Cited." [level=2] [ref=e89]
+        - paragraph [ref=e90]: "Traditional link building still works—we do all of that. But we've cracked something extra: making those same links trigger AI citations. One campaign, double the impact."
+      - generic [ref=e91]:
+        - generic [ref=e92]:
+          - generic [ref=e93]:
+            - heading "What Everyone's Facing" [level=3] [ref=e94]:
+              - img [ref=e95]
+              - text: What Everyone's Facing
+            - list [ref=e98]:
+              - listitem [ref=e99]: • Google traffic down 25-40% year over year
+              - listitem [ref=e100]: • AI overviews capture clicks before your site loads
+              - listitem [ref=e101]: • ChatGPT users never visit your website
+              - listitem [ref=e102]: • Zero-click searches now exceed click-through results
+          - generic [ref=e103]:
+            - heading "Traditional SEO's Fatal Flaw" [level=3] [ref=e104]:
+              - img [ref=e105]
+              - text: Traditional SEO's Fatal Flaw
+            - paragraph [ref=e109]: Still optimizing for 2019? Rankings and traffic don't matter if AI systems never cite your content as an authoritative source.
+        - generic [ref=e110]:
+          - generic [ref=e111]:
+            - heading "The Citation Economy" [level=3] [ref=e112]:
+              - img [ref=e113]
+              - text: The Citation Economy
+            - list [ref=e123]:
+              - listitem [ref=e124]: • Brand mentions in AI responses drive awareness
+              - listitem [ref=e125]: • Citations establish industry authority
+              - listitem [ref=e126]: • Topical relevance beats traffic metrics
+              - listitem [ref=e127]: • Strategic placement creates lasting competitive advantage
+          - generic [ref=e128]:
+            - heading "Our Solution" [level=3] [ref=e129]:
+              - img [ref=e130]
+              - text: Our Solution
+            - paragraph [ref=e134]: We place your content on sites with proven topical authority in your industry. When AI systems need expert sources, they find you.
+    - generic [ref=e136]:
+      - generic [ref=e137]:
+        - heading "Premium Link Building + AI Citation Engineering" [level=2] [ref=e138]
+        - paragraph [ref=e139]: "Every link we build works twice: driving traditional SEO value AND engineering AI citations. Same effort, double the results. Here's what you get that others can't deliver:"
+      - generic [ref=e140]:
+        - generic [ref=e141]:
+          - heading "What Every Agency Does" [level=3] [ref=e142]:
+            - img [ref=e143]
+            - text: What Every Agency Does
+          - generic [ref=e151]:
+            - generic [ref=e152]:
+              - generic [ref=e154]: −
+              - generic [ref=e155]:
+                - generic [ref=e156]: Vanity Metrics Focus
+                - generic [ref=e157]: Chase high DR without topical relevance analysis
+            - generic [ref=e158]:
+              - generic [ref=e160]: −
+              - generic [ref=e161]:
+                - generic [ref=e162]: Traffic-Dependent ROI
+                - generic [ref=e163]: Success tied to declining organic click-through rates
+            - generic [ref=e164]:
+              - generic [ref=e166]: −
+              - generic [ref=e167]:
+                - generic [ref=e168]: Hidden Markups
+                - generic [ref=e169]: Unclear pricing with variable fees
+            - generic [ref=e170]:
+              - generic [ref=e172]: −
+              - generic [ref=e173]:
+                - generic [ref=e174]: Limited Scalability
+                - generic [ref=e175]: Manual processes that don't scale efficiently
+        - generic [ref=e176]:
+          - heading "What We Do (Everything + More)" [level=3] [ref=e177]:
+            - img [ref=e178]
+            - text: What We Do (Everything + More)
+          - generic [ref=e188]:
+            - generic [ref=e189]:
+              - img [ref=e190]
+              - generic [ref=e193]:
+                - generic [ref=e194]: AI Citation Engineering
+                - generic [ref=e195]: Strategic placements on sites with actual topical authority—not vanity metrics
+            - generic [ref=e196]:
+              - img [ref=e197]
+              - generic [ref=e200]:
+                - generic [ref=e201]: LLM Citation Optimization
+                - generic [ref=e202]: Content designed to be referenced by AI systems, not just ranked
+            - generic [ref=e203]:
+              - img [ref=e204]
+              - generic [ref=e207]:
+                - generic [ref=e208]: O3-Powered Research
+                - generic [ref=e209]: Deep reasoning creates citation-worthy content depth and expertise
+            - generic [ref=e210]:
+              - img [ref=e211]
+              - generic [ref=e214]:
+                - generic [ref=e215]: Zero-Click Revenue
+                - generic [ref=e216]: Brand mentions and citations drive awareness when traffic can't
+    - generic [ref=e218]:
+      - heading "While Others Chase Traffic, We Build Citations" [level=2] [ref=e219]
+      - generic [ref=e220]:
+        - generic [ref=e222]:
+          - img [ref=e223]
+          - text: AI Citation Success
+        - blockquote [ref=e233]: "\"We hired them for link building. Two days later, ChatGPT was recommending our product. Our competitors are still waiting for their 'high DR' links to impact rankings.\""
+        - generic [ref=e234]:
+          - generic [ref=e235]:
+            - generic [ref=e236]: Cited
+            - generic [ref=e237]: In AI overviews
+          - generic [ref=e238]:
+            - generic [ref=e239]: Authority
+            - generic [ref=e240]: Topical match
+          - generic [ref=e241]:
+            - generic [ref=e242]: Zero
+            - generic [ref=e243]: Click dependence
+      - paragraph [ref=e244]:
+        - strong [ref=e245]: The difference?
+        - text: While others focus on DR and traffic, we analyze topical authority overlap. When AI systems need expert sources, they find our strategically placed content.
+      - link "View More Case Studies" [ref=e246] [cursor=pointer]:
+        - /url: https://www.outreachlabs.com/link-building-service/
+        - img [ref=e247] [cursor=pointer]
+        - text: View More Case Studies
+    - generic [ref=e250]:
+      - generic [ref=e251]:
+        - heading "Link Building That Triggers AI Citations (Here's How)" [level=2] [ref=e252]
+        - paragraph [ref=e253]: We place the same high-quality guest posts as premium agencies. The difference? Our AI system identifies exactly which sites and topics trigger citations in ChatGPT, Claude, and Perplexity.
+      - generic [ref=e254]:
+        - generic [ref=e255]:
+          - img [ref=e257]
+          - heading "O3 Deep Research" [level=3] [ref=e267]
+          - paragraph [ref=e268]: OpenAI's most advanced reasoning model creates citation-worthy content depth. 10-15 minutes of deep analysis per article.
+          - list [ref=e269]:
+            - listitem [ref=e270]: • Comprehensive source analysis
+            - listitem [ref=e271]: • Multi-angle topic exploration
+            - listitem [ref=e272]: • Expert-level content depth
+        - generic [ref=e273]:
+          - img [ref=e275]
+          - heading "Topical Authority Analysis" [level=3] [ref=e279]
+          - paragraph [ref=e280]: AI maps proven expertise overlap between your industry and potential host sites. DataForSEO + custom algorithms.
+          - list [ref=e281]:
+            - listitem [ref=e282]: • Keyword ranking verification
+            - listitem [ref=e283]: • Authority cluster identification
+            - listitem [ref=e284]: • Strategic topic overlap scoring
+        - generic [ref=e285]:
+          - img [ref=e287]
+          - heading "Citation Optimization" [level=3] [ref=e292]
+          - paragraph [ref=e293]: Section-by-section semantic SEO audit optimizes content for AI system discovery and reference.
+          - list [ref=e294]:
+            - listitem [ref=e295]: • LLM-friendly content structure
+            - listitem [ref=e296]: • Narrative quality control
+            - listitem [ref=e297]: • Citation-worthy expertise signals
+      - generic [ref=e299]:
+        - img [ref=e300]
+        - generic [ref=e310]: The Only Link Building Service Proven to Generate AI Citations
+    - generic [ref=e312]:
+      - generic [ref=e313]:
+        - heading "See the Technology in Action" [level=2] [ref=e314]
+        - paragraph [ref=e315]: This isn't marketing fluff - click through our actual production system. Real AI prompts, database queries, and the technical architecture behind each step.
+      - generic [ref=e316]:
+        - generic [ref=e318]:
+          - generic [ref=e319]:
+            - heading "See Our Actual Process" [level=3] [ref=e320]
+            - paragraph [ref=e321]: Click through each step to see exactly how we work
+          - button "Auto Demo" [ref=e322]:
+            - img [ref=e323]
+            - text: Auto Demo
+        - generic [ref=e325]:
+          - button "Bulk Analysis System" [ref=e326]
+          - button "Guest Post Workflow (8 Steps)" [ref=e327]
+        - generic [ref=e328]:
+          - generic [ref=e329]:
+            - heading "Bulk Analysis System" [level=4] [ref=e330]
+            - paragraph [ref=e331]: Analyze dozens of competitors and find hundreds of strategic opportunities
+          - generic [ref=e332]:
+            - generic [ref=e333]:
+              - generic [ref=e334]:
+                - img [ref=e336]
+                - generic [ref=e344]: Step 1
+              - heading "Client Target URLs & Keywords" [level=5] [ref=e345]
+              - paragraph [ref=e346]: Load your pages that need links and their target keywords
+              - paragraph [ref=e347]: Pull in your client's target pages (the ones that need backlinks) and their associated keywords. This becomes the foundation for finding topically relevant guest post opportunities in our extensive site database.
+            - generic [ref=e348]:
+              - generic [ref=e349]:
+                - img [ref=e351]
+                - generic [ref=e354]: Step 2
+              - heading "Site Keyword Discovery" [level=5] [ref=e355]
+              - paragraph [ref=e356]: Find what keywords each guest post site actually ranks for
+              - paragraph [ref=e357]: DataForSEO shows us what keywords each potential guest post site ranks for. We're looking for sites that rank for keywords related to your client's niche - this means your content will naturally fit and have a better chance of ranking.
+            - generic [ref=e358]:
+              - generic [ref=e359]:
+                - img [ref=e361]
+                - generic [ref=e365]: Step 3
+              - heading "Smart Topical Analysis (O3)" [level=5] [ref=e366]
+              - paragraph [ref=e367]: AI reasoning model evaluates if sites are genuinely good matches
+              - paragraph [ref=e368]: "OpenAI O3 reasoning model thinks through each match: Does this site have topical authority in your client's niche? Will your content feel natural here? It's not just matching keywords - it's understanding context and relevance."
+            - generic [ref=e369]:
+              - generic [ref=e370]:
+                - img [ref=e372]
+                - generic [ref=e375]: Step 4
+              - heading "Opportunity Ranking & Selection" [level=5] [ref=e376]
+              - paragraph [ref=e377]: Surface the best guest post opportunities from our extensive database
+              - paragraph [ref=e378]: Sites are scored and ranked by how well they match your client's needs. High-quality matches become guest post opportunities. Click to convert them into full workflows - no manual searching through thousands of sites.
+          - generic [ref=e379]:
+            - heading "Example Client Results" [level=5] [ref=e380]
+            - generic [ref=e381]:
+              - generic [ref=e382]:
+                - generic [ref=e383]: "5"
+                - generic [ref=e384]: Client target pages analyzed
+              - generic [ref=e385]:
+                - generic [ref=e386]: "247"
+                - generic [ref=e387]: Relevant keywords to match
+              - generic [ref=e388]:
+                - generic [ref=e389]: "89"
+                - generic [ref=e390]: Quality sites found from database
+            - generic [ref=e391]:
+              - heading "What This Means:" [level=6] [ref=e392]
+              - generic [ref=e393]:
+                - generic [ref=e394]:
+                  - text: ✅
+                  - strong [ref=e395]: techcrunch.com
+                  - text: "- Perfect match: They rank for your exact keywords"
+                - generic [ref=e396]:
+                  - text: ✅
+                  - strong [ref=e397]: industryweek.com
+                  - text: "- Good fit: Strong in your broader industry"
+                - generic [ref=e398]:
+                  - text: ⚠️
+                  - strong [ref=e399]: bizjournal.com
+                  - text: "- Maybe: Some overlap but needs manual review"
+                - generic [ref=e400]: No more guessing which sites will accept your content - we show you where it naturally fits
+    - generic [ref=e402]:
+      - heading "Get Premium Links That Also Get You Cited by AI" [level=2] [ref=e403]
+      - paragraph [ref=e404]: "We find the beauty in any site with ranking potential. Real topical authority. Plus something no one else delivers: AI citations in 48 hours."
+      - generic [ref=e405]:
+        - link "Start Citation Engineering" [ref=e406] [cursor=pointer]:
+          - /url: /signup
+          - text: Start Citation Engineering
+          - img [ref=e407] [cursor=pointer]
+        - link "Explore Authority Database" [ref=e410] [cursor=pointer]:
+          - /url: /guest-posting-sites
+    - contentinfo [ref=e411]:
+      - generic [ref=e412]:
+        - generic [ref=e413]:
+          - generic [ref=e414]:
+            - generic [ref=e415]:
+              - img [ref=e417]
+              - generic [ref=e419]:
+                - generic [ref=e420]: Linkio
+                - generic [ref=e421]: Advanced Link Building Tools
+            - paragraph [ref=e422]: Strategic link building for SEO professionals and business owners. Expert curation meets AI efficiency.
+          - generic [ref=e423]:
+            - heading "Services" [level=4] [ref=e424]
+            - list [ref=e425]:
+              - listitem [ref=e426]:
+                - link "Guest Posting Sites" [ref=e427] [cursor=pointer]:
+                  - /url: /guest-posting-sites
+              - listitem [ref=e428]:
+                - link "Anchor Text Optimizer" [ref=e429] [cursor=pointer]:
+                  - /url: /anchor-text-optimizer
+              - listitem [ref=e430]:
+                - link "SEO Blog & Guides" [ref=e431] [cursor=pointer]:
+                  - /url: /blog
+          - generic [ref=e432]:
+            - heading "Company" [level=4] [ref=e433]
+            - list [ref=e434]:
+              - listitem [ref=e435]:
+                - link "How It Works" [ref=e436] [cursor=pointer]:
+                  - /url: /how-it-works
+              - listitem [ref=e437]:
+                - link "Contact Us" [ref=e438] [cursor=pointer]:
+                  - /url: /contact
+              - listitem [ref=e439]:
+                - link "Sign In" [ref=e440] [cursor=pointer]:
+                  - /url: https://www.linkio.com/login
+              - listitem [ref=e441]:
+                - link "Get Started" [ref=e442] [cursor=pointer]:
+                  - /url: /signup
+          - generic [ref=e443]:
+            - heading "Get Started" [level=4] [ref=e444]
+            - paragraph [ref=e445]: Ready to try strategic link building?
+            - link "Start Today" [ref=e446] [cursor=pointer]:
+              - /url: /signup
+              - text: Start Today
+              - img [ref=e447] [cursor=pointer]
+        - generic [ref=e451]:
+          - paragraph [ref=e452]: © 2025 Linkio, Inc. All rights reserved.
+          - generic [ref=e453]:
+            - link "Terms of Service" [ref=e454] [cursor=pointer]:
+              - /url: /terms
+            - link "Privacy Policy" [ref=e455] [cursor=pointer]:
+              - /url: /privacy
+            - link "Cookie Policy" [ref=e456] [cursor=pointer]:
+              - /url: /cookies
+```

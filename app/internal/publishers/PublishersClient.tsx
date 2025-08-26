@@ -124,7 +124,7 @@ export default function PublishersClient({
         {/* Search Bar */}
         <div className="bg-white shadow rounded-lg mb-6">
           <div className="px-6 py-4">
-            <form method="get" className="flex gap-4">
+            <form method="get" className="flex flex-col sm:flex-row gap-3">
               <div className="flex-1">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -137,26 +137,28 @@ export default function PublishersClient({
                   />
                 </div>
               </div>
-              <button
-                type="submit"
-                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-              >
-                Search
-              </button>
-              {searchQuery && (
-                <Link
-                  href="/internal/publishers"
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  className="flex-1 sm:flex-initial px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
                 >
-                  Clear
-                </Link>
-              )}
+                  Search
+                </button>
+                {searchQuery && (
+                  <Link
+                    href="/internal/publishers"
+                    className="flex-1 sm:flex-initial px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 text-center"
+                  >
+                    Clear
+                  </Link>
+                )}
+              </div>
             </form>
           </div>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
           <div className="bg-white overflow-hidden shadow rounded-lg">
             <div className="px-4 py-5 sm:p-6">
               <dt className="text-sm font-medium text-gray-500 truncate">Total Publishers</dt>
@@ -234,11 +236,11 @@ export default function PublishersClient({
                         </div>
                       </div>
                     </div>
-                    <div className="ml-4 flex-shrink-0 flex space-x-2">
+                    <div className="ml-4 flex-shrink-0 flex flex-col sm:flex-row gap-2">
                       <button
                         onClick={() => startImpersonation(publisher)}
                         disabled={impersonating === publisher.id}
-                        className="inline-flex items-center px-3 py-1.5 border border-purple-300 text-xs font-medium rounded text-purple-700 bg-white hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="inline-flex items-center justify-center px-3 py-1.5 border border-purple-300 text-xs font-medium rounded text-purple-700 bg-white hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
                         title="Impersonate this publisher"
                       >
                         <UserCheck className="w-4 h-4 mr-1" />
@@ -246,7 +248,7 @@ export default function PublishersClient({
                       </button>
                       <Link
                         href={`/internal/publishers/${publisher.id}`}
-                        className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        className="inline-flex items-center justify-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                       >
                         View Details
                       </Link>

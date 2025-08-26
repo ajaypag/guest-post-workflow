@@ -178,7 +178,7 @@ export default function InternalVettedSitesRequestsClient() {
 
       {/* Stats Cards */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
           <button
             onClick={() => setStatusFilter('all')}
             className={`p-4 rounded-lg border transition-all ${
@@ -211,7 +211,7 @@ export default function InternalVettedSitesRequestsClient() {
 
         {/* Search and Filters */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
-          <div className="flex items-center space-x-4">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
               <input
@@ -222,7 +222,7 @@ export default function InternalVettedSitesRequestsClient() {
                 className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               />
             </div>
-            <button className="flex items-center px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50">
+            <button className="flex items-center justify-center px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50">
               <Filter className="h-5 w-5 mr-2 text-gray-600" />
               Filters
             </button>
@@ -305,7 +305,7 @@ export default function InternalVettedSitesRequestsClient() {
                       </div>
 
                       {/* Actions */}
-                      <div className="flex items-center space-x-2 ml-4">
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 ml-0 sm:ml-4">
                         <Link
                           href={`/internal/vetted-sites/requests/${request.id}`}
                           className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
