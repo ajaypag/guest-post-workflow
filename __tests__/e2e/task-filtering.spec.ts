@@ -142,7 +142,7 @@ test.describe('Task Filtering Tests', () => {
   });
 });
 
-test('test page 2 navigation without infinite loops', async ({ page }) => {
+test('comprehensive page navigation and task type visibility test', async ({ page }) => {
   // Login
   await page.goto('http://localhost:3000/login?redirect=/internal/tasks');
   await page.waitForLoadState('domcontentloaded');
@@ -178,6 +178,53 @@ test('test page 2 navigation without infinite loops', async ({ page }) => {
   // Check that tasks are displayed
   const taskCards = await page.locator('[data-testid="task-card"], .bg-white.rounded-lg.border').count();
   console.log(`Found ${taskCards} task cards on page 2`);
+  
+  // Check if task type badges are visible
+  const typeBadges = await page.locator('text=/Order|Workflow|Line Item/').count();
+  console.log(`Found ${typeBadges} task type badges`);
+  
+  if (typeBadges > 0) {
+    console.log('✅ Task type badges are visible');
+  } else {
+    console.log('⚠️ No task type badges found');
+  }
+});
+
+test('test line item filtering fix', async ({ page }) => {
+  // Login
+  await page.goto('http://localhost:3000/login?redirect=/internal/tasks');
+  await page.waitForLoadState('domcontentloaded');
+  
+  await page.locator('input[type="email"]').fill('ajay@outreachlabs.com');
+  await page.locator('input[type="password"]').fill('FA64!I$nrbCauS^d');
+  await page.getByRole('button', { name: /sign in/i }).click();
+  
+  // Wait for redirect
+  await page.waitForURL((url) => url.pathname !== '/login', { timeout: 10000 });
+  
+  // Navigate to the problematic URL
+  await page.goto('http://localhost:3000/internal/tasks?user=unassigned&types=line_item');
+  await page.waitForLoadState('networkidle', { timeout: 15000 });
+  
+  // Check for line item tasks
+  const lineItemBadges = await page.locator('text="Line Item"').count();
+  console.log(`Found ${lineItemBadges} Line Item badges`);
+  
+  if (lineItemBadges > 0) {
+    console.log('✅ Line item filtering is working correctly');
+  } else {
+    // Check if there's a "no tasks" message
+    const noTasksMessage = await page.locator('text=/No.*tasks|0 tasks/i').count();
+    if (noTasksMessage > 0) {
+      console.log('⚠️ Line item filtering shows no tasks');
+    } else {
+      console.log('❓ Could not determine line item filtering status');
+    }
+  }
+  
+  // Check total task count
+  const statsText = await page.locator('text=/\\d+ task/').textContent();
+  console.log(`Task stats: ${statsText}`);
 });
 
 test('debug: inspect API calls', async ({ page }) => {

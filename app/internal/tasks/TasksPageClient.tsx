@@ -348,8 +348,9 @@ export default function TasksPageClient({
         params.append('search', searchQuery);
       }
       
-      // Line items toggle
-      params.append('showLineItems', showLineItems.toString());
+      // Line items toggle - auto-enable when filtering by line_item type
+      const shouldShowLineItems = showLineItems || selectedTypes.includes('line_item');
+      params.append('showLineItems', shouldShowLineItems.toString());
       
       // Pagination
       params.append('page', currentPage.toString());

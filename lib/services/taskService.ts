@@ -497,8 +497,11 @@ export class TaskService {
     
     const statusMap: Record<string, TaskStatus> = {
       'draft': 'pending',
+      'pending': 'pending',
       'pending_selection': 'pending',
       'selected': 'pending',
+      'assigned': 'in_progress',
+      'invoiced': 'in_progress',
       'approved': 'in_progress',
       'in_progress': 'in_progress',
       'delivered': 'completed',
