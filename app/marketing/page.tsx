@@ -22,13 +22,16 @@ import {
   BarChart3,
   Brain,
   Eye,
-  AlertCircle
+  AlertCircle,
+  Bot
 } from 'lucide-react';
 import Link from 'next/link';
 import InteractiveWorkflowDemo from '@/components/InteractiveWorkflowDemo';
 import LinkioHeader from '@/components/LinkioHeader';
 import MarketingCTA from '@/components/MarketingCTA';
 import MarketingFooter from '@/components/MarketingFooter';
+import RecaptchaProvider from '@/components/RecaptchaProvider';
+import VettedSitesLeadForm from '@/components/VettedSitesLeadForm';
 
 interface Stats {
   totalSites: number;
@@ -61,93 +64,51 @@ export default function MarketingHomepage() {
 
   return (
     <div className="min-h-screen bg-white">
+      <RecaptchaProvider />
       <LinkioHeader variant="default" />
 
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-gray-50 to-blue-50 py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* Left: Main Message */}
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium mb-6">
-                <CheckCircle className="w-4 h-4" />
-                🎯 Clients Cited in ChatGPT Within 48 Hours
-              </div>
-              
-              <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-                Get Cited by AI.
-                <span className="text-purple-600"> Not Just Ranked by Google.</span>
-              </h1>
-              
-              <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-                We engineer guest posts that get you mentioned in ChatGPT, Perplexity, and Claude responses—often within days. 
-                While competitors wait months for rankings, your brand appears where 65% of searches now happen: AI answers.
-              </p>
-              
-              {/* Key Benefits */}
-              <div className="space-y-4 mb-8">
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-                  <span className="text-gray-700">We find hidden gems others miss—sites with real ranking potential</span>
+      <section className="bg-gradient-to-br from-blue-900 via-blue-800 to-slate-900 py-12 md:py-16 lg:py-20 min-h-[85vh] flex items-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 xl:gap-16 items-center">
+            {/* Left: Value Proposition */}
+            <div className="lg:pr-4 xl:pr-8">
+              <div className="mb-12">
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-400/90 text-white rounded-full text-sm font-bold mb-8 shadow-lg border border-blue-300/30">
+                  <CheckCircle className="w-4 h-4" />
+                  KEYWORD-MATCHED SITES, NOT RANDOM HIGH-DR SPAM
                 </div>
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-                  <span className="text-gray-700">See brand mentions in AI responses within 48-72 hours</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-                  <span className="text-gray-700">Traditional SEO benefits PLUS the AI visibility edge</span>
-                </div>
-              </div>
+                
+                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-bold text-white mb-6 lg:mb-8 leading-tight">
+                  Get mentioned in <span className="text-blue-300">ChatGPT</span> and ranked in <span className="text-blue-300">Google</span> through strategic content placements.
+                </h1>
+                
+                <p className="text-lg md:text-xl text-slate-200 leading-relaxed mb-6 lg:mb-8">
+                  Instead of backlinks from random high DR sites, we find websites that already rank for <strong className="text-white">your exact keywords</strong>—getting you AI citations while building traditional SEO rankings.
+                </p>
 
-              {/* CTAs */}
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Link
-                  href="/signup"
-                  className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-purple-700 transition-colors text-lg"
-                >
-                  Get Your First AI Citation
-                  <ArrowRight className="w-5 h-5" />
-                </Link>
-                <Link
-                  href="/guest-posting-sites"
-                  className="inline-flex items-center justify-center gap-2 px-8 py-4 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors text-lg"
-                >
-                  <Eye className="w-5 h-5" />
-                  See {stats.totalSites.toLocaleString()} Authority Sites
-                </Link>
+                <div className="flex flex-wrap items-center gap-4 lg:gap-8">
+                  <div className="text-center">
+                    <div className="text-2xl lg:text-3xl font-bold text-blue-300 flex items-center justify-center gap-1">
+                      <Bot className="w-6 h-6" />+<Users className="w-6 h-6" />
+                    </div>
+                    <div className="text-xs lg:text-sm text-slate-300">Curation</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl lg:text-3xl font-bold text-blue-300">Cost+</div>
+                    <div className="text-xs lg:text-sm text-slate-300">$79 admin fee</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl lg:text-3xl font-bold text-blue-300">Done</div>
+                    <div className="text-xs lg:text-sm text-slate-300">For You</div>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Right: Stats Card */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg border">
-              <h3 className="text-xl font-semibold text-gray-900 mb-6 text-center">
-                AI Citation Infrastructure
-              </h3>
-              
-              <div className="grid grid-cols-2 gap-6">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-blue-600 mb-1">
-                    {stats.totalSites.toLocaleString()}+
-                  </div>
-                  <div className="text-sm text-gray-600">Authority Sites</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-purple-600 mb-1">O3</div>
-                  <div className="text-sm text-gray-600">Research Model</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-green-600 mb-1">
-                    {stats.totalNiches}+
-                  </div>
-                  <div className="text-sm text-gray-600">Topical Clusters</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-orange-600 mb-1">Zero</div>
-                  <div className="text-sm text-gray-600">Click Dependence</div>
-                </div>
-              </div>
-
+            {/* Right: Form */}
+            <div className="lg:pl-8">
+              <VettedSitesLeadForm />
             </div>
           </div>
         </div>

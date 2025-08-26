@@ -18,9 +18,10 @@ import {
 interface QuickVettedSitesRequestProps {
   onSuccess?: () => void;
   compact?: boolean;
+  hideWhatYouReceive?: boolean;
 }
 
-export default function QuickVettedSitesRequest({ onSuccess, compact = false }: QuickVettedSitesRequestProps) {
+export default function QuickVettedSitesRequest({ onSuccess, compact = false, hideWhatYouReceive = false }: QuickVettedSitesRequestProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -314,32 +315,34 @@ https://yoursite.com/another-page"
       </div>
 
       {/* What you'll get - moved outside with better spacing */}
-      <div className="mt-12">
-        <p className="text-base font-medium text-gray-900 mb-6 text-center">What you'll receive:</p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="text-center">
-            <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-              <Globe className="h-8 w-8 text-gray-600" />
+      {!hideWhatYouReceive && (
+        <div className="mt-12">
+          <p className="text-base font-medium text-gray-900 mb-6 text-center">What you'll receive:</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <Globe className="h-8 w-8 text-gray-600" />
+              </div>
+              <h3 className="font-semibold text-gray-900 text-base mb-2">Keyword Overlap Analysis</h3>
+              <p className="text-sm text-gray-600 leading-relaxed">See which keywords each site ranks for vs. yours</p>
             </div>
-            <h3 className="font-semibold text-gray-900 text-base mb-2">Keyword Overlap Analysis</h3>
-            <p className="text-sm text-gray-600 leading-relaxed">See which keywords each site ranks for vs. yours</p>
-          </div>
-          <div className="text-center">
-            <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-              <Sparkles className="h-8 w-8 text-gray-600" />
+            <div className="text-center">
+              <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <Sparkles className="h-8 w-8 text-gray-600" />
+              </div>
+              <h3 className="font-semibold text-gray-900 text-base mb-2">Target Relevance Scores</h3>
+              <p className="text-sm text-gray-600 leading-relaxed">AI analysis of why each site matches your content</p>
             </div>
-            <h3 className="font-semibold text-gray-900 text-base mb-2">Target Relevance Scores</h3>
-            <p className="text-sm text-gray-600 leading-relaxed">AI analysis of why each site matches your content</p>
-          </div>
-          <div className="text-center">
-            <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-              <CheckCircle className="h-8 w-8 text-gray-600" />
+            <div className="text-center">
+              <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="h-8 w-8 text-gray-600" />
+              </div>
+              <h3 className="font-semibold text-gray-900 text-base mb-2">Fair Pricing</h3>
+              <p className="text-sm text-gray-600 leading-relaxed">Wholesale cost + $79 admin fee (no markups)</p>
             </div>
-            <h3 className="font-semibold text-gray-900 text-base mb-2">Fair Pricing</h3>
-            <p className="text-sm text-gray-600 leading-relaxed">Wholesale cost + $79 admin fee (no markups)</p>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

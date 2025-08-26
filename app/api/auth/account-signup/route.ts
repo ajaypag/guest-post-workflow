@@ -9,11 +9,22 @@ import { EmailService } from '@/lib/services/emailService';
 import { OrderService } from '@/lib/services/orderService';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { cookies } from 'next/headers';
+import { verifyRecaptcha } from '@/lib/utils/recaptcha';
 
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json();
-    const { email, password, name, company, phone, token } = data;
+    const { 
+      email, 
+      password, 
+      name, 
+      company, 
+      phone, 
+      token,
+      recaptchaToken,
+      requireVerification = false,
+      pendingRequest
+    } = data;
 
     // Validate required fields
     if (!email || !password || !name) {
@@ -40,6 +51,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Verify reCAPTCHA if token provided
+    if (recaptchaToken) {
+      const isValidRecaptcha = await verifyRecaptcha(recaptchaToken);
+      if (!isValidRecaptcha) {
+        console.warn('🤖 Failed reCAPTCHA verification for:', email);
+        return NextResponse.json(
+          { error: 'Verification failed. Please try again.' },
+          { status: 400 }
+        );
+      }
+    }
+
     // Check if account already exists
     const existingAccount = await db.query.accounts.findFirst({
       where: eq(accounts.email, email.toLowerCase()),
@@ -58,6 +81,13 @@ export async function POST(request: NextRequest) {
     // Create account
     const accountId = uuidv4();
     const now = new Date();
+    const emailVerificationToken = requireVerification ? uuidv4() : null;
+
+    // Prepare onboarding steps with pending request if provided
+    const onboardingData: any = {};
+    if (pendingRequest) {
+      onboardingData.pendingRequest = pendingRequest;
+    }
 
     await db.insert(accounts).values({
       id: accountId,
@@ -66,7 +96,10 @@ export async function POST(request: NextRequest) {
       contactName: name,
       companyName: company || '',
       phone: phone || null,
-      status: 'active',
+      status: requireVerification ? 'pending' : 'active',
+      emailVerified: !requireVerification,
+      emailVerificationToken,
+      onboardingSteps: JSON.stringify(onboardingData),
       createdAt: now,
       updatedAt: now,
     });
@@ -103,56 +136,77 @@ export async function POST(request: NextRequest) {
     // Orders must be explicitly linked through the share token flow or by admin assignment
     const existingOrders: any[] = [];
 
-    // Send welcome email
+    // Send appropriate email
     try {
-      await EmailService.sendAccountWelcome({
-        email,
-        name,
-        company: company || undefined,
-      });
+      if (requireVerification) {
+        // Send verification email
+        const baseUrl = process.env.NEXTAUTH_URL || 
+          (request.headers.get('x-forwarded-proto') || 'https') + '://' + 
+          request.headers.get('host');
+        const verificationUrl = `${baseUrl}/verify-email?token=${emailVerificationToken}`;
+        
+        await EmailService.sendEmailVerification({
+          email,
+          name,
+          verificationUrl,
+        });
+        console.log('📧 Verification email sent to:', email);
+      } else {
+        // Send welcome email for non-verification signups
+        await EmailService.sendAccountWelcome({
+          email,
+          name,
+          company: company || undefined,
+        });
+      }
     } catch (emailError) {
-      console.error('Failed to send welcome email:', emailError);
+      console.error('Failed to send email:', emailError);
       // Don't fail registration if email fails
     }
 
-    // Create session and set cookie
-    const accountData = await db.query.accounts.findFirst({
-      where: eq(accounts.id, accountId),
-    });
-
-    if (accountData) {
-      // Create user object from account for session
-      const user = {
-        id: accountData.id,
-        email: accountData.email,
-        name: accountData.contactName,
-        role: 'account' as const,
-        isActive: true,
-        userType: 'account' as const,
-        passwordHash: accountData.password,
-        lastLogin: accountData.lastLoginAt,
-        createdAt: accountData.createdAt,
-        updatedAt: accountData.updatedAt,
-      };
-      
-      const token = await AuthServiceServer.createSession(user);
-      
-      // Set cookie
-      const cookieStore = await cookies();
-      cookieStore.set('auth-token', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 7, // 7 days
-        path: '/',
+    // Create session and set cookie (only if not requiring verification)
+    if (!requireVerification) {
+      const accountData = await db.query.accounts.findFirst({
+        where: eq(accounts.id, accountId),
       });
 
-      console.log('🔐 Account signup successful, cookie set for:', email);
+      if (accountData) {
+        // Create user object from account for session
+        const user = {
+          id: accountData.id,
+          email: accountData.email,
+          name: accountData.contactName,
+          role: 'account' as const,
+          isActive: true,
+          userType: 'account' as const,
+          passwordHash: accountData.password,
+          lastLogin: accountData.lastLoginAt,
+          createdAt: accountData.createdAt,
+          updatedAt: accountData.updatedAt,
+        };
+        
+        const token = await AuthServiceServer.createSession(user);
+        
+        // Set cookie
+        const cookieStore = await cookies();
+        cookieStore.set('auth-token', token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 60 * 60 * 24 * 7, // 7 days
+          path: '/',
+        });
+
+        console.log('🔐 Account signup successful, cookie set for:', email);
+      }
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Account created successfully',
+      message: requireVerification 
+        ? 'Account created. Please check your email to verify your account.'
+        : 'Account created successfully',
+      requiresVerification: requireVerification,
       hasOrdersLinked: existingOrders.length > 0,
     });
   } catch (error) {

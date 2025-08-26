@@ -6,6 +6,7 @@ import AccountAuthWrapper from '@/components/AccountAuthWrapper';
 import Header from '@/components/Header';
 import AccountLayout from '@/components/AccountLayout';
 import QuickVettedSitesRequest from '@/components/dashboard/QuickVettedSitesRequest';
+import NewMetricsCards from '@/components/dashboard/NewMetricsCards';
 import { formatCurrency } from '@/lib/utils/formatting';
 import { getStateDisplay } from '@/components/orders/OrderProgressSteps';
 import { useNotifications } from '@/lib/contexts/NotificationContext';
@@ -349,71 +350,28 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
     );
   }
 
+  return (<div className="space-y-8">
+      {/* Show Vetted Sites Request Onboarding for users with brands but no requests */}
+      {clients.length > 0 && vettedSitesRequests.length === 0 && (
+        <QuickVettedSitesRequest 
+          onSuccess={() => {
+            refreshVettedSitesRequests();
+          }}
+          hideWhatYouReceive={true}
+        />
+      )}
 
-  return (
-    <div className="space-y-8">
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <button 
-          onClick={() => router.push('/clients')}
-          className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg hover:scale-105 transition-all text-left group cursor-pointer border-2 border-transparent hover:border-purple-200"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors">
-              <Building className="h-6 w-6 text-purple-600" />
-            </div>
-            <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-purple-600 opacity-0 group-hover:opacity-100 transition-all" />
-          </div>
-          <div className="text-2xl font-bold text-gray-900 group-hover:text-purple-600 transition-colors">{stats.totalBrands}</div>
-          <p className="text-sm text-gray-600 group-hover:text-purple-700 transition-colors">Active Brands</p>
-        </button>
-
-        <button 
-          onClick={() => router.push('/orders')}
-          className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg hover:scale-105 transition-all text-left group cursor-pointer border-2 border-transparent hover:border-blue-200"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
-              <Package className="h-6 w-6 text-blue-600" />
-            </div>
-            <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-blue-600 opacity-0 group-hover:opacity-100 transition-all" />
-          </div>
-          <div className="text-2xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{stats.totalOrders}</div>
-          <p className="text-sm text-gray-600 group-hover:text-blue-700 transition-colors">Total Orders</p>
-        </button>
-
-        <button 
-          onClick={() => router.push('/orders?status=active')}
-          className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg hover:scale-105 transition-all text-left group cursor-pointer border-2 border-transparent hover:border-yellow-200"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-yellow-100 rounded-lg group-hover:bg-yellow-200 transition-colors">
-              <Clock className="h-6 w-6 text-yellow-600" />
-            </div>
-            <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-yellow-600 opacity-0 group-hover:opacity-100 transition-all" />
-          </div>
-          <div className="text-2xl font-bold text-gray-900 group-hover:text-yellow-600 transition-colors">{stats.activeOrders}</div>
-          <p className="text-sm text-gray-600 group-hover:text-yellow-700 transition-colors">In Progress</p>
-        </button>
-
-        <button 
-          onClick={() => router.push('/orders?status=completed')}
-          className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg hover:scale-105 transition-all text-left group cursor-pointer border-2 border-transparent hover:border-green-200"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-green-100 rounded-lg group-hover:bg-green-200 transition-colors">
-              <CheckCircle className="h-6 w-6 text-green-600" />
-            </div>
-            <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-green-600 opacity-0 group-hover:opacity-100 transition-all" />
-          </div>
-          <div className="text-2xl font-bold text-gray-900 group-hover:text-green-600 transition-colors">{stats.completedOrders}</div>
-          <p className="text-sm text-gray-600 group-hover:text-green-700 transition-colors">Completed</p>
-        </button>
-
-      </div>
+      {/* New Consolidated Metrics */}
+      <NewMetricsCards 
+        stats={stats}
+        clients={clients}
+        vettedSitesRequests={vettedSitesRequests}
+        notifications={notifications}
+        router={router}
+      />
 
       {/* Brand Summary */}
-      {clients.length > 0 ? (
+      {clients.length > 0 && (
         <div className="bg-white rounded-lg shadow-md p-6">
           <div className="flex justify-between items-start mb-4">
             <div>
@@ -454,25 +412,6 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
                 </p>
               </div>
             )}
-          </div>
-        </div>
-      ) : (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-          <div className="flex items-start">
-            <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5 mr-3" />
-            <div className="flex-1">
-              <h3 className="text-sm font-medium text-yellow-800">No Brands Found</h3>
-              <p className="text-sm text-yellow-700 mt-1">
-                You need to add at least one brand before creating orders.
-              </p>
-              <button
-                onClick={() => router.push('/clients/new')}
-                className="mt-3 inline-flex items-center px-3 py-1.5 bg-yellow-600 text-white text-sm font-medium rounded hover:bg-yellow-700"
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                Add Your First Brand
-              </button>
-            </div>
           </div>
         </div>
       )}
@@ -526,10 +465,10 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
                   </span>
                 </div>
                 <p className="text-xs text-gray-500 mb-2">
-                  {request.targetUrls?.length || 0} target URLs
+                  {Array.isArray(request.target_urls || request.targetUrls) ? (request.target_urls || request.targetUrls).length : ((request.target_urls || request.targetUrls) ? 1 : 0)} target {Array.isArray(request.target_urls || request.targetUrls) && (request.target_urls || request.targetUrls).length === 1 ? 'URL' : 'URLs'}
                 </p>
                 <p className="text-xs text-gray-400">
-                  Created {new Date(request.createdAt).toLocaleDateString()}
+                  Created {(request.created_at || request.createdAt) ? new Date(request.created_at || request.createdAt).toLocaleDateString() : 'Recently'}
                 </p>
               </div>
             ))}
@@ -873,8 +812,7 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
           </table>
         </div>
       </div>
-    </div>
-  );
+    </div>);
 }
 
 function ConditionalAccountLayout({ user }: { user: any }) {
