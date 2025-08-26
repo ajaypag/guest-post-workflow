@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { WorkflowStep, GuestPostWorkflow } from '@/types/workflow';
 import { SavedField } from '../SavedField';
 import { CopyButton } from '../ui/CopyButton';
@@ -8,6 +8,7 @@ import { TutorialVideo } from '../ui/TutorialVideo';
 import { AgenticOutlineGenerator } from '../ui/AgenticOutlineGenerator';
 import { AgenticOutlineGeneratorV2 } from '../ui/AgenticOutlineGeneratorV2';
 import { ExternalLink, ChevronDown, ChevronRight, FileText, CheckCircle, AlertCircle, Target, ExternalLinkIcon, Bot, CheckSquare } from 'lucide-react';
+import { OutlinePreferences, generateOutlineEnhancement } from '@/types/outlinePreferences';
 
 interface DeepResearchStepProps {
   step: WorkflowStep;
@@ -18,13 +19,45 @@ interface DeepResearchStepProps {
 export const DeepResearchStepClean = ({ step, workflow, onChange }: DeepResearchStepProps) => {
   const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({
     'research': true,
-    'results': false
+    'results': false,
+    'preferences': false
   });
   const [activeTab, setActiveTab] = useState<'manual' | 'agentic'>('manual');
+  const [researchPreferences, setResearchPreferences] = useState<OutlinePreferences | null>(null);
+  const [applyPreferences, setApplyPreferences] = useState<boolean>(false);
 
   // Get the deep research prompt from Step 2j
   const topicGenerationStep = workflow.steps.find(s => s.id === 'topic-generation');
-  const outlinePrompt = topicGenerationStep?.outputs?.outlinePrompt || '';
+  const baseOutlinePrompt = topicGenerationStep?.outputs?.outlinePrompt || '';
+
+  // Load client research preferences
+  useEffect(() => {
+    const loadClientPreferences = async () => {
+      if (workflow.metadata?.clientId) {
+        try {
+          const response = await fetch(`/api/clients/${workflow.metadata.clientId}/outline-preferences`);
+          if (response.ok) {
+            const data = await response.json();
+            // Show preferences even if not enabled, let user decide
+            if (data.preferences) {
+              setResearchPreferences(data.preferences);
+              // Auto-check the checkbox if preferences exist
+              setApplyPreferences(true);
+            }
+          }
+        } catch (error) {
+          console.error('Failed to load research preferences:', error);
+        }
+      }
+    };
+
+    loadClientPreferences();
+  }, [workflow.metadata?.clientId]);
+
+  // Generate enhanced prompt with preferences
+  const outlinePrompt = researchPreferences && applyPreferences 
+    ? baseOutlinePrompt + generateOutlineEnhancement(researchPreferences)
+    : baseOutlinePrompt;
   
   const toggleSection = (section: string) => {
     setExpandedSections(prev => ({
@@ -169,8 +202,80 @@ export const DeepResearchStepClean = ({ step, workflow, onChange }: DeepResearch
                 </div>
               </div>
 
+              {/* No Client Associated Message */}
+              {!workflow.metadata?.clientId && (
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-center">
+                    <AlertCircle className="w-5 h-5 text-gray-400 mr-3" />
+                    <div>
+                      <p className="text-sm text-gray-600">
+                        <strong>No Client Associated:</strong> This workflow is not linked to a specific client, so research preferences are not available.
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        To use research preferences, create workflows through a client's page or associate this workflow with a client.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Client Research Preferences */}
+              {researchPreferences && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="apply-preferences"
+                        checked={applyPreferences}
+                        onChange={(e) => setApplyPreferences(e.target.checked)}
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <label htmlFor="apply-preferences" className="ml-2 text-sm font-medium text-blue-900">
+                        ☑️ Apply client research preferences
+                      </label>
+                    </div>
+                    <button
+                      onClick={() => toggleSection('preferences')}
+                      className="text-blue-600 hover:text-blue-800 text-sm"
+                    >
+                      {expandedSections['preferences'] ? 'Hide' : 'Show'} preferences
+                    </button>
+                  </div>
+                  
+                  {expandedSections['preferences'] && (
+                    <div className="space-y-3 pt-3 border-t border-blue-200">
+                      {researchPreferences.excludeCompetitors?.some(c => c.trim()) && (
+                        <div>
+                          <p className="text-xs font-medium text-blue-800 mb-1">Will exclude these competitors:</p>
+                          <div className="flex flex-wrap gap-2">
+                            {researchPreferences.excludeCompetitors
+                              .filter(c => c.trim())
+                              .map((competitor, index) => (
+                                <span key={index} className="inline-flex items-center px-2 py-1 text-xs bg-red-100 text-red-800 rounded">
+                                  {competitor}
+                                </span>
+                              ))
+                            }
+                          </div>
+                        </div>
+                      )}
+                      
+                      {researchPreferences.customInstructions?.trim() && (
+                        <div>
+                          <p className="text-xs font-medium text-blue-800 mb-1">Additional research instructions:</p>
+                          <div className="text-sm text-blue-900 bg-white p-2 rounded border">
+                            {researchPreferences.customInstructions}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Prompt from Step 2j */}
-              {outlinePrompt ? (
+              {baseOutlinePrompt ? (
                 <div className="bg-white border border-gray-200 rounded-lg p-4 relative">
                   <div className="absolute top-3 right-3">
                     <CopyButton 
@@ -178,10 +283,17 @@ export const DeepResearchStepClean = ({ step, workflow, onChange }: DeepResearch
                       label="Copy Prompt"
                     />
                   </div>
-                  <h4 className="font-medium text-gray-800 mb-2">Deep Research Prompt (from Step 2j):</h4>
+                  <h4 className="font-medium text-gray-800 mb-2">
+                    Deep Research Prompt (from Step 2j{applyPreferences && researchPreferences ? ' + Research Preferences' : ''}):
+                  </h4>
                   <div className="p-3 bg-gray-50 border rounded-lg text-sm max-h-32 overflow-y-auto pr-16 font-mono">
                     {outlinePrompt}
                   </div>
+                  {applyPreferences && researchPreferences && (
+                    <p className="text-xs text-gray-600 mt-2">
+                      ✅ This prompt includes your client's research preferences
+                    </p>
+                  )}
                 </div>
               ) : (
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
