@@ -142,6 +142,44 @@ test.describe('Task Filtering Tests', () => {
   });
 });
 
+test('test page 2 navigation without infinite loops', async ({ page }) => {
+  // Login
+  await page.goto('http://localhost:3000/login?redirect=/internal/tasks');
+  await page.waitForLoadState('domcontentloaded');
+  
+  await page.locator('input[type="email"]').fill('ajay@outreachlabs.com');
+  await page.locator('input[type="password"]').fill('FA64!I$nrbCauS^d');
+  await page.getByRole('button', { name: /sign in/i }).click();
+  
+  // Wait for redirect
+  await page.waitForURL((url) => url.pathname !== '/login', { timeout: 10000 });
+  
+  // Go to unassigned tasks
+  await page.goto('http://localhost:3000/internal/tasks?user=unassigned');
+  await page.waitForLoadState('networkidle');
+  
+  console.log('Page 1 loaded successfully');
+  
+  // Try to navigate to page 2
+  await page.goto('http://localhost:3000/internal/tasks?user=unassigned&page=2');
+  
+  // Wait for page to load - if there's an infinite loop, this will timeout
+  await page.waitForLoadState('networkidle', { timeout: 15000 });
+  
+  // Check if page loaded successfully (no error messages)
+  const errorText = await page.locator('text=/error|Error|too many|infinite|re-render/i').count();
+  if (errorText > 0) {
+    const errorContent = await page.locator('text=/error|Error|too many|infinite|re-render/i').first().textContent();
+    throw new Error(`Found error on page: ${errorContent}`);
+  }
+  
+  console.log('✅ Page 2 loaded without infinite loop errors');
+  
+  // Check that tasks are displayed
+  const taskCards = await page.locator('[data-testid="task-card"], .bg-white.rounded-lg.border').count();
+  console.log(`Found ${taskCards} task cards on page 2`);
+});
+
 test('debug: inspect API calls', async ({ page }) => {
   // Set up request interception
   const apiCalls: any[] = [];

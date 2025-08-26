@@ -115,13 +115,7 @@ export default function TasksPageClient({
     const completedParam = searchParams.get('showCompleted');
     if (completedParam) urlFilters.showCompleted = completedParam === 'true';
     
-    const searchParam = searchParams.get('search');
-    if (searchParam) {
-      setSearchQuery(searchParam);
-    }
-    
-    const pageParam = searchParams.get('page');
-    if (pageParam) setCurrentPage(parseInt(pageParam, 10) || 1);
+    // Note: search and page params are handled in useEffect to avoid render loops
     
     return urlFilters;
   };
@@ -233,6 +227,19 @@ export default function TasksPageClient({
     customDateEnd, showLineItems, groupByDeadline, showCompleted, searchQuery, 
     currentPage, currentUserId, router
   ]);
+
+  // Handle URL params that require state updates (to avoid infinite loops)
+  useEffect(() => {
+    const searchParam = searchParams.get('search');
+    if (searchParam) {
+      setSearchQuery(searchParam);
+    }
+    
+    const pageParam = searchParams.get('page');
+    if (pageParam) {
+      setCurrentPage(parseInt(pageParam, 10) || 1);
+    }
+  }, [searchParams]);
 
   // Update URL when filters change
   useEffect(() => {
