@@ -12,11 +12,12 @@ The task filtering feature on `/internal/tasks` has critical bugs preventing use
 
 ## Issue Tracking
 
-### Issue #1: User Selection Shows Zero Tasks
-**Status**: 🔴 Active
+### Issue #1: User Selection Shows Zero Tasks  
+**Status**: ✅ FIXED
 **Description**: Selecting any user from dropdown shows 0 tasks despite having assigned tasks
-**Root Cause**: Under investigation
-**Test Result**: FAILING
+**Root Cause**: Workflow status 'active' was not mapped to any task status
+**Fix**: Added 'active' to 'in_progress' mapping in taskService.ts
+**Test Result**: PASSING
 
 ### Issue #2: Task Count Mismatch
 **Status**: 🟡 Partially Fixed
@@ -103,14 +104,19 @@ When selecting another user:
 ### Change #1
 **File**: `app/internal/tasks/page.tsx`
 **Change**: Updated status exclusions to match taskService
-**Result**: Pending verification
+**Result**: Fixed count query alignment
 
 ### Change #2
-**File**: TBD
-**Change**: TBD
-**Result**: TBD
+**File**: `lib/services/taskService.ts`
+**Change**: Added 'active' workflow status to 'in_progress' task status mapping
+**Result**: ✅ Fixed - workflows now appear when filtering tasks
+
+### Change #3
+**File**: `lib/services/taskService.ts`
+**Change**: Added 'active' to forward mapping in mapWorkflowStatus()
+**Result**: ✅ Fixed - proper status display for active workflows
 
 ---
 
-**Last Updated**: 2025-08-26 12:45
+**Last Updated**: 2025-08-26 13:10
 **Engineer**: Claude
