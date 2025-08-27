@@ -76,8 +76,10 @@ const FILTER_STORAGE_KEY = 'internal-tasks-filters';
 // Task type display constants
 const TASK_TYPE_INFO = {
   order: { label: 'Order', color: 'bg-blue-50 text-blue-700 border-blue-200' },
-  workflow: { label: 'Workflow', color: 'bg-green-50 text-green-700 border-green-200' },
-  line_item: { label: 'Line Item', color: 'bg-purple-50 text-purple-700 border-purple-200' }
+  workflow: { label: 'Guest Post', color: 'bg-green-50 text-green-700 border-green-200' },
+  line_item: { label: 'Paid Link', color: 'bg-purple-50 text-purple-700 border-purple-200' },
+  vetted_sites_request: { label: 'Vetted Sites Request', color: 'bg-orange-50 text-orange-700 border-orange-200' },
+  brand_intelligence: { label: 'Brand Intelligence', color: 'bg-indigo-50 text-indigo-700 border-indigo-200' }
 } as const;
 
 export default function TasksPageClient({
@@ -397,7 +399,7 @@ export default function TasksPageClient({
     if (showLineItems) {
       filters.push({
         key: 'line-items',
-        label: '🔗 Show Line Items',
+        label: '🔗 Show Paid Links',
         value: true,
         remove: () => setShowLineItems(false)
       });
@@ -628,7 +630,7 @@ export default function TasksPageClient({
         hierarchy[accountKey].orders[orderKey].standaloneWorkflows.push(workflow);
       } else {
         // Completely standalone workflow
-        const clientName = (workflow as any).clientName || workflow.client?.name || 'Unknown Client';
+        const clientName = (workflow as any).clientName || ('client' in workflow ? workflow.client?.name : undefined) || 'Unknown Client';
         const accountKey = `${clientName} (Standalone)`;
 
         if (!hierarchy[accountKey]) {
@@ -690,7 +692,7 @@ export default function TasksPageClient({
       const grouped: { [key: string]: UnifiedTask[] } = {};
       tasks.forEach(task => {
         let clientKey = 'No Client';
-        if (task.client?.name) {
+        if ('client' in task && task.client?.name) {
           clientKey = task.client.name;
         } else if (task.type === 'workflow' && (task as any).clientName) {
           clientKey = (task as any).clientName;
@@ -751,7 +753,9 @@ export default function TasksPageClient({
       byType: {
         order: 0,
         workflow: 0,
-        line_item: 0
+        line_item: 0,
+        vetted_sites_request: 0,
+        brand_intelligence: 0
       },
       byStatus: {
         pending: 0,
@@ -768,6 +772,8 @@ export default function TasksPageClient({
       if (task.type === 'order') stats.byType.order++;
       else if (task.type === 'workflow') stats.byType.workflow++;
       else if (task.type === 'line_item') stats.byType.line_item++;
+      else if (task.type === 'vetted_sites_request') (stats.byType as any).vetted_sites_request++;
+      else if (task.type === 'brand_intelligence') (stats.byType as any).brand_intelligence++;
 
       // Count by status
       if (task.status === 'pending') stats.byStatus.pending++;
@@ -860,7 +866,7 @@ export default function TasksPageClient({
       } else {
         // When no types are selected, "All types" means fetch everything
         // Always include line items when showing all types
-        params.append('type', 'order,workflow,line_item');
+        params.append('type', 'order,line_item,workflow');
         params.append('showLineItems', 'true');
       }
       
@@ -1061,6 +1067,12 @@ export default function TasksPageClient({
         return <FileText className="h-4 w-4 text-gray-500" />;
       case 'line_item':
         return <ExternalLink className="h-4 w-4 text-gray-500" />;
+      case 'vetted_sites_request':
+        return <Building className="h-4 w-4 text-gray-500" />;
+      case 'brand_intelligence':
+        return <Users className="h-4 w-4 text-gray-500" />;
+      default:
+        return <FileText className="h-4 w-4 text-gray-500" />;
     }
   };
 
@@ -1108,8 +1120,17 @@ export default function TasksPageClient({
       const assignments = tasksToAssign.map(taskId => {
         const [type, ...idParts] = taskId.split('-');
         const id = idParts.join('-'); // Rejoin the UUID parts
+        
+        let entityType: string;
+        if (type === 'order') entityType = 'order';
+        else if (type === 'workflow') entityType = 'workflow';
+        else if (type === 'line_item' || type === 'lineitem') entityType = 'line_item';
+        else if (type === 'vetted_request') entityType = 'vetted_sites_request';
+        else if (type === 'brand_intelligence') entityType = 'brand_intelligence';
+        else entityType = 'line_item'; // fallback
+        
         return {
-          entityType: type === 'order' ? 'order' : type === 'workflow' ? 'workflow' : 'line_item',
+          entityType,
           entityId: id
         };
       });
@@ -1724,6 +1745,86 @@ export default function TasksPageClient({
                   </div>
                 </div>
               )}
+
+              {/* Vetted Sites Request specific */}
+              {task.type === 'vetted_sites_request' && (
+                <div className="col-span-full space-y-2 border-t border-gray-100 pt-2 mt-2">
+                  <div className="bg-orange-50 rounded-lg p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="font-medium text-orange-800">
+                        Vetted Sites Request
+                      </div>
+                      <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        (task as any).requestStatus === 'approved' ? 'bg-green-100 text-green-700' :
+                        (task as any).requestStatus === 'submitted' ? 'bg-yellow-100 text-yellow-700' :
+                        (task as any).requestStatus === 'fulfilled' ? 'bg-blue-100 text-blue-700' :
+                        'bg-gray-100 text-gray-700'
+                      }`}>
+                        {(task as any).requestStatus || 'pending'}
+                      </div>
+                    </div>
+                    
+                    <div className="text-sm text-orange-700">
+                      <div className="mb-1">
+                        <strong>{(task as any).targetUrls?.length || 0} target URLs</strong> requested for analysis
+                      </div>
+                      {(task as any).submittedAt && (
+                        <div className="text-xs text-orange-600">
+                          Submitted: {new Date((task as any).submittedAt).toLocaleDateString()}
+                        </div>
+                      )}
+                      {(task as any).reviewedAt && (
+                        <div className="text-xs text-orange-600">
+                          Approved: {new Date((task as any).reviewedAt).toLocaleDateString()}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Brand Intelligence specific */}
+              {task.type === 'brand_intelligence' && (
+                <div className="col-span-full space-y-2 border-t border-gray-100 pt-2 mt-2">
+                  <div className="bg-indigo-50 rounded-lg p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="font-medium text-indigo-800">
+                        Brand Intelligence
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          (task as any).researchStatus === 'completed' ? 'bg-green-100 text-green-700' :
+                          (task as any).researchStatus === 'in_progress' ? 'bg-yellow-100 text-yellow-700' :
+                          (task as any).researchStatus === 'error' ? 'bg-red-100 text-red-700' :
+                          'bg-gray-100 text-gray-700'
+                        }`}>
+                          Research: {(task as any).researchStatus || 'idle'}
+                        </div>
+                        <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          (task as any).briefStatus === 'completed' ? 'bg-green-100 text-green-700' :
+                          (task as any).briefStatus === 'in_progress' ? 'bg-yellow-100 text-yellow-700' :
+                          (task as any).briefStatus === 'error' ? 'bg-red-100 text-red-700' :
+                          'bg-gray-100 text-gray-700'
+                        }`}>
+                          Brief: {(task as any).briefStatus || 'idle'}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="text-sm text-indigo-700">
+                      <div className="mb-1">
+                        Client: <strong>{task.client?.name || 'Unknown'}</strong>
+                      </div>
+                      <div className="text-xs text-indigo-600">
+                        {(task as any).hasClientInput ? 
+                          '✓ Client input received' : 
+                          'Waiting for client input'
+                        }
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
               
               {/* Assigned to */}
               <div className="text-sm text-gray-600 col-span-1">
@@ -2314,27 +2415,6 @@ export default function TasksPageClient({
                   </button>
                   <button
                     onClick={() => {
-                      if (selectedTypes.includes('workflow')) {
-                        setSelectedTypes(prev => prev.filter(t => t !== 'workflow'));
-                      } else {
-                        setSelectedTypes(prev => [...prev, 'workflow']);
-                      }
-                    }}
-                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 flex items-center gap-1 ${
-                      selectedTypes.includes('workflow')
-                        ? 'bg-white text-green-600 shadow-sm'
-                        : 'text-gray-600 hover:text-green-600'
-                    }`}
-                  >
-                    📄 Workflows
-                    <span className={`px-1.5 py-0.5 rounded-full text-xs ${
-                      selectedTypes.includes('workflow') ? 'bg-green-100 text-green-600' : 'bg-gray-200 text-gray-600'
-                    }`}>
-                      {getFilteredStats().byType.workflow}
-                    </span>
-                  </button>
-                  <button
-                    onClick={() => {
                       if (selectedTypes.includes('line_item')) {
                         setSelectedTypes(prev => prev.filter(t => t !== 'line_item'));
                       } else {
@@ -2347,11 +2427,74 @@ export default function TasksPageClient({
                         : 'text-gray-600 hover:text-purple-600'
                     }`}
                   >
-                    🔗 Line Items
+                    🔗 Paid Links
                     <span className={`px-1.5 py-0.5 rounded-full text-xs ${
                       selectedTypes.includes('line_item') ? 'bg-purple-100 text-purple-600' : 'bg-gray-200 text-gray-600'
                     }`}>
                       {getFilteredStats().byType.line_item}
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (selectedTypes.includes('workflow')) {
+                        setSelectedTypes(prev => prev.filter(t => t !== 'workflow'));
+                      } else {
+                        setSelectedTypes(prev => [...prev, 'workflow']);
+                      }
+                    }}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 flex items-center gap-1 ${
+                      selectedTypes.includes('workflow')
+                        ? 'bg-white text-green-600 shadow-sm'
+                        : 'text-gray-600 hover:text-green-600'
+                    }`}
+                  >
+                    📄 Guest Posts
+                    <span className={`px-1.5 py-0.5 rounded-full text-xs ${
+                      selectedTypes.includes('workflow') ? 'bg-green-100 text-green-600' : 'bg-gray-200 text-gray-600'
+                    }`}>
+                      {getFilteredStats().byType.workflow}
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (selectedTypes.includes('vetted_sites_request')) {
+                        setSelectedTypes(prev => prev.filter(t => t !== 'vetted_sites_request'));
+                      } else {
+                        setSelectedTypes(prev => [...prev, 'vetted_sites_request']);
+                      }
+                    }}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 flex items-center gap-1 ${
+                      selectedTypes.includes('vetted_sites_request')
+                        ? 'bg-white text-orange-600 shadow-sm'
+                        : 'text-gray-600 hover:text-orange-600'
+                    }`}
+                  >
+                    🏢 Vetted Sites
+                    <span className={`px-1.5 py-0.5 rounded-full text-xs ${
+                      selectedTypes.includes('vetted_sites_request') ? 'bg-orange-100 text-orange-600' : 'bg-gray-200 text-gray-600'
+                    }`}>
+                      {(getFilteredStats().byType as any).vetted_sites_request || 0}
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (selectedTypes.includes('brand_intelligence')) {
+                        setSelectedTypes(prev => prev.filter(t => t !== 'brand_intelligence'));
+                      } else {
+                        setSelectedTypes(prev => [...prev, 'brand_intelligence']);
+                      }
+                    }}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 flex items-center gap-1 ${
+                      selectedTypes.includes('brand_intelligence')
+                        ? 'bg-white text-indigo-600 shadow-sm'
+                        : 'text-gray-600 hover:text-indigo-600'
+                    }`}
+                  >
+                    🧠 Brand Intel
+                    <span className={`px-1.5 py-0.5 rounded-full text-xs ${
+                      selectedTypes.includes('brand_intelligence') ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-200 text-gray-600'
+                    }`}>
+                      {(getFilteredStats().byType as any).brand_intelligence || 0}
                     </span>
                   </button>
                 </div>
@@ -2521,7 +2664,7 @@ export default function TasksPageClient({
                         />
                         <div className="flex items-center gap-2 flex-1 group-hover:text-gray-900 transition-colors">
                           <span className="text-sm">🔗</span>
-                          <span className="text-sm font-medium text-gray-700">Show Line Items</span>
+                          <span className="text-sm font-medium text-gray-700">Show Paid Links</span>
                         </div>
                       </label>
                       
@@ -2724,7 +2867,7 @@ export default function TasksPageClient({
                       <option value="deadline">📅 Due Date</option>
                       <option value="order">📦 Order</option>
                       <option value="client">👥 Account/Client</option>
-                      <option value="hierarchy">🏗️ Account → Order → Workflows</option>
+                      <option value="hierarchy">🏗️ Account → Order → Guest Posts</option>
                     </select>
                   </div>
                 )}

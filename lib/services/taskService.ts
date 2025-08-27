@@ -6,10 +6,11 @@
 import { db } from '@/lib/db/connection';
 import { orders } from '@/lib/db/orderSchema';
 import { orderLineItems } from '@/lib/db/orderLineItemSchema';
-import { workflows } from '@/lib/db/schema';
+import { workflows, clientBrandIntelligence } from '@/lib/db/schema';
 import { accounts } from '@/lib/db/accountSchema';
 import { clients } from '@/lib/db/schema';
 import { users } from '@/lib/db/schema';
+import { vettedSitesRequests } from '@/lib/db/vettedSitesRequestSchema';
 import { eq, and, or, sql, isNull, inArray, gte, lte, desc, asc } from 'drizzle-orm';
 import {
   type TaskFilters,
@@ -40,7 +41,7 @@ export class TaskService {
     // Determine which task types to fetch based on type filter
     const typesToFetch = filters?.types && filters.types.length > 0 
       ? filters.types 
-      : ['order', 'workflow', 'line_item'] as TaskType[];
+      : ['order', 'line_item', 'workflow', 'vetted_sites_request', 'brand_intelligence'] as TaskType[];
     
     // Only fetch the task types that are requested
     const fetchPromises: Promise<UnifiedTask[]>[] = [];
@@ -55,6 +56,14 @@ export class TaskService {
     
     if (typesToFetch.includes('line_item') && filters?.showLineItems) {
       fetchPromises.push(this.getLineItemTasks(filters));
+    }
+    
+    if (typesToFetch.includes('vetted_sites_request')) {
+      fetchPromises.push(this.getVettedSitesRequestTasks(filters));
+    }
+    
+    if (typesToFetch.includes('brand_intelligence')) {
+      fetchPromises.push(this.getBrandIntelligenceTasks(filters));
     }
 
     // Execute fetches in parallel
@@ -492,6 +501,159 @@ export class TaskService {
     }));
   }
 
+  private async getVettedSitesRequestTasks(filters?: TaskFilters): Promise<UnifiedTask[]> {
+    // Import the schema at the top if not already imported
+    const { vettedSitesRequests } = await import('@/lib/db/vettedSitesRequestSchema');
+    
+    const query = db
+      .select({
+        request: vettedSitesRequests,
+        assignedUser: users,
+        reviewedByUser: {
+          id: users.id,
+          name: users.name,
+          email: users.email
+        }
+      })
+      .from(vettedSitesRequests)
+      .leftJoin(users, eq(vettedSitesRequests.fulfilledBy, users.id));
+
+    // Apply filters
+    const conditions = [];
+    
+    if (filters?.assignedTo?.length) {
+      if (filters.assignedTo.includes('unassigned')) {
+        conditions.push(isNull(vettedSitesRequests.fulfilledBy));
+      } else {
+        conditions.push(inArray(vettedSitesRequests.fulfilledBy, filters.assignedTo));
+      }
+    }
+
+    if (filters?.statuses?.length) {
+      const requestStatuses = this.getVettedSitesStatusesForTaskStatuses(filters.statuses);
+      if (requestStatuses.length > 0) {
+        conditions.push(inArray(vettedSitesRequests.status, requestStatuses as any));
+      }
+    }
+
+    // Only show approved requests that need fulfillment
+    if (!filters?.statuses || filters.statuses.length === 0) {
+      conditions.push(eq(vettedSitesRequests.status, 'approved'));
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+    const results = await (whereClause ? query.where(whereClause) : query);
+
+    return results.map(row => ({
+      id: `vetted_request-${row.request.id}`,
+      type: 'vetted_sites_request' as const,
+      requestId: row.request.id,
+      title: `Vetted Sites Request - ${row.request.targetUrls?.length || 0} URLs`,
+      description: row.request.notes || `Request for ${row.request.targetUrls?.length || 0} target URLs`,
+      deadline: row.request.reviewedAt ? new Date(new Date(row.request.reviewedAt).getTime() + (7 * 24 * 60 * 60 * 1000)) : new Date(), // 7 days from approval
+      assignedTo: row.assignedUser ? {
+        id: row.assignedUser.id,
+        name: row.assignedUser.name,
+        email: row.assignedUser.email
+      } : null,
+      client: null, // Vetted sites requests may not have a specific client
+      status: this.mapVettedSitesStatus(row.request.status),
+      priority: 'normal',
+      targetUrls: row.request.targetUrls,
+      requestStatus: row.request.status,
+      submittedAt: row.request.createdAt,
+      reviewedAt: row.request.reviewedAt,
+      createdAt: row.request.createdAt,
+      updatedAt: row.request.updatedAt,
+      action: `/internal/vetted-sites/requests/${row.request.id}`
+    }));
+  }
+
+  private async getBrandIntelligenceTasks(filters?: TaskFilters): Promise<UnifiedTask[]> {
+    // Import the schema at the top if not already imported  
+    const { clientBrandIntelligence } = await import('@/lib/db/schema');
+    
+    const query = db
+      .select({
+        intelligence: clientBrandIntelligence,
+        client: clients,
+        assignedUser: users
+      })
+      .from(clientBrandIntelligence)
+      .innerJoin(clients, eq(clientBrandIntelligence.clientId, clients.id))
+      .leftJoin(users, eq(clientBrandIntelligence.assignedTo, users.id));
+
+    // Apply filters
+    const conditions = [];
+    
+    if (filters?.assignedTo?.length) {
+      if (filters.assignedTo.includes('unassigned')) {
+        conditions.push(isNull(clientBrandIntelligence.assignedTo));
+      } else {
+        conditions.push(inArray(clientBrandIntelligence.assignedTo, filters.assignedTo));
+      }
+    }
+
+    if (filters?.statuses?.length) {
+      const intelligenceStatuses = this.getBrandIntelligenceStatusesForTaskStatuses(filters.statuses);
+      if (intelligenceStatuses.length > 0) {
+        conditions.push(
+          or(
+            inArray(clientBrandIntelligence.researchStatus, intelligenceStatuses as any),
+            inArray(clientBrandIntelligence.briefStatus, intelligenceStatuses as any)
+          )
+        );
+      }
+    }
+
+    if (filters?.clients?.length) {
+      conditions.push(inArray(clientBrandIntelligence.clientId, filters.clients));
+    }
+
+    // Only show non-completed brand intelligence
+    if (!filters?.statuses || filters.statuses.length === 0) {
+      conditions.push(
+        or(
+          sql`${clientBrandIntelligence.researchStatus} != 'completed'`,
+          sql`${clientBrandIntelligence.briefStatus} != 'completed'`,
+          and(
+            eq(clientBrandIntelligence.researchStatus, 'completed'),
+            isNull(clientBrandIntelligence.clientInput)
+          )
+        )
+      );
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+    const results = await (whereClause ? query.where(whereClause) : query);
+
+    return results.map(row => ({
+      id: `brand_intelligence-${row.intelligence.id}`,
+      type: 'brand_intelligence' as const,
+      intelligenceId: row.intelligence.id,
+      title: `Brand Intelligence - ${row.client.name}`,
+      description: this.getBrandIntelligenceDescription(row.intelligence),
+      deadline: this.getBrandIntelligenceDeadline(row.intelligence),
+      assignedTo: row.assignedUser ? {
+        id: row.assignedUser.id,
+        name: row.assignedUser.name,
+        email: row.assignedUser.email
+      } : null,
+      client: {
+        id: row.client.id,
+        name: row.client.name
+      },
+      status: this.mapBrandIntelligenceStatus(row.intelligence),
+      priority: 'normal',
+      researchStatus: row.intelligence.researchStatus,
+      briefStatus: row.intelligence.briefStatus,
+      hasClientInput: !!row.intelligence.clientInput,
+      createdAt: row.intelligence.createdAt,
+      updatedAt: row.intelligence.updatedAt,
+      action: `/clients/${row.client.id}/brand-intelligence`
+    }));
+  }
+
   /**
    * Get workflow statuses that map to given task statuses
    */
@@ -624,6 +786,160 @@ export class TaskService {
   }
 
   /**
+   * Get vetted sites request statuses that map to given task statuses
+   */
+  private getVettedSitesStatusesForTaskStatuses(taskStatuses: TaskStatus[]): string[] {
+    const reverseMap: Record<TaskStatus, string[]> = {
+      'pending': ['submitted', 'under_review'],
+      'in_progress': ['approved'],
+      'completed': ['fulfilled'],
+      'blocked': ['rejected'],
+      'cancelled': ['expired']
+    };
+    
+    const requestStatuses = new Set<string>();
+    for (const taskStatus of taskStatuses) {
+      const mapped = reverseMap[taskStatus] || [];
+      mapped.forEach(s => requestStatuses.add(s));
+    }
+    
+    return Array.from(requestStatuses);
+  }
+
+  /**
+   * Map vetted sites request status to task status
+   */
+  private mapVettedSitesStatus(requestStatus: string | null): TaskStatus {
+    if (!requestStatus) return 'pending';
+    
+    const statusMap: Record<string, TaskStatus> = {
+      'submitted': 'pending',
+      'under_review': 'pending',
+      'approved': 'in_progress',
+      'fulfilled': 'completed',
+      'rejected': 'blocked',
+      'expired': 'cancelled'
+    };
+    
+    return statusMap[requestStatus] || 'pending';
+  }
+
+  /**
+   * Get brand intelligence statuses that map to given task statuses
+   */
+  private getBrandIntelligenceStatusesForTaskStatuses(taskStatuses: TaskStatus[]): string[] {
+    const statusesToCheck = new Set<string>();
+    
+    for (const taskStatus of taskStatuses) {
+      switch (taskStatus) {
+        case 'pending':
+          statusesToCheck.add('idle');
+          statusesToCheck.add('queued');
+          break;
+        case 'in_progress':
+          statusesToCheck.add('in_progress');
+          break;
+        case 'completed':
+          statusesToCheck.add('completed');
+          break;
+        case 'blocked':
+          statusesToCheck.add('error');
+          break;
+      }
+    }
+    
+    return Array.from(statusesToCheck);
+  }
+
+  /**
+   * Map brand intelligence status to task status based on workflow phase
+   */
+  private mapBrandIntelligenceStatus(intelligence: any): TaskStatus {
+    // Handle research phase
+    if (intelligence.researchStatus === 'error' || intelligence.briefStatus === 'error') {
+      return 'blocked';
+    }
+    
+    if (intelligence.researchStatus === 'in_progress') {
+      return 'in_progress';
+    }
+    
+    // Research completed, waiting for client input
+    if (intelligence.researchStatus === 'completed' && !intelligence.clientInput) {
+      return 'pending';
+    }
+    
+    // Client input received, brief generation in progress
+    if (intelligence.clientInput && intelligence.briefStatus === 'in_progress') {
+      return 'in_progress';
+    }
+    
+    // Brief completed
+    if (intelligence.briefStatus === 'completed') {
+      return 'completed';
+    }
+    
+    // Default: initial state
+    return 'pending';
+  }
+
+  /**
+   * Get brand intelligence description based on current phase
+   */
+  private getBrandIntelligenceDescription(intelligence: any): string {
+    if (intelligence.researchStatus === 'error') {
+      return 'Research phase failed - needs attention';
+    }
+    
+    if (intelligence.researchStatus === 'in_progress') {
+      return 'AI research in progress...';
+    }
+    
+    if (intelligence.researchStatus === 'completed' && !intelligence.clientInput) {
+      return 'Waiting for client input on research findings';
+    }
+    
+    if (intelligence.clientInput && intelligence.briefStatus !== 'completed') {
+      return 'Client input received - generating final brief';
+    }
+    
+    if (intelligence.briefStatus === 'completed') {
+      return 'Brand intelligence brief completed';
+    }
+    
+    if (intelligence.briefStatus === 'error') {
+      return 'Brief generation failed - needs attention';
+    }
+    
+    return 'Brand intelligence workflow starting';
+  }
+
+  /**
+   * Get brand intelligence deadline based on current phase
+   */
+  private getBrandIntelligenceDeadline(intelligence: any): Date {
+    const now = new Date();
+    
+    // If research is in progress, deadline is 1 day from start
+    if (intelligence.researchStatus === 'in_progress' && intelligence.researchStartedAt) {
+      return new Date(new Date(intelligence.researchStartedAt).getTime() + (1 * 24 * 60 * 60 * 1000));
+    }
+    
+    // If waiting for client input, deadline is 7 days from research completion
+    if (intelligence.researchStatus === 'completed' && !intelligence.clientInput && intelligence.researchCompletedAt) {
+      return new Date(new Date(intelligence.researchCompletedAt).getTime() + (7 * 24 * 60 * 60 * 1000));
+    }
+    
+    // If client input received and brief generation in progress, deadline is 1 day from input
+    if (intelligence.clientInput && intelligence.briefStatus !== 'completed' && intelligence.clientInputAt) {
+      return new Date(new Date(intelligence.clientInputAt).getTime() + (1 * 24 * 60 * 60 * 1000));
+    }
+    
+    // Default: 3 days from creation
+    return new Date(new Date(intelligence.createdAt).getTime() + (3 * 24 * 60 * 60 * 1000));
+  }
+
+  /**
    * Filter tasks by search query
    */
   private filterBySearch(tasks: UnifiedTask[], searchQuery: string): UnifiedTask[] {
@@ -751,7 +1067,7 @@ export class TaskService {
    * Assign a task to a user
    */
   async assignTask(
-    entityType: 'order' | 'workflow' | 'line_item',
+    entityType: 'order' | 'workflow' | 'line_item' | 'vetted_sites_request' | 'brand_intelligence',
     entityId: string,
     userId: string,
     notes?: string
@@ -790,6 +1106,28 @@ export class TaskService {
             })
             .where(eq(orderLineItems.id, entityId));
           break;
+
+        case 'vetted_sites_request':
+          await db
+            .update(vettedSitesRequests)
+            .set({
+              fulfilledBy: userId,
+              updatedAt: new Date()
+            })
+            .where(eq(vettedSitesRequests.id, entityId));
+          break;
+
+        case 'brand_intelligence':
+          await db
+            .update(clientBrandIntelligence)
+            .set({
+              assignedTo: userId,
+              assignedAt: new Date(),
+              assignmentNotes: notes,
+              updatedAt: new Date()
+            })
+            .where(eq(clientBrandIntelligence.id, entityId));
+          break;
       }
 
       return true;
@@ -803,7 +1141,7 @@ export class TaskService {
    * Bulk assign tasks
    */
   async bulkAssignTasks(
-    entityType: 'order' | 'workflow' | 'line_item',
+    entityType: 'order' | 'workflow' | 'line_item' | 'vetted_sites_request' | 'brand_intelligence',
     entityIds: string[],
     userId: string,
     notes?: string
@@ -841,6 +1179,28 @@ export class TaskService {
               modifiedAt: new Date()
             })
             .where(inArray(orderLineItems.id, entityIds));
+          break;
+
+        case 'vetted_sites_request':
+          await db
+            .update(vettedSitesRequests)
+            .set({
+              fulfilledBy: userId,
+              updatedAt: new Date()
+            })
+            .where(inArray(vettedSitesRequests.id, entityIds));
+          break;
+
+        case 'brand_intelligence':
+          await db
+            .update(clientBrandIntelligence)
+            .set({
+              assignedTo: userId,
+              assignedAt: new Date(),
+              assignmentNotes: notes,
+              updatedAt: new Date()
+            })
+            .where(inArray(clientBrandIntelligence.id, entityIds));
           break;
       }
 

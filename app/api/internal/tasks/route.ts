@@ -179,7 +179,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Validate entity type
-    if (!['order', 'workflow', 'line_item'].includes(entityType)) {
+    if (!['order', 'workflow', 'line_item', 'vetted_sites_request', 'brand_intelligence'].includes(entityType)) {
       return NextResponse.json(
         { error: 'Invalid entity type' },
         { status: 400 }
@@ -188,7 +188,7 @@ export async function PUT(request: NextRequest) {
 
     // Perform assignment
     const success = await taskService.assignTask(
-      entityType as 'order' | 'workflow' | 'line_item',
+      entityType as 'order' | 'workflow' | 'line_item' | 'vetted_sites_request' | 'brand_intelligence',
       entityId,
       assignedTo,
       notes
@@ -238,7 +238,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Validate entity type
-      if (!['order', 'workflow', 'line_item'].includes(entityType)) {
+      if (!['order', 'workflow', 'line_item', 'vetted_sites_request', 'brand_intelligence'].includes(entityType)) {
         return NextResponse.json(
           { error: 'Invalid entity type' },
           { status: 400 }
@@ -247,7 +247,7 @@ export async function POST(request: NextRequest) {
 
       // Perform bulk assignment
       const success = await taskService.bulkAssignTasks(
-        entityType as 'order' | 'workflow' | 'line_item',
+        entityType as 'order' | 'workflow' | 'line_item' | 'vetted_sites_request' | 'brand_intelligence',
         entityIds,
         assignedTo,
         notes

@@ -7,7 +7,7 @@
  */
 
 // Base types
-export type TaskType = 'order' | 'workflow' | 'line_item';
+export type TaskType = 'order' | 'workflow' | 'line_item' | 'vetted_sites_request' | 'brand_intelligence';
 export type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'blocked' | 'cancelled';
 export type TaskPriority = 'urgent' | 'high' | 'normal' | 'low';
 
@@ -81,8 +81,30 @@ export interface LineItemTask extends BaseTask {
   action: string; // Link to line item or order page
 }
 
+// Vetted Sites Request task
+export interface VettedSitesRequestTask extends BaseTask {
+  type: 'vetted_sites_request';
+  requestId: string;
+  targetUrls?: string[];
+  requestStatus: string;
+  submittedAt?: Date;
+  reviewedAt?: Date | null;
+  action: string; // Link to vetted sites request page
+}
+
+// Brand Intelligence task
+export interface BrandIntelligenceTask extends BaseTask {
+  type: 'brand_intelligence';
+  intelligenceId: string;
+  client: TaskClient;
+  researchStatus: string;
+  briefStatus: string;
+  hasClientInput: boolean;
+  action: string; // Link to brand intelligence page
+}
+
 // Union type for all tasks
-export type UnifiedTask = OrderTask | WorkflowTask | LineItemTask;
+export type UnifiedTask = OrderTask | WorkflowTask | LineItemTask | VettedSitesRequestTask | BrandIntelligenceTask;
 
 // Filter interfaces
 export interface TaskFilters {
@@ -131,6 +153,8 @@ export interface TaskStats {
     order: number;
     workflow: number;
     line_item: number;
+    vetted_sites_request?: number;
+    brand_intelligence?: number;
   };
 }
 
@@ -174,6 +198,14 @@ export function isWorkflowTask(task: UnifiedTask): task is WorkflowTask {
 
 export function isLineItemTask(task: UnifiedTask): task is LineItemTask {
   return task.type === 'line_item';
+}
+
+export function isVettedSitesRequestTask(task: UnifiedTask): task is VettedSitesRequestTask {
+  return task.type === 'vetted_sites_request';
+}
+
+export function isBrandIntelligenceTask(task: UnifiedTask): task is BrandIntelligenceTask {
+  return task.type === 'brand_intelligence';
 }
 
 // Date helper functions
