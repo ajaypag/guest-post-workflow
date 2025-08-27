@@ -1461,16 +1461,10 @@ export default function LineItemsReviewTable({
                         <ExpandedDomainDetails submission={{
                           domain: {
                             qualificationStatus: (item.metadata as any)?.domainQualificationStatus,
-                            qualificationReasons: (item.metadata as any)?.domainQualificationReasons,
-                            matchData: (item.metadata as any)?.targetMatchData,
-                            hasDataForSeoResults: (item.metadata as any)?.hasDataForSeoResults,
-                            dataForSeoContent: (item.metadata as any)?.dataForSeoContent,
+                            aiQualificationReasoning: (item.metadata as any)?.domainQualificationReasons,
+                            dataForSeoResultsCount: (item.metadata as any)?.dataForSeoResultsCount,
                           },
-                          assignedDomain: item.assignedDomain,
                           metadata: item.metadata as any,
-                          qualifiedAt: (item.metadata as any)?.qualifiedAt,
-                          assignedAt: item.createdAt,
-                          status: item.status,
                         }} />
                       </div>
                     )}
