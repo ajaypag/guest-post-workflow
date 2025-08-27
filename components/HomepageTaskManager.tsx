@@ -28,16 +28,15 @@ export default function HomepageTaskManager({
   currentUserEmail,
   internalUsers
 }: HomepageTaskManagerProps) {
-  // Wrap the TasksPageClient with any homepage-specific modifications if needed
+  // Pass through directly to TasksPageClient without wrapper styling
+  // The TasksPageClient component handles its own responsive layout
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-      <TasksPageClient
-        initialData={initialData}
-        currentUserId={currentUserId}
-        currentUserName={currentUserName}
-        currentUserEmail={currentUserEmail}
-        internalUsers={internalUsers}
-      />
-    </div>
+    <TasksPageClient
+      initialData={initialData}
+      currentUserId={currentUserId}
+      currentUserName={currentUserName}
+      currentUserEmail={currentUserEmail}
+      internalUsers={internalUsers}
+    />
   );
 }
