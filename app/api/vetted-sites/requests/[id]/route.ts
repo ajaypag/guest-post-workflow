@@ -136,9 +136,10 @@ export async function GET(
       .leftJoin(bulkAnalysisProjects, eq(vettedRequestProjects.projectId, bulkAnalysisProjects.id))
       .where(eq(vettedRequestProjects.requestId, requestId));
 
-    // Fetch creator user details if available
+    // Fetch creator user details - check both createdByUser (internal) and accountId (account users)
     let creatorDetails = null;
-    if (requestData.createdByUser) {
+    const creatorId = requestData.createdByUser || requestData.accountId;
+    if (creatorId) {
       const [creatorUser] = await db
         .select({
           id: users.id,
@@ -146,7 +147,7 @@ export async function GET(
           email: users.email
         })
         .from(users)
-        .where(eq(users.id, requestData.createdByUser))
+        .where(eq(users.id, creatorId))
         .limit(1);
       
       creatorDetails = creatorUser;

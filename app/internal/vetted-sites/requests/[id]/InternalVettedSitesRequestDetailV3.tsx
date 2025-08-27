@@ -182,7 +182,8 @@ export default function InternalVettedSitesRequestDetailV3({
     try {
       const response = await fetch(`/api/users/${userId}`);
       if (response.ok) {
-        const userData = await response.json();
+        const data = await response.json();
+        const userData = data.user || data; // Handle both { user } and direct user response
         setAssignedUser({
           id: userData.id,
           name: userData.name,
@@ -816,8 +817,14 @@ export default function InternalVettedSitesRequestDetailV3({
               currentAssignee={assignedUser}
               onAssignmentChange={(assignee) => {
                 setAssignedUser(assignee);
-                // Refresh request to get updated fulfillment data
-                fetchRequestDetail();
+                // Update the request's fulfilledBy field locally to prevent flashing
+                if (assignee) {
+                  setRequest(prev => prev ? { ...prev, fulfilledBy: assignee.id } : prev);
+                } else {
+                  setRequest(prev => prev ? { ...prev, fulfilledBy: null } : prev);
+                }
+                // Refresh request to get updated fulfillment data after a delay
+                setTimeout(() => fetchRequestDetail(), 1000);
               }}
             />
 
