@@ -1360,18 +1360,18 @@ export default function TasksPageClient({
             
             <div className="flex-1">
               {/* Task header */}
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex flex-wrap items-center gap-2 mb-2">
                 {getTaskIcon(task)}
                 <Link 
                   href={task.action}
-                  className="font-medium text-gray-900 hover:text-indigo-600 hover:underline transition-colors"
+                  className="font-medium text-gray-900 hover:text-indigo-600 hover:underline transition-colors flex-1 min-w-0 truncate"
                 >
-                  <h3>{task.title}</h3>
+                  <h3 className="truncate">{task.title}</h3>
                 </Link>
-                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${getTaskTypeInfo(task).color}`}>
+                <span className={`inline-flex items-center px-1.5 sm:px-2 py-0.5 rounded text-xs font-medium border whitespace-nowrap ${getTaskTypeInfo(task).color}`}>
                   {getTaskTypeInfo(task).label}
                 </span>
-                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${getStatusColor(task.status)}`}>
+                <span className={`inline-flex items-center px-1.5 sm:px-2 py-0.5 rounded text-xs font-medium border whitespace-nowrap ${getStatusColor(task.status)}`}>
                   {task.status.replace('_', ' ')}
                 </span>
               </div>
@@ -1827,13 +1827,13 @@ export default function TasksPageClient({
               )}
               
               {/* Assigned to */}
-              <div className="text-sm text-gray-600 col-span-1">
+              <div className="text-xs sm:text-sm text-gray-600 col-span-1">
                 {task.assignedTo ? (
                   <div className="flex items-center gap-1">
-                    <User className="h-3 w-3" />
+                    <User className="h-3 w-3 flex-shrink-0" />
                     <Link 
                       href={`/internal/tasks?user=${task.assignedTo.id}`}
-                      className="text-gray-700 hover:text-indigo-600 hover:underline font-medium"
+                      className="text-gray-700 hover:text-indigo-600 hover:underline font-medium truncate"
                     >
                       {task.assignedTo.name || task.assignedTo.email.split('@')[0]}
                     </Link>
@@ -1845,12 +1845,12 @@ export default function TasksPageClient({
             </div>
 
             {/* Actions */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
               {/* Assignment dropdown or claim button */}
               {!task.assignedTo ? (
                 <button
                   onClick={() => handleClaimTask(task)}
-                  className="px-3 py-1 text-sm text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                  className="px-2 sm:px-3 py-1 text-xs sm:text-sm text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
                 >
                   Claim
                 </button>
@@ -1865,7 +1865,7 @@ export default function TasksPageClient({
                       setShowAssignmentModal(true);
                     }
                   }}
-                  className="text-sm border border-gray-200 rounded-lg px-2 py-1 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="text-xs sm:text-sm border border-gray-200 rounded-lg px-1 sm:px-2 py-1 focus:ring-2 focus:ring-indigo-500 focus:border-transparent max-w-[120px] sm:max-w-none truncate"
                 >
                   <option value="">Reassign...</option>
                   {internalUsers.map(user => (
@@ -1879,10 +1879,10 @@ export default function TasksPageClient({
               {/* View link */}
               <Link
                 href={task.action}
-                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                className="p-1.5 sm:p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
                 title="View"
               >
-                <ExternalLink className="h-4 w-4" />
+                <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4" />
               </Link>
             </div>
           </div>
