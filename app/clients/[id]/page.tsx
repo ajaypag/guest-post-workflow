@@ -1208,7 +1208,7 @@ export default function ClientDetailPage() {
                             </div>
                             
                             {/* Content Sections Grid */}
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                               {/* Keywords Section */}
                               <div className="space-y-2">
                                 <div className="flex items-center justify-between">
@@ -1258,6 +1258,48 @@ export default function ClientDetailPage() {
                                     }
                                   }}
                                 />
+                              </div>
+
+                              {/* Intelligence Section */}
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <h4 className="text-xs font-medium text-gray-700 uppercase tracking-wide">Intelligence</h4>
+                                </div>
+                                {page.hasIntelligence ? (
+                                  <div className="text-xs">
+                                    <div className="flex items-center justify-between">
+                                      <div className="text-gray-400">
+                                        <div>Brief available</div>
+                                        <div className="text-gray-500 mt-1 text-xs">
+                                          Updated {page.intelligenceUpdatedAt ? new Date(page.intelligenceUpdatedAt).toLocaleDateString() : 'recently'}
+                                        </div>
+                                      </div>
+                                      <Link
+                                        href={`/clients/${client.id}/target-page-intelligence/${page.id}`}
+                                        className="inline-flex items-center px-3 py-1.5 bg-purple-600 text-white text-xs rounded-md hover:bg-purple-700 transition-colors"
+                                      >
+                                        View Brief
+                                      </Link>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="text-xs">
+                                    <div className="flex items-center justify-between">
+                                      <div className="text-gray-400">
+                                        <div className="italic">No intelligence yet</div>
+                                        <div className="text-gray-500 mt-1 text-xs">
+                                          Deep research for this specific page
+                                        </div>
+                                      </div>
+                                      <Link
+                                        href={`/clients/${client.id}/target-page-intelligence/${page.id}`}
+                                        className="inline-flex items-center px-3 py-1.5 bg-gray-600 text-white text-xs rounded-md hover:bg-gray-700 transition-colors"
+                                      >
+                                        Generate Intelligence
+                                      </Link>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -1349,6 +1391,75 @@ export default function ClientDetailPage() {
                       {userType === 'internal' ? 'Open Brand Intelligence' : 'View Brand Intelligence'}
                     </Link>
                   </div>
+                </div>
+              </div>
+
+              {/* Target Page Intelligence */}
+              <div className="bg-white rounded-lg shadow">
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">Target Page Intelligence</h3>
+                      <p className="text-gray-600 text-sm">
+                        Deep research and briefs for specific product/service pages
+                      </p>
+                    </div>
+                    {client?.targetPages && client.targetPages.length > 0 && (
+                      <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
+                        {client.targetPages.filter(p => p.hasIntelligence).length} briefs
+                      </span>
+                    )}
+                  </div>
+                  
+                  {/* List of pages with intelligence */}
+                  {client?.targetPages && client.targetPages.filter(p => p.hasIntelligence).length > 0 && (
+                    <div className="space-y-2 mb-4 max-h-48 overflow-y-auto">
+                      {client.targetPages.filter(p => p.hasIntelligence).map(page => (
+                        <div key={page.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-gray-900">{page.url}</p>
+                            <p className="text-xs text-gray-500">Generated {page.intelligenceUpdatedAt ? new Date(page.intelligenceUpdatedAt).toLocaleDateString() : 'recently'}</p>
+                          </div>
+                          <Link
+                            href={`/clients/${client.id}/target-page-intelligence/${page.id}`}
+                            className="text-purple-600 hover:text-purple-700 text-sm font-medium"
+                          >
+                            View Brief
+                          </Link>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {/* Generate new button - only show if client has target pages */}
+                  {client?.targetPages && client.targetPages.length > 0 && (
+                    <button
+                      onClick={() => {
+                        // For now, just navigate to the first target page - later we'll add a selector modal
+                        const firstPage = client.targetPages[0];
+                        if (firstPage) {
+                          router.push(`/clients/${client.id}/target-page-intelligence/${firstPage.id}`);
+                        }
+                      }}
+                      className="w-full px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors flex items-center justify-center"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Generate for Target Page
+                    </button>
+                  )}
+                  
+                  {/* No target pages message */}
+                  {(!client?.targetPages || client.targetPages.length === 0) && (
+                    <div className="text-center py-6 text-gray-500">
+                      <p className="text-sm mb-2">No target pages available</p>
+                      <Link
+                        href={`/clients/${client?.id}?tab=pages`}
+                        className="text-purple-600 hover:text-purple-700 text-sm font-medium"
+                      >
+                        Add target pages first →
+                      </Link>
+                    </div>
+                  )}
                 </div>
               </div>
 

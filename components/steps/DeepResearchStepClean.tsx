@@ -25,6 +25,8 @@ export const DeepResearchStepClean = ({ step, workflow, onChange }: DeepResearch
   const [activeTab, setActiveTab] = useState<'manual' | 'agentic'>('manual');
   const [researchPreferences, setResearchPreferences] = useState<OutlinePreferences | null>(null);
   const [applyPreferences, setApplyPreferences] = useState<boolean>(false);
+  const [intelligence, setIntelligence] = useState<string>('');
+  const [intelligenceType, setIntelligenceType] = useState<'none' | 'brand' | 'target'>('none');
 
   // Get the deep research prompt from Step 2j
   const topicGenerationStep = workflow.steps.find(s => s.id === 'topic-generation');
@@ -54,9 +56,60 @@ export const DeepResearchStepClean = ({ step, workflow, onChange }: DeepResearch
     loadClientPreferences();
   }, [workflow.metadata?.clientId]);
 
-  // Generate enhanced prompt with preferences
+  // Load intelligence with proper hierarchy: Target Page > Brand > None
+  useEffect(() => {
+    const loadIntelligence = async () => {
+      let intelligenceContent = '';
+      let intelligenceType: 'none' | 'brand' | 'target' = 'none';
+      
+      // 1. Check for target page intelligence first (siteSelectionId is the target page ID)
+      const targetPageId = workflow.metadata?.siteSelectionId;
+      
+      if (targetPageId) {
+        try {
+          const targetResponse = await fetch(`/api/target-pages/${targetPageId}/intelligence/latest`);
+          if (targetResponse.ok) {
+            const targetData = await targetResponse.json();
+            if (targetData.session?.finalBrief) {
+              intelligenceContent = targetData.session.finalBrief;
+              intelligenceType = 'target';
+            }
+          }
+        } catch (error) {
+          console.error('Failed to load target page intelligence:', error);
+        }
+      }
+      
+      // 2. Fall back to brand intelligence if no target URL intelligence
+      if (!intelligenceContent && workflow.metadata?.clientId) {
+        try {
+          const brandResponse = await fetch(`/api/clients/${workflow.metadata.clientId}/brand-intelligence/latest`);
+          if (brandResponse.ok) {
+            const brandData = await brandResponse.json();
+            if (brandData.session?.finalBrief) {
+              intelligenceContent = brandData.session.finalBrief;
+              intelligenceType = 'brand';
+            }
+          }
+        } catch (error) {
+          console.error('Failed to load brand intelligence:', error);
+        }
+      }
+      
+      setIntelligence(intelligenceContent);
+      setIntelligenceType(intelligenceType);
+    };
+
+    loadIntelligence();
+  }, [workflow.metadata?.clientId, workflow.metadata?.siteSelectionId]);
+
+  // Generate enhanced prompt with preferences and intelligence
   const outlinePrompt = researchPreferences && applyPreferences 
-    ? baseOutlinePrompt + generateOutlineEnhancement(researchPreferences)
+    ? baseOutlinePrompt + generateOutlineEnhancement(
+        researchPreferences, 
+        workflow.metadata?.targetPageUrl,
+        intelligence // Will use target URL intelligence if available, brand if not
+      )
     : baseOutlinePrompt;
   
   const toggleSection = (section: string) => {
@@ -216,6 +269,31 @@ export const DeepResearchStepClean = ({ step, workflow, onChange }: DeepResearch
                       </p>
                     </div>
                   </div>
+                </div>
+              )}
+
+              {/* Intelligence Integration Indicators */}
+              {intelligenceType === 'target' && (
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                  <p className="text-sm font-medium text-purple-900">
+                    🎯 Using Target URL Intelligence for this specific page
+                  </p>
+                </div>
+              )}
+
+              {intelligenceType === 'brand' && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-sm font-medium text-blue-900">
+                    🏢 Using Brand Intelligence (no target URL brief available)
+                  </p>
+                </div>
+              )}
+
+              {intelligenceType === 'none' && (
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                  <p className="text-sm font-medium text-gray-700">
+                    ℹ️ No intelligence available - using basic outline generation
+                  </p>
                 </div>
               )}
 

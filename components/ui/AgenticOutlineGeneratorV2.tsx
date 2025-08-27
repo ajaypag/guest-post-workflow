@@ -22,6 +22,10 @@ export function AgenticOutlineGeneratorV2({ workflowId, onComplete }: AgenticOut
   const [isLoading, setIsLoading] = useState(true);
   const [pollingCount, setPollingCount] = useState(0);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Intelligence state
+  const [intelligenceType, setIntelligenceType] = useState<'none' | 'brand' | 'target'>('none');
+  const [workflowMetadata, setWorkflowMetadata] = useState<any>(null);
 
   // Load existing session on mount
   useEffect(() => {
@@ -71,6 +75,70 @@ export function AgenticOutlineGeneratorV2({ workflowId, onComplete }: AgenticOut
         clearInterval(pollingIntervalRef.current);
       }
     };
+  }, [workflowId]);
+
+  // Load workflow metadata and intelligence information
+  useEffect(() => {
+    const loadWorkflowIntelligence = async () => {
+      try {
+        // Get workflow metadata
+        const response = await fetch(`/api/workflows/${workflowId}`);
+        if (!response.ok) return;
+        
+        const workflow = await response.json();
+        setWorkflowMetadata(workflow.metadata);
+        
+        if (!workflow.metadata) {
+          setIntelligenceType('none');
+          return;
+        }
+        
+        let intelligenceFound = false;
+        
+        // 1. Check for target page intelligence first
+        const targetPageId = workflow.metadata?.siteSelectionId;
+        if (targetPageId) {
+          try {
+            const targetResponse = await fetch(`/api/target-pages/${targetPageId}/intelligence/latest`);
+            if (targetResponse.ok) {
+              const targetData = await targetResponse.json();
+              if (targetData.session?.finalBrief) {
+                setIntelligenceType('target');
+                intelligenceFound = true;
+              }
+            }
+          } catch (error) {
+            console.error('Failed to load target page intelligence:', error);
+          }
+        }
+        
+        // 2. Fall back to brand intelligence if no target intelligence
+        if (!intelligenceFound && workflow.metadata?.clientId) {
+          try {
+            const brandResponse = await fetch(`/api/clients/${workflow.metadata.clientId}/brand-intelligence/latest`);
+            if (brandResponse.ok) {
+              const brandData = await brandResponse.json();
+              if (brandData.session?.finalBrief) {
+                setIntelligenceType('brand');
+                intelligenceFound = true;
+              }
+            }
+          } catch (error) {
+            console.error('Failed to load brand intelligence:', error);
+          }
+        }
+        
+        if (!intelligenceFound) {
+          setIntelligenceType('none');
+        }
+        
+      } catch (error) {
+        console.error('Error loading workflow intelligence:', error);
+        setIntelligenceType('none');
+      }
+    };
+
+    loadWorkflowIntelligence();
   }, [workflowId]);
 
   const startGeneration = async () => {
@@ -233,6 +301,40 @@ export function AgenticOutlineGeneratorV2({ workflowId, onComplete }: AgenticOut
           This process typically takes 10-15 minutes.
         </p>
       </div>
+
+      {/* Intelligence Integration Indicators */}
+      {intelligenceType === 'target' && (
+        <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+          <p className="text-sm font-medium text-purple-900">
+            🎯 Using Target URL Intelligence for enhanced research
+          </p>
+          <p className="text-xs text-purple-700 mt-1">
+            AI will use deep intelligence about this specific page to create more relevant outlines
+          </p>
+        </div>
+      )}
+
+      {intelligenceType === 'brand' && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <p className="text-sm font-medium text-blue-900">
+            🏢 Using Brand Intelligence for enhanced research
+          </p>
+          <p className="text-xs text-blue-700 mt-1">
+            AI will use comprehensive brand knowledge to create more accurate outlines
+          </p>
+        </div>
+      )}
+
+      {intelligenceType === 'none' && (
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+          <p className="text-sm font-medium text-gray-700">
+            ℹ️ Using standard research mode
+          </p>
+          <p className="text-xs text-gray-600 mt-1">
+            AI will conduct basic research without additional business intelligence
+          </p>
+        </div>
+      )}
 
       {/* Status Display */}
       {status !== 'idle' && (

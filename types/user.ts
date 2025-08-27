@@ -37,6 +37,9 @@ export interface TargetPage {
   description?: string; // AI-generated description
   addedAt: Date;
   completedAt?: Date;
+  // Target Page Intelligence fields
+  hasIntelligence?: boolean;
+  intelligenceUpdatedAt?: Date;
 }
 
 import { AuthSession as AuthSessionType } from '@/lib/types/auth';

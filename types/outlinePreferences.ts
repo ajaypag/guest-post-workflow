@@ -40,13 +40,19 @@ export const DEFAULT_OUTLINE_PREFERENCES: OutlinePreferences = {
  */
 export function generateOutlineEnhancement(
   preferences: OutlinePreferences, 
-  targetUrl?: string
+  targetUrl?: string,
+  intelligence?: string
 ): string {
   if (!preferences || !preferences.enabled) {
     return '';
   }
 
   let enhancement = '';
+  
+  // Add intelligence context if available
+  if (intelligence && intelligence.trim()) {
+    enhancement += `\n\nBRAND/PRODUCT INTELLIGENCE: You have access to this comprehensive intelligence about the business/product. Use it to inform your research and make the outline more relevant and accurate:\n\n${intelligence.trim()}`;
+  }
   
   // Add competitor exclusion instructions
   if (preferences.excludeCompetitors && preferences.excludeCompetitors.length > 0) {
