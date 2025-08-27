@@ -458,30 +458,30 @@ export default function InternalVettedSitesRequestDetailV3({
       {/* Page Header */}
       <div className="bg-white border-b border-gray-200 mb-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between py-4">
-            <div className="flex items-center space-x-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-4 space-y-3 sm:space-y-0">
+            <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
               <h1 className="text-xl font-semibold text-gray-900">Request Detail</h1>
-              <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${statusData.color}`}>
+              <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${statusData.color} self-start sm:self-auto`}>
                 <StatusIcon className="h-4 w-4 mr-1.5" />
                 {statusData.label}
               </span>
             </div>
             
             {/* Action Buttons */}
-            <div className="flex items-center space-x-3">
+            <div className="flex flex-wrap items-center gap-2">
               {request.status === 'submitted' && (
                 <>
                   <button
                     onClick={() => handleStatusUpdate('reviewing')}
                     disabled={updating}
-                    className="px-4 py-2 bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 transition-colors disabled:opacity-50"
+                    className="px-4 py-2 min-h-[44px] bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 active:bg-yellow-300 transition-colors disabled:opacity-50 touch-manipulation"
                   >
                     Start Review
                   </button>
                   <button
                     onClick={() => handleStatusUpdate('approved')}
                     disabled={updating}
-                    className="px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors disabled:opacity-50"
+                    className="px-4 py-2 min-h-[44px] bg-green-100 text-green-700 rounded-lg hover:bg-green-200 active:bg-green-300 transition-colors disabled:opacity-50 touch-manipulation"
                   >
                     Approve
                   </button>
@@ -493,14 +493,14 @@ export default function InternalVettedSitesRequestDetailV3({
                   <button
                     onClick={() => handleStatusUpdate('approved')}
                     disabled={updating}
-                    className="px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors disabled:opacity-50"
+                    className="px-4 py-2 min-h-[44px] bg-green-100 text-green-700 rounded-lg hover:bg-green-200 active:bg-green-300 transition-colors disabled:opacity-50 touch-manipulation"
                   >
                     Approve
                   </button>
                   <button
                     onClick={() => handleStatusUpdate('rejected')}
                     disabled={updating}
-                    className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors disabled:opacity-50"
+                    className="px-4 py-2 min-h-[44px] bg-red-100 text-red-700 rounded-lg hover:bg-red-200 active:bg-red-300 transition-colors disabled:opacity-50 touch-manipulation"
                   >
                     Reject
                   </button>
@@ -512,7 +512,7 @@ export default function InternalVettedSitesRequestDetailV3({
                   <button
                     onClick={() => handleStatusUpdate('fulfilled')}
                     disabled={updating}
-                    className="px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors disabled:opacity-50"
+                    className="px-4 py-2 min-h-[44px] bg-green-100 text-green-700 rounded-lg hover:bg-green-200 active:bg-green-300 transition-colors disabled:opacity-50 touch-manipulation"
                   >
                     Mark as Fulfilled
                   </button>
@@ -549,18 +549,18 @@ export default function InternalVettedSitesRequestDetailV3({
       )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             
             {/* Target URLs Section - Following order pattern */}
             {request.status === 'approved' && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center">
-                    <Target className="h-5 w-5 text-gray-600 mr-2" />
+              <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Target className="h-5 w-5 text-gray-600" />
                     <h2 className="text-lg font-medium text-gray-900">Target URLs</h2>
-                    <span className="ml-2 px-2 py-0.5 bg-gray-100 text-gray-600 text-sm rounded">
+                    <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs sm:text-sm rounded">
                       {targetPageStatuses.filter(p => p.hasKeywords).length}/{targetPageStatuses.length} Ready
                     </span>
                   </div>
@@ -569,7 +569,7 @@ export default function InternalVettedSitesRequestDetailV3({
                     <button
                       onClick={generateKeywordsForSelected}
                       disabled={generatingKeywords || !somePagesSelected}
-                      className="px-3 py-1.5 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                      className="px-3 py-2 min-h-[44px] bg-purple-600 text-white text-xs sm:text-sm rounded-lg hover:bg-purple-700 active:bg-purple-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 touch-manipulation w-full sm:w-auto justify-center"
                     >
                       {generatingKeywords ? (
                         <>
@@ -588,8 +588,8 @@ export default function InternalVettedSitesRequestDetailV3({
                 
                 <div className="space-y-2">
                   {targetPageStatuses.map((page) => (
-                    <div key={page.url} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center space-x-3">
+                    <div key={page.url} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 bg-gray-50 rounded-lg gap-3">
+                      <div className="flex items-start sm:items-center space-x-3">
                         {!page.hasKeywords && (
                           <input
                             type="checkbox"
@@ -666,11 +666,11 @@ export default function InternalVettedSitesRequestDetailV3({
 
             {/* Bulk Analysis Projects - Following order pattern */}
             {(request.status === 'approved' || request.status === 'in_progress' || request.status === 'fulfilled') && request.linkedProjects && request.linkedProjects.length > 0 && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
-                <div className="flex items-center mb-4">
-                  <Database className="h-5 w-5 text-gray-600 mr-2" />
+              <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4 sm:p-6">
+                <div className="flex flex-wrap items-center gap-2 mb-4">
+                  <Database className="h-5 w-5 text-gray-600" />
                   <h2 className="text-lg font-medium text-gray-900">Bulk Analysis Projects</h2>
-                  <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-600 text-sm rounded">
+                  <span className="px-2 py-0.5 bg-green-100 text-green-600 text-xs sm:text-sm rounded">
                     {request.linkedProjects.length} Created
                   </span>
                 </div>
@@ -678,16 +678,16 @@ export default function InternalVettedSitesRequestDetailV3({
                 <div className="space-y-3">
                   {request.linkedProjects.map((project, index) => (
                     <div key={project.projectId} className="p-4 bg-gray-50 rounded-lg">
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                         <div>
-                          <div className="font-medium text-gray-900">{project.projectName || `Bulk Analysis Project ${index + 1}`}</div>
-                          <div className="text-sm text-gray-600 mt-1">
+                          <div className="font-medium text-gray-900 text-sm sm:text-base">{project.projectName || `Bulk Analysis Project ${index + 1}`}</div>
+                          <div className="text-xs sm:text-sm text-gray-600 mt-1">
                             Created {new Date(project.addedAt).toLocaleDateString()}
                           </div>
                         </div>
                         <Link
                           href={`/clients/${project.clientId}/bulk-analysis/projects/${project.projectId}`}
-                          className="inline-flex items-center px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition-colors text-sm"
+                          className="inline-flex items-center justify-center px-3 py-2 min-h-[40px] bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 active:bg-indigo-300 transition-colors text-xs sm:text-sm touch-manipulation w-full sm:w-auto"
                         >
                           <ExternalLink className="h-4 w-4 mr-1" />
                           View Project
@@ -701,11 +701,11 @@ export default function InternalVettedSitesRequestDetailV3({
 
             {/* Original Target URLs Display (for non-approved requests) */}
             {request.status !== 'approved' && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
-                <div className="flex items-center mb-4">
-                  <Target className="h-5 w-5 text-gray-600 mr-2" />
+              <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4 sm:p-6">
+                <div className="flex flex-wrap items-center gap-2 mb-4">
+                  <Target className="h-5 w-5 text-gray-600" />
                   <h2 className="text-lg font-medium text-gray-900">Target URLs</h2>
-                  <span className="ml-2 px-2 py-0.5 bg-gray-100 text-gray-600 text-sm rounded">
+                  <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs sm:text-sm rounded">
                     {request.targetUrls?.length || 0}
                   </span>
                 </div>
@@ -750,7 +750,7 @@ export default function InternalVettedSitesRequestDetailV3({
                 <button
                   onClick={() => handleStatusUpdate(request.status)}
                   disabled={updating}
-                  className="mt-3 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
+                  className="mt-3 px-4 py-2 min-h-[44px] bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 active:bg-indigo-800 transition-colors disabled:opacity-50 touch-manipulation w-full sm:w-auto"
                 >
                   Save Notes
                 </button>
@@ -761,7 +761,7 @@ export default function InternalVettedSitesRequestDetailV3({
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Request Info */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4 sm:p-6">
               <h3 className="text-sm font-medium text-gray-900 mb-4">Request Information</h3>
               <div className="space-y-3">
                 <div>
@@ -806,7 +806,7 @@ export default function InternalVettedSitesRequestDetailV3({
 
             {/* Project Creation Checklist (for approved requests) */}
             {request.status === 'approved' && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+              <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4 sm:p-6">
                 <h3 className="text-sm font-medium text-gray-900 mb-4">Project Creation Checklist</h3>
                 <div className="space-y-2">
                   <div className="flex items-center">
