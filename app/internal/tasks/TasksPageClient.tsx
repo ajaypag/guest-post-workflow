@@ -1106,7 +1106,8 @@ export default function TasksPageClient({
       
       // Parse task IDs to get entity type and ID
       const assignments = tasksToAssign.map(taskId => {
-        const [type, id] = taskId.split('-');
+        const [type, ...idParts] = taskId.split('-');
+        const id = idParts.join('-'); // Rejoin the UUID parts
         return {
           entityType: type === 'order' ? 'order' : type === 'workflow' ? 'workflow' : 'line_item',
           entityId: id
@@ -1839,18 +1840,6 @@ export default function TasksPageClient({
                   </select>
                 </div>
                 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Notes (optional)
-                  </label>
-                  <textarea
-                    value={assignmentNotes}
-                    onChange={(e) => setAssignmentNotes(e.target.value)}
-                    rows={3}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    placeholder="Add any notes about this assignment..."
-                  />
-                </div>
               </div>
               
               <div className="mt-6 flex justify-end gap-3">
