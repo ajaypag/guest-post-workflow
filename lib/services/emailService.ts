@@ -979,9 +979,57 @@ Need help? Contact info@linkio.com
   }
 
   /**
-   * Send email verification email
+   * Send regular signup email verification
    */
-  static async sendEmailVerification(data: {
+  static async sendSignupEmailVerification(data: {
+    email: string;
+    name: string;
+    verificationUrl: string;
+  }): Promise<{ success: boolean; id?: string; error?: string }> {
+    const html = `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto;">
+        <h2>Verify Your Email Address</h2>
+        <p>Hi ${data.name},</p>
+        
+        <p>Thank you for creating your Linkio account! Please verify your email address to complete your registration and access all features.</p>
+        
+        <div style="margin: 30px 0;">
+          <a href="${data.verificationUrl}" style="display: inline-block; padding: 12px 30px; background-color: #2563eb; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
+            Verify Email Address
+          </a>
+        </div>
+        
+        <p><strong>Once verified, you'll be able to:</strong></p>
+        <ul>
+          <li>Access your account dashboard</li>
+          <li>Create and manage guest post orders</li>
+          <li>Track your content campaigns</li>
+          <li>Browse our publisher network</li>
+        </ul>
+        
+        <p style="color: #666; font-size: 14px;">
+          Can't click the button? Copy and paste this link:<br>
+          <span style="background: #f5f5f5; padding: 5px; word-break: break-all;">${data.verificationUrl}</span>
+        </p>
+        
+        <p style="color: #999; font-size: 12px;">
+          This link expires in 24 hours. If you didn't create an account, you can safely ignore this email.
+        </p>
+      </div>
+    `;
+
+    return this.send('notification', {
+      to: data.email,
+      subject: 'Verify Your Email Address - Linkio',
+      html,
+      text: `Hi ${data.name}, Please verify your email address to complete your Linkio account registration: ${data.verificationUrl}`,
+    });
+  }
+
+  /**
+   * Send vetted sites analysis email verification
+   */
+  static async sendVettedSitesEmailVerification(data: {
     email: string;
     name: string;
     verificationUrl: string;
@@ -1025,6 +1073,46 @@ Need help? Contact info@linkio.com
       subject: 'Verify Your Email to Get Your Vetted Sites - Linkio',
       html,
       text: `Hi ${data.name}, Thanks for requesting a vetted sites analysis! Click here to verify your email and start the process: ${data.verificationUrl}. Once verified, we'll analyze your target URL and find guest post sites that already rank for your topics. Results delivered within 24 hours.`,
+    });
+  }
+
+  /**
+   * Send generic email verification (for resend cases where context is unknown)
+   */
+  static async sendEmailVerification(data: {
+    email: string;
+    name: string;
+    verificationUrl: string;
+  }): Promise<{ success: boolean; id?: string; error?: string }> {
+    const html = `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto;">
+        <h2>Verify Your Email Address</h2>
+        <p>Hi ${data.name},</p>
+        
+        <p>Please verify your email address to complete your account setup.</p>
+        
+        <div style="margin: 30px 0;">
+          <a href="${data.verificationUrl}" style="display: inline-block; padding: 12px 30px; background-color: #2563eb; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
+            Verify Email Address
+          </a>
+        </div>
+        
+        <p style="color: #666; font-size: 14px;">
+          Can't click the button? Copy and paste this link:<br>
+          <span style="background: #f5f5f5; padding: 5px; word-break: break-all;">${data.verificationUrl}</span>
+        </p>
+        
+        <p style="color: #999; font-size: 12px;">
+          This link expires in 24 hours. If you didn't create an account, you can safely ignore this email.
+        </p>
+      </div>
+    `;
+
+    return this.send('notification', {
+      to: data.email,
+      subject: 'Verify Your Email Address - Linkio',
+      html,
+      text: `Hi ${data.name}, Please verify your email address to complete your account setup: ${data.verificationUrl}`,
     });
   }
 

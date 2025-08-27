@@ -195,7 +195,7 @@ export async function POST(request: NextRequest) {
         (request.headers.get('x-forwarded-proto') || 'https') + '://' + 
         request.headers.get('host');
       const verificationUrl = `${baseUrl}/verify-email?token=${verificationToken}`;
-      await EmailService.sendEmailVerification({
+      await EmailService.sendVettedSitesEmailVerification({
         email: newAccount.email,
         name: newAccount.contactName,
         verificationUrl,

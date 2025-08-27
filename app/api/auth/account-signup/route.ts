@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
           request.headers.get('host');
         const verificationUrl = `${baseUrl}/verify-email?token=${emailVerificationToken}`;
         
-        await EmailService.sendEmailVerification({
+        await EmailService.sendSignupEmailVerification({
           email,
           name,
           verificationUrl,
