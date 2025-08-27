@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -84,6 +84,29 @@ export default function NewVettedSitesRequestClient() {
   const [showDRFilter, setShowDRFilter] = useState(false);
   const [showTrafficFilter, setShowTrafficFilter] = useState(false);
   const [showPriceFilter, setShowPriceFilter] = useState(false);
+  
+  // Refs for click outside detection
+  const accountDropdownRef = useRef<HTMLDivElement>(null);
+  const clientDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Handle click outside to close dropdowns
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (accountDropdownRef.current && !accountDropdownRef.current.contains(event.target as Node)) {
+        setShowAccountDropdown(false);
+        setAccountSearch('');
+      }
+      if (clientDropdownRef.current && !clientDropdownRef.current.contains(event.target as Node)) {
+        setShowClientDropdown(false);
+        setClientSearch('');
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Get user type from session
   useEffect(() => {
@@ -103,7 +126,15 @@ export default function NewVettedSitesRequestClient() {
           const accountsResponse = await fetch('/api/accounts');
           if (accountsResponse.ok) {
             const accountsData = await accountsResponse.json();
-            setAccounts(accountsData.accounts || []);
+            console.log('📊 Loaded accounts:', accountsData.accounts?.length || 0);
+            // Map contactName to name for consistent interface
+            const mappedAccounts = (accountsData.accounts || []).map((account: any) => ({
+              id: account.id,
+              name: account.contactName || account.name || 'Unknown',
+              email: account.email,
+              clientCount: account.clientCount
+            }));
+            setAccounts(mappedAccounts);
           }
         }
         
@@ -111,6 +142,7 @@ export default function NewVettedSitesRequestClient() {
         const clientsResponse = await fetch('/api/clients');
         if (clientsResponse.ok) {
           const clientsData = await clientsResponse.json();
+          console.log('📊 Loaded clients:', clientsData.clients?.length || 0);
           setClients(clientsData.clients || []);
         }
         
@@ -118,8 +150,16 @@ export default function NewVettedSitesRequestClient() {
         const targetUrlsResponse = await fetch('/api/vetted-sites/target-urls');
         if (targetUrlsResponse.ok) {
           const targetUrlsData = await targetUrlsResponse.json();
+          console.log('📊 Loaded target URLs:', {
+            total: targetUrlsData.targetUrls?.length || 0,
+            sampleUrls: targetUrlsData.targetUrls?.slice(0, 3).map((u: any) => ({
+              url: u.url,
+              clientId: u.clientId,
+              clientName: u.clientName,
+              type: u.type
+            })) || []
+          });
           setTargetUrls(targetUrlsData.targetUrls || []);
-          console.log('Loaded target URLs:', targetUrlsData);
         } else {
           console.error('Failed to load target URLs:', targetUrlsResponse.status, await targetUrlsResponse.text());
         }
@@ -132,6 +172,92 @@ export default function NewVettedSitesRequestClient() {
       loadInitialData();
     }
   }, [userType, sessionLoading]);
+
+  // Get client IDs for selected accounts (when no specific clients selected)
+  const accountClientIds = useMemo(() => {
+    if (selectedAccounts.length === 0) return [];
+    const matchedClients = clients.filter(client => selectedAccounts.includes(client.accountId));
+    const clientIds = matchedClients.map(client => client.id);
+    
+    console.log('🔍 Account-Client Mapping:', {
+      selectedAccounts,
+      allClients: clients.length,
+      matchedClients: matchedClients.map(c => ({ id: c.id, name: c.name, accountId: c.accountId })),
+      resultClientIds: clientIds
+    });
+    
+    return clientIds;
+  }, [selectedAccounts, clients]);
+
+  // Reload target URLs when client or account selection changes
+  useEffect(() => {
+    const reloadTargetUrls = async () => {
+      // Determine which client IDs to filter by
+      let clientIdsToLoad: string[] = [];
+      
+      if (selectedClients.length > 0) {
+        // Specific clients selected
+        clientIdsToLoad = selectedClients;
+      } else if (selectedAccounts.length > 0) {
+        // Account selected
+        if (accountClientIds.length > 0) {
+          // Load all clients for this account
+          clientIdsToLoad = accountClientIds;
+        } else {
+          // Account has no clients - clear target URLs
+          console.log('🔄 Selected account has no clients - clearing target URLs');
+          setTargetUrls([]);
+          return;
+        }
+      }
+      
+      // If we have client IDs to load, fetch their target URLs
+      if (clientIdsToLoad.length > 0) {
+        try {
+          const params = new URLSearchParams();
+          params.set('clientId', clientIdsToLoad.join(','));
+          
+          console.log('🔄 Reloading target URLs for client IDs:', clientIdsToLoad);
+          
+          const response = await fetch(`/api/vetted-sites/target-urls?${params}`);
+          if (response.ok) {
+            const data = await response.json();
+            console.log('🔄 Reloaded target URLs:', {
+              total: data.targetUrls?.length || 0,
+              forClientIds: clientIdsToLoad
+            });
+            setTargetUrls(data.targetUrls || []);
+          } else {
+            console.error('Failed to reload target URLs:', response.status);
+            setTargetUrls([]); // Clear on error
+          }
+        } catch (error) {
+          console.error('Error reloading target URLs:', error);
+          setTargetUrls([]); // Clear on error
+        }
+      } else if (selectedClients.length === 0 && selectedAccounts.length === 0) {
+        // No selection - load all target URLs
+        try {
+          console.log('🔄 No selection - loading all target URLs');
+          const response = await fetch('/api/vetted-sites/target-urls');
+          if (response.ok) {
+            const data = await response.json();
+            console.log('🔄 Loaded all target URLs:', {
+              total: data.targetUrls?.length || 0
+            });
+            setTargetUrls(data.targetUrls || []);
+          }
+        } catch (error) {
+          console.error('Error loading all target URLs:', error);
+        }
+      }
+    };
+
+    // Only reload if we have completed initial loading
+    if (!sessionLoading && clients.length > 0) {
+      reloadTargetUrls();
+    }
+  }, [selectedClients, selectedAccounts, accountClientIds, sessionLoading, clients.length]);
 
   // Filtered accounts for dropdown
   const filteredAccounts = useMemo(() => {
@@ -169,11 +295,34 @@ export default function NewVettedSitesRequestClient() {
   const filteredTargetUrls = useMemo(() => {
     let filtered = targetUrls;
     
-    // Filter by selected clients
+    console.log('🔍 === TARGET URL FILTERING DEBUG ===');
+    console.log('🔍 Filter State:', {
+      totalUrls: targetUrls.length,
+      selectedAccounts: selectedAccounts.length,
+      selectedClients: selectedClients.length,
+      accountClientIds: accountClientIds.length,
+      searchQuery: targetUrlSearch
+    });
+    
+    // Priority 1: Filter by selected clients (specific brands)
     if (selectedClients.length > 0) {
+      console.log('🔍 FILTERING BY SELECTED CLIENTS:', selectedClients);
       filtered = filtered.filter(url =>
         selectedClients.includes(url.clientId)
       );
+      console.log('🔍 After client filter:', filtered.length);
+    }
+    // Priority 2: If no specific clients selected, but accounts selected, show all clients for those accounts
+    else if (selectedAccounts.length > 0 && accountClientIds.length > 0) {
+      console.log('🔍 FILTERING BY ACCOUNT CLIENT IDS:', accountClientIds);
+      filtered = filtered.filter(url =>
+        accountClientIds.includes(url.clientId)
+      );
+      console.log('🔍 After account filter (all brands for account):', filtered.length);
+    }
+    // Priority 3: If nothing selected, show all URLs (current behavior)
+    else {
+      console.log('🔍 NO FILTERING - SHOWING ALL URLS');
     }
     
     // Apply search filter
@@ -182,15 +331,26 @@ export default function NewVettedSitesRequestClient() {
       filtered = filtered.filter(url =>
         url.url.toLowerCase().includes(query)
       );
+      console.log('🔍 After search filter:', filtered.length);
     }
     
     return filtered;
-  }, [targetUrls, selectedClients, targetUrlSearch]);
+  }, [targetUrls, selectedClients, selectedAccounts, accountClientIds, targetUrlSearch]);
 
   // Handle account selection
   const handleAccountSelect = (accountId: string) => {
+    console.log('🔄 Account selection changed:', { accountId, wasSelected: selectedAccounts.includes(accountId) });
+    
     if (selectedAccounts.includes(accountId)) {
-      setSelectedAccounts(prev => prev.filter(id => id !== accountId));
+      // Remove account
+      const newSelectedAccounts = selectedAccounts.filter(id => id !== accountId);
+      setSelectedAccounts(newSelectedAccounts);
+      
+      // Remove clients that belong to this account
+      const accountClients = clients.filter(client => client.accountId === accountId);
+      const clientIdsToRemove = accountClients.map(client => client.id);
+      console.log('🔄 Removing clients from account:', { accountId, clientIds: clientIdsToRemove });
+      setSelectedClients(prev => prev.filter(clientId => !clientIdsToRemove.includes(clientId)));
     } else {
       setSelectedAccounts(prev => [...prev, accountId]);
     }
@@ -200,6 +360,8 @@ export default function NewVettedSitesRequestClient() {
 
   // Handle client selection
   const handleClientSelect = (clientId: string) => {
+    console.log('🔄 Client selection changed:', { clientId, wasSelected: selectedClients.includes(clientId) });
+    
     if (selectedClients.includes(clientId)) {
       setSelectedClients(prev => prev.filter(id => id !== clientId));
     } else {
@@ -324,7 +486,7 @@ export default function NewVettedSitesRequestClient() {
                 
                 {/* Account Filter - Internal Users Only */}
                 {userType === 'internal' && (
-                  <div className="relative">
+                  <div className="relative" ref={accountDropdownRef}>
                     <button
                       type="button"
                       onClick={() => setShowAccountDropdown(!showAccountDropdown)}
@@ -334,7 +496,10 @@ export default function NewVettedSitesRequestClient() {
                         {selectedAccounts.length === 0 
                           ? 'All accounts' 
                           : selectedAccounts.length === 1
-                          ? accounts.find(a => a.id === selectedAccounts[0])?.name
+                          ? (() => {
+                              const account = accounts.find(a => a.id === selectedAccounts[0]);
+                              return account?.name || 'Select account';
+                            })()
                           : `${selectedAccounts.length} accounts`}
                       </span>
                       <ChevronDown className="h-3.5 w-3.5 text-gray-400" />
@@ -379,7 +544,7 @@ export default function NewVettedSitesRequestClient() {
                 )}
 
                 {/* Brand/Client Filter */}
-                <div className="relative">
+                <div className="relative" ref={clientDropdownRef}>
                   <button
                     type="button"
                     onClick={() => setShowClientDropdown(!showClientDropdown)}
@@ -387,9 +552,12 @@ export default function NewVettedSitesRequestClient() {
                   >
                     <span className="text-gray-700">
                       {selectedClients.length === 0 
-                        ? userType === 'internal' ? 'All brands' : 'All brands'
+                        ? 'All brands'
                         : selectedClients.length === 1
-                        ? clients.find(c => c.id === selectedClients[0])?.name
+                        ? (() => {
+                            const client = clients.find(c => c.id === selectedClients[0]);
+                            return client?.name || 'Select brand';
+                          })()
                         : `${selectedClients.length} brands`}
                     </span>
                     <ChevronDown className="h-3.5 w-3.5 text-gray-400" />
