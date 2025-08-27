@@ -2010,7 +2010,7 @@ export default function TasksPageClient({
         </div>
 
         {/* Stats cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <div className="text-2xl font-semibold text-gray-900">{getFilteredStats().overdue}</div>
             <div className="text-sm text-gray-600">Overdue</div>
@@ -2038,7 +2038,8 @@ export default function TasksPageClient({
           {/* Primary Navigation Tabs */}
           <div className="px-6 pt-6 pb-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex bg-gray-50 rounded-lg p-1">
+              <div className="overflow-x-auto">
+                <div className="flex bg-gray-50 rounded-lg p-1 min-w-max">
                 <button
                   onClick={() => setSelectedUser(currentUserId)}
                   className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
@@ -2086,6 +2087,7 @@ export default function TasksPageClient({
                     {getUserTaskCounts().unassigned}
                   </span>
                 </button>
+                </div>
               </div>
             </div>
             

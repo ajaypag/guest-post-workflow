@@ -179,7 +179,7 @@ export default function InternalVettedSitesRequestsClient() {
 
       {/* Stats Cards */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
           <button
             onClick={() => setStatusFilter('all')}
             className={`p-4 rounded-lg border transition-all ${
@@ -266,7 +266,7 @@ export default function InternalVettedSitesRequestsClient() {
                           <div className="text-sm font-medium text-gray-700 mb-1">Target URLs ({request.target_urls?.length || 0})</div>
                           <div className="flex flex-wrap gap-2">
                             {request.target_urls?.slice(0, 3).map((url, idx) => (
-                              <span key={idx} className="inline-block px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
+                              <span key={idx} className="inline-block px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded truncate max-w-[150px] sm:max-w-none">
                                 {new URL(url).hostname.replace('www.', '')}
                               </span>
                             ))}
@@ -317,7 +317,7 @@ export default function InternalVettedSitesRequestsClient() {
                       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 ml-0 sm:ml-4">
                         <Link
                           href={`/internal/vetted-sites/requests/${request.id}`}
-                          className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                          className="p-3 min-h-[44px] flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors touch-manipulation"
                         >
                           <Eye className="h-5 w-5" />
                         </Link>
@@ -327,13 +327,13 @@ export default function InternalVettedSitesRequestsClient() {
                           <>
                             <button
                               onClick={() => handleStatusUpdate(request.id, 'reviewing')}
-                              className="px-3 py-1 text-sm bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 transition-colors"
+                              className="px-3 py-2 min-h-[44px] text-sm bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 transition-colors touch-manipulation"
                             >
                               Start Review
                             </button>
                             <button
                               onClick={() => handleStatusUpdate(request.id, 'approved')}
-                              className="px-3 py-1 text-sm bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors"
+                              className="px-3 py-2 min-h-[44px] text-sm bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors touch-manipulation"
                             >
                               Approve
                             </button>
@@ -344,13 +344,13 @@ export default function InternalVettedSitesRequestsClient() {
                           <>
                             <button
                               onClick={() => handleStatusUpdate(request.id, 'approved')}
-                              className="px-3 py-1 text-sm bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors"
+                              className="px-3 py-2 min-h-[44px] text-sm bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors touch-manipulation"
                             >
                               Approve
                             </button>
                             <button
                               onClick={() => handleStatusUpdate(request.id, 'rejected')}
-                              className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
+                              className="px-3 py-2 min-h-[44px] text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors touch-manipulation"
                             >
                               Reject
                             </button>
@@ -360,7 +360,7 @@ export default function InternalVettedSitesRequestsClient() {
                         {request.status === 'approved' && (
                           <button
                             onClick={() => handleStatusUpdate(request.id, 'fulfilled')}
-                            className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                            className="px-3 py-2 min-h-[44px] text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors touch-manipulation"
                           >
                             Mark Fulfilled
                           </button>
