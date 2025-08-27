@@ -1383,6 +1383,8 @@ export default function TasksPageClient({
                 {getTaskIcon(task)}
                 <Link 
                   href={task.action}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="font-medium text-gray-900 hover:text-indigo-600 hover:underline transition-colors flex-1 min-w-0 truncate"
                 >
                   <h3 className="truncate">{task.title}</h3>
@@ -1419,6 +1421,8 @@ export default function TasksPageClient({
                   <div className="text-gray-600">
                     Client: <Link 
                       href={`/clients/${(task as any).client.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="text-indigo-600 hover:text-indigo-800 hover:underline font-medium"
                     >
                       {(task as any).client.name}
@@ -1530,6 +1534,8 @@ export default function TasksPageClient({
                     <div className="flex items-center gap-3 pt-1">
                       <Link 
                         href={`/orders/${(task as any).orderId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
                       >
                         View order
@@ -1539,6 +1545,8 @@ export default function TasksPageClient({
                           <span className="text-gray-300">•</span>
                           <Link 
                             href={`/orders/${(task as any).orderId}?tab=line-items`}
+                            target="_blank"
+                            rel="noopener noreferrer"
                             className="text-xs text-gray-600 hover:text-gray-800 hover:underline"
                           >
                             {(task as any).lineItemCount} line items
@@ -1754,6 +1762,8 @@ export default function TasksPageClient({
                   <div className="text-gray-500 text-xs pt-1">
                     <Link 
                       href={`/orders/${(task as any).parentOrderId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="text-indigo-500 hover:text-indigo-700 hover:underline"
                     >
                       Order #{(task as any).parentOrderNumber}
@@ -1909,6 +1919,8 @@ export default function TasksPageClient({
               {/* View link */}
               <Link
                 href={task.action}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="p-1.5 sm:p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
                 title="View"
               >
