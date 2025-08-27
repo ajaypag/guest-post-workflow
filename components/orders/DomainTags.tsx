@@ -10,7 +10,7 @@ interface DomainTagsProps {
 
 export default function DomainTags({ dr, traffic, className = '' }: DomainTagsProps) {
   // Helper to format traffic numbers
-  const formatTraffic = (value: number | string | null): string | null => {
+  const formatTraffic = (value: number | string | null | undefined): string | null => {
     if (!value) return null;
     
     if (typeof value === 'string') {
