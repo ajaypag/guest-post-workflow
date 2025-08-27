@@ -51,6 +51,10 @@ interface RequestDetail {
   fulfilledAt?: string;
   createdAt: string;
   updatedAt: string;
+  // Creator info
+  createdByUser?: string;
+  createdByUserName?: string;
+  createdByUserEmail?: string;
   // Track created projects
   projectsCreated?: number;
   bulkAnalysisProjectIds?: string[];
@@ -238,6 +242,12 @@ export default function InternalVettedSitesRequestDetailV3({
     }
     
     setTargetPageStatuses(statuses);
+    
+    // Pre-select pages that need keywords
+    const pagesNeedingKeywords = statuses.filter(p => !p.hasKeywords).map(p => p.id);
+    if (pagesNeedingKeywords.length > 0) {
+      setSelectedPages(new Set(pagesNeedingKeywords));
+    }
     
     // Group by client for project creation
     const groups = statuses.reduce((acc, page) => {
@@ -768,6 +778,13 @@ export default function InternalVettedSitesRequestDetailV3({
                   <div className="text-xs text-gray-500">Request ID</div>
                   <div className="text-sm font-mono text-gray-700">{request.id.substring(0, 8)}</div>
                 </div>
+                {request.createdByUserName && (
+                  <div>
+                    <div className="text-xs text-gray-500">Submitted By</div>
+                    <div className="text-sm text-gray-700">{request.createdByUserName}</div>
+                    <div className="text-xs text-gray-500">{request.createdByUserEmail}</div>
+                  </div>
+                )}
                 <div>
                   <div className="text-xs text-gray-500">Created</div>
                   <div className="text-sm text-gray-700">{formatDate(request.createdAt)}</div>

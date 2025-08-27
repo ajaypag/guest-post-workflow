@@ -11,7 +11,7 @@ import { accounts } from '@/lib/db/accountSchema';
 import { clients } from '@/lib/db/schema';
 import { users } from '@/lib/db/schema';
 import { vettedSitesRequests } from '@/lib/db/vettedSitesRequestSchema';
-import { eq, and, or, sql, isNull, inArray, gte, lte, desc, asc } from 'drizzle-orm';
+import { eq, and, or, sql, isNull, inArray, gte, lte, desc, asc, aliasedTable } from 'drizzle-orm';
 import {
   type TaskFilters,
   type UnifiedTask,
@@ -505,18 +505,23 @@ export class TaskService {
     // Import the schema at the top if not already imported
     const { vettedSitesRequests } = await import('@/lib/db/vettedSitesRequestSchema');
     
+    // Use aliases for multiple joins on same table
+    const assignedUser = aliasedTable(users, 'assigned_user');
+    const creatorUser = aliasedTable(users, 'creator_user');
+    
     const query = db
       .select({
         request: vettedSitesRequests,
-        assignedUser: users,
-        reviewedByUser: {
-          id: users.id,
-          name: users.name,
-          email: users.email
+        assignedUser: assignedUser,
+        creatorUser: {
+          id: creatorUser.id,
+          name: creatorUser.name,
+          email: creatorUser.email
         }
       })
       .from(vettedSitesRequests)
-      .leftJoin(users, eq(vettedSitesRequests.fulfilledBy, users.id));
+      .leftJoin(assignedUser, eq(vettedSitesRequests.fulfilledBy, assignedUser.id))
+      .leftJoin(creatorUser, eq(vettedSitesRequests.createdByUser, creatorUser.id));
 
     // Apply filters
     const conditions = [];
@@ -565,6 +570,8 @@ export class TaskService {
       reviewedAt: row.request.reviewedAt,
       createdAt: row.request.createdAt,
       updatedAt: row.request.updatedAt,
+      createdByUserName: row.creatorUser?.name || null,
+      createdByUserEmail: row.creatorUser?.email || null,
       action: `/internal/vetted-sites/requests/${row.request.id}`
     }));
   }

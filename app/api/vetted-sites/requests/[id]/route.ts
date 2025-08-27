@@ -3,7 +3,7 @@ import { AuthServiceServer } from '@/lib/auth-server';
 import { db } from '@/lib/db/connection';
 import { vettedSitesRequests, vettedRequestProjects } from '@/lib/db/vettedSitesRequestSchema';
 import { bulkAnalysisProjects } from '@/lib/db/bulkAnalysisSchema';
-import { clients, targetPages } from '@/lib/db/schema';
+import { clients, targetPages, users } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
@@ -136,8 +136,26 @@ export async function GET(
       .leftJoin(bulkAnalysisProjects, eq(vettedRequestProjects.projectId, bulkAnalysisProjects.id))
       .where(eq(vettedRequestProjects.requestId, requestId));
 
+    // Fetch creator user details if available
+    let creatorDetails = null;
+    if (requestData.createdByUser) {
+      const [creatorUser] = await db
+        .select({
+          id: users.id,
+          name: users.name,
+          email: users.email
+        })
+        .from(users)
+        .where(eq(users.id, requestData.createdByUser))
+        .limit(1);
+      
+      creatorDetails = creatorUser;
+    }
+
     const response = {
       ...requestData,
+      createdByUserName: creatorDetails?.name || null,
+      createdByUserEmail: creatorDetails?.email || null,
       linkedClients: [], // TODO: Implement if needed
       linkedProjects: linkedProjectsData,
       actualDomainCount: 0, // TODO: Calculate if needed

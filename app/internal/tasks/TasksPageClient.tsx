@@ -1768,9 +1768,14 @@ export default function TasksPageClient({
                       <div className="mb-1">
                         <strong>{(task as any).targetUrls?.length || 0} target URLs</strong> requested for analysis
                       </div>
+                      {(task as any).createdByUserName && (
+                        <div className="text-xs text-orange-600">
+                          Submitted by: <span className="font-medium">{(task as any).createdByUserName}</span>
+                        </div>
+                      )}
                       {(task as any).submittedAt && (
                         <div className="text-xs text-orange-600">
-                          Submitted: {new Date((task as any).submittedAt).toLocaleDateString()}
+                          Date: {new Date((task as any).submittedAt).toLocaleDateString()}
                         </div>
                       )}
                       {(task as any).reviewedAt && (
