@@ -95,6 +95,7 @@ export default async function InternalTasksPage() {
           pending: 0,
           in_progress: 0,
           completed: 0,
+          rejected: 0,
           blocked: 0,
           cancelled: 0
         },

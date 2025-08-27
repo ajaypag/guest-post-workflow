@@ -8,7 +8,7 @@
 
 // Base types
 export type TaskType = 'order' | 'workflow' | 'line_item' | 'vetted_sites_request' | 'brand_intelligence';
-export type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'blocked' | 'cancelled';
+export type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'rejected' | 'blocked' | 'cancelled';
 export type TaskPriority = 'urgent' | 'high' | 'normal' | 'low';
 
 // User type (simplified for tasks)
@@ -146,6 +146,7 @@ export interface TaskStats {
     pending: number;
     in_progress: number;
     completed: number;
+    rejected: number;
     blocked: number;
     cancelled: number;
   };

@@ -11,7 +11,7 @@ import { accounts } from '@/lib/db/accountSchema';
 import { clients } from '@/lib/db/schema';
 import { users } from '@/lib/db/schema';
 import { vettedSitesRequests } from '@/lib/db/vettedSitesRequestSchema';
-import { eq, and, or, sql, isNull, inArray, gte, lte, desc, asc, aliasedTable } from 'drizzle-orm';
+import { eq, and, or, sql, isNull, inArray, gte, lte, desc, asc, aliasedTable, not } from 'drizzle-orm';
 import {
   type TaskFilters,
   type UnifiedTask,
@@ -548,7 +548,8 @@ export class TaskService {
       }
     }
 
-    // Show active requests by default (submitted and approved)
+    // Show only active requests by default (no terminal states like fulfilled/rejected/expired)
+    // User can explicitly choose "All statuses" to see everything
     if (!filters?.statuses || filters.statuses.length === 0) {
       conditions.push(inArray(vettedSitesRequests.status, ['submitted', 'approved'] as any));
     }
@@ -675,8 +676,9 @@ export class TaskService {
     const reverseMap: Record<TaskStatus, string[]> = {
       'pending': ['draft'],
       'in_progress': ['active', 'in_progress', 'review', 'approved'],
-      'completed': ['published', 'completed'],
-      'blocked': ['rejected'],
+      'completed': ['published', 'archived'],
+      'rejected': [],
+      'blocked': ['paused'],
       'cancelled': ['cancelled', 'deleted']
     };
     
@@ -696,9 +698,10 @@ export class TaskService {
     const reverseMap: Record<TaskStatus, string[]> = {
       'pending': ['draft', 'pending'],
       'in_progress': ['confirmed', 'paid', 'processing', 'partially_fulfilled'],
-      'completed': ['fulfilled', 'completed'],
+      'completed': ['fulfilled', 'completed', 'refunded'],
+      'rejected': [],
       'blocked': ['on_hold'],
-      'cancelled': ['cancelled', 'refunded']
+      'cancelled': ['cancelled']
     };
     
     const orderStatuses = new Set<string>();
@@ -726,7 +729,7 @@ export class TaskService {
       'fulfilled': 'completed',
       'completed': 'completed',
       'cancelled': 'cancelled',
-      'refunded': 'cancelled',
+      'refunded': 'completed',
       'on_hold': 'blocked'
     };
     
@@ -761,6 +764,7 @@ export class TaskService {
       'pending': ['draft', 'pending', 'pending_selection', 'selected'],
       'in_progress': ['assigned', 'invoiced', 'approved', 'in_progress'],
       'completed': ['delivered', 'completed'],
+      'rejected': [],
       'blocked': ['disputed'],
       'cancelled': ['cancelled', 'refunded']
     };
@@ -807,7 +811,8 @@ export class TaskService {
       'pending': ['submitted', 'under_review'],
       'in_progress': ['approved'],
       'completed': ['fulfilled'],
-      'blocked': ['rejected'],
+      'rejected': ['rejected'],
+      'blocked': [],
       'cancelled': ['expired']
     };
     
@@ -831,7 +836,7 @@ export class TaskService {
       'under_review': 'pending',
       'approved': 'in_progress',
       'fulfilled': 'completed',
-      'rejected': 'blocked',
+      'rejected': 'rejected',
       'expired': 'cancelled'
     };
     
@@ -856,8 +861,14 @@ export class TaskService {
         case 'completed':
           statusesToCheck.add('completed');
           break;
+        case 'rejected':
+          // Brand intelligence doesn't have explicit rejection states
+          break;
         case 'blocked':
           statusesToCheck.add('error');
+          break;
+        case 'cancelled':
+          // Brand intelligence doesn't have cancellation states
           break;
       }
     }
@@ -1014,6 +1025,7 @@ export class TaskService {
         pending: 0,
         in_progress: 0,
         completed: 0,
+        rejected: 0,
         blocked: 0,
         cancelled: 0
       },
