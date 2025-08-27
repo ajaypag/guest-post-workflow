@@ -139,6 +139,14 @@ export async function GET(
     // Fetch creator user details - check both createdByUser (internal) and accountId (account users)
     let creatorDetails = null;
     const creatorId = requestData.createdByUser || requestData.accountId;
+    
+    console.log('Request data:', {
+      id: requestData.id,
+      createdByUser: requestData.createdByUser,
+      accountId: requestData.accountId,
+      creatorId
+    });
+    
     if (creatorId) {
       const [creatorUser] = await db
         .select({
@@ -151,6 +159,7 @@ export async function GET(
         .limit(1);
       
       creatorDetails = creatorUser;
+      console.log('Found creator:', creatorDetails);
     }
 
     const response = {

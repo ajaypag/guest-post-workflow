@@ -169,6 +169,7 @@ export default function InternalVettedSitesRequestDetailV3({
       if (!response.ok) throw new Error('Failed to fetch request');
       
       const data = await response.json();
+      console.log('Fetched request data:', data.request); // Debug log
       setRequest(data.request);
       setReviewNotes(data.request.reviewNotes || '');
     } catch (error) {
@@ -779,13 +780,17 @@ export default function InternalVettedSitesRequestDetailV3({
                   <div className="text-xs text-gray-500">Request ID</div>
                   <div className="text-sm font-mono text-gray-700">{request.id.substring(0, 8)}</div>
                 </div>
-                {request.createdByUserName && (
-                  <div>
-                    <div className="text-xs text-gray-500">Submitted By</div>
-                    <div className="text-sm text-gray-700">{request.createdByUserName}</div>
-                    <div className="text-xs text-gray-500">{request.createdByUserEmail}</div>
-                  </div>
-                )}
+                <div>
+                  <div className="text-xs text-gray-500">Submitted By</div>
+                  {request.createdByUserName ? (
+                    <>
+                      <div className="text-sm text-gray-700">{request.createdByUserName}</div>
+                      <div className="text-xs text-gray-500">{request.createdByUserEmail}</div>
+                    </>
+                  ) : (
+                    <div className="text-sm text-gray-400 italic">Unknown</div>
+                  )}
+                </div>
                 <div>
                   <div className="text-xs text-gray-500">Created</div>
                   <div className="text-sm text-gray-700">{formatDate(request.createdAt)}</div>
