@@ -9,8 +9,11 @@ import Header from '@/components/Header';
 import LineItemsReviewTable from '@/components/orders/LineItemsReviewTable';
 import type { LineItem } from '@/components/orders/LineItemsReviewTable';
 import BenchmarkDisplay from '@/components/orders/BenchmarkDisplay';
+import OrderSuggestionsModule from '@/components/orders/OrderSuggestionsModule';
+import InvoiceGenerationModal from '@/components/orders/InvoiceGenerationModal';
 import { formatCurrency } from '@/lib/utils/formatting';
 import { isLineItemsSystemEnabled } from '@/lib/config/featureFlags';
+import { AuthService } from '@/lib/auth';
 
 interface OrderData {
   id: string;
@@ -35,10 +38,26 @@ export default function ExternalOrderReviewPage() {
   const [benchmarkData, setBenchmarkData] = useState<any>(null);
   const [comparisonData, setComparisonData] = useState<any>(null);
   const [generatingInvoice, setGeneratingInvoice] = useState(false);
+  const [session, setSession] = useState<any>(null);
+  const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
+  const [invoiceModal, setInvoiceModal] = useState<{
+    isOpen: boolean;
+    data: any;
+  }>({ isOpen: false, data: null });
 
   useEffect(() => {
     fetchOrder();
+    loadSession();
   }, [orderId]);
+
+  const loadSession = async () => {
+    try {
+      const session = await AuthService.getSession();
+      setSession(session);
+    } catch (error) {
+      console.error('Failed to load session:', error);
+    }
+  };
 
   const loadBenchmarkData = async (orderStatus?: string) => {
     // Use passed status or current order status
@@ -117,6 +136,37 @@ export default function ExternalOrderReviewPage() {
     } catch (error) {
       console.error('Error updating item:', error);
       alert('Failed to update item. Please try again.');
+    }
+  };
+
+  const handleRemoveLineItem = async (itemId: string) => {
+    if (!confirm('Are you sure you want to remove this line item? This action cannot be undone.')) {
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/api/orders/${orderId}/line-items/${itemId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to remove line item');
+      }
+      
+      await fetchOrder();
+      setMessage({ type: 'success', text: 'Line item removed successfully' });
+      
+      // Clear message after 3 seconds
+      setTimeout(() => setMessage(null), 3000);
+    } catch (error: any) {
+      console.error('Error removing line item:', error);
+      setMessage({ type: 'error', text: error.message || 'Failed to remove line item' });
+      
+      // Clear error message after 5 seconds
+      setTimeout(() => setMessage(null), 5000);
     }
   };
 
@@ -212,7 +262,7 @@ export default function ExternalOrderReviewPage() {
     return hasInvoiceAffectingChanges;
   };
 
-  const handleProceed = async () => {
+  const handleProceed = async (cancelUnusedItems = false) => {
     const needsRegeneration = needsInvoiceRegeneration();
     
     // If invoice exists and doesn't need regeneration, just navigate to it
@@ -237,25 +287,40 @@ export default function ExternalOrderReviewPage() {
         const response = await fetch(`/api/orders/${orderId}/invoice`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action })
+          body: JSON.stringify({ 
+            action,
+            cancelUnusedItems 
+          })
         });
         
+        const result = await response.json();
+        
+        // Handle warning about unused line items - show modal
+        if (response.status === 422 && result.warning === 'unused_line_items') {
+          setGeneratingInvoice(false);
+          setInvoiceModal({
+            isOpen: true,
+            data: result
+          });
+          return;
+        }
+        
         if (response.ok) {
-          const result = await response.json();
           console.log(`[INVOICE] ${needsRegeneration ? 'Regenerated' : 'Generated'} successfully:`, result);
+          // Close modal if it was open
+          setInvoiceModal({ isOpen: false, data: null });
           // Invoice generated successfully, redirect to invoice page
           router.push(`/orders/${orderId}/invoice`);
         } else {
           // Log the error details for debugging
-          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
           console.error(`[INVOICE] Failed to ${needsRegeneration ? 'regenerate' : 'generate'} invoice:`, {
             status: response.status,
             statusText: response.statusText,
-            error: errorData
+            error: result
           });
           
           // Show error message to user
-          alert(`Failed to ${needsRegeneration ? 'regenerate' : 'generate'} invoice: ${errorData.error || 'Unknown error'}. Please try again or contact support.`);
+          alert(`Failed to ${needsRegeneration ? 'regenerate' : 'generate'} invoice: ${result.error || 'Unknown error'}. Please try again or contact support.`);
           
           // Don't redirect automatically - let user decide next step
         }
@@ -344,6 +409,26 @@ export default function ExternalOrderReviewPage() {
               </div>
             </div>
 
+            {/* Message Display */}
+            {message && (
+              <div className={`rounded-lg p-3 mb-4 flex items-center gap-3 ${
+                message.type === 'success' 
+                  ? 'bg-green-50 border border-green-200' 
+                  : 'bg-red-50 border border-red-200'
+              }`}>
+                {message.type === 'success' ? (
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                ) : (
+                  <XCircle className="h-5 w-5 text-red-600" />
+                )}
+                <p className={`text-sm font-medium ${
+                  message.type === 'success' ? 'text-green-900' : 'text-red-900'
+                }`}>
+                  {message.text}
+                </p>
+              </div>
+            )}
+
             {/* Clear instructions for users */}
             {totalItems > 0 && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 flex items-center gap-3">
@@ -407,7 +492,7 @@ export default function ExternalOrderReviewPage() {
           <LineItemsReviewTable
             orderId={orderId}
             lineItems={lineItems}
-            userType="account"
+            userType={session?.userType || "account"}
             permissions={{
               canApproveReject: false,  // Disable confusing approve/reject buttons
               canViewPricing: true,    // External users can see pricing column
@@ -422,8 +507,20 @@ export default function ExternalOrderReviewPage() {
             }}
             onChangeStatus={handleStatusChange}
             onEditItem={handleEditItem}
+            onRemoveItem={session?.userType === 'internal' ? handleRemoveLineItem : undefined}
             onRefresh={fetchOrder}
             benchmarkData={benchmarkData}
+          />
+
+          {/* Order Suggestions Module - Help users expand their orders */}
+          <OrderSuggestionsModule 
+            orderId={orderId}
+            userType="account"
+            lineItems={lineItems}
+            onAddDomain={() => {
+              // Refresh order data when domain is added or replaced
+              fetchOrder();
+            }}
           />
 
           {/* Pricing Summary for Selected Sites */}
@@ -512,7 +609,7 @@ export default function ExternalOrderReviewPage() {
             {includedCount > 0 ? (
               <>
                 <button
-                  onClick={handleProceed}
+                  onClick={() => handleProceed()}
                   disabled={generatingInvoice}
                   className="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium shadow-lg min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -570,6 +667,23 @@ export default function ExternalOrderReviewPage() {
           </div>
         </div>
       </div>
+
+      {/* Invoice Generation Modal */}
+      {invoiceModal.data && (
+        <InvoiceGenerationModal
+          isOpen={invoiceModal.isOpen}
+          onClose={() => setInvoiceModal({ isOpen: false, data: null })}
+          onProceed={() => {
+            setInvoiceModal({ isOpen: false, data: null });
+            handleProceed(true); // Proceed with cancelling unused items
+          }}
+          totalRequested={invoiceModal.data.totalRequested}
+          totalAssigned={invoiceModal.data.totalAssigned}
+          unusedCount={invoiceModal.data.unusedCount}
+          unusedItems={invoiceModal.data.unusedItems}
+          isProcessing={generatingInvoice}
+        />
+      )}
     </AuthWrapper>
   );
 }

@@ -6,6 +6,8 @@ import Link from 'next/link';
 import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
 import LineItemsReviewTable from '@/components/orders/LineItemsReviewTable';
+import BulkDeleteLineItemsModal from '@/components/orders/BulkDeleteLineItemsModal';
+import InvoiceGenerationModal from '@/components/orders/InvoiceGenerationModal';
 import BenchmarkDisplay from '@/components/orders/BenchmarkDisplay';
 import OrderProgressSteps, { getStateDisplay, getProgressSteps } from '@/components/orders/OrderProgressSteps';
 import TargetPageSelector from '@/components/orders/TargetPageSelector';
@@ -276,6 +278,7 @@ export default function InternalOrderManagementPage() {
   const [showDeadlineEditor, setShowDeadlineEditor] = useState(false);
   const [newDeadline, setNewDeadline] = useState('');
   const [cascadeDeadline, setCascadeDeadline] = useState(true);
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
   const [targetPageStatuses, setTargetPageStatuses] = useState<TargetPageStatus[]>([]);
   const [selectedPages, setSelectedPages] = useState<Set<string>>(new Set());
   const [generatingKeywords, setGeneratingKeywords] = useState(false);
@@ -284,6 +287,10 @@ export default function InternalOrderManagementPage() {
   const [assigningDomain, setAssigningDomain] = useState<string | null>(null);
   const [benchmarkData, setBenchmarkData] = useState<any>(null);
   const [comparisonData, setComparisonData] = useState<any>(null);
+  const [invoiceModal, setInvoiceModal] = useState<{
+    isOpen: boolean;
+    data: any;
+  }>({ isOpen: false, data: null });
   const [useLineItemsView, setUseLineItemsView] = useState(false);
 
   // Auto-dismiss success messages after 5 seconds
@@ -1021,33 +1028,22 @@ export default function InternalOrderManagementPage() {
       
       const result = await response.json();
       
-      // Handle warning about unused line items
+      // Handle warning about unused line items - show modal instead of confirm
       if (response.status === 422 && result.warning === 'unused_line_items') {
-        const confirmed = confirm(
-          `⚠️ Invoice Generation Warning\n\n` +
-          `This order has ${result.totalRequested} requested links, but only ${result.totalAssigned} sites have been assigned.\n\n` +
-          `Unused line items (${result.unusedCount}):\n` +
-          result.unusedItems.map((item: any, index: number) => 
-            `• Link #${index + result.totalAssigned + 1} - ${item.targetPageUrl ? `${item.targetPageUrl} - ` : ''}${item.hasAssignedDomain ? 'Pending review' : 'No site assigned'}`
-          ).join('\n') +
-          `\n\nOptions:\n` +
-          `• Cancel: Go back to review\n` +
-          `• OK: Cancel unused items and generate invoice with ${result.totalAssigned} sites\n\n` +
-          `Note: Cancelled items can be restored later if needed.`
-        );
-        
-        if (confirmed) {
-          // Retry with cancelUnusedItems flag
-          return handleGenerateInvoice(true);
-        } else {
-          setActionLoading(prev => ({ ...prev, generate_invoice: false }));
-          return;
-        }
+        setActionLoading(prev => ({ ...prev, generate_invoice: false }));
+        setInvoiceModal({
+          isOpen: true,
+          data: result
+        });
+        return;
       }
       
       if (!response.ok) {
         throw new Error(result.error || 'Failed to generate invoice');
       }
+      
+      // Close modal if it was open
+      setInvoiceModal({ isOpen: false, data: null });
       
       setMessage({
         type: 'success',
@@ -1339,6 +1335,76 @@ export default function InternalOrderManagementPage() {
     }
   };
 
+  const handleRemoveLineItem = async (itemId: string) => {
+    if (!confirm('Are you sure you want to remove this line item? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/orders/${orderId}/line-items/${itemId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to remove line item');
+      }
+
+      await loadOrder();
+      setMessage({
+        type: 'success',
+        text: 'Line item removed successfully'
+      });
+    } catch (error: any) {
+      console.error('Error removing line item:', error);
+      setMessage({
+        type: 'error',
+        text: error.message || 'Failed to remove line item'
+      });
+    }
+  };
+
+  const handleBulkDeleteLineItems = async (itemIds: string[]) => {
+    try {
+      // Delete items one by one (we could create a bulk endpoint in the future)
+      const results = await Promise.allSettled(
+        itemIds.map(itemId => 
+          fetch(`/api/orders/${orderId}/line-items/${itemId}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include'
+          })
+        )
+      );
+
+      const successful = results.filter(r => r.status === 'fulfilled').length;
+      const failed = results.filter(r => r.status === 'rejected').length;
+
+      if (failed > 0 && successful > 0) {
+        setMessage({
+          type: 'warning',
+          text: `${successful} items removed, ${failed} failed`
+        });
+      } else if (failed > 0) {
+        throw new Error(`Failed to remove ${failed} item(s)`);
+      } else {
+        setMessage({
+          type: 'success',
+          text: `${successful} line item${successful > 1 ? 's' : ''} removed successfully`
+        });
+      }
+
+      await loadOrder();
+    } catch (error: any) {
+      setMessage({
+        type: 'error',
+        text: error.message || 'Failed to remove line items'
+      });
+      throw error;
+    }
+  };
   const handleStatusRollback = async (targetStatus: string) => {
     if (!confirm(`Are you sure you want to rollback the order status to "${targetStatus}"? This action may have consequences.`)) {
       return;
@@ -2551,6 +2617,19 @@ export default function InternalOrderManagementPage() {
                       </button>
                     )}
                     
+                    {/* Delete Line Items - Available when order has line items */}
+                    {order.lineItems && order.lineItems.length > 0 && (
+                      <button
+                        onClick={() => setShowBulkDeleteModal(true)}
+                        className="w-full px-3 py-2 bg-red-600 text-white text-sm rounded-md hover:bg-red-700"
+                      >
+                        <span className="flex items-center justify-center gap-2">
+                          <Trash2 className="h-4 w-4" />
+                          Delete Line Items
+                        </span>
+                      </button>
+                    )}
+                    
                     {/* Generate Invoice - after sites are approved */}
                     {order.status === 'confirmed' && !order.invoicedAt && (
                       <button
@@ -2925,6 +3004,7 @@ export default function InternalOrderManagementPage() {
                 onRefresh={handleRefresh || loadOrder}
                 onChangeStatus={handleChangeLineItemStatus}
                 onEditItem={handleEditLineItem}
+                onRemoveItem={handleRemoveLineItem}
                 benchmarkData={benchmarkData}
               />
               
@@ -3089,6 +3169,31 @@ export default function InternalOrderManagementPage() {
         title="Assign Workflows To User"
         loading={actionLoading.generate_workflows}
       />
+
+      {/* Bulk Delete Line Items Modal */}
+      <BulkDeleteLineItemsModal
+        isOpen={showBulkDeleteModal}
+        onClose={() => setShowBulkDeleteModal(false)}
+        lineItems={order?.lineItems || []}
+        onDelete={handleBulkDeleteLineItems}
+      />
+
+      {/* Invoice Generation Modal */}
+      {invoiceModal.data && (
+        <InvoiceGenerationModal
+          isOpen={invoiceModal.isOpen}
+          onClose={() => setInvoiceModal({ isOpen: false, data: null })}
+          onProceed={() => {
+            setInvoiceModal({ isOpen: false, data: null });
+            handleGenerateInvoice(true); // Proceed with cancelling unused items
+          }}
+          totalRequested={invoiceModal.data.totalRequested}
+          totalAssigned={invoiceModal.data.totalAssigned}
+          unusedCount={invoiceModal.data.unusedCount}
+          unusedItems={invoiceModal.data.unusedItems}
+          isProcessing={actionLoading.generate_invoice}
+        />
+      )}
     </AuthWrapper>
   );
 }

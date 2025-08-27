@@ -232,6 +232,11 @@ export async function POST(
             targetPageUrl: item.targetPageUrl,
             anchorText: item.anchorText,
             status: item.status || 'draft',
+            // FIXED: Use assignedDomain from main field first, fall back to metadata for backward compatibility
+            assignedDomain: item.assignedDomain || metadata?.assignedDomain,
+            assignedDomainId: item.assignedDomainId || metadata?.assignedDomainId,
+            assignedAt: (item.assignedDomain || metadata?.assignedDomain) ? new Date() : undefined,
+            assignedBy: (item.assignedDomain || metadata?.assignedDomain) ? session.userId : undefined,
             estimatedPrice: item.estimatedPrice,
             wholesalePrice: item.wholesalePrice || metadata?.wholesalePrice,
             serviceFee: 7900, // $79 service fee
@@ -461,6 +466,34 @@ export async function PATCH(
           changes.clientReview = {
             from: current.clientReviewStatus,
             to: update.clientReviewStatus
+          };
+        }
+
+        // Handle price updates
+        if (update.estimatedPrice !== undefined && update.estimatedPrice !== current.estimatedPrice) {
+          updateData.estimatedPrice = update.estimatedPrice;
+          changes.estimatedPrice = { from: current.estimatedPrice, to: update.estimatedPrice };
+        }
+
+        if (update.wholesalePrice !== undefined && update.wholesalePrice !== current.wholesalePrice) {
+          updateData.wholesalePrice = update.wholesalePrice;
+          changes.wholesalePrice = { from: current.wholesalePrice, to: update.wholesalePrice };
+        }
+
+        if (update.approvedPrice !== undefined && update.approvedPrice !== current.approvedPrice) {
+          updateData.approvedPrice = update.approvedPrice;
+          changes.approvedPrice = { from: current.approvedPrice, to: update.approvedPrice };
+        }
+
+        // Handle metadata updates (merge with existing)
+        if (update.metadata !== undefined) {
+          updateData.metadata = {
+            ...(current.metadata || {}),
+            ...update.metadata
+          };
+          changes.metadata = { 
+            from: current.metadata, 
+            to: updateData.metadata 
           };
         }
 

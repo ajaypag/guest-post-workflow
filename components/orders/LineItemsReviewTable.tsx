@@ -1012,8 +1012,11 @@ export default function LineItemsReviewTable({
       {Object.entries(groupedByClient).map(([clientId, group]) => {
         const filteredItems = filterItems(group.items);
         const assignedCount = group.items.filter(i => i.assignedDomainId).length;
-        const includedCount = group.items.filter(i => getItemStatus(i) === 'included').length;
-        const excludedCount = group.items.filter(i => getItemStatus(i) === 'excluded').length;
+        // Count only non-cancelled items
+        const activeItems = group.items.filter(i => i.status !== 'cancelled' && i.status !== 'refunded');
+        const includedCount = activeItems.filter(i => getItemStatus(i) === 'included').length;
+        const excludedCount = activeItems.filter(i => getItemStatus(i) === 'excluded').length;
+        const cancelledCount = group.items.filter(i => i.status === 'cancelled').length;
         const savedCount = 0; // Site bank concept removed
         
         return (
@@ -1028,9 +1031,12 @@ export default function LineItemsReviewTable({
                       `${group.items.length} high-quality sites selected for your campaign`
                     ) : (
                       <>
-                        {group.items.length} links requested • 
-                        <span className="text-green-600"> {includedCount} included</span> • 
-                        <span className="text-red-600"> {excludedCount} excluded</span>
+                        {activeItems.length} active links • 
+                        <span className="text-green-600">{includedCount} included</span> • 
+                        <span className="text-red-600">{excludedCount} excluded</span>
+                        {cancelledCount > 0 && (
+                          <span className="text-gray-500"> • {cancelledCount} cancelled</span>
+                        )}
                       </>
                     )}
                   </p>
@@ -1079,7 +1085,8 @@ export default function LineItemsReviewTable({
                       <th className="pb-2 font-medium text-center min-w-[50px] hidden lg:table-cell">DR</th>
                       <th className="pb-2 font-medium text-center min-w-[80px] hidden lg:table-cell">Traffic</th>
                       <th className="pb-2 font-medium text-center min-w-[60px] lg:hidden">DR/Traffic</th>
-                      {permissions.canChangeStatus && <th className="pb-2 font-medium min-w-[100px]">Status</th>}
+                      {permissions.canChangeStatus && <th className="pb-2 font-medium min-w-[100px]">Inclusion</th>}
+                      <th className="pb-2 font-medium min-w-[80px]">State</th>
                       <th className="pb-2 font-medium min-w-[200px] pr-4">Target Page</th>
                       <th className="pb-2 font-medium min-w-[150px] hidden xl:table-cell">Anchor Text</th>
                       <th className="pb-2 font-medium min-w-[100px] xl:hidden">Anchor</th>
@@ -1165,6 +1172,20 @@ export default function LineItemsReviewTable({
                               </select>
                             </td>
                           )}
+                          {/* Line Item State */}
+                          <td className="py-3 pr-4">
+                            <span className={`inline-flex px-2 py-1 text-xs rounded-full ${
+                              item.status === 'active' ? 'bg-green-100 text-green-700' :
+                              item.status === 'draft' ? 'bg-gray-100 text-gray-700' :
+                              item.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                              item.status === 'cancelled' ? 'bg-red-100 text-red-700 line-through' :
+                              item.status === 'refunded' ? 'bg-purple-100 text-purple-700' :
+                              item.status === 'completed' ? 'bg-blue-100 text-blue-700' :
+                              'bg-gray-100 text-gray-700'
+                            }`}>
+                              {item.status || 'unknown'}
+                            </span>
+                          </td>
                           <td className="py-3 pl-2 pr-4 text-sm max-w-[250px]">
                             {item.targetPageUrl ? (
                               <a 
@@ -1327,45 +1348,61 @@ export default function LineItemsReviewTable({
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         {item.assignedDomain ? (
-                          <DomainCell 
-                            domain={item.assignedDomain} 
-                            domainId={item.assignedDomainId || ''}
-                          />
+                          <div className="truncate">
+                            <DomainCell 
+                              domain={item.assignedDomain} 
+                              domainId={item.assignedDomainId || ''}
+                            />
+                          </div>
                         ) : (
                           <span className="text-gray-400">No domain assigned</span>
                         )}
                       </div>
-                      {permissions.canChangeStatus ? (
-                        <select
-                          value={itemStatus}
-                          onChange={(e) => handleStatusChange(item.id, e.target.value)}
-                          className={`px-2 py-1 text-xs rounded-full ${
+                      <div className="flex items-center gap-2">
+                        {permissions.canChangeStatus ? (
+                          <select
+                            value={itemStatus}
+                            onChange={(e) => handleStatusChange(item.id, e.target.value)}
+                            className={`px-2 py-1 text-xs rounded-full ${
+                              itemStatus === 'included' 
+                                ? 'bg-green-100 text-green-700' 
+                                : itemStatus === 'excluded'
+                                ? 'bg-red-100 text-red-700'
+                                : 'bg-gray-100 text-gray-700'
+                            }`}
+                          >
+                            <option value="included">Included</option>
+                            <option value="excluded">Excluded</option>
+                            <option value="saved_for_later">Saved</option>
+                          </select>
+                        ) : (
+                          <span className={`inline-flex items-center px-2 py-1 text-xs rounded-full ${
                             itemStatus === 'included' 
                               ? 'bg-green-100 text-green-700' 
                               : itemStatus === 'excluded'
                               ? 'bg-red-100 text-red-700'
+                              : itemStatus === 'saved_for_later'
+                              ? 'bg-yellow-100 text-yellow-700'
                               : 'bg-gray-100 text-gray-700'
-                          }`}
-                        >
-                          <option value="included">Included</option>
-                          <option value="excluded">Excluded</option>
-                          <option value="saved_for_later">Saved</option>
-                        </select>
-                      ) : (
-                        <span className={`inline-flex items-center px-2 py-1 text-xs rounded-full ${
-                          itemStatus === 'included' 
-                            ? 'bg-green-100 text-green-700' 
-                            : itemStatus === 'excluded'
-                            ? 'bg-red-100 text-red-700'
-                            : itemStatus === 'saved_for_later'
-                            ? 'bg-yellow-100 text-yellow-700'
-                            : 'bg-gray-100 text-gray-700'
+                          }`}>
+                            {itemStatus === 'included' ? 'Included' : 
+                             itemStatus === 'excluded' ? 'Excluded' :
+                             itemStatus === 'saved_for_later' ? 'Saved' : 'Pending'}
+                          </span>
+                        )}
+                        {/* Line Item State */}
+                        <span className={`inline-flex px-2 py-1 text-xs rounded-full ${
+                          item.status === 'active' ? 'bg-blue-100 text-blue-700' :
+                          item.status === 'draft' ? 'bg-gray-100 text-gray-700' :
+                          item.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                          item.status === 'cancelled' ? 'bg-red-100 text-red-700 line-through' :
+                          item.status === 'refunded' ? 'bg-purple-100 text-purple-700' :
+                          item.status === 'completed' ? 'bg-green-100 text-green-700' :
+                          'bg-gray-100 text-gray-700'
                         }`}>
-                          {itemStatus === 'included' ? 'Included' : 
-                           itemStatus === 'excluded' ? 'Excluded' :
-                           itemStatus === 'saved_for_later' ? 'Saved' : 'Pending'}
+                          {item.status || 'unknown'}
                         </span>
-                      )}
+                      </div>
                     </div>
                     
                     {/* Metrics */}
@@ -1440,6 +1477,22 @@ export default function LineItemsReviewTable({
                           >
                             <XCircle className="h-4 w-4" />
                           </button>
+                        )}
+                        {onRemoveItem && (
+                          <button
+                            onClick={() => {
+                              console.log('Remove button clicked for item:', item.id);
+                              onRemoveItem(item.id);
+                            }}
+                            className="text-red-600 hover:text-red-700 ml-2"
+                            title="Remove Line Item"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
+                        {/* Debug: Show if onRemoveItem exists */}
+                        {!onRemoveItem && (
+                          <span className="text-xs text-gray-400 ml-2">No remove handler</span>
                         )}
                       </div>
                     )}
