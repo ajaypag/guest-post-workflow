@@ -10,7 +10,7 @@ interface DomainTagsProps {
 
 export default function DomainTags({ dr, traffic, className = '' }: DomainTagsProps) {
   // Helper to format traffic numbers
-  const formatTraffic = (value: number | string | null) => {
+  const formatTraffic = (value: number | string | null): string | null => {
     if (!value) return null;
     
     if (typeof value === 'string') {
@@ -20,8 +20,12 @@ export default function DomainTags({ dr, traffic, className = '' }: DomainTagsPr
       }
       // Try to parse as number
       const num = parseInt(value.replace(/,/g, ''));
-      if (isNaN(num)) return value;
-      value = num;
+      if (isNaN(num)) return value; // Return original string if can't parse
+      // Parse successful, format as number
+      if (num >= 1000000000) return `${(num / 1000000000).toFixed(1)}B`;
+      if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+      if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
+      return num.toString();
     }
     
     if (typeof value === 'number') {
@@ -31,7 +35,8 @@ export default function DomainTags({ dr, traffic, className = '' }: DomainTagsPr
       return value.toString();
     }
     
-    return value?.toString() || null;
+    // This should never be reached given our input types, but handle gracefully
+    return String(value);
   };
 
   const formattedTraffic = formatTraffic(traffic);
