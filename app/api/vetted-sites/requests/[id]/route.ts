@@ -3,7 +3,7 @@ import { AuthServiceServer } from '@/lib/auth-server';
 import { db } from '@/lib/db/connection';
 import { vettedSitesRequests, vettedRequestProjects } from '@/lib/db/vettedSitesRequestSchema';
 import { bulkAnalysisProjects } from '@/lib/db/bulkAnalysisSchema';
-import { clients, targetPages, users } from '@/lib/db/schema';
+import { clients, targetPages, users, accounts } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
@@ -136,30 +136,43 @@ export async function GET(
       .leftJoin(bulkAnalysisProjects, eq(vettedRequestProjects.projectId, bulkAnalysisProjects.id))
       .where(eq(vettedRequestProjects.requestId, requestId));
 
-    // Fetch creator user details - check both createdByUser (internal) and accountId (account users)
+    // Fetch creator details - check both createdByUser (internal) and accountId (account users)
     let creatorDetails = null;
-    const creatorId = requestData.createdByUser || requestData.accountId;
     
-    console.log('Request data:', {
+    console.log('Request data:', JSON.stringify({
       id: requestData.id,
       createdByUser: requestData.createdByUser,
-      accountId: requestData.accountId,
-      creatorId
-    });
+      accountId: requestData.accountId
+    }, null, 2));
     
-    if (creatorId) {
-      const [creatorUser] = await db
+    if (requestData.createdByUser) {
+      // Internal user created the request
+      const [internalUser] = await db
         .select({
           id: users.id,
           name: users.name,
           email: users.email
         })
         .from(users)
-        .where(eq(users.id, creatorId))
+        .where(eq(users.id, requestData.createdByUser))
         .limit(1);
       
-      creatorDetails = creatorUser;
-      console.log('Found creator:', creatorDetails);
+      creatorDetails = internalUser;
+      console.log('Found internal creator:', creatorDetails);
+    } else if (requestData.accountId) {
+      // Account user created the request
+      const [accountUser] = await db
+        .select({
+          id: accounts.id,
+          name: accounts.contactName,
+          email: accounts.email
+        })
+        .from(accounts)
+        .where(eq(accounts.id, requestData.accountId))
+        .limit(1);
+      
+      creatorDetails = accountUser;
+      console.log('Found account creator:', creatorDetails);
     }
 
     const response = {

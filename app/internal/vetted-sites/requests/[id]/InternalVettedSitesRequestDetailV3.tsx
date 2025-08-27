@@ -826,7 +826,7 @@ export default function InternalVettedSitesRequestDetailV3({
                 if (assignee) {
                   setRequest(prev => prev ? { ...prev, fulfilledBy: assignee.id } : prev);
                 } else {
-                  setRequest(prev => prev ? { ...prev, fulfilledBy: null } : prev);
+                  setRequest(prev => prev ? { ...prev, fulfilledBy: undefined } : prev);
                 }
                 // Refresh request to get updated fulfillment data after a delay
                 setTimeout(() => fetchRequestDetail(), 1000);

@@ -78,7 +78,7 @@ const TASK_TYPE_INFO = {
   order: { label: 'Order', color: 'bg-blue-50 text-blue-700 border-blue-200' },
   workflow: { label: 'Guest Post', color: 'bg-green-50 text-green-700 border-green-200' },
   line_item: { label: 'Paid Link', color: 'bg-purple-50 text-purple-700 border-purple-200' },
-  vetted_sites_request: { label: 'Vetted Sites Request', color: 'bg-orange-50 text-orange-700 border-orange-200' },
+  vetted_sites_request: { label: 'Vetted Sites Request', color: 'bg-gray-50 text-gray-700 border-gray-200' },
   brand_intelligence: { label: 'Brand Intelligence', color: 'bg-indigo-50 text-indigo-700 border-indigo-200' }
 } as const;
 
@@ -866,7 +866,7 @@ export default function TasksPageClient({
       } else {
         // When no types are selected, "All types" means fetch everything
         // Always include line items when showing all types
-        params.append('type', 'order,line_item,workflow');
+        params.append('type', 'order,line_item,workflow,vetted_sites_request,brand_intelligence');
         params.append('showLineItems', 'true');
       }
       
@@ -1746,13 +1746,15 @@ export default function TasksPageClient({
                 </div>
               )}
 
-              {/* Vetted Sites Request specific */}
+              {/* Vetted Sites Request specific - Redesigned to match workflow card style */}
               {task.type === 'vetted_sites_request' && (
-                <div className="col-span-full space-y-2 border-t border-gray-100 pt-2 mt-2">
-                  <div className="bg-orange-50 rounded-lg p-3">
+                <div className="mt-3 pt-3 border-t border-gray-100 space-y-2">
+                  {/* Main content section with clean design */}
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    {/* Header with request details */}
                     <div className="flex items-center justify-between mb-2">
-                      <div className="font-medium text-orange-800">
-                        Vetted Sites Request
+                      <div className="font-medium text-gray-900 text-sm">
+                        <strong>{(task as any).targetUrls?.length || 0} target URLs</strong> requested for analysis
                       </div>
                       <div className={`px-2 py-1 rounded-full text-xs font-medium ${
                         (task as any).requestStatus === 'approved' ? 'bg-green-100 text-green-700' :
@@ -1764,23 +1766,27 @@ export default function TasksPageClient({
                       </div>
                     </div>
                     
-                    <div className="text-sm text-orange-700">
-                      <div className="mb-1">
-                        <strong>{(task as any).targetUrls?.length || 0} target URLs</strong> requested for analysis
-                      </div>
+                    {/* Request metadata with clean typography */}
+                    <div className="space-y-1 text-xs text-gray-600">
                       {(task as any).createdByUserName && (
-                        <div className="text-xs text-orange-600">
-                          Submitted by: <span className="font-medium">{(task as any).createdByUserName}</span>
+                        <div className="flex items-center gap-1">
+                          <span className="text-gray-500">Submitted by:</span>
+                          <span className="font-medium text-gray-700">{(task as any).createdByUserName}</span>
+                          {(task as any).createdByUserEmail && (
+                            <span className="text-gray-500">({(task as any).createdByUserEmail})</span>
+                          )}
                         </div>
                       )}
                       {(task as any).submittedAt && (
-                        <div className="text-xs text-orange-600">
-                          Date: {new Date((task as any).submittedAt).toLocaleDateString()}
+                        <div className="flex items-center gap-1">
+                          <span className="text-gray-500">Date:</span>
+                          <span className="font-medium text-gray-700">{new Date((task as any).submittedAt).toLocaleDateString()}</span>
                         </div>
                       )}
                       {(task as any).reviewedAt && (
-                        <div className="text-xs text-orange-600">
-                          Approved: {new Date((task as any).reviewedAt).toLocaleDateString()}
+                        <div className="flex items-center gap-1">
+                          <span className="text-gray-500">Approved:</span>
+                          <span className="font-medium text-gray-700">{new Date((task as any).reviewedAt).toLocaleDateString()}</span>
                         </div>
                       )}
                     </div>
@@ -2473,13 +2479,13 @@ export default function TasksPageClient({
                     }}
                     className={`px-2 sm:px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 flex items-center gap-1 whitespace-nowrap ${
                       selectedTypes.includes('vetted_sites_request')
-                        ? 'bg-white text-orange-600 shadow-sm'
-                        : 'text-gray-600 hover:text-orange-600'
+                        ? 'bg-white text-gray-700 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-700'
                     }`}
                   >
                     <span className="hidden sm:inline">🏢</span><span className="sm:hidden">Vetted</span><span className="hidden sm:inline"> Vetted</span> Sites
                     <span className={`px-1 sm:px-1.5 py-0.5 rounded-full text-xs ${
-                      selectedTypes.includes('vetted_sites_request') ? 'bg-orange-100 text-orange-600' : 'bg-gray-200 text-gray-600'
+                      selectedTypes.includes('vetted_sites_request') ? 'bg-gray-100 text-gray-700' : 'bg-gray-200 text-gray-600'
                     }`}>
                       {(getFilteredStats().byType as any).vetted_sites_request || 0}
                     </span>

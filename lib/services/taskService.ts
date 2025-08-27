@@ -508,6 +508,7 @@ export class TaskService {
     // Use aliases for multiple joins on same table
     const assignedUser = aliasedTable(users, 'assigned_user');
     const creatorUser = aliasedTable(users, 'creator_user');
+    const creatorAccount = aliasedTable(accounts, 'creator_account');
     
     const query = db
       .select({
@@ -517,11 +518,17 @@ export class TaskService {
           id: creatorUser.id,
           name: creatorUser.name,
           email: creatorUser.email
+        },
+        creatorAccount: {
+          id: creatorAccount.id,
+          name: creatorAccount.contactName,
+          email: creatorAccount.email
         }
       })
       .from(vettedSitesRequests)
       .leftJoin(assignedUser, eq(vettedSitesRequests.fulfilledBy, assignedUser.id))
-      .leftJoin(creatorUser, eq(vettedSitesRequests.createdByUser, creatorUser.id));
+      .leftJoin(creatorUser, eq(vettedSitesRequests.createdByUser, creatorUser.id))
+      .leftJoin(creatorAccount, eq(vettedSitesRequests.accountId, creatorAccount.id));
 
     // Apply filters
     const conditions = [];
@@ -541,9 +548,9 @@ export class TaskService {
       }
     }
 
-    // Only show approved requests that need fulfillment
+    // Show active requests by default (submitted and approved)
     if (!filters?.statuses || filters.statuses.length === 0) {
-      conditions.push(eq(vettedSitesRequests.status, 'approved'));
+      conditions.push(inArray(vettedSitesRequests.status, ['submitted', 'approved'] as any));
     }
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
@@ -570,8 +577,8 @@ export class TaskService {
       reviewedAt: row.request.reviewedAt,
       createdAt: row.request.createdAt,
       updatedAt: row.request.updatedAt,
-      createdByUserName: row.creatorUser?.name || null,
-      createdByUserEmail: row.creatorUser?.email || null,
+      createdByUserName: row.creatorUser?.name || row.creatorAccount?.name || null,
+      createdByUserEmail: row.creatorUser?.email || row.creatorAccount?.email || null,
       action: `/internal/vetted-sites/requests/${row.request.id}`
     }));
   }
