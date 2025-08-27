@@ -382,7 +382,7 @@ async function getInitialData(session: any, searchParams: any) {
         targetPageIds: bulkAnalysisDomains.targetPageIds,
         
         // Calculate active line items using this domain
-        activeLineItemsCount: sql<number>`(\n          SELECT COUNT(*)::int \n          FROM ${orderLineItems} \n          WHERE ${orderLineItems.assignedDomain} = ${bulkAnalysisDomains.domain} \n          AND ${orderLineItems.status} IN ('approved', 'in_progress', 'delivered')\n        )`
+        activeLineItemsCount: sql<number>`(\n          SELECT COUNT(*)::int \n          FROM ${orderLineItems} \n          WHERE ${orderLineItems.assignedDomain} = ${bulkAnalysisDomains.domain} \n          AND ${orderLineItems.status} IN ('approved', 'invoiced', 'in_progress', 'delivered')\n        )`
       })
       .from(bulkAnalysisDomains)
       .leftJoin(clients, eq(bulkAnalysisDomains.clientId, clients.id))

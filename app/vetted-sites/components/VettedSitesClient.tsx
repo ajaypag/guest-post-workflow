@@ -1,9 +1,11 @@
 'use client';
 
 import React, { Suspense } from 'react';
+import Link from 'next/link';
 import VettedSitesFiltersCompact from './VettedSitesFiltersCompact';
 import VettedSitesTable from './VettedSitesTable';
 import DynamicStats from './DynamicStats';
+import { FileText, ExternalLink } from 'lucide-react';
 
 interface VettedSitesClientProps {
   initialData: any;
@@ -56,6 +58,20 @@ export default function VettedSitesClient({
                 initialStats={initialData.stats} 
                 total={initialData.total} 
               />
+              
+              {/* Internal-only navigation button */}
+              {session.userType === 'internal' && (
+                <div className="flex justify-end">
+                  <Link
+                    href="/internal/vetted-sites/requests"
+                    className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white font-medium text-sm rounded-lg hover:bg-indigo-700 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 shadow-sm"
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    Manage Requests
+                    <ExternalLink className="h-3 w-3 ml-2" />
+                  </Link>
+                </div>
+              )}
               
               <Suspense fallback={
                 <div className="bg-white rounded-lg border">

@@ -159,22 +159,56 @@ export default function BulkAnalysisDashboard() {
         loadedClients = await clientStorage.getAllClients();
       }
 
-      // Enrich with stats (mock data for now)
+      // Enrich with actual stats from database
       const enrichedClients = await Promise.all(
         loadedClients.map(async (client) => {
-          // In real implementation, fetch from database
-          const projectCount = Math.floor(Math.random() * 10);
-          const domainCount = Math.floor(Math.random() * 100);
-          const workflowCount = Math.floor(Math.random() * 20);
-          
-          return {
-            ...client,
-            clientType: (client as any).clientType || 'client',
-            projectCount,
-            domainCount,
-            workflowCount,
-            lastActivityAt: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000)
-          };
+          try {
+            // Fetch actual project data from the API
+            const projectResponse = await fetch(`/api/clients/${client.id}/projects`, {
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            });
+            
+            let projectCount = 0;
+            let domainCount = 0;
+            let workflowCount = 0;
+            let lastActivityAt = null;
+            
+            if (projectResponse.ok) {
+              const { projects } = await projectResponse.json();
+              projectCount = projects.length;
+              
+              // Sum up domains and workflows across all projects
+              for (const project of projects) {
+                domainCount += project.domainCount || 0;
+                workflowCount += project.workflowCount || 0;
+                if (project.lastActivityAt && (!lastActivityAt || new Date(project.lastActivityAt) > new Date(lastActivityAt))) {
+                  lastActivityAt = project.lastActivityAt;
+                }
+              }
+            }
+            
+            return {
+              ...client,
+              clientType: (client as any).clientType || 'client',
+              projectCount,
+              domainCount,
+              workflowCount,
+              lastActivityAt: lastActivityAt ? new Date(lastActivityAt) : undefined
+            };
+          } catch (error) {
+            console.error(`Error fetching stats for client ${client.id}:`, error);
+            // Return client with zero counts on error
+            return {
+              ...client,
+              clientType: (client as any).clientType || 'client',
+              projectCount: 0,
+              domainCount: 0,
+              workflowCount: 0,
+              lastActivityAt: undefined
+            };
+          }
         })
       );
 

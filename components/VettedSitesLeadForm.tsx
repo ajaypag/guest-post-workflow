@@ -279,7 +279,6 @@ export default function VettedSitesLeadForm() {
               placeholder="https://yoursite.com/page-to-promote"
               className="w-full px-6 py-5 text-xl border-3 border-blue-300 rounded-2xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 font-mono bg-blue-50 focus:bg-white transition-all shadow-lg"
               required
-              autoFocus
             />
           </div>
 
@@ -358,7 +357,6 @@ export default function VettedSitesLeadForm() {
                   placeholder="Your name"
                   className="w-full px-6 py-5 text-lg border-3 border-blue-300 rounded-2xl focus:ring-4 focus:ring-blue-200 focus:border-blue-500 bg-blue-50 focus:bg-white transition-all shadow-lg font-normal"
                   required
-                  autoFocus
                 />
               </div>
 
