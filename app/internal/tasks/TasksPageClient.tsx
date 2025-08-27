@@ -2038,18 +2038,18 @@ export default function TasksPageClient({
           {/* Primary Navigation Tabs */}
           <div className="px-6 pt-6 pb-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="overflow-x-auto">
-                <div className="flex bg-gray-50 rounded-lg p-1 min-w-max">
+              <div className="w-full overflow-x-auto -mx-2 px-2">
+                <div className="flex bg-gray-50 rounded-lg p-1 gap-1 min-w-max">
                 <button
                   onClick={() => setSelectedUser(currentUserId)}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
+                  className={`px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 flex items-center gap-1 sm:gap-2 whitespace-nowrap ${
                     selectedUser === currentUserId
                       ? 'bg-white text-indigo-600 shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  📋 My Tasks
-                  <span className={`px-2 py-0.5 rounded-full text-xs ${
+                  <span className="hidden sm:inline">📋</span><span className="sm:hidden">My</span><span className="hidden sm:inline"> My</span> Tasks
+                  <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-xs ${
                     selectedUser === currentUserId ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-200 text-gray-600'
                   }`}>
                     {getUserTaskCounts().myTasks}
@@ -2058,14 +2058,14 @@ export default function TasksPageClient({
                 
                 <button
                   onClick={() => setSelectedUser('all')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
+                  className={`px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 flex items-center gap-1 sm:gap-2 whitespace-nowrap ${
                     selectedUser === 'all'
                       ? 'bg-white text-indigo-600 shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  👥 All Tasks
-                  <span className={`px-2 py-0.5 rounded-full text-xs ${
+                  <span className="hidden sm:inline">👥</span><span className="sm:hidden">All</span><span className="hidden sm:inline"> All</span> Tasks
+                  <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-xs ${
                     selectedUser === 'all' ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-200 text-gray-600'
                   }`}>
                     {getUserTaskCounts().allTasks}
@@ -2074,14 +2074,14 @@ export default function TasksPageClient({
                 
                 <button
                   onClick={() => setSelectedUser('unassigned')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
+                  className={`px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 flex items-center gap-1 sm:gap-2 whitespace-nowrap ${
                     selectedUser === 'unassigned'
                       ? 'bg-white text-indigo-600 shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  📭 Unassigned
-                  <span className={`px-2 py-0.5 rounded-full text-xs ${
+                  <span className="hidden sm:inline">📭</span> Unassigned
+                  <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-xs ${
                     selectedUser === 'unassigned' ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-200 text-gray-600'
                   }`}>
                     {getUserTaskCounts().unassigned}
@@ -2123,7 +2123,7 @@ export default function TasksPageClient({
           </div>
           
           {/* Search Bar */}
-          <div className="px-6 pb-3">
+          <div className="px-4 sm:px-6 pb-3">
             <div className="relative max-w-2xl">
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
               <input
@@ -2148,9 +2148,9 @@ export default function TasksPageClient({
           <div className="px-6 pb-4">
             <div className="flex flex-col gap-4">
               {/* Primary Filters Row */}
-              <div className="flex flex-wrap items-center gap-4">
+              <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-4">
                 {/* Account & Client Hierarchical Dropdowns */}
-                <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-2">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 bg-gray-50 rounded-lg p-2">
                   {/* Account Selector */}
                   <div className="relative" data-dropdown="account">
                     <button
@@ -2383,10 +2383,11 @@ export default function TasksPageClient({
                 </div>
                 
                 {/* Task Type Quick Filters */}
-                <div className="flex bg-gray-100 rounded-lg p-1.5 border border-gray-200">
+                <div className="w-full overflow-x-auto -mx-2 px-2">
+                  <div className="flex bg-gray-100 rounded-lg p-1.5 border border-gray-200 gap-0.5 min-w-max">
                   <button
                     onClick={() => setSelectedTypes([])}
-                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 flex items-center gap-1 ${
+                    className={`px-2 sm:px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 flex items-center gap-1 whitespace-nowrap ${
                       selectedTypes.length === 0
                         ? 'bg-white text-gray-900 shadow-sm'
                         : 'text-gray-600 hover:text-gray-900'
@@ -2402,14 +2403,14 @@ export default function TasksPageClient({
                         setSelectedTypes(prev => [...prev, 'order']);
                       }
                     }}
-                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 flex items-center gap-1 ${
+                    className={`px-2 sm:px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 flex items-center gap-1 whitespace-nowrap ${
                       selectedTypes.includes('order')
                         ? 'bg-white text-blue-600 shadow-sm'
                         : 'text-gray-600 hover:text-blue-600'
                     }`}
                   >
-                    📦 Orders
-                    <span className={`px-1.5 py-0.5 rounded-full text-xs ${
+                    <span className="hidden sm:inline">📦</span> Orders
+                    <span className={`px-1 sm:px-1.5 py-0.5 rounded-full text-xs ${
                       selectedTypes.includes('order') ? 'bg-blue-100 text-blue-600' : 'bg-gray-200 text-gray-600'
                     }`}>
                       {getFilteredStats().byType.order}
@@ -2423,14 +2424,14 @@ export default function TasksPageClient({
                         setSelectedTypes(prev => [...prev, 'line_item']);
                       }
                     }}
-                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 flex items-center gap-1 ${
+                    className={`px-2 sm:px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 flex items-center gap-1 whitespace-nowrap ${
                       selectedTypes.includes('line_item')
                         ? 'bg-white text-purple-600 shadow-sm'
                         : 'text-gray-600 hover:text-purple-600'
                     }`}
                   >
-                    🔗 Paid Links
-                    <span className={`px-1.5 py-0.5 rounded-full text-xs ${
+                    <span className="hidden sm:inline">🔗</span><span className="sm:hidden">Paid</span><span className="hidden sm:inline"> Paid</span> Links
+                    <span className={`px-1 sm:px-1.5 py-0.5 rounded-full text-xs ${
                       selectedTypes.includes('line_item') ? 'bg-purple-100 text-purple-600' : 'bg-gray-200 text-gray-600'
                     }`}>
                       {getFilteredStats().byType.line_item}
@@ -2444,14 +2445,14 @@ export default function TasksPageClient({
                         setSelectedTypes(prev => [...prev, 'workflow']);
                       }
                     }}
-                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 flex items-center gap-1 ${
+                    className={`px-2 sm:px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 flex items-center gap-1 whitespace-nowrap ${
                       selectedTypes.includes('workflow')
                         ? 'bg-white text-green-600 shadow-sm'
                         : 'text-gray-600 hover:text-green-600'
                     }`}
                   >
-                    📄 Guest Posts
-                    <span className={`px-1.5 py-0.5 rounded-full text-xs ${
+                    <span className="hidden sm:inline">📄</span><span className="sm:hidden">Guest</span><span className="hidden sm:inline"> Guest</span> Posts
+                    <span className={`px-1 sm:px-1.5 py-0.5 rounded-full text-xs ${
                       selectedTypes.includes('workflow') ? 'bg-green-100 text-green-600' : 'bg-gray-200 text-gray-600'
                     }`}>
                       {getFilteredStats().byType.workflow}
@@ -2465,14 +2466,14 @@ export default function TasksPageClient({
                         setSelectedTypes(prev => [...prev, 'vetted_sites_request']);
                       }
                     }}
-                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 flex items-center gap-1 ${
+                    className={`px-2 sm:px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 flex items-center gap-1 whitespace-nowrap ${
                       selectedTypes.includes('vetted_sites_request')
                         ? 'bg-white text-orange-600 shadow-sm'
                         : 'text-gray-600 hover:text-orange-600'
                     }`}
                   >
-                    🏢 Vetted Sites
-                    <span className={`px-1.5 py-0.5 rounded-full text-xs ${
+                    <span className="hidden sm:inline">🏢</span><span className="sm:hidden">Vetted</span><span className="hidden sm:inline"> Vetted</span> Sites
+                    <span className={`px-1 sm:px-1.5 py-0.5 rounded-full text-xs ${
                       selectedTypes.includes('vetted_sites_request') ? 'bg-orange-100 text-orange-600' : 'bg-gray-200 text-gray-600'
                     }`}>
                       {(getFilteredStats().byType as any).vetted_sites_request || 0}
@@ -2486,32 +2487,34 @@ export default function TasksPageClient({
                         setSelectedTypes(prev => [...prev, 'brand_intelligence']);
                       }
                     }}
-                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 flex items-center gap-1 ${
+                    className={`px-2 sm:px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 flex items-center gap-1 whitespace-nowrap ${
                       selectedTypes.includes('brand_intelligence')
                         ? 'bg-white text-indigo-600 shadow-sm'
                         : 'text-gray-600 hover:text-indigo-600'
                     }`}
                   >
-                    🧠 Brand Intel
-                    <span className={`px-1.5 py-0.5 rounded-full text-xs ${
+                    <span className="hidden sm:inline">🧠</span><span className="sm:hidden">Intel</span><span className="hidden sm:inline"> Brand Intel</span>
+                    <span className={`px-1 sm:px-1.5 py-0.5 rounded-full text-xs ${
                       selectedTypes.includes('brand_intelligence') ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-200 text-gray-600'
                     }`}>
                       {(getFilteredStats().byType as any).brand_intelligence || 0}
                     </span>
                   </button>
+                  </div>
                 </div>
                 
                 {/* Advanced Filters Toggle */}
                 <button
                   onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                  className={`px-4 py-2 rounded-lg border text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
+                  className={`px-2 sm:px-4 py-2 rounded-lg border text-xs sm:text-sm font-medium transition-all duration-200 flex items-center gap-1 sm:gap-2 ${
                     showAdvancedFilters || selectedStatuses.length > 0 || showLineItems || showCompleted || dateRange !== 'all'
                       ? 'border-indigo-500 bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
                       : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
                   }`}
                 >
-                  <SlidersHorizontal className="h-4 w-4" />
-                  More Filters
+                  <SlidersHorizontal className="h-3 sm:h-4 w-3 sm:w-4" />
+                  <span className="hidden sm:inline">More Filters</span>
+                  <span className="sm:hidden">Filters</span>
                   {(selectedStatuses.length > 0 || showLineItems || showCompleted || dateRange !== 'all') && (
                     <span className="ml-1 px-1.5 py-0.5 bg-indigo-200 text-indigo-800 rounded text-xs">
                       {selectedStatuses.length + (showLineItems ? 1 : 0) + (showCompleted ? 1 : 0) + (dateRange !== 'all' ? 1 : 0)}
@@ -2525,21 +2528,23 @@ export default function TasksPageClient({
                 {/* Export to CSV */}
                 <button
                   onClick={exportToCSV}
-                  className="px-3 py-2 text-sm text-green-600 hover:text-green-700 hover:bg-green-50 rounded-lg transition-all duration-200 flex items-center gap-1"
+                  className="px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-green-600 hover:text-green-700 hover:bg-green-50 rounded-lg transition-all duration-200 flex items-center gap-1"
                   title={`Export ${data.tasks?.length || 0} tasks to CSV`}
                 >
-                  <Download className="h-4 w-4" />
-                  Export CSV
+                  <Download className="h-3 sm:h-4 w-3 sm:w-4" />
+                  <span className="hidden sm:inline">Export CSV</span>
+                  <span className="sm:hidden">CSV</span>
                 </button>
                 
                 {/* Clear All Filters */}
                 {hasActiveFilters() && (
                   <button
                     onClick={resetFilters}
-                    className="px-3 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all duration-200 flex items-center gap-1"
+                    className="px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all duration-200 flex items-center gap-1"
                   >
-                    <X className="h-4 w-4" />
-                    Clear All
+                    <X className="h-3 sm:h-4 w-3 sm:w-4" />
+                    <span className="hidden sm:inline">Clear All</span>
+                    <span className="sm:hidden">Clear</span>
                   </button>
                 )}
               </div>
@@ -2791,7 +2796,7 @@ export default function TasksPageClient({
           )}
 
           {/* Modern View Controls Bar */}
-          <div className="px-6 py-4 bg-white border-t border-gray-100">
+          <div className="px-4 sm:px-6 py-4 bg-white border-t border-gray-100">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
                 {/* Select all checkbox */}
@@ -2827,14 +2832,14 @@ export default function TasksPageClient({
                 </div>
               </div>
               
-              <div className="flex items-center gap-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
                 {/* View Mode Toggle */}
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600 font-medium">View:</span>
+                  <span className="text-xs sm:text-sm text-gray-600 font-medium">View:</span>
                   <div className="flex bg-gray-100 rounded-lg p-1">
                     <button
                       onClick={() => setGroupByDeadline(false)}
-                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 flex items-center gap-1 ${
+                      className={`px-2 sm:px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 flex items-center gap-1 ${
                         !groupByDeadline
                           ? 'bg-white text-gray-900 shadow-sm'
                           : 'text-gray-600 hover:text-gray-900'
@@ -2845,7 +2850,7 @@ export default function TasksPageClient({
                     </button>
                     <button
                       onClick={() => setGroupByDeadline(true)}
-                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 flex items-center gap-1 ${
+                      className={`px-2 sm:px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 flex items-center gap-1 ${
                         groupByDeadline
                           ? 'bg-white text-gray-900 shadow-sm'
                           : 'text-gray-600 hover:text-gray-900'
@@ -2859,17 +2864,17 @@ export default function TasksPageClient({
                 
                 {/* Group By Selector (only when grouped view is active) */}
                 {groupByDeadline && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-600">Group by:</span>
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <span className="text-xs sm:text-sm text-gray-600 flex-shrink-0">Group by:</span>
                     <select
                       value={groupBy}
                       onChange={(e) => setGroupBy(e.target.value as 'deadline' | 'order' | 'client' | 'hierarchy')}
-                      className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                      className="px-2 sm:px-3 py-1.5 sm:py-2 bg-white border border-gray-200 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors flex-1 sm:flex-initial"
                     >
                       <option value="deadline">📅 Due Date</option>
                       <option value="order">📦 Order</option>
                       <option value="client">👥 Account/Client</option>
-                      <option value="hierarchy">🏗️ Account → Order → Guest Posts</option>
+                      <option value="hierarchy">🏗️ Hierarchy</option>
                     </select>
                   </div>
                 )}
