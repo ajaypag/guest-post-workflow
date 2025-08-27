@@ -5,12 +5,17 @@ import Link from 'next/link';
 import { 
   Search, ChevronDown, ChevronRight, ChevronUp, Edit2, Trash2, 
   CheckCircle, XCircle, AlertCircle, Save, X, Plus, Filter,
-  Square, CheckSquare, MinusSquare, Loader2
+  Square, CheckSquare, MinusSquare, Loader2, Globe
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils/formatting';
 import DomainCell from './DomainCell';
 import ExpandedDomainDetails from './ExpandedDomainDetails';
 import EnhancedTargetPageSelector from './EnhancedTargetPageSelector';
+import TableTargetDropdown from './TableTargetDropdown';
+import InlineAnchorEditor from './InlineAnchorEditor';
+import StatusToggle from './StatusToggle';
+import ActionColumnToggle from './ActionColumnToggle';
+import DomainTags from './DomainTags';
 
 // Simple hook to fetch workflow progress
 const useWorkflowProgress = (workflowId?: string) => {
@@ -533,6 +538,9 @@ export default function LineItemsReviewTable({
   const [clientTargetPages, setClientTargetPages] = useState<Record<string, any[]>>({});
   const [loadingTargetPages, setLoadingTargetPages] = useState<Set<string>>(new Set());
   
+  // Dropdown management state
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  
   // Filter state
   const [filters, setFilters] = useState({
     drMin: null as number | null,
@@ -732,6 +740,32 @@ export default function LineItemsReviewTable({
     return item.metadata?.inclusionStatus || 'included';
   };
 
+  // Handle target URL update for dropdown
+  const handleTargetUrlUpdate = async (itemId: string, targetUrl: string) => {
+    if (!onEditItem) return;
+    
+    try {
+      await onEditItem(itemId, { targetPageUrl: targetUrl });
+      // Refresh is handled by parent component
+    } catch (error) {
+      console.error('Failed to update target URL:', error);
+      throw error; // Re-throw so TableTargetDropdown can show error
+    }
+  };
+
+  // Handle anchor text update for inline editor
+  const handleAnchorTextUpdate = async (itemId: string, anchorText: string) => {
+    if (!onEditItem) return;
+    
+    try {
+      await onEditItem(itemId, { anchorText });
+      // Refresh is handled by parent component
+    } catch (error) {
+      console.error('Failed to update anchor text:', error);
+      throw error; // Re-throw so InlineAnchorEditor can show error
+    }
+  };
+
   // Handle status change
   const handleStatusChange = async (itemId: string, newStatus: string) => {
     if (!onChangeStatus) return;
@@ -747,6 +781,29 @@ export default function LineItemsReviewTable({
     } else {
       await onChangeStatus(itemId, newStatus as any);
     }
+  };
+
+  // Handle inclusion toggle
+  const handleInclusionToggle = async (itemId: string, included: boolean) => {
+    const newStatus = included ? 'included' : 'excluded';
+    await handleStatusChange(itemId, newStatus);
+  };
+
+  // Dropdown management functions
+  const handleDropdownOpen = (itemId: string) => {
+    if (openDropdown === itemId) {
+      setOpenDropdown(null); // Close if already open
+    } else {
+      setOpenDropdown(itemId); // Open this dropdown and close others
+    }
+  };
+
+  const handleDropdownClose = () => {
+    setOpenDropdown(null);
+  };
+
+  const isDropdownOpen = (itemId: string) => {
+    return openDropdown === itemId;
   };
 
   // Handle bulk status change with confirmation and batch processing
@@ -1082,18 +1139,11 @@ export default function LineItemsReviewTable({
                       {hasAnyWorkflows && (
                         <th className="pb-2 font-medium min-w-[120px]">Workflow</th>
                       )}
-                      <th className="pb-2 font-medium text-center min-w-[50px] hidden lg:table-cell">DR</th>
-                      <th className="pb-2 font-medium text-center min-w-[80px] hidden lg:table-cell">Traffic</th>
-                      <th className="pb-2 font-medium text-center min-w-[60px] lg:hidden">DR/Traffic</th>
-                      {permissions.canChangeStatus && <th className="pb-2 font-medium min-w-[100px]">Inclusion</th>}
-                      <th className="pb-2 font-medium min-w-[80px]">State</th>
                       <th className="pb-2 font-medium min-w-[200px] pr-4">Target Page</th>
-                      <th className="pb-2 font-medium min-w-[150px] hidden xl:table-cell">Anchor Text</th>
-                      <th className="pb-2 font-medium min-w-[100px] xl:hidden">Anchor</th>
+                      <th className="pb-2 font-medium min-w-[250px] hidden xl:table-cell">Anchor Text</th>
+                      <th className="pb-2 font-medium min-w-[180px] xl:hidden">Anchor</th>
                       {permissions.canViewPricing && <th className="pb-2 font-medium min-w-[80px]">Price</th>}
-                      {(permissions.canEditDomainAssignments || permissions.canApproveReject) && (
-                        <th className="pb-2 font-medium min-w-[80px]">Actions</th>
-                      )}
+                      <th className="pb-2 font-medium min-w-[120px]">Action</th>
                     </tr>
                   </thead>
                 <tbody>
@@ -1123,11 +1173,36 @@ export default function LineItemsReviewTable({
                                 <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0" />
                               )}
                               {item.assignedDomain ? (
-                                <div className="truncate">
-                                  <DomainCell 
-                                    domain={item.assignedDomain} 
-                                    domainId={item.assignedDomainId || ''}
-                                  />
+                                <div className="space-y-1">
+                                  {/* Domain name with DR and traffic tags on same line */}
+                                  <div className="flex items-center gap-2">
+                                    <Globe className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                                    <a 
+                                      href={`https://${typeof item.assignedDomain === 'object' && item.assignedDomain.domain 
+                                        ? item.assignedDomain.domain 
+                                        : item.assignedDomain}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="font-medium text-gray-900 hover:text-blue-600 hover:underline"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      {typeof item.assignedDomain === 'object' && item.assignedDomain.domain 
+                                        ? item.assignedDomain.domain 
+                                        : item.assignedDomain}
+                                    </a>
+                                    <DomainTags 
+                                      dr={metrics.dr}
+                                      traffic={metrics.traffic}
+                                      className="flex-shrink-0"
+                                    />
+                                  </div>
+                                  {/* Quality badges below if domain is an object */}
+                                  {typeof item.assignedDomain === 'object' && item.assignedDomain.domain && (
+                                    <DomainCell 
+                                      domain={item.assignedDomain} 
+                                      domainId={item.assignedDomainId || ''}
+                                    />
+                                  )}
                                 </div>
                               ) : (
                                 <span className="text-gray-400">No domain assigned</span>
@@ -1140,75 +1215,41 @@ export default function LineItemsReviewTable({
                               <WorkflowStatusCell workflowId={item.workflowId} userType={userType} />
                             </td>
                           )}
-                          {/* Separate DR and Traffic columns for large screens */}
-                          <td className="py-3 px-2 text-center hidden lg:table-cell">
-                            {metrics.dr || '-'}
-                          </td>
-                          <td className="py-3 px-2 text-center hidden lg:table-cell">
-                            {metrics.traffic || '-'}
-                          </td>
-                          {/* Combined DR/Traffic column for medium screens */}
-                          <td className="py-3 px-2 text-center text-xs lg:hidden">
-                            <div className="space-y-1">
-                              <div>DR: {metrics.dr || '-'}</div>
-                              <div>T: {metrics.traffic || '-'}</div>
-                            </div>
-                          </td>
-                          {permissions.canChangeStatus && (
-                            <td className="py-3 pr-4">
-                              <select
-                                value={itemStatus}
-                                onChange={(e) => handleStatusChange(item.id, e.target.value)}
-                                className={`px-2 py-1 text-xs rounded-full border w-full max-w-[110px] ${
-                                  itemStatus === 'included' 
-                                    ? 'bg-green-100 text-green-700 border-green-200' 
-                                    : itemStatus === 'excluded'
-                                    ? 'bg-red-100 text-red-700 border-red-200'
-                                    : 'bg-gray-100 text-gray-700 border-gray-200'
-                                }`}
-                              >
-                                <option value="included">Included</option>
-                                <option value="excluded">Excluded</option>
-                              </select>
-                            </td>
-                          )}
-                          {/* Line Item State */}
-                          <td className="py-3 pr-4">
-                            <span className={`inline-flex px-2 py-1 text-xs rounded-full ${
-                              item.status === 'active' ? 'bg-green-100 text-green-700' :
-                              item.status === 'draft' ? 'bg-gray-100 text-gray-700' :
-                              item.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                              item.status === 'cancelled' ? 'bg-red-100 text-red-700 line-through' :
-                              item.status === 'refunded' ? 'bg-purple-100 text-purple-700' :
-                              item.status === 'completed' ? 'bg-blue-100 text-blue-700' :
-                              'bg-gray-100 text-gray-700'
-                            }`}>
-                              {item.status || 'unknown'}
-                            </span>
-                          </td>
                           <td className="py-3 pl-2 pr-4 text-sm max-w-[250px]">
-                            {item.targetPageUrl ? (
-                              <a 
-                                href={item.targetPageUrl} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-blue-600 hover:text-blue-800 hover:underline inline-block break-words"
-                                title={item.targetPageUrl}
-                              >
-                                {item.targetPageUrl}
-                              </a>
-                            ) : '-'}
+                            <TableTargetDropdown
+                              currentTarget={item.targetPageUrl}
+                              clientId={item.clientId}
+                              onSelect={(targetUrl) => handleTargetUrlUpdate(item.id, targetUrl)}
+                              matchData={(item.metadata as any)?.targetMatchData}
+                              disabled={!permissions.canAssignTargetPages}
+                              className="w-full"
+                              isOpen={isDropdownOpen(item.id)}
+                              onToggle={() => handleDropdownOpen(item.id)}
+                              onClose={handleDropdownClose}
+                            />
                           </td>
                           {/* Full anchor text for very wide screens */}
-                          <td className="py-3 px-3 text-sm hidden xl:table-cell max-w-[150px]">
-                            <div className="truncate" title={item.anchorText || '-'}>
-                              {item.anchorText || '-'}
+                          <td className="py-3 px-3 text-sm hidden xl:table-cell">
+                            <div className="max-w-[250px]">
+                              <InlineAnchorEditor
+                                value={item.anchorText || ''}
+                                onSave={(newValue) => handleAnchorTextUpdate(item.id, newValue)}
+                                disabled={!permissions.canAssignTargetPages && !permissions.canEditDomainAssignments}
+                                placeholder="Enter anchor text..."
+                                className="w-full"
+                              />
                             </div>
                           </td>
                           {/* Shortened anchor text for medium screens */}
-                          <td className="py-3 px-3 text-sm xl:hidden max-w-[100px]">
-                            <div className="truncate" title={item.anchorText || '-'}>
-                              {item.anchorText ? item.anchorText.substring(0, 15) + (item.anchorText.length > 15 ? '...' : '') : '-'}
+                          <td className="py-3 px-3 text-sm xl:hidden">
+                            <div className="max-w-[180px]">
+                              <InlineAnchorEditor
+                                value={item.anchorText || ''}
+                                onSave={(newValue) => handleAnchorTextUpdate(item.id, newValue)}
+                                disabled={!permissions.canAssignTargetPages && !permissions.canEditDomainAssignments}
+                                placeholder="Anchor text..."
+                                className="w-full"
+                              />
                             </div>
                           </td>
                           {permissions.canViewPricing && (
@@ -1216,7 +1257,7 @@ export default function LineItemsReviewTable({
                               {(() => {
                                 // If domain is assigned, show actual price
                                 if (item.assignedDomainId && item.estimatedPrice) {
-                                  return formatCurrency(item.estimatedPrice);
+                                  return <span className="font-bold">{formatCurrency(item.estimatedPrice)}</span>;
                                 }
                                 
                                 // If no domain assigned but we have a target estimate from benchmark
@@ -1238,7 +1279,7 @@ export default function LineItemsReviewTable({
                                       ) / targetPage.requestedDomains.length;
                                       
                                       if (avgPrice > 0) {
-                                        return <span className="text-gray-500">~{formatCurrency(Math.round(avgPrice))}</span>;
+                                        return <span className="text-gray-500 font-bold">~{formatCurrency(Math.round(avgPrice))}</span>;
                                       }
                                     }
                                   }
@@ -1246,57 +1287,25 @@ export default function LineItemsReviewTable({
                                 
                                 // If we have an estimated price but no domain, show with ~
                                 if (!item.assignedDomainId && item.estimatedPrice) {
-                                  return <span className="text-gray-500">~{formatCurrency(item.estimatedPrice)}</span>;
+                                  return <span className="text-gray-500 font-bold">~{formatCurrency(item.estimatedPrice)}</span>;
                                 }
                                 
                                 // Default: show placeholder if no price info
-                                return <span className="text-gray-400">Price TBD</span>;
+                                return <span className="text-gray-400 font-bold">Price TBD</span>;
                               })()}
                             </td>
                           )}
-                          {(permissions.canEditDomainAssignments || permissions.canApproveReject) && (
-                            <td className="py-3">
-                              <div className="flex items-center gap-2">
-                                {permissions.canEditDomainAssignments && (
-                                  <button
-                                    onClick={() => {
-                                      if (item.clientId) {
-                                        fetchClientTargetPages(item.clientId);
-                                      }
-                                      setEditModal({ isOpen: true, item });
-                                    }}
-                                    className="text-gray-500 hover:text-gray-700"
-                                    title="Edit"
-                                  >
-                                    <Edit2 className="h-4 w-4" />
-                                  </button>
-                                )}
-                                {permissions.canApproveReject && onApprove && (
-                                  <button
-                                    onClick={() => onApprove(item.id, clientId)}
-                                    className="text-green-600 hover:text-green-700"
-                                    title="Approve"
-                                  >
-                                    <CheckCircle className="h-4 w-4" />
-                                  </button>
-                                )}
-                                {permissions.canApproveReject && onReject && (
-                                  <button
-                                    onClick={() => setFeedbackModal({
-                                      isOpen: true,
-                                      itemId: item.id,
-                                      clientId,
-                                      domain: item.assignedDomain?.domain || 'this domain'
-                                    })}
-                                    className="text-red-600 hover:text-red-700"
-                                    title="Reject"
-                                  >
-                                    <XCircle className="h-4 w-4" />
-                                  </button>
-                                )}
-                              </div>
-                            </td>
-                          )}
+                          {/* Combined Action Column - Now at the end */}
+                          <td className="py-3 pr-4">
+                            <ActionColumnToggle
+                              included={itemStatus === 'included'}
+                              onToggle={(included) => handleInclusionToggle(item.id, included)}
+                              status={item.status}
+                              canChangeStatus={permissions.canChangeStatus}
+                              disabled={false}
+                              className="w-full max-w-[120px]"
+                            />
+                          </td>
                         </tr>
                         {/* Expanded Details Row */}
                         {expandedRows.has(item.id) && item.assignedDomain && (
@@ -1346,156 +1355,120 @@ export default function LineItemsReviewTable({
                   <div key={item.id} className="border border-gray-200 rounded-lg p-4 space-y-3">
                     {/* Domain & Status */}
                     <div className="flex items-start justify-between">
-                      <div className="flex-1">
+                      <div className="flex-1 cursor-pointer" onClick={() => toggleRow(item.id)}>
                         {item.assignedDomain ? (
-                          <div className="truncate">
-                            <DomainCell 
-                              domain={item.assignedDomain} 
-                              domainId={item.assignedDomainId || ''}
-                            />
+                          <div className="space-y-1">
+                            {/* Domain name with DR and traffic tags on same line */}
+                            <div className="flex items-center gap-2">
+                              {/* Chevron for expansion */}
+                              {expandedRows.has(item.id) ? (
+                                <ChevronUp className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                              ) : (
+                                <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                              )}
+                              <Globe className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                              <a 
+                                href={`https://${typeof item.assignedDomain === 'object' && item.assignedDomain.domain 
+                                  ? item.assignedDomain.domain 
+                                  : item.assignedDomain}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="font-medium text-gray-900 hover:text-blue-600 hover:underline"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {typeof item.assignedDomain === 'object' && item.assignedDomain.domain 
+                                  ? item.assignedDomain.domain 
+                                  : item.assignedDomain}
+                              </a>
+                              <DomainTags 
+                                dr={metrics.dr}
+                                traffic={metrics.traffic}
+                                className="flex-shrink-0"
+                              />
+                            </div>
+                            {/* Quality badges below if domain is an object */}
+                            {typeof item.assignedDomain === 'object' && item.assignedDomain.domain && (
+                              <DomainCell 
+                                domain={item.assignedDomain} 
+                                domainId={item.assignedDomainId || ''}
+                              />
+                            )}
                           </div>
                         ) : (
                           <span className="text-gray-400">No domain assigned</span>
                         )}
                       </div>
+                      {/* Combined Action for Mobile */}
                       <div className="flex items-center gap-2">
-                        {permissions.canChangeStatus ? (
-                          <select
-                            value={itemStatus}
-                            onChange={(e) => handleStatusChange(item.id, e.target.value)}
-                            className={`px-2 py-1 text-xs rounded-full ${
-                              itemStatus === 'included' 
-                                ? 'bg-green-100 text-green-700' 
-                                : itemStatus === 'excluded'
-                                ? 'bg-red-100 text-red-700'
-                                : 'bg-gray-100 text-gray-700'
-                            }`}
-                          >
-                            <option value="included">Included</option>
-                            <option value="excluded">Excluded</option>
-                            <option value="saved_for_later">Saved</option>
-                          </select>
-                        ) : (
-                          <span className={`inline-flex items-center px-2 py-1 text-xs rounded-full ${
-                            itemStatus === 'included' 
-                              ? 'bg-green-100 text-green-700' 
-                              : itemStatus === 'excluded'
-                              ? 'bg-red-100 text-red-700'
-                              : itemStatus === 'saved_for_later'
-                              ? 'bg-yellow-100 text-yellow-700'
-                              : 'bg-gray-100 text-gray-700'
-                          }`}>
-                            {itemStatus === 'included' ? 'Included' : 
-                             itemStatus === 'excluded' ? 'Excluded' :
-                             itemStatus === 'saved_for_later' ? 'Saved' : 'Pending'}
-                          </span>
-                        )}
-                        {/* Line Item State */}
-                        <span className={`inline-flex px-2 py-1 text-xs rounded-full ${
-                          item.status === 'active' ? 'bg-blue-100 text-blue-700' :
-                          item.status === 'draft' ? 'bg-gray-100 text-gray-700' :
-                          item.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                          item.status === 'cancelled' ? 'bg-red-100 text-red-700 line-through' :
-                          item.status === 'refunded' ? 'bg-purple-100 text-purple-700' :
-                          item.status === 'completed' ? 'bg-green-100 text-green-700' :
-                          'bg-gray-100 text-gray-700'
-                        }`}>
-                          {item.status || 'unknown'}
-                        </span>
+                        <ActionColumnToggle
+                          included={itemStatus === 'included'}
+                          onToggle={(included) => handleInclusionToggle(item.id, included)}
+                          status={item.status}
+                          canChangeStatus={permissions.canChangeStatus}
+                          disabled={false}
+                          className="max-w-[120px]"
+                        />
                       </div>
                     </div>
                     
-                    {/* Metrics */}
-                    <div className="flex gap-4 text-sm">
-                      <div>
-                        <span className="text-gray-500">DR:</span>
-                        <span className="ml-1 font-medium">{metrics.dr || '-'}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">Traffic:</span>
-                        <span className="ml-1 font-medium">{metrics.traffic || '-'}</span>
-                      </div>
-                      {permissions.canViewPricing && (
+                    {/* Pricing */}
+                    {permissions.canViewPricing && (
+                      <div className="flex gap-4 text-sm">
                         <div>
                           <span className="text-gray-500">Price:</span>
-                          <span className="ml-1 font-medium">
+                          <span className="ml-1 font-bold">
                             {formatCurrency(item.estimatedPrice || 0)}
                           </span>
                         </div>
-                      )}
+                      </div>
+                    )}
+                    
+                    {/* Target & Anchor - Now with interactive elements */}
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center">
+                        <span className="text-gray-500 mr-2">Target:</span>
+                        <div className="flex-1">
+                          <TableTargetDropdown
+                            currentTarget={item.targetPageUrl}
+                            clientId={item.clientId}
+                            onSelect={(targetUrl) => handleTargetUrlUpdate(item.id, targetUrl)}
+                            matchData={(item.metadata as any)?.targetMatchData}
+                            disabled={!permissions.canAssignTargetPages}
+                            className="w-full"
+                            isOpen={isDropdownOpen(item.id)}
+                            onToggle={() => handleDropdownOpen(item.id)}
+                            onClose={handleDropdownClose}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="text-gray-500 mr-2">Anchor:</span>
+                        <div className="flex-1">
+                          <InlineAnchorEditor
+                            value={item.anchorText || ''}
+                            onSave={(newValue) => handleAnchorTextUpdate(item.id, newValue)}
+                            disabled={!permissions.canAssignTargetPages && !permissions.canEditDomainAssignments}
+                            placeholder="Enter anchor text..."
+                            className="w-full"
+                          />
+                        </div>
+                      </div>
                     </div>
                     
-                    {/* Target & Anchor */}
-                    {(item.targetPageUrl || item.anchorText) && (
-                      <div className="space-y-1 text-sm">
-                        {item.targetPageUrl && (
-                          <div>
-                            <span className="text-gray-500">Target:</span>
-                            <span className="ml-1 text-gray-900 break-all">{item.targetPageUrl}</span>
-                          </div>
-                        )}
-                        {item.anchorText && (
-                          <div>
-                            <span className="text-gray-500">Anchor:</span>
-                            <span className="ml-1 text-gray-900">{item.anchorText}</span>
-                          </div>
-                        )}
+                    {/* Expanded Domain Details for Mobile */}
+                    {expandedRows.has(item.id) && item.assignedDomain && (
+                      <div className="mt-4 pt-4 border-t border-gray-200">
+                        <ExpandedDomainDetails submission={{
+                          domain: {
+                            qualificationStatus: (item.metadata as any)?.domainQualificationStatus,
+                            aiQualificationReasoning: (item.metadata as any)?.domainQualificationReasons,
+                            dataForSeoResultsCount: (item.metadata as any)?.dataForSeoResultsCount,
+                          },
+                          metadata: item.metadata as any,
+                        }} />
                       </div>
                     )}
                     
-                    {/* Actions */}
-                    {(permissions.canEditDomainAssignments || permissions.canApproveReject) && (
-                      <div className="flex gap-2 pt-2 border-t border-gray-100">
-                        {permissions.canEditDomainAssignments && (
-                          <button
-                            onClick={() => setEditModal({ isOpen: true, item })}
-                            className="text-gray-500 hover:text-gray-700"
-                            title="Edit"
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </button>
-                        )}
-                        {permissions.canApproveReject && onApprove && (
-                          <button
-                            onClick={() => onApprove(item.id, clientId)}
-                            className="text-green-600 hover:text-green-700"
-                            title="Approve"
-                          >
-                            <CheckCircle className="h-4 w-4" />
-                          </button>
-                        )}
-                        {permissions.canApproveReject && onReject && (
-                          <button
-                            onClick={() => setFeedbackModal({
-                              isOpen: true,
-                              itemId: item.id,
-                              clientId,
-                              domain: item.assignedDomain?.domain || 'this domain'
-                            })}
-                            className="text-red-600 hover:text-red-700"
-                            title="Reject"
-                          >
-                            <XCircle className="h-4 w-4" />
-                          </button>
-                        )}
-                        {onRemoveItem && (
-                          <button
-                            onClick={() => {
-                              console.log('Remove button clicked for item:', item.id);
-                              onRemoveItem(item.id);
-                            }}
-                            className="text-red-600 hover:text-red-700 ml-2"
-                            title="Remove Line Item"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        )}
-                        {/* Debug: Show if onRemoveItem exists */}
-                        {!onRemoveItem && (
-                          <span className="text-xs text-gray-400 ml-2">No remove handler</span>
-                        )}
-                      </div>
-                    )}
                   </div>
                 );
               })}

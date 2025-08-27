@@ -27,6 +27,7 @@ export default function ReplaceLineItemModal({
   const [isReplacing, setIsReplacing] = useState(false);
   const [error, setError] = useState('');
   const [step, setStep] = useState<'select' | 'confirm'>('select');
+  const [targetUrlChoice, setTargetUrlChoice] = useState<'keep' | 'replace'>('keep');
   
   // Filter to show all active line items (including empty ones that need domains!)
   const replaceableItems = lineItems.filter(item => 
@@ -53,6 +54,12 @@ export default function ReplaceLineItemModal({
     setError('');
 
     try {
+      // Determine which target URL to use
+      const shouldUseNewTarget = targetUrlChoice === 'replace' && newDomain.suggestedTargetUrl;
+      const finalTargetUrl = shouldUseNewTarget 
+        ? newDomain.suggestedTargetUrl 
+        : selectedLineItem.targetPageUrl;
+      
       // Prepare the update payload
       // IMPORTANT: PricingService returns dollars, but database stores cents
       const updatePayload = {
@@ -62,13 +69,27 @@ export default function ReplaceLineItemModal({
           assignedDomain: newDomain.domain,
           estimatedPrice: Math.floor(newDomain.price * 100), // Convert dollars to cents
           wholesalePrice: Math.floor(newDomain.wholesalePrice * 100), // Convert dollars to cents
+          ...(shouldUseNewTarget && { targetPageUrl: finalTargetUrl }), // Only update if replacing
           metadata: {
             ...(selectedLineItem.metadata || {}),
             domainRating: newDomain.domainRating || 0,
             traffic: newDomain.traffic || 0,
             qualificationStatus: newDomain.qualificationStatus,
             replacedFrom: selectedLineItem.assignedDomain?.domain || selectedLineItem.assignedDomain,
-            replacedAt: new Date().toISOString()
+            replacedAt: new Date().toISOString(),
+            // Track target URL decision
+            ...(selectedLineItem.targetPageUrl && newDomain.suggestedTargetUrl && 
+               selectedLineItem.targetPageUrl !== newDomain.suggestedTargetUrl && {
+              targetUrlConflict: {
+                previousTarget: selectedLineItem.targetPageUrl,
+                suggestedTarget: newDomain.suggestedTargetUrl,
+                userChoice: targetUrlChoice,
+                chosenTarget: finalTargetUrl
+              }
+            }),
+            // Include new domain's target match data
+            ...(newDomain.targetMatchData && { targetMatchData: newDomain.targetMatchData }),
+            ...(newDomain.suggestedTargetUrl && { suggestedTargetUrl: newDomain.suggestedTargetUrl })
           }
         }],
         reason: `Domain replacement: ${selectedLineItem.assignedDomain} → ${newDomain.domain}`
@@ -326,11 +347,71 @@ export default function ReplaceLineItemModal({
                   </div>
                 </div>
 
+                {/* Target URL Conflict Detection */}
+                {selectedLineItem.targetPageUrl && newDomain.suggestedTargetUrl && 
+                 selectedLineItem.targetPageUrl !== newDomain.suggestedTargetUrl && (
+                  <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                    <div className="flex items-start gap-2 mb-3">
+                      <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-amber-800">Target URL Conflict Detected</p>
+                        <p className="text-xs text-amber-700 mt-1">
+                          The current and new domains have different target URLs. Choose which one to keep:
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="flex items-start gap-3 p-2 rounded cursor-pointer hover:bg-amber-100 transition-colors">
+                        <input
+                          type="radio"
+                          name="targetUrl"
+                          value="keep"
+                          checked={targetUrlChoice === 'keep'}
+                          onChange={() => setTargetUrlChoice('keep')}
+                          className="mt-1"
+                        />
+                        <div className="flex-1">
+                          <div className="text-sm font-medium text-gray-900">Keep Current Target</div>
+                          <div className="text-xs text-gray-600 break-words">{selectedLineItem.targetPageUrl}</div>
+                        </div>
+                      </label>
+                      
+                      <label className="flex items-start gap-3 p-2 rounded cursor-pointer hover:bg-amber-100 transition-colors">
+                        <input
+                          type="radio"
+                          name="targetUrl"
+                          value="replace"
+                          checked={targetUrlChoice === 'replace'}
+                          onChange={() => setTargetUrlChoice('replace')}
+                          className="mt-1"
+                        />
+                        <div className="flex-1">
+                          <div className="text-sm font-medium text-gray-900">Use New Target (AI Recommended)</div>
+                          <div className="text-xs text-gray-600 break-words">{newDomain.suggestedTargetUrl}</div>
+                          {newDomain.targetMatchData?.target_analysis?.[0] && (
+                            <div className="text-xs text-green-600 mt-1">
+                              {newDomain.targetMatchData.target_analysis[0].match_quality} match • 
+                              {' '}
+                              {(newDomain.targetMatchData.target_analysis[0].evidence?.direct_count || 0) + 
+                               (newDomain.targetMatchData.target_analysis[0].evidence?.related_count || 0)} keywords
+                            </div>
+                          )}
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                )}
+
                 {/* Preserved Fields */}
                 <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-                  <p className="text-sm text-blue-800 font-medium mb-1">Preserved Settings:</p>
+                  <p className="text-sm text-blue-800 font-medium mb-1">Settings to be Applied:</p>
                   <ul className="text-xs text-blue-700 space-y-1">
-                    <li>• Target URL: {selectedLineItem.targetPageUrl || 'Not set'}</li>
+                    <li>• Target URL: {
+                      targetUrlChoice === 'replace' && newDomain.suggestedTargetUrl 
+                        ? newDomain.suggestedTargetUrl 
+                        : (selectedLineItem.targetPageUrl || 'Not set')
+                    }</li>
                     <li>• Anchor Text: {selectedLineItem.anchorText || 'Not set'}</li>
                     <li>• Client: {selectedLineItem.client?.name || 'AIApply'}</li>
                   </ul>

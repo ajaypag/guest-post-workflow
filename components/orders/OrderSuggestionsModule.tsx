@@ -505,9 +505,6 @@ export default function OrderSuggestionsModule({
                     <th className="px-3 xl:px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Price
                     </th>
-                    <th className="px-3 xl:px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Availability
-                    </th>
                     <th className="px-3 xl:px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions
                     </th>
@@ -532,9 +529,14 @@ export default function OrderSuggestionsModule({
                               )}
                             </button>
                             <div>
-                              <div className="text-sm font-medium text-gray-900 break-words">
+                              <a
+                                href={`https://${domain.domain}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm font-medium text-gray-900 hover:text-blue-600 hover:underline break-words"
+                              >
                                 {domain.domain}
-                              </div>
+                              </a>
                               {/* Client under domain */}
                               <div className="text-xs text-gray-500 break-words">
                                 {domain.clientName || 'Unknown Client'}
@@ -607,23 +609,59 @@ export default function OrderSuggestionsModule({
 
                         {/* Target Match Column */}
                         <td className="px-3 xl:px-4 py-4">
-                          {domain.targetMatchData?.target_analysis && domain.targetMatchData.target_analysis.length > 0 ? (
-                            <div className="space-y-1.5">
-                              {domain.suggestedTargetUrl && (
-                                <div className="text-xs text-blue-600 break-words">
-                                  {domain.suggestedTargetUrl.length > 40 
-                                    ? `${domain.suggestedTargetUrl.substring(0, 40)}...` 
-                                    : domain.suggestedTargetUrl}
+                          {domain.targetMatchData?.target_analysis && domain.targetMatchData.target_analysis.length > 0 && domain.suggestedTargetUrl ? (
+                            <div className="space-y-1">
+                              {/* Show pathname only */}
+                              <div className="text-xs text-gray-900 break-words" title={domain.suggestedTargetUrl}>
+                                {(() => {
+                                  try {
+                                    return new URL(domain.suggestedTargetUrl).pathname || '/';
+                                  } catch {
+                                    return domain.suggestedTargetUrl;
+                                  }
+                                })()}
+                              </div>
+                              {/* Quality indicator and evidence count */}
+                              {domain.targetMatchData.target_analysis[0] && (
+                                <div className="text-xs">
+                                  {(() => {
+                                    const quality = domain.targetMatchData.target_analysis[0].match_quality;
+                                    const evidence = domain.targetMatchData.target_analysis[0].evidence;
+                                    const totalMatches = (evidence?.direct_count || 0) + (evidence?.related_count || 0);
+                                    
+                                    // Color based on quality
+                                    const qualityColor = quality === 'excellent' ? 'text-green-600' :
+                                                        quality === 'good' ? 'text-blue-600' :
+                                                        quality === 'fair' ? 'text-yellow-600' : 'text-gray-500';
+                                    
+                                    return (
+                                      <>
+                                        <span className={qualityColor}>● {quality}</span>
+                                        {totalMatches > 0 && (
+                                          <span className="text-gray-500"> • {totalMatches} matches</span>
+                                        )}
+                                      </>
+                                    );
+                                  })()}
                                 </div>
                               )}
-                              {domain.targetMatchData.target_analysis[0] && (
-                                <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                  {domain.targetMatchData.target_analysis[0].match_quality} match
+                              {/* Show more targets if available */}
+                              {domain.targetMatchData.target_analysis.length > 1 && (
+                                <div className="text-xs text-gray-500">
+                                  +{domain.targetMatchData.target_analysis.length - 1} more targets
                                 </div>
                               )}
                             </div>
                           ) : (
-                            <span className="text-gray-400 text-xs">No target match</span>
+                            <div className="text-xs text-gray-400">
+                              {!domain.targetMatchData || !domain.targetMatchData.target_analysis 
+                                ? "Not analyzed yet" 
+                                : domain.targetMatchData.target_analysis.length === 0 
+                                  ? "No matching targets found"
+                                  : !domain.suggestedTargetUrl
+                                    ? "Analysis incomplete"
+                                    : "No target match"}
+                            </div>
                           )}
                         </td>
 
@@ -632,21 +670,6 @@ export default function OrderSuggestionsModule({
                           <div className="text-sm font-medium text-gray-900">
                             {domain.price > 0 ? `$${domain.price}` : 'TBD'}
                           </div>
-                        </td>
-
-                        {/* Availability Column */}
-                        <td className="px-3 xl:px-4 py-4">
-                          {domain.availabilityStatus === 'available' ? (
-                            <div className="inline-flex items-center gap-1.5 text-xs font-medium text-green-700">
-                              <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                              Available
-                            </div>
-                          ) : (
-                            <div className="inline-flex items-center gap-1.5 text-xs font-medium text-yellow-700">
-                              <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
-                              In Use
-                            </div>
-                          )}
                         </td>
 
                         {/* Actions Column */}
