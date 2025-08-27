@@ -1006,7 +1006,9 @@ export class TaskService {
       byType: {
         order: 0,
         workflow: 0,
-        line_item: 0
+        line_item: 0,
+        vetted_sites_request: 0,
+        brand_intelligence: 0
       }
     };
 
@@ -1027,8 +1029,13 @@ export class TaskService {
       // Status counts
       stats.byStatus[task.status]++;
 
-      // Type counts
-      stats.byType[task.type]++;
+      // Type counts - safely increment with fallback
+      if (stats.byType.hasOwnProperty(task.type)) {
+        stats.byType[task.type]++;
+      } else {
+        // Handle any new task types that might not be in the initial stats object
+        (stats.byType as any)[task.type] = ((stats.byType as any)[task.type] || 0) + 1;
+      }
     });
 
     return stats;
