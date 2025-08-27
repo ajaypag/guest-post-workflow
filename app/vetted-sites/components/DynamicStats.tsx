@@ -80,6 +80,9 @@ export default function DynamicStats({ initialStats, total }: DynamicStatsProps)
   };
 
   const qualityLabel = getQualityLabel();
+  
+  // Check if the available filter is off (showing all sites)
+  const showingAllSites = searchParams.get('available') === 'false';
 
   return (
     <div className="bg-white rounded-lg shadow-sm p-4">
@@ -125,10 +128,12 @@ export default function DynamicStats({ initialStats, total }: DynamicStatsProps)
           <div className="font-semibold text-green-600">{stats.available}</div>
           <div className="text-gray-500">Available to Use</div>
         </div>
-        <div className="text-center">
-          <div className="font-semibold text-yellow-600">{stats.used}</div>
-          <div className="text-gray-500">Already in Orders</div>
-        </div>
+        {(showingAllSites || stats.used > 0) && (
+          <div className="text-center">
+            <div className="font-semibold text-yellow-600">{stats.used}</div>
+            <div className="text-gray-500">Already in Orders</div>
+          </div>
+        )}
         {stats.bookmarked > 0 && (
           <div className="text-center">
             <div className="font-semibold text-purple-600">{stats.bookmarked}</div>
@@ -153,7 +158,7 @@ export default function DynamicStats({ initialStats, total }: DynamicStatsProps)
           <div className="font-semibold text-green-600">{stats.available}</div>
           <div className="text-xs text-gray-500">Available</div>
         </div>
-        {stats.used > 0 && (
+        {(showingAllSites || stats.used > 0) && (
           <div className="text-center">
             <div className="font-semibold text-yellow-600">{stats.used}</div>
             <div className="text-xs text-gray-500">In Use</div>
