@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronLeft, Search, Filter, Eye, CheckCircle, XCircle, Clock, AlertCircle, PlayCircle } from 'lucide-react';
+import VettedSitesTaskAssignment from '@/components/vetted-sites/VettedSitesTaskAssignment';
 
 interface VettedSitesRequest {
   id: string;
@@ -297,11 +298,19 @@ export default function InternalVettedSitesRequestsClient() {
                         )}
 
                         {/* Metadata */}
-                        <div className="flex items-center space-x-4 text-xs text-gray-500">
+                        <div className="flex items-center space-x-4 text-xs text-gray-500 mb-2">
                           <span>Created {formatDate(request.created_at)}</span>
                           <span>•</span>
                           <span>ID: {request.id.substring(0, 8)}</span>
                         </div>
+
+                        {/* Task Assignment */}
+                        <VettedSitesTaskAssignment
+                          requestId={request.id}
+                          currentAssignee={null} // TODO: Add assignee data to interface
+                          onAssignmentChange={() => fetchRequests()} // Refresh list on assignment change
+                          compact={true}
+                        />
                       </div>
 
                       {/* Actions */}

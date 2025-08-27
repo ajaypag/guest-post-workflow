@@ -21,6 +21,7 @@ import {
   KeyRound
 } from 'lucide-react';
 import ShareVettedSitesRequestButton from '@/components/vetted-sites/ShareVettedSitesRequestButton';
+import VettedSitesTaskAssignment from '@/components/vetted-sites/VettedSitesTaskAssignment';
 
 // Following the exact pattern from orders/[id]/internal
 interface TargetPageStatus {
@@ -130,6 +131,9 @@ export default function InternalVettedSitesRequestDetailV3({
   
   // Client groups for project creation
   const [clientGroups, setClientGroups] = useState<ClientGroup[]>([]);
+  
+  // Assignment state
+  const [assignedUser, setAssignedUser] = useState<{ id: string; name: string; email: string } | null>(null);
 
   useEffect(() => {
     if (requestId) {
@@ -143,6 +147,15 @@ export default function InternalVettedSitesRequestDetailV3({
       checkTargetPageStatuses();
     }
   }, [request?.status]);
+
+  useEffect(() => {
+    // Fetch assignee details when request is loaded
+    if (request?.fulfilledBy) {
+      fetchAssigneeDetails(request.fulfilledBy);
+    } else {
+      setAssignedUser(null);
+    }
+  }, [request?.fulfilledBy]);
 
   const fetchRequestDetail = async () => {
     if (!requestId) return;
@@ -158,6 +171,23 @@ export default function InternalVettedSitesRequestDetailV3({
       console.error('Error fetching request:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAssigneeDetails = async (userId: string) => {
+    try {
+      const response = await fetch(`/api/users/${userId}`);
+      if (response.ok) {
+        const userData = await response.json();
+        setAssignedUser({
+          id: userData.id,
+          name: userData.name,
+          email: userData.email
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching assignee details:', error);
+      setAssignedUser(null);
     }
   };
 
@@ -762,6 +792,17 @@ export default function InternalVettedSitesRequestDetailV3({
                 )}
               </div>
             </div>
+
+            {/* Task Assignment */}
+            <VettedSitesTaskAssignment
+              requestId={requestId}
+              currentAssignee={assignedUser}
+              onAssignmentChange={(assignee) => {
+                setAssignedUser(assignee);
+                // Refresh request to get updated fulfillment data
+                fetchRequestDetail();
+              }}
+            />
 
             {/* Project Creation Checklist (for approved requests) */}
             {request.status === 'approved' && (
