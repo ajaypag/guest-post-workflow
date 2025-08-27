@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
       userClientId: session.clientId
     });
 
-    // Get unique target URLs that are actually used in bulk analysis
+    // Get all target URLs for clients (not just those used in bulk analysis)
     const targetUrlsQuery = await db
       .select({
         url: targetPages.url,
@@ -65,8 +65,8 @@ export async function GET(request: NextRequest) {
       .leftJoin(bulkAnalysisDomains, sql`${bulkAnalysisDomains.targetPageIds}::jsonb ? ${targetPages.id}::text`)
       .where(conditions.length > 0 ? and(...conditions) : undefined)
       .groupBy(targetPages.url, targetPages.clientId, clients.name)
-      .having(sql`COUNT(DISTINCT ${bulkAnalysisDomains.id}) > 0`)
-      .orderBy(sql`COUNT(DISTINCT ${bulkAnalysisDomains.id}) DESC`);
+      // REMOVED: .having(sql`COUNT(DISTINCT ${bulkAnalysisDomains.id}) > 0`) - this was filtering out unused target pages
+      .orderBy(sql`COUNT(DISTINCT ${bulkAnalysisDomains.id}) DESC`, targetPages.url);
 
     // Also get target URLs from AI analysis results
     const aiAnalysisUrlsQuery = await db
