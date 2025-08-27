@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { 
@@ -63,7 +63,7 @@ interface FilterState {
   dateRange: string;
   showLineItems: boolean;
   groupByDeadline: boolean;
-  groupBy: 'deadline' | 'order' | 'client';
+  groupBy: 'deadline' | 'order' | 'client' | 'hierarchy';
   showCompleted: boolean;
   customDateStart?: string;
   customDateEnd?: string;
@@ -129,8 +129,8 @@ export default function TasksPageClient({
     if (groupedParam) urlFilters.groupByDeadline = groupedParam === 'true';
     
     const groupByParam = searchParams.get('groupBy');
-    if (groupByParam && ['deadline', 'order', 'client'].includes(groupByParam)) {
-      urlFilters.groupBy = groupByParam as 'deadline' | 'order' | 'client';
+    if (groupByParam && ['deadline', 'order', 'client', 'hierarchy'].includes(groupByParam)) {
+      urlFilters.groupBy = groupByParam as 'deadline' | 'order' | 'client' | 'hierarchy';
     }
     
     const completedParam = searchParams.get('showCompleted');
@@ -184,7 +184,7 @@ export default function TasksPageClient({
   const [groupByDeadline, setGroupByDeadline] = useState(
     urlFilters.groupByDeadline ?? savedFilters.groupByDeadline ?? true
   );
-  const [groupBy, setGroupBy] = useState<'deadline' | 'order' | 'client'>(
+  const [groupBy, setGroupBy] = useState<'deadline' | 'order' | 'client' | 'hierarchy'>(
     urlFilters.groupBy ?? savedFilters.groupBy ?? 'deadline'
   );
   const [showCompleted, setShowCompleted] = useState(
@@ -216,6 +216,9 @@ export default function TasksPageClient({
   const [assignmentNotes, setAssignmentNotes] = useState('');
   const [assignmentType, setAssignmentType] = useState<'single' | 'bulk'>('single');
   const [singleAssignmentTask, setSingleAssignmentTask] = useState<UnifiedTask | null>(null);
+  
+  // Refs for auto-focus
+  const accountSearchRef = useRef<HTMLInputElement>(null);
 
   // Update URL with current filter state
   const updateURL = useCallback(() => {
@@ -427,6 +430,13 @@ export default function TasksPageClient({
     setActiveFilters(filters);
   }, [selectedTypes, selectedStatuses, showLineItems, showCompleted, dateRange, customDateStart, customDateEnd, selectedAccounts, selectedClients, availableAccounts, availableClients]);
   
+  // Auto-focus account search when dropdown opens
+  useEffect(() => {
+    if (showAccountDropdown && accountSearchRef.current) {
+      accountSearchRef.current.focus();
+    }
+  }, [showAccountDropdown]);
+  
   // Reset filters
   const resetFilters = () => {
     setSelectedUser(currentUserId);
@@ -447,6 +457,196 @@ export default function TasksPageClient({
     setShowClientDropdown(false);
   };
   
+  // Create hierarchical grouping structure
+  const createHierarchicalGrouping = (tasks: UnifiedTask[]) => {
+    const hierarchy: {
+      [accountKey: string]: {
+        name: string;
+        expanded: boolean;
+        orders: {
+          [orderKey: string]: {
+            name: string;
+            orderId: string;
+            expanded: boolean;
+            lineItems: {
+              [lineItemKey: string]: {
+                name: string;
+                lineItemId: string;
+                expanded: boolean;
+                workflows: UnifiedTask[];
+                lineItemTask?: UnifiedTask;
+              }
+            };
+            standaloneWorkflows: UnifiedTask[];
+          }
+        };
+        standaloneWorkflows: UnifiedTask[];
+      }
+    } = {};
+
+    // Create a lookup map for workflows by ID to match with line items
+    const workflowMap = new Map<string, UnifiedTask>();
+    tasks.forEach(task => {
+      if (task.type === 'workflow') {
+        // Task IDs have prefixes like "workflow-", but we need the raw ID for matching
+        const workflowId = task.id.replace('workflow-', '');
+        workflowMap.set(workflowId, task);
+        // Also store with the full ID in case that's what's referenced
+        workflowMap.set(task.id, task);
+      }
+    });
+
+    tasks.forEach(task => {
+      if (task.type === 'line_item') {
+        // Line items are the primary relationship holders
+        const parentOrderId = (task as any).parentOrderId;
+        const parentOrderNumber = (task as any).parentOrderNumber;
+        const workflowId = (task as any).workflowId; // Line items have workflowId
+        
+        if (parentOrderId) {
+          // Get account info - need to match what workflows use
+          const clientName = task.client?.name || 'Unknown Client';
+          
+          // Try to find ANY workflow from this order to get consistent account info
+          let accountName = 'Unknown Account';
+          
+          // First try to find from the associated workflow
+          if (workflowId && workflowMap.has(workflowId)) {
+            const matchingWorkflow = workflowMap.get(workflowId);
+            const workflowMetadata = (matchingWorkflow as any).metadata;
+            if (workflowMetadata?.accountName) {
+              accountName = workflowMetadata.accountName;
+            }
+          }
+          
+          // If still no account name, find ANY workflow from this order to get the account
+          if (accountName === 'Unknown Account') {
+            for (const [wfId, wf] of workflowMap) {
+              const wfMetadata = (wf as any).metadata;
+              if (wfMetadata?.orderId === parentOrderId && wfMetadata?.accountName) {
+                accountName = wfMetadata.accountName;
+                break;
+              }
+            }
+          }
+          
+          // Always use the full format to match workflows
+          const accountKey = accountName !== 'Unknown Account' 
+            ? `${accountName} - ${clientName}`
+            : `Unknown Account - ${clientName}`;
+          const orderKey = parentOrderNumber || `#${parentOrderId.slice(0, 8)}`;
+          // Make order name more informative
+          const orderStatus = (task as any).parentOrderStatus || '';
+          const orderDate = (task as any).deadline ? new Date((task as any).deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+          const orderName = `${clientName} - Order ${orderKey}${orderStatus ? ` (${orderStatus})` : ''}${orderDate ? ` - Due ${orderDate}` : ''}`;
+          
+          const lineItemKey = task.id; // Use full ID to avoid collisions
+          // Use the assigned domain as the line item name - much more useful!
+          const assignedDomain = (task as any).assignedDomain || (task as any).targetUrl || '';
+          const lineItemName = assignedDomain || (task as any).description || `Line Item #${task.id.slice(0, 8)}`;
+
+          // Initialize account
+          if (!hierarchy[accountKey]) {
+            hierarchy[accountKey] = {
+              name: accountKey,
+              expanded: true,
+              orders: {},
+              standaloneWorkflows: []
+            };
+          }
+
+          // Initialize order
+          if (!hierarchy[accountKey].orders[orderKey]) {
+            hierarchy[accountKey].orders[orderKey] = {
+              name: orderName,
+              orderId: parentOrderId,
+              expanded: true,
+              lineItems: {},
+              standaloneWorkflows: []
+            };
+          }
+
+          // Initialize line item and store the line item task itself
+          if (!hierarchy[accountKey].orders[orderKey].lineItems[lineItemKey]) {
+            hierarchy[accountKey].orders[orderKey].lineItems[lineItemKey] = {
+              name: lineItemName,
+              lineItemId: task.id,
+              expanded: true,
+              workflows: [],
+              lineItemTask: task
+            };
+          }
+
+          // Find and add the associated workflow
+          if (workflowId) {
+            if (workflowMap.has(workflowId)) {
+              const associatedWorkflow = workflowMap.get(workflowId)!;
+              hierarchy[accountKey].orders[orderKey].lineItems[lineItemKey].workflows.push(associatedWorkflow);
+              // Remove from workflowMap so we don't process it again
+              workflowMap.delete(workflowId);
+              // Also delete the prefixed version if it exists
+              workflowMap.delete('workflow-' + workflowId);
+            }
+          }
+        }
+      }
+    });
+
+    // Handle remaining workflows that don't have line item associations
+    workflowMap.forEach(workflow => {
+      const metadata = (workflow as any).metadata;
+      
+      if (metadata?.orderId) {
+        // Workflow belongs to order but no specific line item (standalone within order)
+        const accountName = metadata.accountName || 'Unknown Account';
+        const clientName = metadata.clientName || 'Unknown Client';
+        const accountKey = `${accountName}${clientName !== 'Unknown Client' ? ` - ${clientName}` : ''}`;
+        const orderKey = metadata.orderNumber || `#${metadata.orderId.slice(0, 8)}`;
+        const orderName = `Order ${orderKey}`;
+
+        // Initialize account
+        if (!hierarchy[accountKey]) {
+          hierarchy[accountKey] = {
+            name: accountKey,
+            expanded: true,
+            orders: {},
+            standaloneWorkflows: []
+          };
+        }
+
+        // Initialize order
+        if (!hierarchy[accountKey].orders[orderKey]) {
+          hierarchy[accountKey].orders[orderKey] = {
+            name: orderName,
+            orderId: metadata.orderId,
+            expanded: true,
+            lineItems: {},
+            standaloneWorkflows: []
+          };
+        }
+
+        hierarchy[accountKey].orders[orderKey].standaloneWorkflows.push(workflow);
+      } else {
+        // Completely standalone workflow
+        const clientName = (workflow as any).clientName || workflow.client?.name || 'Unknown Client';
+        const accountKey = `${clientName} (Standalone)`;
+
+        if (!hierarchy[accountKey]) {
+          hierarchy[accountKey] = {
+            name: accountKey,
+            expanded: true,
+            orders: {},
+            standaloneWorkflows: []
+          };
+        }
+
+        hierarchy[accountKey].standaloneWorkflows.push(workflow);
+      }
+    });
+
+    return hierarchy;
+  };
+
   // Group tasks by different criteria
   const groupTasksByType = (tasks: UnifiedTask[]) => {
     if (groupBy === 'order') {
@@ -458,7 +658,12 @@ export default function TasksPageClient({
           if (!grouped[orderKey]) grouped[orderKey] = [];
           grouped[orderKey].push(task);
         } else if (task.type === 'workflow' && (task as any).metadata?.orderId) {
-          const orderKey = `Order #${(task as any).metadata.orderNumber || (task as any).metadata.orderId.slice(0, 8)}`;
+          // Use enhanced metadata for richer grouping titles
+          const metadata = (task as any).metadata;
+          const accountName = metadata.accountName || 'Unknown Account';
+          const clientName = metadata.clientName || 'Unknown Client';
+          const orderNumber = metadata.orderNumber || `#${metadata.orderId.slice(0, 8)}`;
+          const orderKey = `${accountName} - ${clientName} - Order ${orderNumber}`;
           if (!grouped[orderKey]) grouped[orderKey] = [];
           grouped[orderKey].push(task);
         } else if (task.type === 'line_item') {
@@ -466,18 +671,18 @@ export default function TasksPageClient({
           const parentOrderId = (task as any).parentOrderId;
           const parentOrderNumber = (task as any).parentOrderNumber;
           if (parentOrderId) {
-            const orderKey = `Order #${parentOrderNumber || parentOrderId.slice(0, 8)}`;
+            const orderKey = `Order ${parentOrderNumber || '#' + parentOrderId.slice(0, 8)}`;
             if (!grouped[orderKey]) grouped[orderKey] = [];
             grouped[orderKey].push(task);
           } else {
             // Only put in No Order if truly no order reference
-            if (!grouped['No Order']) grouped['No Order'] = [];
-            grouped['No Order'].push(task);
+            if (!grouped['Standalone Tasks']) grouped['Standalone Tasks'] = [];
+            grouped['Standalone Tasks'].push(task);
           }
         } else {
-          // Tasks without orders
-          if (!grouped['No Order']) grouped['No Order'] = [];
-          grouped['No Order'].push(task);
+          // Tasks without orders - better naming for clarity
+          if (!grouped['Standalone Tasks']) grouped['Standalone Tasks'] = [];
+          grouped['Standalone Tasks'].push(task);
         }
       });
       return grouped;
@@ -494,6 +699,9 @@ export default function TasksPageClient({
         grouped[clientKey].push(task);
       });
       return grouped;
+    } else if (groupBy === 'hierarchy') {
+      // Create hierarchical grouping: Account -> Orders -> Workflows
+      return createHierarchicalGrouping(tasks);
     }
     return null;
   };
@@ -631,9 +839,29 @@ export default function TasksPageClient({
         params.append('assignedTo', 'all');
       }
       
-      // Type filter
+      // Type filter - for hierarchy grouping, we need both line_item and workflow types
       if (selectedTypes.length > 0) {
-        params.append('type', selectedTypes.join(','));
+        let typesToFetch = [...selectedTypes];
+        
+        // If hierarchy grouping is selected and we have line_item or workflow types,
+        // we need both types to build the proper relationships
+        if (groupBy === 'hierarchy') {
+          const hasLineItem = typesToFetch.includes('line_item');
+          const hasWorkflow = typesToFetch.includes('workflow');
+          
+          if (hasLineItem && !hasWorkflow) {
+            typesToFetch.push('workflow');
+          } else if (hasWorkflow && !hasLineItem) {
+            typesToFetch.push('line_item');
+          }
+        }
+        
+        params.append('type', typesToFetch.join(','));
+      } else {
+        // When no types are selected, "All types" means fetch everything
+        // Always include line items when showing all types
+        params.append('type', 'order,workflow,line_item');
+        params.append('showLineItems', 'true');
       }
       
       // Status filter - if not showing completed, exclude it
@@ -1126,43 +1354,46 @@ export default function TasksPageClient({
                 </span>
               </div>
 
-            {/* Task details */}
-            {task.description && (
+            {/* Task details - hide for workflows since we show it differently */}
+            {task.description && task.type !== 'workflow' && (
               <p className="text-sm text-gray-600 mb-2">{task.description}</p>
             )}
 
-            {/* Task metadata */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 text-sm mt-3 pt-3 border-t border-gray-100">
-              {/* Deadline */}
-              <div className={`flex items-center gap-1 ${getDeadlineColor(task.deadline)} col-span-1`}>
-                <Clock className="h-3 w-3" />
-                <span className="font-medium">{formatDate(task.deadline)}</span>
-                {isOverdue && (
-                  <span className="ml-2 px-1.5 py-0.5 text-xs bg-red-100 text-red-700 rounded font-semibold animate-pulse">
-                    OVERDUE!
-                  </span>
+            {/* Task metadata - customize for workflows */}
+            {task.type !== 'workflow' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 text-sm mt-3 pt-3 border-t border-gray-100">
+                {/* Deadline */}
+                <div className={`flex items-center gap-1 ${getDeadlineColor(task.deadline)} col-span-1`}>
+                  <Clock className="h-3 w-3" />
+                  <span className="font-medium">{formatDate(task.deadline)}</span>
+                  {isOverdue && (
+                    <span className="ml-2 px-1.5 py-0.5 text-xs bg-red-100 text-red-700 rounded font-semibold animate-pulse">
+                      OVERDUE!
+                    </span>
+                  )}
+                </div>
+
+                {/* Client */}
+                {(task.type === 'order' || task.type === 'line_item') && (task as any).client && (
+                  <div className="text-gray-600">
+                    Client: <Link 
+                      href={`/clients/${(task as any).client.id}`}
+                      className="text-indigo-600 hover:text-indigo-800 hover:underline font-medium"
+                    >
+                      {(task as any).client.name}
+                    </Link>
+                  </div>
+                )}
+                {(task.type === 'order' || task.type === 'line_item') && !(task as any).client && (
+                  <div className="text-gray-600">
+                    Client: Unknown
+                  </div>
                 )}
               </div>
+            )}
 
-              {/* Client */}
-              {(task.type === 'order' || task.type === 'workflow' || task.type === 'line_item') && (task as any).client && (
-                <div className="text-gray-600">
-                  Client: <Link 
-                    href={`/clients/${(task as any).client.id}`}
-                    className="text-indigo-600 hover:text-indigo-800 hover:underline font-medium"
-                  >
-                    {(task as any).client.name}
-                  </Link>
-                </div>
-              )}
-              {(task.type === 'order' || task.type === 'workflow' || task.type === 'line_item') && !(task as any).client && (
-                <div className="text-gray-600">
-                  Client: Unknown
-                </div>
-              )}
-
-              {/* Order specific - spans full width */}
-              {task.type === 'order' && (
+            {/* Order specific - spans full width */}
+            {task.type === 'order' && (
                 <div className="col-span-full space-y-2 border-t border-gray-100 pt-2 mt-2">
                   {/* Elegant Order Details */}
                   <div className="space-y-2">
@@ -1288,138 +1519,130 @@ export default function TasksPageClient({
                 </div>
               )}
 
-              {/* Workflow specific - spans full width */}
+              {/* Workflow specific - Complete redesigned layout */}
               {task.type === 'workflow' && (
-                <div className="col-span-full space-y-3 border-t border-gray-100 pt-3 mt-2">
-                  {/* Article Title */}
-                  {(task as any).articleTitle && (
-                    <div className="text-gray-700 text-sm font-medium">
-                      <span className="text-gray-500 font-medium">Article:</span> 
-                      <span className="ml-1 text-gray-800">"{(task as any).articleTitle}"</span>
+                <div className="mt-3 pt-3 border-t border-gray-100 space-y-2">
+                  {/* Main content section with better structure */}
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    {/* Article Title - Primary focus */}
+                    <div className="font-medium text-gray-900 text-sm mb-2">
+                      {(task as any).articleTitle || task.title}
                     </div>
-                  )}
-                  
-                  {/* Client Information - Always show */}
-                  <div className="text-gray-600 text-sm">
-                    <span className="text-gray-500 font-medium">Client:</span> 
-                    <span className="font-semibold ml-1 text-gray-800">{(task as any).clientName || 'Unknown Client'}</span>
-                    {(task as any).clientSite && (
-                      <>
-                        <span className="text-gray-400 mx-2">•</span>
-                        <Link 
-                          href={(task as any).clientSite.trim()}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
-                        >
-                          {(() => {
-                            try {
-                              return new URL((task as any).clientSite.trim()).hostname;
-                            } catch {
-                              return (task as any).clientSite.trim().replace(/^https?:\/\//, '');
-                            }
-                          })()}
-                          <ExternalLink className="h-3 w-3 inline ml-1" />
-                        </Link>
-                      </>
-                    )}
-                  </div>
-                  
-                  {/* Target Domain for Guest Post - Only show if exists */}
-                  {(task as any).guestPostSite && (
-                    <div className="text-gray-600 text-xs">
-                      <span className="text-gray-500 font-medium">Target Domain:</span> 
-                      <Link 
-                        href={`https://${(task as any).guestPostSite}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-indigo-600 hover:text-indigo-800 hover:underline font-medium ml-1"
-                      >
-                        {(task as any).guestPostSite}
-                        <ExternalLink className="h-3 w-3 inline ml-1" />
-                      </Link>
-                    </div>
-                  )}
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {/* Publisher */}
-                    {(task as any).publisher && (
-                      <div className="text-gray-600 text-xs">
-                        <span className="text-gray-500 font-medium">Publisher:</span> 
-                        <span className="font-medium ml-1 text-gray-800">{(task as any).publisher}</span>
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {/* Target URL (Google URL) */}
-                    {(task as any).googleUrl && (
-                      <div className="text-gray-600 text-xs">
-                        <span className="text-gray-500 font-medium">Target URL:</span> 
-                        <Link 
-                          href={(task as any).googleUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-indigo-600 hover:text-indigo-800 hover:underline ml-1 break-all"
-                        >
-                          {(task as any).googleUrl.replace(/^https?:\/\//, '')}
-                          <ExternalLink className="h-3 w-3 inline ml-1" />
-                        </Link>
-                      </div>
-                    )}
                     
-                    {/* Published Article URL */}
-                    {(task as any).publishedArticleUrl && (
-                      <div className="text-gray-600 text-xs">
-                        <span className="text-gray-500 font-medium">Published Article:</span> 
+                    {/* Client → Target flow with visual hierarchy */}
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="font-medium text-gray-700 bg-white px-2 py-1 rounded border border-gray-200">
+                        {(task as any).clientName || 'Unknown Client'}
+                      </span>
+                      <ChevronRight className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                      {(task as any).guestPostSite ? (
                         <Link 
-                          href={(task as any).publishedArticleUrl}
+                          href={`https://${(task as any).guestPostSite}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-green-600 hover:text-green-800 hover:underline ml-1 break-all"
+                          className="text-indigo-600 hover:text-indigo-800 hover:underline font-medium bg-indigo-50 px-2 py-1 rounded border border-indigo-200"
                         >
-                          {(task as any).publishedArticleUrl.replace(/^https?:\/\//, '')}
+                          {(task as any).guestPostSite}
                           <ExternalLink className="h-3 w-3 inline ml-1" />
                         </Link>
+                      ) : (
+                        <span className="text-gray-500 italic">No target site selected</span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Metadata row - Deadline, Progress, Assignee */}
+                  <div className="flex items-center justify-between gap-3 text-xs">
+                    {/* Left side - Deadline and Assignee */}
+                    <div className="flex items-center gap-3">
+                      {/* Deadline */}
+                      {task.deadline && (
+                        <div className={`flex items-center gap-1 ${getDeadlineColor(task.deadline)}`}>
+                          <Clock className="h-3 w-3" />
+                          <span className="font-medium">{formatDate(task.deadline)}</span>
+                          {task.deadline && new Date(task.deadline) < new Date() && task.status !== 'completed' && (
+                            <span className="ml-1 px-1.5 py-0.5 text-xs bg-red-100 text-red-700 rounded font-semibold">
+                              OVERDUE
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* Assignee */}
+                      {task.assignedTo && (
+                        <div className="flex items-center gap-1 text-gray-600">
+                          <User className="h-3 w-3" />
+                          <span>{task.assignedTo.name || task.assignedTo.email?.split('@')[0] || 'Unassigned'}</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Right side - Progress indicator */}
+                    {(task as any).completionPercentage !== undefined && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-500">Progress:</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-20 bg-gray-200 rounded-full h-2">
+                            <div 
+                              className={`h-2 rounded-full transition-all duration-300 ${
+                                (task as any).completionPercentage === 100 ? 'bg-green-500' :
+                                (task as any).completionPercentage > 70 ? 'bg-blue-500' : 
+                                (task as any).completionPercentage > 30 ? 'bg-yellow-500' : 'bg-gray-400'
+                              }`}
+                              style={{ width: `${Math.min(100, (task as any).completionPercentage)}%` }}
+                            />
+                          </div>
+                          <span className="font-medium text-gray-700">
+                            {(task as any).completionPercentage}%
+                          </span>
+                        </div>
                       </div>
                     )}
                   </div>
                   
-                  {/* Progress Bar */}
-                  {(task as any).completionPercentage !== undefined && (
-                    <div className="text-gray-600 text-xs">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-gray-500 font-medium">Progress:</span>
-                        <span className="font-medium text-blue-600">{(task as any).completionPercentage}%</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-blue-600 h-2 rounded-full transition-all" 
-                          style={{ width: `${(task as any).completionPercentage}%` }}
-                        ></div>
-                      </div>
+                  {/* Secondary info row - only show if we have URLs */}
+                  {((task as any).googleUrl || (task as any).publishedArticleUrl || (task as any).publisher) && (
+                    <div className="flex flex-wrap gap-3 mt-2 text-xs">
+                      {/* Publisher */}
+                      {(task as any).publisher && (
+                        <div className="text-gray-500">
+                          <span className="font-medium">Publisher:</span> {(task as any).publisher}
+                        </div>
+                      )}
+                      
+                      {/* Target URL */}
+                      {(task as any).googleUrl && (
+                        <div className="text-gray-500">
+                          <span className="font-medium">Target:</span>{' '}
+                          <Link 
+                            href={(task as any).googleUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-indigo-600 hover:text-indigo-800 hover:underline"
+                          >
+                            {(task as any).googleUrl.replace(/^https?:\/\//, '').substring(0, 30)}...
+                            <ExternalLink className="h-2.5 w-2.5 inline ml-0.5" />
+                          </Link>
+                        </div>
+                      )}
+                      
+                      {/* Published Article */}
+                      {(task as any).publishedArticleUrl && (
+                        <div className="text-gray-500">
+                          <span className="font-medium text-green-600">✓ Published:</span>{' '}
+                          <Link 
+                            href={(task as any).publishedArticleUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-green-600 hover:text-green-800 hover:underline"
+                          >
+                            View Article
+                            <ExternalLink className="h-2.5 w-2.5 inline ml-0.5" />
+                          </Link>
+                        </div>
+                      )}
                     </div>
                   )}
-                  
-                  {/* Estimated Completion */}
-                  {(task as any).estimatedCompletionDate && (
-                    <div className="text-gray-600 text-xs">
-                      <span className="text-gray-500 font-medium">Est. Completion:</span> 
-                      <span className="ml-1 text-gray-700">
-                        {new Date((task as any).estimatedCompletionDate).toLocaleDateString()}
-                      </span>
-                    </div>
-                  )}
-                  
-                  {/* Workflow Details */}
-                  <div className="text-gray-500 text-xs pt-1 border-t border-gray-100">
-                    <Link 
-                      href={`/workflow/${(task as any).workflowId}`}
-                      className="text-indigo-500 hover:text-indigo-700 hover:underline"
-                    >
-                      View Full Workflow Details
-                    </Link>
-                  </div>
                 </div>
               )}
 
@@ -1518,10 +1741,9 @@ export default function TasksPageClient({
                 )}
               </div>
             </div>
-          </div>
 
-          {/* Actions */}
-          <div className="flex items-center gap-2">
+            {/* Actions */}
+            <div className="flex items-center gap-2">
               {/* Assignment dropdown or claim button */}
               {!task.assignedTo ? (
                 <button
@@ -1865,6 +2087,7 @@ export default function TasksPageClient({
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                         <input
+                          ref={accountSearchRef}
                           type="text"
                           placeholder="Search accounts..."
                           value={accountSearch}
@@ -2506,12 +2729,13 @@ export default function TasksPageClient({
                     <span className="text-sm text-gray-600">Group by:</span>
                     <select
                       value={groupBy}
-                      onChange={(e) => setGroupBy(e.target.value as 'deadline' | 'order' | 'client')}
+                      onChange={(e) => setGroupBy(e.target.value as 'deadline' | 'order' | 'client' | 'hierarchy')}
                       className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                     >
                       <option value="deadline">📅 Due Date</option>
                       <option value="order">📦 Order</option>
                       <option value="client">👥 Account/Client</option>
+                      <option value="hierarchy">🏗️ Account → Order → Workflows</option>
                     </select>
                   </div>
                 )}
@@ -2647,7 +2871,7 @@ export default function TasksPageClient({
                         <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
                           <Inbox className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                           <h3 className="text-lg font-medium text-gray-900 mb-2">
-                            No tasks to group by {groupBy === 'order' ? 'order' : 'client'}
+                            No tasks to group by {groupBy === 'order' ? 'order' : groupBy === 'client' ? 'client' : 'hierarchy'}
                           </h3>
                           <div className="text-sm text-gray-500 mb-6">
                             <p>Try changing your filters or grouping method</p>
@@ -2672,6 +2896,104 @@ export default function TasksPageClient({
                           </div>
                         </div>
                       );
+                    }
+
+                    // Special rendering for hierarchical grouping
+                    if (groupBy === 'hierarchy') {
+                      const hierarchy = groupedTasks as any;
+                      return Object.entries(hierarchy).map(([accountKey, accountData]: [string, any]) => (
+                        <div key={accountKey} className="border border-gray-200 rounded-lg overflow-hidden">
+                          {/* Account Level Header */}
+                          <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                            <h2 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+                              <Building className="h-5 w-5 text-indigo-600" />
+                              {accountData.name}
+                              <span className="text-sm font-normal text-gray-500">
+                                ({Object.keys(accountData.orders).length} orders, 
+                                 {Object.values(accountData.orders).reduce((sum: number, order: any) => sum + Object.keys(order.lineItems).length, 0)} line items,
+                                 {accountData.standaloneWorkflows.length} standalone)
+                              </span>
+                            </h2>
+                          </div>
+                          
+                          <div className="divide-y divide-gray-200">
+                            {/* Orders */}
+                            {Object.entries(accountData.orders).map(([orderKey, orderData]: [string, any]) => (
+                              <div key={orderKey} className="p-4">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <ShoppingBag className="h-4 w-4 text-blue-600" />
+                                  <h3 className="font-medium text-gray-900 text-base">{orderData.name}</h3>
+                                </div>
+                                <div className="ml-6 text-sm text-gray-600 mb-3">
+                                  <span>{Object.keys(orderData.lineItems).length} guest posts</span>
+                                  {orderData.standaloneWorkflows.length > 0 && (
+                                    <span> • {orderData.standaloneWorkflows.length} standalone workflows</span>
+                                  )}
+                                </div>
+                                
+                                {/* Line Items within Order */}
+                                <div className="ml-6">
+                                  {Object.entries(orderData.lineItems).map(([lineItemKey, lineItemData]: [string, any]) => (
+                                    <div key={lineItemKey} className="border-l-2 border-gray-200 pl-4 mb-4">
+                                      <div className="flex items-center gap-2 mb-2">
+                                        <Package className="h-3 w-3 text-green-600" />
+                                        <h4 className="font-medium text-gray-800 text-sm">
+                                          {lineItemData.name}
+                                          {lineItemData.workflows.length > 0 && (
+                                            <span className="ml-2 text-xs font-normal text-gray-500">
+                                              ({lineItemData.workflows.length} {lineItemData.workflows.length === 1 ? 'workflow' : 'workflows'})
+                                            </span>
+                                          )}
+                                        </h4>
+                                      </div>
+                                      
+                                      {/* Show line item task if available */}
+                                      {lineItemData.lineItemTask && (
+                                        <div className="ml-5 mb-2">
+                                          {renderTaskCard(lineItemData.lineItemTask)}
+                                        </div>
+                                      )}
+                                      
+                                      {/* Workflows under this line item */}
+                                      <div className="ml-5 space-y-2">
+                                        {lineItemData.workflows.map((workflow: UnifiedTask) => renderTaskCard(workflow))}
+                                      </div>
+                                    </div>
+                                  ))}
+                                  
+                                  {/* Standalone workflows within order */}
+                                  {orderData.standaloneWorkflows.length > 0 && (
+                                    <div className="border-l-2 border-gray-200 pl-4 mb-4">
+                                      <div className="flex items-center gap-2 mb-2">
+                                        <FileText className="h-3 w-3 text-gray-600" />
+                                        <h4 className="font-medium text-gray-700 text-sm">Order Workflows</h4>
+                                        <span className="text-xs text-gray-500">({orderData.standaloneWorkflows.length})</span>
+                                      </div>
+                                      <div className="ml-5 space-y-2">
+                                        {orderData.standaloneWorkflows.map(renderTaskCard)}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                            
+                            {/* Standalone Workflows */}
+                            {accountData.standaloneWorkflows.length > 0 && (
+                              <div className="p-4">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <FileText className="h-4 w-4 text-gray-600" />
+                                  <h3 className="font-medium text-gray-700">Account Standalone Tasks</h3>
+                                  <span className="text-sm text-gray-500">({accountData.standaloneWorkflows.length})</span>
+                                </div>
+                                <div className="ml-6 space-y-3">
+                                  {accountData.standaloneWorkflows.map(renderTaskCard)}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ));
                     }
 
                     return Object.entries(groupedTasks).map(([groupKey, tasks]) => (

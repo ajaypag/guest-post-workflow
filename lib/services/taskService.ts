@@ -228,11 +228,17 @@ export class TaskService {
       .select({
         workflow: workflows,
         client: clients,
-        assignedUser: users
+        assignedUser: users,
+        lineItem: orderLineItems,
+        order: orders,
+        account: accounts
       })
       .from(workflows)
       .leftJoin(clients, eq(workflows.clientId, clients.id))
-      .leftJoin(users, eq(workflows.assignedUserId, users.id));
+      .leftJoin(users, eq(workflows.assignedUserId, users.id))
+      .leftJoin(orderLineItems, eq(orderLineItems.workflowId, workflows.id))
+      .leftJoin(orders, eq(orderLineItems.orderId, orders.id))
+      .leftJoin(accounts, eq(orders.accountId, accounts.id));
 
     // Apply filters
     const conditions = [];
@@ -366,6 +372,15 @@ export class TaskService {
         articleTitle: articleTitle,
         publishedArticleUrl: publishedArticleUrl,
         workflowContent: workflowContent, // Include full content for additional data
+        
+        // Order metadata for proper grouping
+        metadata: row.order ? {
+          orderId: row.order.id,
+          orderNumber: `#${row.order.id.slice(0, 8)}`,
+          lineItemId: row.lineItem?.id,
+          accountName: row.account?.companyName || row.account?.contactName || 'Unknown Account',
+          clientName: row.client?.name || 'Unknown Client'
+        } : null,
         
         createdAt: row.workflow.createdAt,
         updatedAt: row.workflow.updatedAt,

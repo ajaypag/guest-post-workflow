@@ -1,58 +1,25 @@
-'use client';
-
-import { useEffect, useState } from 'react';
-import { AuthService, type AuthSession } from '@/lib/auth';
-import { useRouter } from 'next/navigation';
+import { redirect } from 'next/navigation';
+import { AuthServiceServer } from '@/lib/auth-server';
 import Header from '@/components/Header';
 import WorkflowListEnhanced from '@/components/WorkflowListEnhanced';
 import QuickActions from '@/components/QuickActions';
-import AssignedProjectsNotification from '@/components/AssignedProjectsNotification';
+import HomepageTaskSection from '@/components/HomepageTaskSection';
 import MarketingHomepage from '@/app/marketing/page';
 
-export default function Home() {
-  const router = useRouter();
-  const [session, setSession] = useState<AuthSession | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const checkAuth = () => {
-      const currentSession = AuthService.getSession();
-      
-      if (currentSession) {
-        // Redirect account users to their dashboard
-        if (currentSession.userType === 'account') {
-          router.push('/account/dashboard');
-          return;
-        }
-        
-        // Internal users see the dashboard
-        if (currentSession.userType === 'internal') {
-          setSession(currentSession);
-        }
-      }
-      
-      setLoading(false);
-    };
-
-    checkAuth();
-  }, [router]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
+export default async function Home() {
+  // Check authentication server-side
+  const session = await AuthServiceServer.getSession();
+  
   // Show marketing homepage for logged-out users
   if (!session) {
     return <MarketingHomepage />;
   }
-
+  
+  // Redirect account users to their dashboard
+  if (session.userType === 'account') {
+    redirect('/account/dashboard');
+  }
+  
   // Show internal dashboard for logged-in internal users
   if (session.userType === 'internal') {
     return (
@@ -71,8 +38,12 @@ export default function Home() {
             </div>
           </div>
           
-          {/* Assigned Projects Notification */}
-          <AssignedProjectsNotification />
+          {/* Task Management Section - Replacing AssignedProjectsNotification */}
+          <HomepageTaskSection 
+            userId={session.userId}
+            userName={session.name || 'Internal User'}
+            userEmail={session.email}
+          />
           
           {/* Quick Actions Pipeline */}
           <QuickActions />
