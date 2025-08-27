@@ -119,15 +119,8 @@ export default function DomainCell({ domain, domainId }: DomainCellProps) {
   const qualityBadge = getQualityBadge();
 
   return (
-    <div className="space-y-2">
-      {/* Domain name only - DR and traffic are in separate columns */}
-      <div className="flex items-center gap-2">
-        <Globe className="h-4 w-4 text-gray-400" />
-        <span className="font-medium">{domain.domain}</span>
-      </div>
-
-      {/* Analysis badges */}
-      <div className="flex flex-wrap items-center gap-1">
+    // Only show badges, not the domain name - that's handled in the parent
+    <div className="flex flex-wrap items-center gap-1">
         {/* Qualification status */}
         {qualityBadge && (
           <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-xs rounded ${qualityBadge.color}`}>
@@ -171,7 +164,6 @@ export default function DomainCell({ domain, domainId }: DomainCellProps) {
             📊 {domain.dataForSeoResultsCount || 'Data'}
           </span>
         )}
-      </div>
     </div>
   );
 }
