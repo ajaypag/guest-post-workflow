@@ -125,8 +125,17 @@ export async function GET(request: NextRequest) {
     // Apply permission filters based on user type
     if (session.userType === 'account') {
       // Account users can only see domains from their clients
-      const userClientIds = session.clientId ? [session.clientId] : [];
+      // Get all client IDs for this account user
+      const userClients = await db
+        .select({ id: clients.id })
+        .from(clients)
+        .where(eq(clients.accountId, session.userId));
+      
+      const userClientIds = userClients.map(client => client.id);
+      console.log('🔍 Vetted Sites API - Account user client IDs:', userClientIds);
+      
       if (userClientIds.length === 0) {
+        console.log('⚠️ Vetted Sites API - No clients found for account user, returning empty');
         return NextResponse.json({ domains: [], total: 0, stats: {} });
       }
       conditions.push(inArray(bulkAnalysisDomains.clientId, userClientIds));
@@ -337,28 +346,17 @@ export async function GET(request: NextRequest) {
         ));
 
         if (allTargetPageIds.length > 0) {
-          // Fetch target pages data
-          const targetPagesData = await db
-            .select({
-              id: targetPages.id,
-              url: targetPages.url,
-              keywords: targetPages.keywords,
-              description: targetPages.description,
-            })
-            .from(targetPages)
-            .where(inArray(targetPages.id, allTargetPageIds));
-
-          // Create lookup map for easy access
-          const targetPagesLookup = new Map(
-            targetPagesData.map(tp => [tp.id, tp])
-          );
-
-          // Build target pages map by domain ID
+          // NOTE: targetPageIds contains URL strings, not UUIDs, so we handle them directly
+          // Build target pages map by domain ID using URL strings
           domainsWithTargetPageIds.forEach(domain => {
             if (domain.targetPageIds) {
               targetPagesMap[domain.id] = (domain.targetPageIds as string[])
-                .map(id => targetPagesLookup.get(id))
-                .filter(Boolean); // Remove any null/undefined entries
+                .map((url, index) => ({
+                  id: `url-${index}`, // synthetic ID since these are URLs, not DB records
+                  url: url,
+                  keywords: null, // URLs don't have associated keywords in this context
+                  description: null, // URLs don't have descriptions in this context
+                }));
             }
           });
         }
@@ -414,7 +412,7 @@ export async function GET(request: NextRequest) {
       })
     );
 
-    return NextResponse.json({
+    const responseData = {
       domains: domainsWithPricing.filter(Boolean),
       total: total || 0,
       page: page || 1,
@@ -436,7 +434,19 @@ export async function GET(request: NextRequest) {
           disqualified: stats?.disqualified || 0,
         },
       },
+    };
+    
+    console.log('🚀 VETTED SITES API RESPONSE:', {
+      userType: session.userType,
+      userId: session.userId,
+      domainsCount: responseData.domains.length,
+      total: responseData.total,
+      availableCount: responseData.stats.available,
+      totalQualified: responseData.stats.totalQualified,
+      referer: request.headers.get('referer'),
     });
+    
+    return NextResponse.json(responseData);
 
   } catch (error: any) {
     console.error('Vetted Sites API Error:', error);
