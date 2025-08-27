@@ -569,23 +569,22 @@ async function getInitialData(session: any, searchParams: any) {
     const stats = statsQuery[0] || {};
 
     // Fetch target pages for all domains
+    // NOTE: targetPageIds contains URL strings, not UUIDs, so we handle them directly
     const domainTargetPages = new Map();
     if (Array.isArray(domains)) {
       for (const domain of domains) {
         if (domain?.targetPageIds && Array.isArray(domain.targetPageIds) && domain.targetPageIds.length > 0) {
           try {
-            const pages = await db.query.targetPages.findMany({
-              where: inArray(targetPages.id, domain.targetPageIds as string[]),
-              columns: {
-                id: true,
-                url: true,
-                keywords: true,
-                description: true,
-              }
-            });
-            domainTargetPages.set(domain.id, pages);
+            // targetPageIds contains URL strings, convert to target page format
+            const targetPagesForDomain = domain.targetPageIds.map((url: string, index: number) => ({
+              id: `url-${index}`, // synthetic ID since these are URLs, not DB records
+              url: url,
+              keywords: null, // URLs don't have associated keywords in this context
+              description: null, // URLs don't have descriptions in this context
+            }));
+            domainTargetPages.set(domain.id, targetPagesForDomain);
           } catch (pageError) {
-            console.error(`Error fetching target pages for domain ${domain.id}:`, pageError);
+            console.error(`Error processing target pages for domain ${domain.id}:`, pageError);
           }
         }
       }
