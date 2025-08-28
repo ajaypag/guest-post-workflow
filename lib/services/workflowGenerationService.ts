@@ -213,7 +213,8 @@ export class WorkflowGenerationService {
           clientId: client.id,
           orderId: order.id,
           targetPageUrl: lineItem.targetPageUrl,
-          anchorText: lineItem.anchorText
+          anchorText: lineItem.anchorText,
+          targetPageId: lineItem.targetPageId
         }
       };
 

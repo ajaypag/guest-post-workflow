@@ -85,7 +85,8 @@ export function AgenticOutlineGeneratorV2({ workflowId, onComplete }: AgenticOut
         const response = await fetch(`/api/workflows/${workflowId}`);
         if (!response.ok) return;
         
-        const workflow = await response.json();
+        const data = await response.json();
+        const workflow = data.workflow;
         setWorkflowMetadata(workflow.metadata);
         
         if (!workflow.metadata) {
@@ -95,20 +96,49 @@ export function AgenticOutlineGeneratorV2({ workflowId, onComplete }: AgenticOut
         
         let intelligenceFound = false;
         
-        // 1. Check for target page intelligence first
-        const targetPageId = workflow.metadata?.siteSelectionId;
-        if (targetPageId) {
+        // 1. First try to use targetPageId if workflow has it (more reliable)
+        if (workflow.targetPageId) {
           try {
-            const targetResponse = await fetch(`/api/target-pages/${targetPageId}/intelligence/latest`);
-            if (targetResponse.ok) {
-              const targetData = await targetResponse.json();
-              if (targetData.session?.finalBrief) {
+            console.log('Using direct targetPageId for intelligence lookup:', workflow.targetPageId);
+            const intelligenceResponse = await fetch(`/api/target-pages/${workflow.targetPageId}/intelligence/latest`);
+            if (intelligenceResponse.ok) {
+              const intelligenceData = await intelligenceResponse.json();
+              if (intelligenceData.session?.finalBrief) {
                 setIntelligenceType('target');
                 intelligenceFound = true;
               }
             }
           } catch (error) {
-            console.error('Failed to load target page intelligence:', error);
+            console.error('Failed to load target page intelligence by ID:', error);
+          }
+        }
+        
+        // 2. Fallback to URL matching if no targetPageId or no intelligence found
+        if (!intelligenceFound) {
+          const topicGenerationStep = workflow.steps?.find((s: any) => s.id === 'topic-generation');
+          const clientTargetUrl = topicGenerationStep?.outputs?.clientTargetUrl;
+          
+          if (clientTargetUrl) {
+            try {
+              // Find target page by URL match
+              const targetPageResponse = await fetch(`/api/target-pages/by-url?url=${encodeURIComponent(clientTargetUrl)}`);
+              if (targetPageResponse.ok) {
+                const targetPageData = await targetPageResponse.json();
+                if (targetPageData.targetPage) {
+                  // Try to get intelligence for this target page
+                  const intelligenceResponse = await fetch(`/api/target-pages/${targetPageData.targetPage.id}/intelligence/latest`);
+                  if (intelligenceResponse.ok) {
+                    const intelligenceData = await intelligenceResponse.json();
+                    if (intelligenceData.session?.finalBrief) {
+                      setIntelligenceType('target');
+                      intelligenceFound = true;
+                    }
+                  }
+                }
+              }
+            } catch (error) {
+              console.error('Failed to load target page intelligence by URL:', error);
+            }
           }
         }
         
@@ -325,16 +355,6 @@ export function AgenticOutlineGeneratorV2({ workflowId, onComplete }: AgenticOut
         </div>
       )}
 
-      {intelligenceType === 'none' && (
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-          <p className="text-sm font-medium text-gray-700">
-            ℹ️ Using standard research mode
-          </p>
-          <p className="text-xs text-gray-600 mt-1">
-            AI will conduct basic research without additional business intelligence
-          </p>
-        </div>
-      )}
 
       {/* Status Display */}
       {status !== 'idle' && (

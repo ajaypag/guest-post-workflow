@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { WorkflowService } from '@/lib/db/workflowService';
 import { WorkflowProgressService } from '@/lib/services/workflowProgressService';
+import { db } from '@/lib/db/connection';
+import { targetPages, clients } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
+import { v4 as uuidv4 } from 'uuid';
 
 export async function GET(
   request: NextRequest,
@@ -57,12 +61,60 @@ export async function PUT(
 
     console.log('Existing workflow found, updating...');
 
+    // Check if Step 3 (Topic Generation) has a clientTargetUrl
+    let targetPageId = existingWorkflow.targetPageId;
+    
+    const topicGenerationStep = data.steps?.find((s: any) => s.id === 'topic-generation');
+    const clientTargetUrl = topicGenerationStep?.outputs?.clientTargetUrl;
+    
+    if (clientTargetUrl && !targetPageId) {
+      console.log('Found clientTargetUrl in Topic Generation step, looking up/creating target page:', clientTargetUrl);
+      
+      // Look up or create the target page
+      let targetPage = await db.query.targetPages.findFirst({
+        where: eq(targetPages.url, clientTargetUrl)
+      });
+      
+      if (!targetPage) {
+        console.log('Target page not found, creating new one for:', clientTargetUrl);
+        
+        // Extract domain from URL
+        let domain: string;
+        try {
+          const urlObj = new URL(clientTargetUrl);
+          domain = urlObj.hostname.replace('www.', '');
+        } catch (error) {
+          console.error('Invalid URL:', clientTargetUrl);
+          domain = 'unknown';
+        }
+        
+        // Create the target page (only if we have a clientId)
+        if (existingWorkflow.clientId) {
+          const newTargetPageId = uuidv4();
+          await db.insert(targetPages).values({
+            id: newTargetPageId,
+            clientId: existingWorkflow.clientId,
+            url: clientTargetUrl,
+            domain: domain,
+            addedAt: new Date()
+          });
+          targetPageId = newTargetPageId;
+        }
+        console.log('Created new target page with ID:', targetPageId);
+      } else {
+        targetPageId = targetPage.id;
+        console.log('Found existing target page with ID:', targetPageId);
+      }
+    }
+
     // Prepare update data - store complete workflow as JSON in content field
     const updateData = {
       content: data, // Store the complete updated workflow as JSON
       updatedAt: new Date(),
       // Update title if provided
-      ...(data.clientName && { title: data.clientName })
+      ...(data.clientName && { title: data.clientName }),
+      // Update targetPageId if we found/created one
+      ...(targetPageId && { targetPageId })
     };
 
     console.log('Final update data:', JSON.stringify(updateData, null, 2));

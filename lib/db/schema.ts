@@ -120,7 +120,8 @@ export const workflows = pgTable('workflows', {
   title: varchar('title', { length: 255 }).notNull(),
   status: varchar('status', { length: 50 }).notNull().default('active'),
   content: jsonb('content'), // Stores the complete GuestPostWorkflow as JSON
-  targetPages: jsonb('target_pages'), // Stores target pages as JSON
+  targetPages: jsonb('target_pages'), // Stores target pages as JSON (deprecated - use targetPageId instead)
+  targetPageId: uuid('target_page_id').references(() => targetPages.id), // Direct link to target_pages table (added in migration 0076)
   orderItemId: uuid('order_item_id'), // Link to order system
   
   // Completion tracking fields (added in migration 0062)
@@ -356,11 +357,12 @@ export const clientAssignmentsRelations = relations(clientAssignments, ({ one })
   }),
 }));
 
-export const targetPagesRelations = relations(targetPages, ({ one }) => ({
+export const targetPagesRelations = relations(targetPages, ({ one, many }) => ({
   client: one(clients, {
     fields: [targetPages.clientId],
     references: [clients.id],
   }),
+  workflows: many(workflows), // Workflows creating content for this target page
 }));
 
 export const workflowsRelations = relations(workflows, ({ one, many }) => ({
@@ -371,6 +373,10 @@ export const workflowsRelations = relations(workflows, ({ one, many }) => ({
   client: one(clients, {
     fields: [workflows.clientId],
     references: [clients.id],
+  }),
+  targetPage: one(targetPages, {
+    fields: [workflows.targetPageId],
+    references: [targetPages.id],
   }),
   steps: many(workflowSteps),
   articleSections: many(articleSections),

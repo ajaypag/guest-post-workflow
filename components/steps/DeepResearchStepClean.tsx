@@ -62,21 +62,49 @@ export const DeepResearchStepClean = ({ step, workflow, onChange }: DeepResearch
       let intelligenceContent = '';
       let intelligenceType: 'none' | 'brand' | 'target' = 'none';
       
-      // 1. Check for target page intelligence first (siteSelectionId is the target page ID)
-      const targetPageId = workflow.metadata?.siteSelectionId;
-      
-      if (targetPageId) {
+      // 1. First try to use targetPageId if workflow has it (more reliable)
+      if ((workflow as any).targetPageId) {
         try {
-          const targetResponse = await fetch(`/api/target-pages/${targetPageId}/intelligence/latest`);
-          if (targetResponse.ok) {
-            const targetData = await targetResponse.json();
-            if (targetData.session?.finalBrief) {
-              intelligenceContent = targetData.session.finalBrief;
+          console.log('Using direct targetPageId for intelligence lookup:', (workflow as any).targetPageId);
+          const intelligenceResponse = await fetch(`/api/target-pages/${(workflow as any).targetPageId}/intelligence/latest`);
+          if (intelligenceResponse.ok) {
+            const intelligenceData = await intelligenceResponse.json();
+            if (intelligenceData.session?.finalBrief) {
+              intelligenceContent = intelligenceData.session.finalBrief;
               intelligenceType = 'target';
             }
           }
         } catch (error) {
-          console.error('Failed to load target page intelligence:', error);
+          console.error('Failed to load target page intelligence by ID:', error);
+        }
+      }
+      
+      // 2. Fallback to URL matching if no targetPageId or no intelligence found
+      if (intelligenceType === 'none') {
+        const topicGenerationStep = workflow.steps.find(s => s.id === 'topic-generation');
+        const clientTargetUrl = topicGenerationStep?.outputs?.clientTargetUrl;
+        
+        if (clientTargetUrl) {
+          try {
+            // Find target page by URL match
+            const targetPageResponse = await fetch(`/api/target-pages/by-url?url=${encodeURIComponent(clientTargetUrl)}`);
+            if (targetPageResponse.ok) {
+              const targetPageData = await targetPageResponse.json();
+              if (targetPageData.targetPage) {
+                // Try to get intelligence for this target page
+                const intelligenceResponse = await fetch(`/api/target-pages/${targetPageData.targetPage.id}/intelligence/latest`);
+                if (intelligenceResponse.ok) {
+                  const intelligenceData = await intelligenceResponse.json();
+                  if (intelligenceData.session?.finalBrief) {
+                    intelligenceContent = intelligenceData.session.finalBrief;
+                    intelligenceType = 'target';
+                  }
+                }
+              }
+            }
+          } catch (error) {
+            console.error('Failed to load target page intelligence by URL:', error);
+          }
         }
       }
       
@@ -101,7 +129,7 @@ export const DeepResearchStepClean = ({ step, workflow, onChange }: DeepResearch
     };
 
     loadIntelligence();
-  }, [workflow.metadata?.clientId, workflow.metadata?.siteSelectionId]);
+  }, [workflow.metadata?.clientId, topicGenerationStep?.outputs?.clientTargetUrl]);
 
   // Generate enhanced prompt with preferences and intelligence
   const outlinePrompt = researchPreferences && applyPreferences 

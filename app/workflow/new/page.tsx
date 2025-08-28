@@ -30,6 +30,8 @@ function NewWorkflowContent() {
   const searchParams = useSearchParams();
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [targetPages, setTargetPages] = useState<any[]>([]);
+  const [selectedTargetPageId, setSelectedTargetPageId] = useState<string>('');
   const [formData, setFormData] = useState({
     clientName: '',
     clientUrl: ''
@@ -73,13 +75,27 @@ function NewWorkflowContent() {
     }
   };
 
-  const handleClientSelect = (client: Client | null) => {
+  const handleClientSelect = async (client: Client | null) => {
     setSelectedClient(client);
+    setTargetPages([]);
+    setSelectedTargetPageId('');
+    
     if (client) {
       setFormData({
         clientName: client.name,
         clientUrl: client.website
       });
+      
+      // Fetch target pages for this client
+      try {
+        const response = await fetch(`/api/clients/${client.id}/target-pages`);
+        if (response.ok) {
+          const data = await response.json();
+          setTargetPages(data.targetPages || []);
+        }
+      } catch (error) {
+        console.error('Error loading target pages:', error);
+      }
     } else {
       setFormData({
         clientName: '',
@@ -121,11 +137,17 @@ function NewWorkflowContent() {
             notes: notes
           } : index === 1 && targetPageId ? {
             selectedTargetPageId: targetPageId
+          } : index === 2 && selectedTargetPageId ? {
+            // Pre-fill Topic Generation step if target page was selected
+            clientTargetUrl: targetPages.find(tp => tp.id === selectedTargetPageId)?.url || ''
           } : {},
           completedAt: undefined
         })),
-        metadata: selectedClient ? { clientId: selectedClient.id } : {}
-      };
+        metadata: selectedClient ? { 
+          clientId: selectedClient.id,
+          targetPageId: selectedTargetPageId || undefined 
+        } : {}
+      } as GuestPostWorkflow & { targetPageId?: string };
 
       console.log('Creating workflow:', workflow.id, 'for client:', workflow.clientName);
       await storage.saveWorkflow(workflow);
@@ -212,6 +234,31 @@ function NewWorkflowContent() {
                 />
               </div>
 
+              {/* Target Page Selection (Optional) */}
+              {selectedClient && targetPages.length > 0 && (
+                <div>
+                  <label htmlFor="targetPage" className="block text-sm font-medium text-gray-700 mb-2">
+                    Target URL (Optional)
+                  </label>
+                  <select
+                    id="targetPage"
+                    value={selectedTargetPageId}
+                    onChange={(e) => setSelectedTargetPageId(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">-- Select a target URL (or choose later) --</option>
+                    {targetPages.map(page => (
+                      <option key={page.id} value={page.id}>
+                        {page.url}
+                        {page.description && ` - ${page.description}`}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    You can select a target URL now or add it later in Step 3
+                  </p>
+                </div>
+              )}
 
               {/* Error Display */}
               {submitError && (
