@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import { db } from '@/lib/db/connection';
 import { clientBrandIntelligence } from '@/lib/db/clientBrandIntelligenceSchema';
+import { clients } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
 /**
@@ -373,8 +374,15 @@ Format your response as JSON with the following structure:
         cleanClientInput = existing.clientInput || '';
       }
 
+      // Get client info for context
+      const [clientInfo] = await db.select()
+        .from(clients)
+        .where(eq(clients.id, clientId))
+        .limit(1);
+
       const briefPrompt = `
-You are tasked with creating a comprehensive brand brief based on deep research and client input.
+You are creating a comprehensive research intelligence document about this company: ${clientInfo?.name || 'Unknown'}
+Website: ${clientInfo?.website || 'Unknown'}
 
 RESEARCH ANALYSIS:
 ${researchToUse}
@@ -382,23 +390,20 @@ ${researchToUse}
 CLIENT INPUT:
 ${cleanClientInput}
 
-Your task is to synthesize this information into a concise brief about this company that can be used to feed our content creation process. The brief should include:
+Your task is to synthesize this information into a comprehensive document that can be used to feed our outline research process. 
 
-1. Business Overview (what they do, how they make money)
-2. Key Products/Services and Pricing
-3. Target Audience and Market Position
-4. Unique Value Propositions
-5. Notable Achievements or Case Studies
-6. Brand Voice and Messaging Guidelines
+First, understand what consumers in this market care about, want to know about, and do comparisons about. Based on that analysis, create your own outline structure that makes sense for this specific market and company.
 
-Create a concise, well-structured brief that is approximately 1000 words. Focus on the most important information that content writers need. Use markdown formatting with clear headers and bullet points for easy scanning. Be specific and actionable.`;
+Then fill out that outline with the research provided, focusing on insider knowledge or harder-to-find information that would be valuable for understanding what consumers in this market really care about when making decisions.
+
+Create a well-structured document that is approximately 1000 words using markdown formatting with clear headers and bullet points for easy scanning. Be specific and actionable.`;
 
       const completion = await this.openai.chat.completions.create({
         model: 'o3-2025-04-16',
         messages: [
           {
             role: 'system',
-            content: 'You are a brand strategist creating concise, actionable briefs for content teams. Be direct and focus on essential information.'
+            content: 'You are a research intelligence agent creating a comprehensive document about this brand that can be used during deep research and outline creation activities.'
           },
           {
             role: 'user',

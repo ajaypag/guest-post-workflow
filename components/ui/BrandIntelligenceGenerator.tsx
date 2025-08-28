@@ -509,14 +509,25 @@ export function BrandIntelligenceGenerator({ clientId, onComplete, userType = 'i
 
   return (
     <div className="space-y-6">
-      {/* Phase Progress Indicator */}
+      {/* Phase Progress Indicator - Now Clickable Tabs */}
       <div className="bg-white border border-gray-200 rounded-lg p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex-1">
             <div className="flex items-center justify-between mb-2">
-              <div className={`flex items-center space-x-2 ${
-                currentPhase === 'research' || researchStatus === 'completed' ? 'text-purple-600' : 'text-gray-400'
-              }`}>
+              {/* Deep Research Tab */}
+              <button 
+                onClick={() => {
+                  if (researchStatus === 'completed' || currentPhase === 'research') {
+                    setCurrentPhase('research');
+                  }
+                }}
+                disabled={researchStatus === 'idle' && currentPhase !== 'research'}
+                className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
+                  currentPhase === 'research' ? 'bg-purple-100 text-purple-700' :
+                  researchStatus === 'completed' ? 'text-purple-600 hover:bg-purple-50 cursor-pointer' : 
+                  'text-gray-400 cursor-not-allowed'
+                }`}
+              >
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                   researchStatus === 'completed' ? 'bg-green-100 text-green-600' : 
                   currentPhase === 'research' ? 'bg-purple-100' : 'bg-gray-100'
@@ -524,11 +535,22 @@ export function BrandIntelligenceGenerator({ clientId, onComplete, userType = 'i
                   {researchStatus === 'completed' ? <CheckCircle className="w-5 h-5" /> : '1'}
                 </div>
                 <span className="text-sm font-medium">Deep Research</span>
-              </div>
+              </button>
               
-              <div className={`flex items-center space-x-2 ${
-                currentPhase === 'input' || clientInput ? 'text-purple-600' : 'text-gray-400'
-              }`}>
+              {/* Questionnaire Tab */}
+              <button 
+                onClick={() => {
+                  if (researchStatus === 'completed' || currentPhase === 'input' || clientInput) {
+                    setCurrentPhase('input');
+                  }
+                }}
+                disabled={researchStatus !== 'completed' && currentPhase !== 'input'}
+                className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
+                  currentPhase === 'input' ? 'bg-purple-100 text-purple-700' :
+                  (researchStatus === 'completed' || clientInput) ? 'text-purple-600 hover:bg-purple-50 cursor-pointer' :
+                  'text-gray-400 cursor-not-allowed'
+                }`}
+              >
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                   clientInput ? 'bg-green-100 text-green-600' : 
                   currentPhase === 'input' ? 'bg-purple-100' : 'bg-gray-100'
@@ -536,11 +558,22 @@ export function BrandIntelligenceGenerator({ clientId, onComplete, userType = 'i
                   {clientInput ? <CheckCircle className="w-5 h-5" /> : '2'}
                 </div>
                 <span className="text-sm font-medium">Questionnaire</span>
-              </div>
+              </button>
               
-              <div className={`flex items-center space-x-2 ${
-                currentPhase === 'brief' || currentPhase === 'completed' ? 'text-purple-600' : 'text-gray-400'
-              }`}>
+              {/* Brief Creation Tab */}
+              <button 
+                onClick={() => {
+                  if (currentPhase === 'completed' || briefStatus === 'completed' || currentPhase === 'brief') {
+                    setCurrentPhase('completed');
+                  }
+                }}
+                disabled={!clientInput && currentPhase !== 'brief' && currentPhase !== 'completed'}
+                className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
+                  currentPhase === 'completed' || currentPhase === 'brief' ? 'bg-purple-100 text-purple-700' :
+                  (briefStatus === 'completed' || clientInput) ? 'text-purple-600 hover:bg-purple-50 cursor-pointer' :
+                  'text-gray-400 cursor-not-allowed'
+                }`}
+              >
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                   currentPhase === 'completed' ? 'bg-green-100 text-green-600' : 
                   currentPhase === 'brief' ? 'bg-purple-100' : 'bg-gray-100'
@@ -548,7 +581,7 @@ export function BrandIntelligenceGenerator({ clientId, onComplete, userType = 'i
                   {currentPhase === 'completed' ? <CheckCircle className="w-5 h-5" /> : '3'}
                 </div>
                 <span className="text-sm font-medium">Brief Creation</span>
-              </div>
+              </button>
             </div>
             
             {/* Progress Bar */}
@@ -652,6 +685,62 @@ export function BrandIntelligenceGenerator({ clientId, onComplete, userType = 'i
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Phase 1: Research Results View (when navigated back to completed research) */}
+      {currentPhase === 'research' && researchStatus === 'completed' && researchOutput && (
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <div className="flex items-center space-x-3 mb-4">
+            <CheckCircle className="w-5 h-5 text-green-500" />
+            <div>
+              <h4 className="font-medium text-gray-900">Deep Research Complete</h4>
+              <p className="text-xs text-gray-500">Brand research findings</p>
+            </div>
+          </div>
+          
+          <div className="space-y-4">
+            <div>
+              <h5 className="font-medium text-gray-900 mb-2">Brand Analysis</h5>
+              <div className="prose prose-sm max-w-none bg-gray-50 p-4 rounded-lg">
+                <MarkdownPreview content={researchOutput.analysis} />
+              </div>
+            </div>
+
+            {researchOutput.gaps && researchOutput.gaps.length > 0 && (
+              <div>
+                <h5 className="font-medium text-gray-900 mb-2">Information Gaps Identified</h5>
+                <div className="space-y-2">
+                  {researchOutput.gaps.map((gap, idx) => (
+                    <div key={idx} className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <span className="text-xs font-medium px-2 py-1 bg-yellow-200 text-yellow-800 rounded">
+                          {gap.importance ? gap.importance.toUpperCase() : 'MEDIUM'}
+                        </span>
+                        <span className="text-sm font-medium text-gray-900">{gap.category || 'General'}</span>
+                      </div>
+                      <p className="text-sm text-gray-700">{gap.question || 'Question not available'}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {researchOutput.sources && researchOutput.sources.length > 0 && (
+              <div>
+                <h5 className="font-medium text-gray-900 mb-2">Sources</h5>
+                <div className="space-y-1">
+                  {researchOutput.sources.map((source, idx) => (
+                    <div key={idx} className="text-sm text-gray-600 flex items-center space-x-2">
+                      <span className="text-xs bg-gray-200 px-2 py-1 rounded">{source.type}</span>
+                      <span>{source.value}</span>
+                      {source.description && <span className="text-gray-500">- {source.description}</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
       
@@ -1209,18 +1298,6 @@ export function BrandIntelligenceGenerator({ clientId, onComplete, userType = 'i
             </div>
           </div>
 
-          {/* Regenerate Button - Internal Only */}
-          {userType === 'internal' && (
-            <div className="flex justify-center">
-              <button
-                onClick={startResearch}
-                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md flex items-center"
-              >
-                <Sparkles className="w-4 h-4 mr-2" />
-                Generate New Brand Intelligence
-              </button>
-            </div>
-          )}
         </div>
       )}
 

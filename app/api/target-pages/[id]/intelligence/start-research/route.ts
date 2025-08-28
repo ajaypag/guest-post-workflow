@@ -66,14 +66,27 @@ export async function POST(
 
     const existingSession = existingSessions[0];
 
-    // If there's an active research session, return it
-    if (existingSession && ['queued', 'in_progress'].includes(existingSession.researchStatus)) {
-      return NextResponse.json({
-        success: true,
-        sessionId: existingSession.researchSessionId || existingSession.id,
-        status: 'already_active',
-        existingSessionId: existingSession.id
-      });
+    // Check existing session status
+    if (existingSession) {
+      // If research is completed, don't allow restart
+      if (existingSession.researchStatus === 'completed') {
+        return NextResponse.json({
+          success: false,
+          error: 'Research already completed for this target page',
+          status: 'already_completed',
+          existingSessionId: existingSession.id
+        });
+      }
+      
+      // If there's an active research session, return it
+      if (['queued', 'in_progress'].includes(existingSession.researchStatus)) {
+        return NextResponse.json({
+          success: true,
+          sessionId: existingSession.researchSessionId || existingSession.id,
+          status: 'already_active',
+          existingSessionId: existingSession.id
+        });
+      }
     }
 
     // Generate a new research session ID (OpenAI session ID will be set later)

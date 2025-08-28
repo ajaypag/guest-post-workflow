@@ -1,6 +1,8 @@
 import OpenAI from 'openai';
 import { db } from '@/lib/db/connection';
+import { targetPages } from '@/lib/db/schema';
 import { targetPageIntelligence } from '@/lib/db/targetPageIntelligenceSchema';
+import { intelligenceGenerationLogs } from '@/lib/db/intelligenceLogsSchema';
 import { eq } from 'drizzle-orm';
 
 /**
@@ -29,9 +31,12 @@ export class TargetPageIntelligenceService {
     console.log('Target URL:', targetPageUrl);
     console.log('Session ID:', sessionId);
     
+    // Move existing outside try block so it's accessible in catch
+    let existing: any[] = [];
+    
     try {
       // Check if there's already an in_progress research that might have completed
-      const existing = await db.select()
+      existing = await db.select()
         .from(targetPageIntelligence)
         .where(eq(targetPageIntelligence.targetPageId, targetPageId))
         .limit(1);
@@ -187,7 +192,14 @@ Format your response as JSON with the following structure:
             .filter((text: string) => text.length > 0);
           
           if (textItems.length > 0) {
-            const finalText = textItems[textItems.length - 1];
+            let finalText = textItems[textItems.length - 1];
+            
+            // Clean markdown JSON blocks if present
+            if (finalText.includes('```json')) {
+              console.log('🧹 Cleaning markdown JSON blocks from response...');
+              finalText = finalText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+            }
+            
             try {
               researchResult = JSON.parse(finalText);
             } catch {
@@ -221,27 +233,88 @@ Format your response as JSON with the following structure:
       };
 
       // Update database with research results
+      const completedAt = new Date();
       await db.update(targetPageIntelligence)
         .set({
           researchStatus: 'completed',
-          researchCompletedAt: new Date(),
+          researchCompletedAt: completedAt,
           researchOutput: {
             ...researchResult,
             metadata
           }
         })
         .where(eq(targetPageIntelligence.targetPageId, targetPageId));
+      
+      // Log successful completion
+      const startTime = existing[0]?.researchStartedAt || new Date();
+      const durationSeconds = Math.floor((completedAt.getTime() - new Date(startTime).getTime()) / 1000);
+      
+      await db.insert(intelligenceGenerationLogs).values({
+        targetPageId,
+        sessionType: 'research',
+        openaiSessionId: sessionId,
+        startedAt: startTime,
+        completedAt,
+        durationSeconds,
+        status: 'completed',
+        outputSize: JSON.stringify(researchResult).length,
+        metadata: {
+          modelUsed: 'o4-mini-deep-research',
+          gapsFound: researchResult.gaps?.length || 0
+        }
+      });
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Research failed:', error);
       
-      // Update status to error
+      // Extract error details for better debugging
+      const errorDetails = {
+        message: error?.message || 'Unknown error',
+        type: error?.constructor?.name || 'UnknownError',
+        code: error?.code,
+        status: error?.status,
+        timestamp: new Date().toISOString()
+      };
+      
+      // Check if it's an OpenAI API error
+      if (error?.response) {
+        errorDetails.message = `OpenAI API Error: ${error.response?.data?.error?.message || error.message}`;
+        errorDetails.code = error.response?.status;
+      }
+      
+      // Update status to error with detailed metadata
+      const failedAt = new Date();
       await db.update(targetPageIntelligence)
         .set({
           researchStatus: 'error',
-          researchCompletedAt: new Date()
+          researchCompletedAt: failedAt,
+          metadata: {
+            additionalInfo: JSON.stringify({
+              error: errorDetails,
+              failedSessionId: sessionId
+            })
+          }
         })
         .where(eq(targetPageIntelligence.targetPageId, targetPageId));
+      
+      // Log the failure
+      const startTime = existing[0]?.researchStartedAt || new Date();
+      const durationSeconds = Math.floor((failedAt.getTime() - new Date(startTime).getTime()) / 1000);
+      
+      await db.insert(intelligenceGenerationLogs).values({
+        targetPageId,
+        sessionType: 'research',
+        openaiSessionId: sessionId,
+        startedAt: startTime,
+        completedAt: failedAt,
+        durationSeconds,
+        status: 'failed',
+        errorMessage: errorDetails.message,
+        errorDetails: errorDetails,
+        metadata: {
+          failedSessionId: sessionId
+        }
+      });
       
       throw error;
     }
@@ -252,28 +325,84 @@ Format your response as JSON with the following structure:
    */
   private async processCompletedResearch(targetPageId: string, responseId: string, response: any): Promise<void> {
     try {
-      // Parse the response output - simplified approach to avoid complex type issues
+      // Parse the response output using the same logic as conductResearch
       const output = response.output;
       console.log('🔍 Parsing abandoned research response...');
       
       let researchResult;
       
-      // Simple type-agnostic parsing
-      if (typeof output === 'string') {
+      // Use the same parsing logic as the main conductResearch method
+      const outputAny = output as any;
+      
+      if (typeof outputAny === 'string') {
         try {
-          researchResult = JSON.parse(output);
+          researchResult = JSON.parse(outputAny as string);
         } catch {
+          // If not JSON, create structured response
           researchResult = {
-            analysis: output,
+            analysis: outputAny,
             gaps: [],
             sources: []
           };
         }
+      } else if (Array.isArray(outputAny)) {
+        // Handle array format - this is the common case for o4-mini-deep-research
+        const assistantMsg = outputAny.find((msg: any) => msg.role === 'assistant');
+        
+        if (assistantMsg && Array.isArray((assistantMsg as any).content)) {
+          const textItems = (assistantMsg as any).content
+            .filter((item: any) => 
+              typeof item === 'string' || 
+              ((item as any).type !== 'reasoning' && (item as any).type !== 'web_search_call')
+            )
+            .map((item: any) => {
+              if (typeof item === 'string') return item;
+              return (item as any).text || (item as any).output_text || '';
+            })
+            .filter((text: string) => text.length > 0);
+          
+          if (textItems.length > 0) {
+            let finalText = textItems[textItems.length - 1];
+            
+            // Clean markdown JSON blocks if present
+            if (finalText.includes('```json')) {
+              console.log('🧹 Cleaning markdown JSON blocks from response...');
+              finalText = finalText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+            }
+            
+            try {
+              researchResult = JSON.parse(finalText);
+            } catch {
+              researchResult = {
+                analysis: finalText,
+                gaps: [],
+                sources: []
+              };
+            }
+          } else {
+            // No text items found, create error result
+            researchResult = {
+              analysis: 'Error: Could not extract research content from response',
+              gaps: [],
+              sources: []
+            };
+          }
+        } else {
+          // Fallback for unexpected array format
+          researchResult = {
+            analysis: JSON.stringify(outputAny),
+            gaps: [],
+            sources: []
+          };
+        }
+      } else if (outputAny && typeof outputAny === 'object') {
+        researchResult = outputAny.text || 
+                        outputAny.content || 
+                        outputAny.output_text ||
+                        outputAny;
       } else {
-        // For any non-string output, try to extract text content
-        const outputStr = JSON.stringify(output);
         researchResult = {
-          analysis: outputStr,
+          analysis: JSON.stringify(outputAny),
           gaps: [],
           sources: []
         };
@@ -315,11 +444,22 @@ Format your response as JSON with the following structure:
     sessionId: string
   ): Promise<void> {
     try {
-      // Get existing research and client input
-      const [existing] = await db.select()
+      // Get existing research and client input with target page details
+      const [result] = await db.select({
+        intelligence: targetPageIntelligence,
+        targetPage: targetPages
+      })
         .from(targetPageIntelligence)
+        .innerJoin(targetPages, eq(targetPages.id, targetPageIntelligence.targetPageId))
         .where(eq(targetPageIntelligence.targetPageId, targetPageId))
         .limit(1);
+
+      if (!result) {
+        throw new Error('Target page intelligence session not found');
+      }
+
+      const existing = result.intelligence;
+      const targetPageUrl = result.targetPage.url;
 
       if (!existing || !existing.researchOutput || !existing.clientInput) {
         throw new Error('Missing research output or client input');
@@ -374,7 +514,11 @@ Format your response as JSON with the following structure:
       }
 
       const briefPrompt = `
-You are tasked with creating a comprehensive brand brief based on deep research and client input.
+You are creating a research intelligence document for this target page: ${targetPageUrl}
+
+First, consider: What do potential customers in this market typically care about? What factors influence their buying decisions? What do they research and compare?
+
+Now, synthesize all the research and client input below into a comprehensive research document that would help a research assistant understand everything unique and valuable about this specific offering.
 
 RESEARCH ANALYSIS:
 ${researchToUse}
@@ -382,23 +526,21 @@ ${researchToUse}
 CLIENT INPUT:
 ${cleanClientInput}
 
-Your task is to synthesize this information into a concise brief about this company that can be used to feed our content creation process. The brief should include:
+Focus on:
+- What makes this stand out from competitors
+- Unique features, benefits, or approaches  
+- Specific use cases, case studies, results
+- Pricing, positioning, target segments
+- Any insider knowledge or lesser-known facts
 
-1. Business Overview (what they do, how they make money)
-2. Key Products/Services and Pricing
-3. Target Audience and Market Position
-4. Unique Value Propositions
-5. Notable Achievements or Case Studies
-6. Brand Voice and Messaging Guidelines
-
-Create a concise, well-structured brief that is approximately 1000 words. Focus on the most important information that content writers need. Use markdown formatting with clear headers and bullet points for easy scanning. Be specific and actionable.`;
+Create a well-organized research document that captures all the unique, decision-relevant information a researcher would want to know about this specific page/offering. Use markdown formatting with clear headers for easy scanning.`;
 
       const completion = await this.openai.chat.completions.create({
         model: 'o3-2025-04-16',
         messages: [
           {
             role: 'system',
-            content: 'You are a brand strategist creating concise, actionable briefs for content teams. Be direct and focus on essential information.'
+            content: 'You are a research analyst creating intelligence documents to help researchers understand specific products/services. Focus on unique, decision-relevant information that would be valuable for market research.'
           },
           {
             role: 'user',
