@@ -370,6 +370,9 @@ export default function InternalVettedSitesRequestDetailV3({
   const handleStatusUpdate = async (newStatus: string) => {
     if (!requestId) return;
     
+    console.log('🔥 Frontend: Updating status to:', newStatus);
+    console.log('🔥 Frontend: Request ID:', requestId);
+    
     setUpdating(true);
     try {
       const response = await fetch(`/api/vetted-sites/requests/${requestId}`, {
@@ -380,6 +383,10 @@ export default function InternalVettedSitesRequestDetailV3({
           reviewNotes: reviewNotes
         })
       });
+      
+      console.log('🔥 Frontend: Response status:', response.status);
+      const data = await response.json();
+      console.log('🔥 Frontend: Response data:', data);
       
       if (!response.ok) throw new Error('Failed to update status');
       

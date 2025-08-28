@@ -178,11 +178,44 @@ export async function POST(request: NextRequest) {
       keywords: [],
     } : {};
 
+    // Determine account ID
+    let accountId: string | null = null;
+    
+    if (session.userType === 'account') {
+      // Account users always use their own account ID
+      accountId = session.userId;
+    } else if (session.userType === 'internal' && validatedData.target_urls && validatedData.target_urls.length > 0) {
+      // Internal users: look up which account owns these target URLs
+      const { targetPages, clients } = await import('@/lib/db/schema');
+      
+      // Find the first target page that matches one of our URLs
+      for (const targetUrl of validatedData.target_urls) {
+        const targetPageResult = await db
+          .select({
+            accountId: clients.accountId
+          })
+          .from(targetPages)
+          .innerJoin(clients, eq(targetPages.clientId, clients.id))
+          .where(eq(targetPages.url, targetUrl))
+          .limit(1);
+        
+        if (targetPageResult.length > 0 && targetPageResult[0].accountId) {
+          accountId = targetPageResult[0].accountId;
+          console.log(`Found account ${accountId} for target URL ${targetUrl}`);
+          break; // Use the first account we find
+        }
+      }
+      
+      if (!accountId) {
+        console.log('Warning: No account found for target URLs:', validatedData.target_urls);
+      }
+    }
+
     // Create the request
     const requestId = uuidv4();
     const newRequest = {
       id: requestId,
-      accountId: session.userType === 'account' ? session.userId : null,
+      accountId: accountId,
       targetUrls: validatedData.target_urls, // JS array for jsonb column
       filters: transformedFilters,
       notes: validatedData.notes,

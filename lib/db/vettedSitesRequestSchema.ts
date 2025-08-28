@@ -62,6 +62,12 @@ export const vettedSitesRequests = pgTable('vetted_sites_requests', {
   proposalVideoUrl: text('proposal_video_url'),
   proposalMessage: text('proposal_message'),
   
+  // Share token email fields (added migration 0074)
+  shareRecipientEmail: varchar('share_recipient_email', { length: 255 }),
+  shareRecipientName: varchar('share_recipient_name', { length: 255 }),
+  shareCustomMessage: text('share_custom_message'),
+  shareEmailSentAt: timestamp('share_email_sent_at'),
+  
   // Attribution tracking
   utmSource: varchar('utm_source', { length: 100 }),
   utmMedium: varchar('utm_medium', { length: 100 }),

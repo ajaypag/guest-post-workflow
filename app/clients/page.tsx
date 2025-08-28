@@ -7,8 +7,9 @@ import AuthWrapper from '@/components/AuthWrapper';
 import Header from '@/components/Header';
 import { clientStorage, sessionStorage } from '@/lib/userStorage';
 import { Client } from '@/types/user';
-import { Building2, Plus, Users, Globe, CheckCircle, XCircle, Clock, Edit, Archive, ArchiveRestore, X, BarChart2, AlertCircle, ArrowLeft, Search, Filter, ChevronDown, Package, TrendingUp } from 'lucide-react';
+import { Building2, Plus, Users, Globe, CheckCircle, XCircle, Clock, Edit, Archive, ArchiveRestore, X, BarChart2, AlertCircle, ArrowLeft, Search, Filter, ChevronDown, Package, TrendingUp, FileText } from 'lucide-react';
 import AccountMultiSelectFilter from '@/components/AccountMultiSelectFilter';
+import { getClientOutlinePreferences } from '@/types/outlinePreferences';
 
 function ClientsPageContent() {
   const router = useRouter();

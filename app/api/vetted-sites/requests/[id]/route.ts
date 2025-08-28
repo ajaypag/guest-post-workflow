@@ -289,6 +289,39 @@ export async function PATCH(
       .where(eq(vettedSitesRequests.id, requestId))
       .returning();
 
+    // Send email notifications based on status change
+    console.log('🔥 Backend: Checking email notification trigger');
+    console.log('🔥 Backend: New status:', validatedData.status);
+    console.log('🔥 Backend: Old status:', existingRequest[0].status);
+    console.log('🔥 Backend: Should send email?', validatedData.status && validatedData.status !== existingRequest[0].status);
+    
+    if (validatedData.status && validatedData.status !== existingRequest[0].status) {
+      console.log('🔥 Backend: Email notification triggered for status change');
+      try {
+        const { VettedSitesEmailService } = await import('@/lib/services/vettedSitesEmailService');
+        console.log('🔥 Backend: Email service imported');
+        
+        if (validatedData.status === 'approved') {
+          console.log('🔥 Backend: Sending approval notification...');
+          const result = await VettedSitesEmailService.sendApprovalNotification(requestId);
+          console.log(`✅ Approval notification ${result.success ? 'sent' : 'failed'} for request ${requestId}`);
+        } else if (validatedData.status === 'fulfilled') {
+          console.log('🔥 Backend: Sending fulfillment notification...');
+          const result = await VettedSitesEmailService.sendFulfillmentNotification(requestId);
+          console.log(`✅ Fulfillment notification ${result.success ? 'sent' : 'failed'} for request ${requestId}`);
+        } else if (validatedData.status === 'rejected') {
+          console.log('🔥 Backend: Sending rejection notification...');
+          const result = await VettedSitesEmailService.sendRejectionNotification(requestId);
+          console.log(`✅ Rejection notification ${result.success ? 'sent' : 'failed'} for request ${requestId}`);
+        }
+      } catch (error) {
+        console.error('Error sending status change notification:', error);
+        // Don't fail the update if email fails
+      }
+    } else {
+      console.log('🔥 Backend: No email notification needed (same status or no status change)');
+    }
+
     return NextResponse.json({ 
       request: updatedRequest,
       message: 'Request updated successfully' 

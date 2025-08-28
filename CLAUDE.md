@@ -22,6 +22,13 @@ Production-ready workflow system with PostgreSQL, multi-user auth, and AI agent 
   - Target URLs available for selection in bulk analysis interface
   - Users manually add domains to analyze (correct behavior - no auto-domains)
   - See: `/internal/vetted-sites/requests` and [Vetted Sites Implementation](#vetted-sites-system)
+- ✅ Vetted Sites Share Notifications Phase 1 (2025-08-27) - COMPLETE
+  - Unified share modal eliminates UX fragmentation (no duplicate message fields)
+  - Smart validation: share links always work, email blocked only when 0 qualified domains
+  - Rich HTML email template with domain metrics and reasoning
+  - Full backend integration with VettedSitesEmailService
+  - Consolidated state management and consistent user flow
+  - See: [docs/06-planning/vetted-sites-notifications-plan.md](docs/06-planning/vetted-sites-notifications-plan.md)
 - ✅ All Database Migrations Complete (2025-08-22)
   - Publisher system, domain normalization, target URL matching, inclusion status - all done
   - Now using SQL migration files directly (no admin pages)

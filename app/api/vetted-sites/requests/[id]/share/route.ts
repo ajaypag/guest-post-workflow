@@ -4,6 +4,7 @@ import { db } from '@/lib/db/connection';
 import { vettedSitesRequests } from '@/lib/db/vettedSitesRequestSchema';
 import { eq } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
+import { VettedSitesEmailService } from '@/lib/services/vettedSitesEmailService';
 
 // POST /api/vetted-sites/requests/[id]/share - Generate share link
 export async function POST(
@@ -19,7 +20,13 @@ export async function POST(
     }
 
     const { id } = await params;
-    const { expiresInDays } = await request.json();
+    const { 
+      expiresInDays, 
+      recipientEmail, 
+      recipientName, 
+      customMessage, 
+      sendEmail = false 
+    } = await request.json();
 
     // Get the request and verify it exists and is fulfilled
     const vettedRequest = await db
@@ -59,11 +66,30 @@ export async function POST(
     const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3004';
     const shareUrl = `${baseUrl}/vetted-sites/claim/${shareToken}`;
 
+    // Send email if requested
+    let emailResult = null;
+    if (sendEmail && recipientEmail && recipientName) {
+      try {
+        emailResult = await VettedSitesEmailService.sendShareEmail(
+          id,
+          recipientEmail,
+          recipientName,
+          customMessage
+        );
+      } catch (emailError) {
+        console.error('Email sending failed:', emailError);
+        // Don't fail the whole request if email fails
+        emailResult = { success: false, error: 'Email sending failed' };
+      }
+    }
+
     return NextResponse.json({
       success: true,
       shareToken,
       shareUrl,
-      expiresAt: shareExpiresAt
+      expiresAt: shareExpiresAt,
+      emailSent: emailResult?.success || false,
+      emailError: emailResult?.error
     });
 
   } catch (error) {

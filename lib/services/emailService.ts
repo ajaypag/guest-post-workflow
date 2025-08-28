@@ -41,7 +41,8 @@ export type EmailType =
   | 'order_approved'
   | 'order_paid'
   | 'sites_ready'
-  | 'workflows_generated';
+  | 'workflows_generated'
+  | 'vetted-sites-share';
 
 // Email send options
 export interface EmailOptions {
