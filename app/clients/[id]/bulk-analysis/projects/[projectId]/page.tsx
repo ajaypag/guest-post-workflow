@@ -729,12 +729,18 @@ export default function ProjectDetailPage() {
         });
         
         // First check for duplicates
+        const targetPageIds = keywordInputMode === 'target-pages' 
+          ? selectedTargetPages  // selectedTargetPages already contains the IDs directly
+          : [];
+          
+          
         const checkResponse = await fetch(`/api/clients/${params.id}/bulk-analysis/check-duplicates`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             domains: domainList,
-            projectId: params.projectId
+            projectId: params.projectId,
+            targetPageIds: targetPageIds
           })
         });
 
@@ -828,12 +834,18 @@ export default function ProjectDetailPage() {
           .filter(Boolean);
 
         // Check for duplicates in other projects
+        const targetPageIds = keywordInputMode === 'target-pages' 
+          ? selectedTargetPages  // selectedTargetPages already contains the IDs directly
+          : [];
+          
+        
         const checkResponse = await fetch(`/api/clients/${params.id}/bulk-analysis/check-duplicates`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             domains: domainList,
-            projectId: params.projectId
+            projectId: params.projectId,
+            targetPageIds: targetPageIds
           })
         });
 

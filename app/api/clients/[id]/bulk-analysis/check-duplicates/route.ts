@@ -21,7 +21,9 @@ export async function POST(
     }
 
     const { id: clientId } = await params;
-    const { domains, projectId } = await request.json();
+    const { domains, projectId, targetPageIds } = await request.json();
+    
+    console.log('[API] check-duplicates received:', { domains, projectId, targetPageIds, type: typeof targetPageIds, isArray: Array.isArray(targetPageIds) });
 
     if (!domains || !Array.isArray(domains) || domains.length === 0) {
       return NextResponse.json(
@@ -41,7 +43,8 @@ export async function POST(
     const result = await BulkAnalysisService.checkDuplicatesWithDetails(
       clientId,
       domains,
-      projectId
+      projectId,
+      targetPageIds || []
     );
 
     // Debug logging

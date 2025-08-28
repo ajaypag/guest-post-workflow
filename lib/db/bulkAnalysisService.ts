@@ -1,8 +1,11 @@
 import { db } from './connection';
 import { targetPages, TargetPage } from './schema';
 import { bulkAnalysisDomains, BulkAnalysisDomain, bulkAnalysisProjects } from './bulkAnalysisSchema';
+import { orders } from './orderSchema';
+import { orderLineItems } from './orderLineItemSchema';
 import { eq, and, inArray, sql, ne, desc, asc, or, like } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
+import { getAnalysisAgeDays, hasTargetUrlsChanged } from '@/lib/utils/targetHashUtils';
 
 export type DuplicateResolution = 'keep_both' | 'move_to_new' | 'skip' | 'update_original';
 
@@ -598,12 +601,27 @@ export class BulkAnalysisService {
               break;
               
             case 'move_to_new':
+              // Get existing domain data for target merging
+              const existingDomain = await db.query.bulkAnalysisDomains.findFirst({
+                where: eq(bulkAnalysisDomains.id, resolution.existingDomainId)
+              });
+              
+              if (!existingDomain) {
+                throw new Error(`Existing domain not found: ${resolution.existingDomainId}`);
+              }
+              
+              // Merge target URLs (preserving existing + adding new) using production-safe approach
+              const existingTargets = Array.isArray(existingDomain.targetPageIds) ? existingDomain.targetPageIds : [];
+              const newTargets = Array.isArray(targetPageIds) ? targetPageIds : [];
+              const allTargets = [...existingTargets, ...newTargets];
+              const mergedTargets = deduplicateArray(allTargets);
+              
               // Update existing entry to new project
               const [moved] = await db
                 .update(bulkAnalysisDomains)
                 .set({
                   projectId: sanitizeUUID(projectId),
-                  targetPageIds: deduplicateArray(targetPageIds),
+                  targetPageIds: mergedTargets, // ✅ MERGE instead of overwrite
                   keywordCount,
                   originalProjectId: sanitizeUUID(resolution.existingProjectId),
                   duplicateResolution: 'move_to_new' as const,
@@ -686,12 +704,90 @@ export class BulkAnalysisService {
   }
 
   /**
+   * Get order status for domains to help with smart duplicate resolution.
+   * Returns order status information for enhanced duplicate detection.
+   * 
+   * @param clientId Client ID to check orders for
+   * @param domainIds Array of domain IDs to check
+   * @returns Map of domainId -> order status info
+   */
+  static async getOrderStatusForDomains(clientId: string, domainIds: string[]): Promise<Map<string, {
+    orderStatus: 'none' | 'draft' | 'pending' | 'paid' | 'active';
+    orderId?: string;
+  }>> {
+    console.log(`[ORDER STATUS] getOrderStatusForDomains called with:`, { clientId, domainIds, type: typeof domainIds, isArray: Array.isArray(domainIds) });
+    
+    if (!domainIds || domainIds.length === 0) {
+      return new Map();
+    }
+
+    try {
+      // Query order_line_items table to find domains in orders using proper Drizzle syntax
+      const orderResults = await db
+        .select({
+          domainId: orderLineItems.assignedDomainId,
+          orderId: orders.id,
+          orderStatus: orders.status
+        })
+        .from(orderLineItems)
+        .leftJoin(orders, eq(orders.id, orderLineItems.orderId))
+        .leftJoin(bulkAnalysisDomains, eq(bulkAnalysisDomains.id, orderLineItems.assignedDomainId))
+        .where(
+          and(
+            eq(bulkAnalysisDomains.clientId, clientId),
+            inArray(orderLineItems.assignedDomainId, domainIds)
+          )
+        );
+
+      const statusMap = new Map();
+      
+      // Initialize all domains as 'none'
+      domainIds.forEach(id => {
+        statusMap.set(id, { orderStatus: 'none' as const });
+      });
+
+      // Update with actual order status
+      orderResults.forEach(result => {
+        const domainId = result.domainId as string;
+        const orderStatus = result.orderStatus as string;
+        
+        let mappedStatus: 'none' | 'draft' | 'pending' | 'paid' | 'active';
+        
+        // Map order status to our simplified categories
+        if (orderStatus === 'paid' || orderStatus === 'in_progress' || orderStatus === 'completed') {
+          mappedStatus = 'active';
+        } else if (orderStatus === 'draft' || orderStatus === 'pending_confirmation') {
+          mappedStatus = 'draft';
+        } else {
+          mappedStatus = 'none';
+        }
+
+        statusMap.set(domainId, {
+          orderStatus: mappedStatus,
+          orderId: result.orderId as string
+        });
+      });
+
+      return statusMap;
+    } catch (error) {
+      console.error('Error getting order status for domains:', error);
+      // Return all as 'none' on error to fail gracefully
+      const fallbackMap = new Map();
+      domainIds.forEach(id => {
+        fallbackMap.set(id, { orderStatus: 'none' as const });
+      });
+      return fallbackMap;
+    }
+  }
+
+  /**
    * Check for duplicate domains with detailed project info
    */
   static async checkDuplicatesWithDetails(
     clientId: string,
     domains: string[],
-    currentProjectId: string
+    currentProjectId: string,
+    newTargetPageIds: string[] = []
   ): Promise<{
     duplicates: Array<{
       domain: string;
@@ -703,6 +799,14 @@ export class BulkAnalysisService {
       checkedAt?: Date;
       checkedBy?: string;
       isInCurrentProject?: boolean;
+      // Enhanced fields (optional for backward compatibility)
+      duplicateType?: 'exact_match' | 'different_target';
+      existingTargets?: string[];
+      newTargets?: string[];
+      orderStatus?: 'none' | 'draft' | 'pending' | 'paid' | 'active';
+      analysisAge?: number;
+      smartDefault?: 'skip' | 'move_here';
+      reasoning?: string;
     }>;
     newDomains: string[];
     alreadyInProject: string[];
@@ -721,6 +825,10 @@ export class BulkAnalysisService {
           hasWorkflow: bulkAnalysisDomains.hasWorkflow,
           checkedAt: bulkAnalysisDomains.checkedAt,
           checkedBy: bulkAnalysisDomains.checkedBy,
+          // Enhanced fields for duplicate analysis
+          targetPageIds: bulkAnalysisDomains.targetPageIds,
+          aiQualifiedAt: bulkAnalysisDomains.aiQualifiedAt,
+          targetPageHash: bulkAnalysisDomains.targetPageHash,
         })
         .from(bulkAnalysisDomains)
         .leftJoin(bulkAnalysisProjects, eq(bulkAnalysisDomains.projectId, bulkAnalysisProjects.id))
@@ -735,17 +843,69 @@ export class BulkAnalysisService {
       const inCurrentProject = allExisting.filter(e => e.projectId === currentProjectId);
       const inOtherProjects = allExisting.filter(e => e.projectId !== currentProjectId);
 
+      // Get order status for all existing domains
+      const existingDomainIds = inOtherProjects.map(e => e.id);
+      console.log(`[ORDER STATUS] Checking order status for ${existingDomainIds.length} domain IDs:`, existingDomainIds);
+      const orderStatusMap = await this.getOrderStatusForDomains(clientId, existingDomainIds);
+
       // Only report duplicates from OTHER projects (not current)
-      const duplicates = inOtherProjects.map(e => ({
-        domain: e.domain,
-        existingDomainId: e.id,
-        existingProjectId: e.projectId || '',
-        existingProjectName: e.projectName || 'No Project',
-        qualificationStatus: e.qualificationStatus,
-        hasWorkflow: e.hasWorkflow || false,
-        checkedAt: e.checkedAt || undefined,
-        checkedBy: e.checkedBy || undefined,
-      }));
+      const duplicates = inOtherProjects.map(e => {
+        const orderStatus = orderStatusMap.get(e.id)?.orderStatus || 'none';
+        const analysisAge = getAnalysisAgeDays(e.aiQualifiedAt);
+        
+        // Compare existing target URLs with new ones being added
+        const existingTargets = e.targetPageIds ? (e.targetPageIds as string[]) : [];
+        const newTargets = newTargetPageIds;
+        
+        // Debug logging for target URL comparison
+        console.log(`[DUPLICATE DETECTION] Domain: ${e.domain}`);
+        console.log(`[DUPLICATE DETECTION] Existing targets:`, existingTargets);
+        console.log(`[DUPLICATE DETECTION] New targets:`, newTargets);
+        
+        // Determine duplicate type
+        const duplicateType: 'exact_match' | 'different_target' = 
+          newTargets.length === 0 ? 'exact_match' : 
+          hasTargetUrlsChanged(existingTargets, newTargets) ? 'different_target' : 'exact_match';
+          
+        console.log(`[DUPLICATE DETECTION] Duplicate type: ${duplicateType}`);
+        
+        // Smart default logic
+        let smartDefault: 'skip' | 'move_here' = 'move_here';
+        let reasoning = '';
+        
+        if (orderStatus === 'active') {
+          smartDefault = 'skip';
+          reasoning = 'Domain is in active order - skipping to avoid conflicts';
+        } else if (orderStatus === 'draft' && duplicateType === 'exact_match') {
+          smartDefault = 'skip';
+          reasoning = 'Exact match in draft order - likely accidental duplicate';
+        } else if (duplicateType === 'different_target') {
+          smartDefault = 'move_here';
+          reasoning = 'Different targets - merge into this project';
+        } else {
+          smartDefault = 'move_here';
+          reasoning = 'Consolidate domain in this project';
+        }
+
+        return {
+          domain: e.domain,
+          existingDomainId: e.id,
+          existingProjectId: e.projectId || '',
+          existingProjectName: e.projectName || 'No Project',
+          qualificationStatus: e.qualificationStatus,
+          hasWorkflow: e.hasWorkflow || false,
+          checkedAt: e.checkedAt || undefined,
+          checkedBy: e.checkedBy || undefined,
+          // Enhanced fields
+          duplicateType,
+          existingTargets,
+          newTargets,
+          orderStatus,
+          analysisAge: analysisAge ?? undefined,
+          smartDefault,
+          reasoning
+        };
+      });
 
       // Domains already in the current project (skip these silently)
       const alreadyInProject = inCurrentProject.map(e => e.domain);
