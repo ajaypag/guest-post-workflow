@@ -96,6 +96,7 @@ export default async function HomepageTaskSection({
           pending: 0,
           in_progress: 0,
           completed: 0,
+          rejected: 0,
           blocked: 0,
           cancelled: 0
         },

@@ -175,7 +175,7 @@ export default function TasksPageClient({
     urlFilters.selectedTypes ?? savedFilters.selectedTypes ?? []
   );
   const [selectedStatuses, setSelectedStatuses] = useState<TaskStatus[]>(
-    urlFilters.selectedStatuses ?? savedFilters.selectedStatuses ?? []
+    urlFilters.selectedStatuses ?? savedFilters.selectedStatuses ?? ['pending', 'in_progress', 'blocked']
   );
   const [dateRange, setDateRange] = useState<string>(
     urlFilters.dateRange ?? savedFilters.dateRange ?? 'all'
@@ -384,8 +384,9 @@ export default function TasksPageClient({
           'pending': '⏳',
           'in_progress': '🔄', 
           'completed': '✅',
+          'rejected': '❌',
           'blocked': '🚫',
-          'cancelled': '❌'
+          'cancelled': '⏹️'
         };
         filters.push({
           key: `status-${status}`,
@@ -443,7 +444,7 @@ export default function TasksPageClient({
   const resetFilters = () => {
     setSelectedUser(currentUserId);
     setSelectedTypes([]);
-    setSelectedStatuses([]);
+    setSelectedStatuses(['pending', 'in_progress', 'blocked']); // Reset to default visible statuses
     setSelectedAccounts([]);
     setSelectedClients([]);
     setDateRange('all');
@@ -761,7 +762,9 @@ export default function TasksPageClient({
         pending: 0,
         in_progress: 0,
         completed: 0,
-        blocked: 0
+        rejected: 0,
+        blocked: 0,
+        cancelled: 0
       }
     };
 
@@ -870,15 +873,8 @@ export default function TasksPageClient({
         params.append('showLineItems', 'true');
       }
       
-      // Status filter - if not showing completed, exclude it
-      if (!showCompleted) {
-        const statusesToFilter = selectedStatuses.length > 0 
-          ? selectedStatuses.filter(s => s !== 'completed')
-          : ['pending', 'in_progress', 'blocked'];
-        if (statusesToFilter.length > 0) {
-          params.append('status', statusesToFilter.join(','));
-        }
-      } else if (selectedStatuses.length > 0) {
+      // Status filter - use selected statuses
+      if (selectedStatuses.length > 0) {
         params.append('status', selectedStatuses.join(','));
       }
       
@@ -1283,15 +1279,38 @@ export default function TasksPageClient({
   
   // Handle claim task (assign to self)
   const handleClaimTask = async (task: UnifiedTask) => {
-    const [type, id] = task.id.split('-');
+    // Parse task ID format: {type}-{uuid}
+    // Handle different prefixes: order-, workflow-, lineitem-, vetted_request-, brand_intelligence-
+    let entityType: string;
+    let entityId: string;
+    
+    if (task.id.startsWith('order-')) {
+      entityType = 'order';
+      entityId = task.id.substring('order-'.length);
+    } else if (task.id.startsWith('workflow-')) {
+      entityType = 'workflow';
+      entityId = task.id.substring('workflow-'.length);
+    } else if (task.id.startsWith('lineitem-')) {
+      entityType = 'line_item';
+      entityId = task.id.substring('lineitem-'.length);
+    } else if (task.id.startsWith('vetted_request-')) {
+      entityType = 'vetted_sites_request';
+      entityId = task.id.substring('vetted_request-'.length);
+    } else if (task.id.startsWith('brand_intelligence-')) {
+      entityType = 'brand_intelligence';
+      entityId = task.id.substring('brand_intelligence-'.length);
+    } else {
+      console.error('Unknown task ID format:', task.id);
+      return;
+    }
     
     try {
       await fetch('/api/internal/tasks', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          entityType: type === 'order' ? 'order' : type === 'workflow' ? 'workflow' : 'line_item',
-          entityId: id,
+          entityType,
+          entityId,
           assignedTo: currentUserId,
           notes: 'Claimed by user'
         })
@@ -1364,6 +1383,8 @@ export default function TasksPageClient({
                 {getTaskIcon(task)}
                 <Link 
                   href={task.action}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="font-medium text-gray-900 hover:text-indigo-600 hover:underline transition-colors flex-1 min-w-0 truncate"
                 >
                   <h3 className="truncate">{task.title}</h3>
@@ -1400,6 +1421,8 @@ export default function TasksPageClient({
                   <div className="text-gray-600">
                     Client: <Link 
                       href={`/clients/${(task as any).client.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="text-indigo-600 hover:text-indigo-800 hover:underline font-medium"
                     >
                       {(task as any).client.name}
@@ -1511,6 +1534,8 @@ export default function TasksPageClient({
                     <div className="flex items-center gap-3 pt-1">
                       <Link 
                         href={`/orders/${(task as any).orderId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
                       >
                         View order
@@ -1520,6 +1545,8 @@ export default function TasksPageClient({
                           <span className="text-gray-300">•</span>
                           <Link 
                             href={`/orders/${(task as any).orderId}?tab=line-items`}
+                            target="_blank"
+                            rel="noopener noreferrer"
                             className="text-xs text-gray-600 hover:text-gray-800 hover:underline"
                           >
                             {(task as any).lineItemCount} line items
@@ -1735,6 +1762,8 @@ export default function TasksPageClient({
                   <div className="text-gray-500 text-xs pt-1">
                     <Link 
                       href={`/orders/${(task as any).parentOrderId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="text-indigo-500 hover:text-indigo-700 hover:underline"
                     >
                       Order #{(task as any).parentOrderNumber}
@@ -1890,6 +1919,8 @@ export default function TasksPageClient({
               {/* View link */}
               <Link
                 href={task.action}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="p-1.5 sm:p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
                 title="View"
               >
@@ -2639,7 +2670,9 @@ export default function TasksPageClient({
                         { id: 'pending', label: 'Pending', emoji: '⏳', count: getFilteredStats().byStatus.pending },
                         { id: 'in_progress', label: 'In Progress', emoji: '🔄', count: getFilteredStats().byStatus.in_progress },
                         { id: 'completed', label: 'Completed', emoji: '✅', count: getFilteredStats().byStatus.completed },
-                        { id: 'blocked', label: 'Blocked', emoji: '🚫', count: getFilteredStats().byStatus.blocked }
+                        { id: 'rejected', label: 'Rejected', emoji: '❌', count: getFilteredStats().byStatus.rejected },
+                        { id: 'blocked', label: 'Blocked', emoji: '🚫', count: getFilteredStats().byStatus.blocked },
+                        { id: 'cancelled', label: 'Cancelled', emoji: '⏹️', count: getFilteredStats().byStatus.cancelled }
                       ].map(status => (
                         <label key={status.id} className="flex items-center gap-3 cursor-pointer group">
                           <input
@@ -2681,21 +2714,8 @@ export default function TasksPageClient({
                           className="w-4 h-4 text-indigo-600 bg-white border-gray-300 rounded focus:ring-indigo-500 focus:ring-2 transition-colors"
                         />
                         <div className="flex items-center gap-2 flex-1 group-hover:text-gray-900 transition-colors">
-                          <span className="text-sm">🔗</span>
-                          <span className="text-sm font-medium text-gray-700">Show Paid Links</span>
-                        </div>
-                      </label>
-                      
-                      <label className="flex items-center gap-3 cursor-pointer group">
-                        <input
-                          type="checkbox"
-                          checked={showCompleted}
-                          onChange={(e) => setShowCompleted(e.target.checked)}
-                          className="w-4 h-4 text-indigo-600 bg-white border-gray-300 rounded focus:ring-indigo-500 focus:ring-2 transition-colors"
-                        />
-                        <div className="flex items-center gap-2 flex-1 group-hover:text-gray-900 transition-colors">
-                          <span className="text-sm">✅</span>
-                          <span className="text-sm font-medium text-gray-700">Show Completed</span>
+                          <span className="text-sm">📋</span>
+                          <span className="text-sm font-medium text-gray-700">Show Line Items</span>
                         </div>
                       </label>
                     </div>
