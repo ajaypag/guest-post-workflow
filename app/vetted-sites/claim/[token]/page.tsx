@@ -55,8 +55,18 @@ async function getRequestData(token: string) {
     .leftJoin(bulkAnalysisProjects, eq(vettedRequestProjects.projectId, bulkAnalysisProjects.id))
     .where(eq(vettedRequestProjects.requestId, request.id));
   
-  // Get domains associated with this request from bulk_analysis_domains with website pricing
-  const domainsQuery = await db
+  console.log('Linked projects:', linkedProjects.map(p => p.projectId));
+  
+  // Get project IDs
+  const linkedProjectIds = linkedProjects.map(p => p.projectId);
+  
+  // If no linked projects, return empty domains
+  if (linkedProjectIds.length === 0) {
+    console.log('No linked projects found for request');
+  }
+  
+  // Get domains associated with this request - either through sourceRequestId OR through linked projects
+  const domainsQuery = linkedProjectIds.length > 0 ? await db
     .select({
       // Bulk analysis domain fields
       id: bulkAnalysisDomains.id,
@@ -97,11 +107,15 @@ async function getRequestData(token: string) {
     .leftJoin(websites, eq(bulkAnalysisDomains.domain, websites.domain))
     .where(
       and(
-        eq(bulkAnalysisDomains.sourceRequestId, request.id),
+        // Query domains from linked projects OR with sourceRequestId
+        or(
+          inArray(bulkAnalysisDomains.projectId, linkedProjectIds),
+          eq(bulkAnalysisDomains.sourceRequestId, request.id)
+        ),
         inArray(bulkAnalysisDomains.qualificationStatus, ['high_quality', 'good_quality'])
       )
     )
-    .orderBy(desc(bulkAnalysisDomains.aiQualifiedAt));
+    .orderBy(desc(bulkAnalysisDomains.aiQualifiedAt)) : [];
   
   // Transform to match the expected format
   const domains = domainsQuery.map(d => ({

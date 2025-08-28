@@ -16,6 +16,8 @@ interface VettingContextProps {
 export default function VettingContext({ targetPages }: VettingContextProps) {
   const [showTooltip, setShowTooltip] = useState(false);
 
+  console.log('🔍 VettingContext received targetPages:', JSON.stringify(targetPages));
+
   if (!targetPages || targetPages.length === 0) {
     return null;
   }

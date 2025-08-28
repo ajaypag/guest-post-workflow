@@ -383,13 +383,40 @@ async function getInitialData(session: any, searchParams: any) {
         targetPageIds: bulkAnalysisDomains.targetPageIds,
         
         // Calculate active line items using this domain
-        activeLineItemsCount: sql<number>`(\n          SELECT COUNT(*)::int \n          FROM ${orderLineItems} \n          WHERE ${orderLineItems.assignedDomain} = ${bulkAnalysisDomains.domain} \n          AND ${orderLineItems.status} IN ('approved', 'invoiced', 'in_progress', 'delivered')\n        )`
+        // Filter by client or account if specified
+        activeLineItemsCount: filters.clientId && filters.clientId.length > 0
+          ? sql<number>`(
+              SELECT COUNT(*)::int 
+              FROM ${orderLineItems} 
+              WHERE ${orderLineItems.assignedDomain} = ${bulkAnalysisDomains.domain} 
+              AND ${orderLineItems.status} IN ('approved', 'invoiced', 'in_progress', 'delivered')
+              AND ${orderLineItems.clientId} IN (${sql.join(filters.clientId.map((id: string) => sql`${id}::uuid`), sql`,`)})
+            )`
+          : filters.accountId && filters.accountId.length > 0
+          ? sql<number>`(
+              SELECT COUNT(*)::int 
+              FROM ${orderLineItems} oli
+              INNER JOIN ${clients} c ON oli.client_id = c.id
+              WHERE oli.assigned_domain = ${bulkAnalysisDomains.domain} 
+              AND oli.status IN ('approved', 'invoiced', 'in_progress', 'delivered')
+              AND c.account_id IN (${sql.join(filters.accountId.map((id: string) => sql`${id}::uuid`), sql`,`)})
+            )`
+          : sql<number>`(
+              SELECT COUNT(*)::int 
+              FROM ${orderLineItems} 
+              WHERE ${orderLineItems.assignedDomain} = ${bulkAnalysisDomains.domain} 
+              AND ${orderLineItems.status} IN ('approved', 'invoiced', 'in_progress', 'delivered')
+            )`
       })
       .from(bulkAnalysisDomains)
       .leftJoin(clients, eq(bulkAnalysisDomains.clientId, clients.id))
       .leftJoin(accounts, eq(clients.accountId, accounts.id))
       .leftJoin(bulkAnalysisProjects, eq(bulkAnalysisDomains.projectId, bulkAnalysisProjects.id))
-      .leftJoin(websites, eq(bulkAnalysisDomains.domain, websites.domain));
+      .leftJoin(websites, sql`
+        ${websites.domain} = ${bulkAnalysisDomains.domain}
+        OR ${websites.domain} = CONCAT('www.', ${bulkAnalysisDomains.domain})
+        OR CONCAT('www.', ${websites.domain}) = ${bulkAnalysisDomains.domain}
+      `);
 
     // Apply filters
     const conditions = [];
@@ -521,7 +548,11 @@ async function getInitialData(session: any, searchParams: any) {
       .leftJoin(clients, eq(bulkAnalysisDomains.clientId, clients.id))
       .leftJoin(accounts, eq(clients.accountId, accounts.id))
       .leftJoin(bulkAnalysisProjects, eq(bulkAnalysisDomains.projectId, bulkAnalysisProjects.id))
-      .leftJoin(websites, eq(bulkAnalysisDomains.domain, websites.domain))
+      .leftJoin(websites, sql`
+        ${websites.domain} = ${bulkAnalysisDomains.domain}
+        OR ${websites.domain} = CONCAT('www.', ${bulkAnalysisDomains.domain})
+        OR CONCAT('www.', ${websites.domain}) = ${bulkAnalysisDomains.domain}
+      `)
       .where(conditions.length > 0 ? and(...conditions) : undefined);
 
     const total = totalCountQuery[0]?.count || 0;
@@ -627,7 +658,11 @@ async function getInitialData(session: any, searchParams: any) {
       .from(bulkAnalysisDomains)
       .leftJoin(clients, eq(bulkAnalysisDomains.clientId, clients.id))
       .leftJoin(accounts, eq(clients.accountId, accounts.id))
-      .leftJoin(websites, eq(bulkAnalysisDomains.domain, websites.domain))
+      .leftJoin(websites, sql`
+        ${websites.domain} = ${bulkAnalysisDomains.domain}
+        OR ${websites.domain} = CONCAT('www.', ${bulkAnalysisDomains.domain})
+        OR CONCAT('www.', ${websites.domain}) = ${bulkAnalysisDomains.domain}
+      `)
       .where(statsConditions.length > 0 ? and(...statsConditions) : undefined);
 
     const stats = statsQuery[0] || {};
@@ -643,20 +678,47 @@ async function getInitialData(session: any, searchParams: any) {
     });
 
     // Fetch target pages for all domains
-    // NOTE: targetPageIds contains URL strings, not UUIDs, so we handle them directly
+    // targetPageIds contains UUIDs that need to be resolved to actual target page records
     const domainTargetPages = new Map();
     if (Array.isArray(domains)) {
+      // Collect all unique target page IDs
+      const allTargetPageIds = new Set<string>();
+      for (const domain of domains) {
+        if (domain?.targetPageIds && Array.isArray(domain.targetPageIds)) {
+          domain.targetPageIds.forEach((id: string) => allTargetPageIds.add(id));
+        }
+      }
+      
+      // Fetch all target pages in one query
+      let targetPagesMap = new Map();
+      if (allTargetPageIds.size > 0) {
+        const targetPagesData = await db
+          .select({
+            id: targetPages.id,
+            url: targetPages.url,
+            keywords: targetPages.keywords,
+            description: targetPages.description,
+          })
+          .from(targetPages)
+          .where(inArray(targetPages.id, Array.from(allTargetPageIds)));
+        
+        // Create a map for quick lookup
+        for (const tp of targetPagesData) {
+          targetPagesMap.set(tp.id, tp);
+        }
+      }
+      
+      // Map target pages to domains
       for (const domain of domains) {
         if (domain?.targetPageIds && Array.isArray(domain.targetPageIds) && domain.targetPageIds.length > 0) {
           try {
-            // targetPageIds contains URL strings, convert to target page format
-            const targetPagesForDomain = domain.targetPageIds.map((url: string, index: number) => ({
-              id: `url-${index}`, // synthetic ID since these are URLs, not DB records
-              url: url,
-              keywords: null, // URLs don't have associated keywords in this context
-              description: null, // URLs don't have descriptions in this context
-            }));
-            domainTargetPages.set(domain.id, targetPagesForDomain);
+            const targetPagesForDomain = domain.targetPageIds
+              .map((id: string) => targetPagesMap.get(id))
+              .filter(Boolean); // Remove any undefined entries if target page wasn't found
+            
+            if (targetPagesForDomain.length > 0) {
+              domainTargetPages.set(domain.id, targetPagesForDomain);
+            }
           } catch (pageError) {
             console.error(`Error processing target pages for domain ${domain.id}:`, pageError);
           }

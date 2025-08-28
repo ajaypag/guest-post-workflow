@@ -134,9 +134,12 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
   const [actionLoading, setActionLoading] = useState<Set<string>>(new Set());
   
   // Update data when initialData changes (e.g., when filters are applied)
+  // This handles server-side rendered data updates
   useEffect(() => {
+    console.log('InitialData changed, updating local data');
     setData(initialData);
   }, [initialData]);
+  
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [expandedSections, setExpandedSections] = useState<Map<string, string>>(new Map());
   const [showOrderModal, setShowOrderModal] = useState(false);
@@ -154,44 +157,6 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
     selectedCount,
     totalPrice
   } = useSelection(userType as 'internal' | 'account' | 'publisher');
-
-  // Skip initial fetch since we already have initialData
-  const [isInitialMount, setIsInitialMount] = useState(true);
-  
-  // Update data when search params change (but not on initial mount)
-  useEffect(() => {
-    if (isInitialMount) {
-      setIsInitialMount(false);
-      return;
-    }
-    
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const url = new URL('/api/vetted-sites', window.location.origin);
-        searchParams.forEach((value, key) => {
-          url.searchParams.set(key, value);
-        });
-
-        const response = await fetch(url.toString());
-        if (response.ok) {
-          const newData = await response.json();
-          console.log('Fetched data - page:', newData.page, 'totalPages:', newData.totalPages, 'total:', newData.total);
-          setData(newData);
-          // Update parent component with fresh stats
-          onDataUpdate?.({ stats: newData.stats, total: newData.total });
-        } else {
-          console.error('API error:', response.status);
-        }
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [searchParams.toString()]); // Use toString() to get a stable dependency
 
   const handleUserAction = async (domainId: string, action: 'bookmark' | 'unbookmark' | 'hide' | 'unhide') => {
     // Optimistic update - update UI immediately
@@ -326,7 +291,7 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
       );
     } else {
       return (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
           ⚠ In Use ({count})
         </span>
       );
@@ -604,7 +569,7 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
                           alert(error); // Simple error display for now
                         });
                       }}
-                      disabled={domain.activeLineItemsCount > 0}
+                      // Removed disabled - domains can be selected even if in use
                     />
                   </td>
                 )}
@@ -788,8 +753,8 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
                 {/* Availability Column */}
                 <td className="px-3 xl:px-4 py-4">
                   {domain.activeLineItemsCount > 0 ? (
-                    <div className="inline-flex items-center gap-1.5 text-xs font-medium text-yellow-700">
-                      <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
+                    <div className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-700">
+                      <span className="w-2 h-2 rounded-full bg-amber-500"></span>
                       In Use ({domain.activeLineItemsCount})
                     </div>
                   ) : (

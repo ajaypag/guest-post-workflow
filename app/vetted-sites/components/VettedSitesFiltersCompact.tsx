@@ -343,13 +343,16 @@ export default function VettedSitesFiltersCompact({
     if (maxPrice) params.set('maxPrice', maxPrice);
 
     params.set('page', '1');
-    router.push(`/vetted-sites?${params.toString()}`, { scroll: false });
     
-    // Reset loading state after a reasonable time
-    // This accounts for the server-side data fetching
+    // Use replace to avoid browser back/forward issues
+    // and ensure fresh data fetch
+    const url = `/vetted-sites?${params.toString()}`;
+    router.replace(url, { scroll: false });
+    
+    // Reset loading state after navigation completes
     setTimeout(() => {
       setIsApplying(false);
-    }, 2000);
+    }, 1500);
   };
 
   // Handle account selection
@@ -413,23 +416,10 @@ export default function VettedSitesFiltersCompact({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Sync state with URL
-  useEffect(() => {
-    setSearch(filters.search || '');
-    setSelectedAccounts(filters.accountId ? filters.accountId.split(',') : []);
-    setSelectedClients(filters.clientId ? filters.clientId.split(',') : []);
-    setSelectedProjects(filters.projectId ? [filters.projectId] : []);
-    setQualificationStatus(filters.status ? filters.status.split(',') : ['high_quality', 'good_quality']);
-    setView(filters.view || 'all');
-    setAvailableOnly(filters.available === 'false' ? false : true);
-    setMinDR(filters.minDR || '');
-    setMaxDR(filters.maxDR || '');
-    setMinTraffic(filters.minTraffic || '');
-    setMaxTraffic(filters.maxTraffic || '');
-    setMinPrice(filters.minPrice || '');
-    setMaxPrice(filters.maxPrice || '');
-    setSelectedTargetUrls(filters.targetUrls ? filters.targetUrls.split(',') : []);
-  }, [filters]);
+  // REMOVED: Syncing filter state with URL was causing the flash issue
+  // The component should maintain its own state after initial mount
+  // and only update the URL when "Apply Filters" is clicked
+  // Initial state is already set from filters prop in useState() calls above
 
   // Get selected account names for display
   const selectedAccountNames = selectedAccounts

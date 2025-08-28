@@ -581,7 +581,7 @@ function ClientsPageContent() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-center">
                             <Link
-                              href={`/clients/${client.id}/target-pages`}
+                              href={`/clients/${client.id}?tab=pages`}
                               onClick={(e) => e.stopPropagation()}
                               className="text-sm font-medium text-blue-600 hover:text-blue-800"
                             >

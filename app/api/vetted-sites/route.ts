@@ -10,6 +10,7 @@ import { PricingService } from '@/lib/services/pricingService';
 
 interface VettedSitesFilters {
   clientId?: string[];
+  accountId?: string[];
   projectId?: string;
   qualificationStatus?: string[];
   view?: 'all' | 'bookmarked' | 'hidden';
@@ -26,6 +27,7 @@ interface VettedSitesFilters {
   sortOrder?: 'asc' | 'desc';
   page?: number;
   limit?: number;
+  requestId?: string;
 }
 
 export async function GET(request: NextRequest) {
@@ -40,6 +42,7 @@ export async function GET(request: NextRequest) {
     // Parse filters from query parameters
     const filters: VettedSitesFilters = {
       clientId: searchParams.get('clientId')?.split(',').filter(Boolean),
+      accountId: searchParams.get('accountId')?.split(',').filter(Boolean),
       projectId: searchParams.get('projectId') || undefined,
       qualificationStatus: searchParams.get('status')?.split(',').filter(Boolean) || ['high_quality', 'good_quality'],
       view: (searchParams.get('view') as any) || 'all',
@@ -56,6 +59,7 @@ export async function GET(request: NextRequest) {
       sortOrder: (searchParams.get('sortOrder') as any) || 'desc',
       page: parseInt(searchParams.get('page') || '1'),
       limit: Math.min(parseInt(searchParams.get('limit') || '50'), 100), // Max 100 per page
+      requestId: searchParams.get('requestId') || undefined,
     };
 
     // Build the base query with joins
@@ -105,19 +109,45 @@ export async function GET(request: NextRequest) {
         guestPostCost: websites.guestPostCost,
         
         // Availability check (count of active line items using this domain)
-        activeLineItemsCount: sql<number>`
-          COALESCE((
-            SELECT COUNT(*)::int
-            FROM ${orderLineItems}
-            WHERE ${orderLineItems.assignedDomain} = ${bulkAnalysisDomains.domain}
-            AND ${orderLineItems.status} != 'cancelled'
-          ), 0)
-        `,
+        // Filter by client or account if specified
+        activeLineItemsCount: filters.clientId && filters.clientId.length > 0
+          ? sql<number>`
+              COALESCE((
+                SELECT COUNT(*)::int
+                FROM ${orderLineItems}
+                WHERE ${orderLineItems.assignedDomain} = ${bulkAnalysisDomains.domain}
+                AND ${orderLineItems.status} != 'cancelled'
+                AND ${orderLineItems.clientId} IN (${sql.join(filters.clientId.map(id => sql`${id}::uuid`), sql`,`)})
+              ), 0)
+            `
+          : filters.accountId && filters.accountId.length > 0
+          ? sql<number>`
+              COALESCE((
+                SELECT COUNT(*)::int
+                FROM ${orderLineItems} oli
+                INNER JOIN ${clients} c ON oli.client_id = c.id
+                WHERE oli.assigned_domain = ${bulkAnalysisDomains.domain}
+                AND oli.status != 'cancelled'
+                AND c.account_id IN (${sql.join(filters.accountId.map(id => sql`${id}::uuid`), sql`,`)})
+              ), 0)
+            `
+          : sql<number>`
+              COALESCE((
+                SELECT COUNT(*)::int
+                FROM ${orderLineItems}
+                WHERE ${orderLineItems.assignedDomain} = ${bulkAnalysisDomains.domain}
+                AND ${orderLineItems.status} != 'cancelled'
+              ), 0)
+            `,
       })
       .from(bulkAnalysisDomains)
       .leftJoin(clients, eq(bulkAnalysisDomains.clientId, clients.id))
       .leftJoin(bulkAnalysisProjects, eq(bulkAnalysisDomains.projectId, bulkAnalysisProjects.id))
-      .leftJoin(websites, eq(bulkAnalysisDomains.domain, websites.domain));
+      .leftJoin(websites, sql`
+        ${websites.domain} = ${bulkAnalysisDomains.domain}
+        OR ${websites.domain} = CONCAT('www.', ${bulkAnalysisDomains.domain})
+        OR CONCAT('www.', ${websites.domain}) = ${bulkAnalysisDomains.domain}
+      `);
 
     // Apply filters
     const conditions = [];
@@ -145,6 +175,11 @@ export async function GET(request: NextRequest) {
     // Client filter
     if (filters.clientId && filters.clientId.length > 0) {
       conditions.push(inArray(bulkAnalysisDomains.clientId, filters.clientId));
+    }
+    
+    // Account filter - filter by all clients that belong to the selected accounts
+    if (filters.accountId && filters.accountId.length > 0) {
+      conditions.push(inArray(clients.accountId, filters.accountId));
     }
 
     // Project filter
@@ -262,7 +297,11 @@ export async function GET(request: NextRequest) {
       .from(bulkAnalysisDomains)
       .leftJoin(clients, eq(bulkAnalysisDomains.clientId, clients.id))
       .leftJoin(bulkAnalysisProjects, eq(bulkAnalysisDomains.projectId, bulkAnalysisProjects.id))
-      .leftJoin(websites, eq(bulkAnalysisDomains.domain, websites.domain))
+      .leftJoin(websites, sql`
+        ${websites.domain} = ${bulkAnalysisDomains.domain}
+        OR ${websites.domain} = CONCAT('www.', ${bulkAnalysisDomains.domain})
+        OR CONCAT('www.', ${websites.domain}) = ${bulkAnalysisDomains.domain}
+      `)
       .where(conditions.length > 0 ? and(...conditions) : undefined);
 
     const total = totalCountQuery[0]?.count || 0;
@@ -409,7 +448,11 @@ export async function GET(request: NextRequest) {
       })
       .from(bulkAnalysisDomains)
       .leftJoin(clients, eq(bulkAnalysisDomains.clientId, clients.id))
-      .leftJoin(websites, eq(bulkAnalysisDomains.domain, websites.domain))
+      .leftJoin(websites, sql`
+        ${websites.domain} = ${bulkAnalysisDomains.domain}
+        OR ${websites.domain} = CONCAT('www.', ${bulkAnalysisDomains.domain})
+        OR CONCAT('www.', ${websites.domain}) = ${bulkAnalysisDomains.domain}
+      `)
       .where(statsConditions.length > 0 ? and(...statsConditions) : undefined);
 
     const stats = statsQuery[0] || {};
@@ -429,7 +472,7 @@ export async function GET(request: NextRequest) {
         ));
 
         if (allTargetPageIds.length > 0) {
-          // NOTE: targetPageIds contains URL strings, not UUIDs, so we handle them directly
+          // NOTE: targetPageIds contains UUIDs that reference target_pages table records
           // Build target pages map by domain ID using URL strings
           domainsWithTargetPageIds.forEach(domain => {
             if (domain.targetPageIds) {
