@@ -62,6 +62,11 @@ export const clientBrandIntelligence = pgTable('client_brand_intelligence', {
     clientAnswers?: any;
   }>(),
   
+  // Task Assignment (added by migration 0071)
+  assignedTo: uuid('assigned_to').references(() => users.id),
+  assignedAt: timestamp('assigned_at'),
+  assignmentNotes: text('assignment_notes'),
+  
   // Metadata and Tracking
   createdBy: uuid('created_by').notNull().references(() => users.id),
   createdAt: timestamp('created_at').notNull().defaultNow(),
@@ -73,6 +78,7 @@ export const clientBrandIntelligence = pgTable('client_brand_intelligence', {
   briefStatusIdx: index('client_brand_intelligence_brief_status_idx').on(table.briefStatus),
   createdByIdx: index('client_brand_intelligence_created_by_idx').on(table.createdBy),
   createdAtIdx: index('client_brand_intelligence_created_at_idx').on(table.createdAt),
+  assignedToIdx: index('client_brand_intelligence_assigned_to_idx').on(table.assignedTo),
   
   // Unique constraint: one brand intelligence per client
   // This is handled by the database UNIQUE constraint on client_id
@@ -86,6 +92,10 @@ export const clientBrandIntelligenceRelations = relations(clientBrandIntelligenc
   }),
   createdByUser: one(users, {
     fields: [clientBrandIntelligence.createdBy],
+    references: [users.id],
+  }),
+  assignedUser: one(users, {
+    fields: [clientBrandIntelligence.assignedTo],
     references: [users.id],
   }),
 }));

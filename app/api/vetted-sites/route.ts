@@ -125,8 +125,17 @@ export async function GET(request: NextRequest) {
     // Apply permission filters based on user type
     if (session.userType === 'account') {
       // Account users can only see domains from their clients
-      const userClientIds = session.clientId ? [session.clientId] : [];
+      // Get all client IDs for this account user
+      const userClients = await db
+        .select({ id: clients.id })
+        .from(clients)
+        .where(eq(clients.accountId, session.userId));
+      
+      const userClientIds = userClients.map(client => client.id);
+      console.log('🔍 Vetted Sites API - Account user client IDs:', userClientIds);
+      
       if (userClientIds.length === 0) {
+        console.log('⚠️ Vetted Sites API - No clients found for account user, returning empty');
         return NextResponse.json({ domains: [], total: 0, stats: {} });
       }
       conditions.push(inArray(bulkAnalysisDomains.clientId, userClientIds));
@@ -276,7 +285,90 @@ export async function GET(request: NextRequest) {
       throw queryError;
     }
 
-    // Calculate summary stats - dynamic based on current filters
+    // Calculate summary stats - we need separate conditions without the availability filter
+    // This ensures we get accurate counts for both available and in-use sites
+    const statsConditions = [];
+    
+    // Rebuild conditions WITHOUT the availability filter
+    // Apply permission filters based on user type
+    if (session.userType === 'account') {
+      // Account users can only see domains from their clients
+      // Get all client IDs for this account user
+      const userClients = await db
+        .select({ id: clients.id })
+        .from(clients)
+        .where(eq(clients.accountId, session.userId));
+      
+      const userClientIds = userClients.map(client => client.id);
+      if (userClientIds.length > 0) {
+        statsConditions.push(inArray(bulkAnalysisDomains.clientId, userClientIds));
+      }
+    }
+    
+    // Apply all other filters EXCEPT availability
+    if (filters.clientId && filters.clientId.length > 0) {
+      statsConditions.push(inArray(bulkAnalysisDomains.clientId, filters.clientId));
+    }
+    
+    if (filters.projectId) {
+      statsConditions.push(eq(bulkAnalysisDomains.projectId, filters.projectId));
+    }
+    
+    if (filters.qualificationStatus && filters.qualificationStatus.length > 0) {
+      statsConditions.push(inArray(bulkAnalysisDomains.qualificationStatus, filters.qualificationStatus));
+    }
+    
+    if (filters.view === 'bookmarked') {
+      statsConditions.push(eq(bulkAnalysisDomains.userBookmarked, true));
+    } else if (filters.view === 'hidden') {
+      statsConditions.push(eq(bulkAnalysisDomains.userHidden, true));
+    } else if (filters.view === 'all') {
+      // Default view - exclude hidden domains
+      statsConditions.push(or(
+        eq(bulkAnalysisDomains.userHidden, false),
+        isNull(bulkAnalysisDomains.userHidden)
+      ));
+    }
+    
+    if (filters.search) {
+      const searchConditions = [
+        ilike(bulkAnalysisDomains.domain, `%${filters.search}%`),
+        ilike(websites.categories, `%${filters.search}%`),
+        ilike(websites.niche, `%${filters.search}%`),
+      ];
+      const clientNameCondition = ilike(clients.name, `%${filters.search}%`);
+      searchConditions.push(clientNameCondition);
+      statsConditions.push(or(...searchConditions));
+    }
+    
+    if (filters.targetUrls && filters.targetUrls.length > 0) {
+      statsConditions.push(
+        sql`${bulkAnalysisDomains.targetPageIds}::jsonb ?| ${filters.targetUrls}`
+      );
+    }
+    
+    if (filters.minDR !== undefined) {
+      statsConditions.push(sql`${websites.domainRating} >= ${filters.minDR}`);
+    }
+    if (filters.maxDR !== undefined) {
+      statsConditions.push(sql`${websites.domainRating} <= ${filters.maxDR}`);
+    }
+    if (filters.minTraffic !== undefined) {
+      statsConditions.push(sql`${websites.totalTraffic} >= ${filters.minTraffic}`);
+    }
+    if (filters.maxTraffic !== undefined) {
+      statsConditions.push(sql`${websites.totalTraffic} <= ${filters.maxTraffic}`);
+    }
+    if (filters.minPrice !== undefined) {
+      const minWholesale = Math.max(0, filters.minPrice - 79);
+      statsConditions.push(sql`COALESCE(${websites.guestPostCost}, 0) >= ${minWholesale}`);
+    }
+    if (filters.maxPrice !== undefined) {
+      const maxWholesale = Math.max(0, filters.maxPrice - 79);
+      statsConditions.push(sql`COALESCE(${websites.guestPostCost}, 0) <= ${maxWholesale}`);
+    }
+    // IMPORTANT: Do NOT add the availability filter to statsConditions
+    
     const statsQuery = await db
       .select({
         // Total in current view (respects all filters)
@@ -318,7 +410,7 @@ export async function GET(request: NextRequest) {
       .from(bulkAnalysisDomains)
       .leftJoin(clients, eq(bulkAnalysisDomains.clientId, clients.id))
       .leftJoin(websites, eq(bulkAnalysisDomains.domain, websites.domain))
-      .where(conditions.length > 0 ? and(...conditions) : undefined);
+      .where(statsConditions.length > 0 ? and(...statsConditions) : undefined);
 
     const stats = statsQuery[0] || {};
 
@@ -337,28 +429,17 @@ export async function GET(request: NextRequest) {
         ));
 
         if (allTargetPageIds.length > 0) {
-          // Fetch target pages data
-          const targetPagesData = await db
-            .select({
-              id: targetPages.id,
-              url: targetPages.url,
-              keywords: targetPages.keywords,
-              description: targetPages.description,
-            })
-            .from(targetPages)
-            .where(inArray(targetPages.id, allTargetPageIds));
-
-          // Create lookup map for easy access
-          const targetPagesLookup = new Map(
-            targetPagesData.map(tp => [tp.id, tp])
-          );
-
-          // Build target pages map by domain ID
+          // NOTE: targetPageIds contains URL strings, not UUIDs, so we handle them directly
+          // Build target pages map by domain ID using URL strings
           domainsWithTargetPageIds.forEach(domain => {
             if (domain.targetPageIds) {
               targetPagesMap[domain.id] = (domain.targetPageIds as string[])
-                .map(id => targetPagesLookup.get(id))
-                .filter(Boolean); // Remove any null/undefined entries
+                .map((url, index) => ({
+                  id: `url-${index}`, // synthetic ID since these are URLs, not DB records
+                  url: url,
+                  keywords: null, // URLs don't have associated keywords in this context
+                  description: null, // URLs don't have descriptions in this context
+                }));
             }
           });
         }
@@ -414,7 +495,7 @@ export async function GET(request: NextRequest) {
       })
     );
 
-    return NextResponse.json({
+    const responseData = {
       domains: domainsWithPricing.filter(Boolean),
       total: total || 0,
       page: page || 1,
@@ -436,7 +517,19 @@ export async function GET(request: NextRequest) {
           disqualified: stats?.disqualified || 0,
         },
       },
+    };
+    
+    console.log('🚀 VETTED SITES API RESPONSE:', {
+      userType: session.userType,
+      userId: session.userId,
+      domainsCount: responseData.domains.length,
+      total: responseData.total,
+      availableCount: responseData.stats.available,
+      totalQualified: responseData.stats.totalQualified,
+      referer: request.headers.get('referer'),
     });
+    
+    return NextResponse.json(responseData);
 
   } catch (error: any) {
     console.error('Vetted Sites API Error:', error);

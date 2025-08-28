@@ -6,11 +6,12 @@
 import { db } from '@/lib/db/connection';
 import { orders } from '@/lib/db/orderSchema';
 import { orderLineItems } from '@/lib/db/orderLineItemSchema';
-import { workflows } from '@/lib/db/schema';
+import { workflows, clientBrandIntelligence } from '@/lib/db/schema';
 import { accounts } from '@/lib/db/accountSchema';
 import { clients } from '@/lib/db/schema';
 import { users } from '@/lib/db/schema';
-import { eq, and, or, sql, isNull, inArray, gte, lte, desc, asc } from 'drizzle-orm';
+import { vettedSitesRequests } from '@/lib/db/vettedSitesRequestSchema';
+import { eq, and, or, sql, isNull, inArray, gte, lte, desc, asc, aliasedTable } from 'drizzle-orm';
 import {
   type TaskFilters,
   type UnifiedTask,
@@ -40,7 +41,7 @@ export class TaskService {
     // Determine which task types to fetch based on type filter
     const typesToFetch = filters?.types && filters.types.length > 0 
       ? filters.types 
-      : ['order', 'workflow', 'line_item'] as TaskType[];
+      : ['order', 'line_item', 'workflow', 'vetted_sites_request', 'brand_intelligence'] as TaskType[];
     
     // Only fetch the task types that are requested
     const fetchPromises: Promise<UnifiedTask[]>[] = [];
@@ -55,6 +56,14 @@ export class TaskService {
     
     if (typesToFetch.includes('line_item') && filters?.showLineItems) {
       fetchPromises.push(this.getLineItemTasks(filters));
+    }
+    
+    if (typesToFetch.includes('vetted_sites_request')) {
+      fetchPromises.push(this.getVettedSitesRequestTasks(filters));
+    }
+    
+    if (typesToFetch.includes('brand_intelligence')) {
+      fetchPromises.push(this.getBrandIntelligenceTasks(filters));
     }
 
     // Execute fetches in parallel
@@ -162,6 +171,11 @@ export class TaskService {
       conditions.push(inArray(orders.accountId, filters.clients));
     }
 
+    if (filters?.accounts?.length) {
+      // Filter by account IDs
+      conditions.push(inArray(orders.accountId, filters.accounts));
+    }
+
     if (filters?.dateRange) {
       if (filters.dateRange.start) {
         conditions.push(gte(orders.expectedDeliveryDate, filters.dateRange.start));
@@ -203,6 +217,7 @@ export class TaskService {
         companyName: row.account.companyName
       } : null,
       status: this.mapOrderStatus(row.order.status),
+      state: row.order.state,
       priority: row.order.rushDelivery ? 'high' : 'normal',
       lineItemCount: Number(row.lineItemCount) || 0,
       completedLineItems: Number(row.completedLineItems) || 0,
@@ -222,11 +237,17 @@ export class TaskService {
       .select({
         workflow: workflows,
         client: clients,
-        assignedUser: users
+        assignedUser: users,
+        lineItem: orderLineItems,
+        order: orders,
+        account: accounts
       })
       .from(workflows)
       .leftJoin(clients, eq(workflows.clientId, clients.id))
-      .leftJoin(users, eq(workflows.assignedUserId, users.id));
+      .leftJoin(users, eq(workflows.assignedUserId, users.id))
+      .leftJoin(orderLineItems, eq(orderLineItems.workflowId, workflows.id))
+      .leftJoin(orders, eq(orderLineItems.orderId, orders.id))
+      .leftJoin(accounts, eq(orders.accountId, accounts.id));
 
     // Apply filters
     const conditions = [];
@@ -249,6 +270,11 @@ export class TaskService {
 
     if (filters?.clients?.length) {
       conditions.push(inArray(workflows.clientId, filters.clients));
+    }
+
+    if (filters?.accounts?.length) {
+      // Filter by account IDs via client relationship
+      conditions.push(inArray(clients.accountId, filters.accounts));
     }
 
     if (filters?.dateRange) {
@@ -282,33 +308,94 @@ export class TaskService {
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
     const results = await (whereClause ? query.where(whereClause) : query);
 
-    return results.map(row => ({
-      id: `workflow-${row.workflow.id}`,
-      type: 'workflow' as const,
-      workflowId: row.workflow.id,
-      workflowTitle: row.workflow.title || 'Untitled Workflow',
-      title: row.workflow.title || 'Untitled Workflow',
-      description: null, // Field doesn't exist in current schema
-      deadline: row.workflow.estimatedCompletionDate,
-      assignedTo: row.assignedUser ? {
-        id: row.assignedUser.id,
-        name: row.assignedUser.name,
-        email: row.assignedUser.email
-      } : null,
-      client: row.client ? {
-        id: row.client.id,
-        name: row.client.name
-      } : null,
-      status: this.mapWorkflowStatus(row.workflow.status),
-      priority: 'normal' as const,
-      completionPercentage: Number(row.workflow.completionPercentage) || 0,
-      estimatedCompletionDate: row.workflow.estimatedCompletionDate,
-      publishDeadline: null, // Field doesn't exist in current schema
-      publisher: row.workflow.publisherEmail,
-      createdAt: row.workflow.createdAt,
-      updatedAt: row.workflow.updatedAt,
-      action: `/workflows/${row.workflow.id}`
-    }));
+    return results.map((row, index) => {
+      // Parse workflow content to extract rich data
+      const workflowContent = row.workflow.content as any;
+      
+      
+      // Extract rich data from workflow content based on ACTUAL API response structure
+      const steps = workflowContent?.steps || [];
+      
+      // Extract guest post site from domain-selection step (step 0)
+      let guestPostSite = null;
+      const domainSelectionStep = steps.find((step: any) => step.id === 'domain-selection');
+      if (domainSelectionStep?.outputs?.domain) {
+        guestPostSite = domainSelectionStep.outputs.domain;
+      }
+      
+      // Extract client info from root workflow content (already working)
+      const clientSite = (workflowContent?.clientUrl && workflowContent.clientUrl.trim()) || null;
+      const clientName = (workflowContent?.clientName && workflowContent.clientName.trim()) || null;
+      
+      // Extract article title from topic-generation step (step 2)
+      let articleTitle = null;
+      const topicGenerationStep = steps.find((step: any) => step.id === 'topic-generation');
+      if (topicGenerationStep?.outputs?.postTitle) {
+        articleTitle = topicGenerationStep.outputs.postTitle;
+      }
+      
+      // Try to find published article URL from final steps
+      let publishedArticleUrl = null;
+      const contentAuditStep = steps.find((step: any) => step.id === 'content-audit');
+      if (contentAuditStep?.outputs?.publishedUrl) {
+        publishedArticleUrl = contentAuditStep.outputs.publishedUrl;
+      }
+      
+      // Find Google URL from steps if available
+      let googleUrl = null;
+      for (const step of steps) {
+        if (step.outputs?.googleUrl) {
+          googleUrl = step.outputs.googleUrl;
+          break;
+          // For now, skip this complexity
+        }
+      }
+      
+      return {
+        id: `workflow-${row.workflow.id}`,
+        type: 'workflow' as const,
+        workflowId: row.workflow.id,
+        workflowTitle: row.workflow.title || 'Untitled Workflow',
+        title: row.workflow.title || 'Untitled Workflow',
+        description: articleTitle || null,
+        deadline: row.workflow.estimatedCompletionDate,
+        assignedTo: row.assignedUser ? {
+          id: row.assignedUser.id,
+          name: row.assignedUser.name,
+          email: row.assignedUser.email
+        } : null,
+        client: row.client ? {
+          id: row.client.id,
+          name: row.client.name
+        } : null,
+        status: this.mapWorkflowStatus(row.workflow.status),
+        priority: 'normal' as const,
+        completionPercentage: Number(row.workflow.completionPercentage) || 0,
+        estimatedCompletionDate: row.workflow.estimatedCompletionDate,
+        publishDeadline: null,
+        publisher: row.workflow.publisherEmail,
+        // Enhanced workflow-specific fields
+        guestPostSite: guestPostSite,
+        clientSite: clientSite,
+        clientName: clientName,
+        articleTitle: articleTitle,
+        publishedArticleUrl: publishedArticleUrl,
+        workflowContent: workflowContent, // Include full content for additional data
+        
+        // Order metadata for proper grouping
+        metadata: row.order ? {
+          orderId: row.order.id,
+          orderNumber: `#${row.order.id.slice(0, 8)}`,
+          lineItemId: row.lineItem?.id,
+          accountName: row.account?.companyName || row.account?.contactName || 'Unknown Account',
+          clientName: row.client?.name || 'Unknown Client'
+        } : null,
+        
+        createdAt: row.workflow.createdAt,
+        updatedAt: row.workflow.updatedAt,
+        action: `/workflow/${row.workflow.id}`
+      };
+    });
   }
 
   /**
@@ -331,6 +418,7 @@ export class TaskService {
 
     // Apply filters
     const conditions = [];
+    
 
     if (filters?.assignedTo?.length) {
       if (filters.assignedTo.includes('unassigned')) {
@@ -341,11 +429,20 @@ export class TaskService {
     }
 
     if (filters?.statuses?.length) {
-      conditions.push(inArray(orderLineItems.status, filters.statuses as any));
+      // Map task statuses to line item statuses
+      const lineItemStatuses = this.getLineItemStatusesForTaskStatuses(filters.statuses);
+      if (lineItemStatuses.length > 0) {
+        conditions.push(inArray(orderLineItems.status, lineItemStatuses as any));
+      }
     }
 
     if (filters?.clients?.length) {
       conditions.push(inArray(orderLineItems.clientId, filters.clients));
+    }
+
+    if (filters?.accounts?.length) {
+      // Filter by account IDs via client relationship
+      conditions.push(inArray(clients.accountId, filters.accounts));
     }
 
     if (filters?.orders?.length) {
@@ -404,13 +501,180 @@ export class TaskService {
     }));
   }
 
+  private async getVettedSitesRequestTasks(filters?: TaskFilters): Promise<UnifiedTask[]> {
+    // Import the schema at the top if not already imported
+    const { vettedSitesRequests } = await import('@/lib/db/vettedSitesRequestSchema');
+    
+    // Use aliases for multiple joins on same table
+    const assignedUser = aliasedTable(users, 'assigned_user');
+    const creatorUser = aliasedTable(users, 'creator_user');
+    const creatorAccount = aliasedTable(accounts, 'creator_account');
+    
+    const query = db
+      .select({
+        request: vettedSitesRequests,
+        assignedUser: assignedUser,
+        creatorUser: {
+          id: creatorUser.id,
+          name: creatorUser.name,
+          email: creatorUser.email
+        },
+        creatorAccount: {
+          id: creatorAccount.id,
+          name: creatorAccount.contactName,
+          email: creatorAccount.email
+        }
+      })
+      .from(vettedSitesRequests)
+      .leftJoin(assignedUser, eq(vettedSitesRequests.fulfilledBy, assignedUser.id))
+      .leftJoin(creatorUser, eq(vettedSitesRequests.createdByUser, creatorUser.id))
+      .leftJoin(creatorAccount, eq(vettedSitesRequests.accountId, creatorAccount.id));
+
+    // Apply filters
+    const conditions = [];
+    
+    if (filters?.assignedTo?.length) {
+      if (filters.assignedTo.includes('unassigned')) {
+        conditions.push(isNull(vettedSitesRequests.fulfilledBy));
+      } else {
+        conditions.push(inArray(vettedSitesRequests.fulfilledBy, filters.assignedTo));
+      }
+    }
+
+    if (filters?.statuses?.length) {
+      const requestStatuses = this.getVettedSitesStatusesForTaskStatuses(filters.statuses);
+      if (requestStatuses.length > 0) {
+        conditions.push(inArray(vettedSitesRequests.status, requestStatuses as any));
+      }
+    }
+
+    // Show active requests by default (submitted and approved)
+    if (!filters?.statuses || filters.statuses.length === 0) {
+      conditions.push(inArray(vettedSitesRequests.status, ['submitted', 'approved'] as any));
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+    const results = await (whereClause ? query.where(whereClause) : query);
+
+    return results.map(row => ({
+      id: `vetted_request-${row.request.id}`,
+      type: 'vetted_sites_request' as const,
+      requestId: row.request.id,
+      title: `Vetted Sites Request - ${row.request.targetUrls?.length || 0} URLs`,
+      description: row.request.notes || `Request for ${row.request.targetUrls?.length || 0} target URLs`,
+      deadline: row.request.reviewedAt ? new Date(new Date(row.request.reviewedAt).getTime() + (7 * 24 * 60 * 60 * 1000)) : new Date(), // 7 days from approval
+      assignedTo: row.assignedUser ? {
+        id: row.assignedUser.id,
+        name: row.assignedUser.name,
+        email: row.assignedUser.email
+      } : null,
+      client: null, // Vetted sites requests may not have a specific client
+      status: this.mapVettedSitesStatus(row.request.status),
+      priority: 'normal',
+      targetUrls: row.request.targetUrls,
+      requestStatus: row.request.status,
+      submittedAt: row.request.createdAt,
+      reviewedAt: row.request.reviewedAt,
+      createdAt: row.request.createdAt,
+      updatedAt: row.request.updatedAt,
+      createdByUserName: row.creatorUser?.name || row.creatorAccount?.name || null,
+      createdByUserEmail: row.creatorUser?.email || row.creatorAccount?.email || null,
+      action: `/internal/vetted-sites/requests/${row.request.id}`
+    }));
+  }
+
+  private async getBrandIntelligenceTasks(filters?: TaskFilters): Promise<UnifiedTask[]> {
+    // Import the schema at the top if not already imported  
+    const { clientBrandIntelligence } = await import('@/lib/db/schema');
+    
+    const query = db
+      .select({
+        intelligence: clientBrandIntelligence,
+        client: clients,
+        assignedUser: users
+      })
+      .from(clientBrandIntelligence)
+      .innerJoin(clients, eq(clientBrandIntelligence.clientId, clients.id))
+      .leftJoin(users, eq(clientBrandIntelligence.assignedTo, users.id));
+
+    // Apply filters
+    const conditions = [];
+    
+    if (filters?.assignedTo?.length) {
+      if (filters.assignedTo.includes('unassigned')) {
+        conditions.push(isNull(clientBrandIntelligence.assignedTo));
+      } else {
+        conditions.push(inArray(clientBrandIntelligence.assignedTo, filters.assignedTo));
+      }
+    }
+
+    if (filters?.statuses?.length) {
+      const intelligenceStatuses = this.getBrandIntelligenceStatusesForTaskStatuses(filters.statuses);
+      if (intelligenceStatuses.length > 0) {
+        conditions.push(
+          or(
+            inArray(clientBrandIntelligence.researchStatus, intelligenceStatuses as any),
+            inArray(clientBrandIntelligence.briefStatus, intelligenceStatuses as any)
+          )
+        );
+      }
+    }
+
+    if (filters?.clients?.length) {
+      conditions.push(inArray(clientBrandIntelligence.clientId, filters.clients));
+    }
+
+    // Only show non-completed brand intelligence
+    if (!filters?.statuses || filters.statuses.length === 0) {
+      conditions.push(
+        or(
+          sql`${clientBrandIntelligence.researchStatus} != 'completed'`,
+          sql`${clientBrandIntelligence.briefStatus} != 'completed'`,
+          and(
+            eq(clientBrandIntelligence.researchStatus, 'completed'),
+            isNull(clientBrandIntelligence.clientInput)
+          )
+        )
+      );
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+    const results = await (whereClause ? query.where(whereClause) : query);
+
+    return results.map(row => ({
+      id: `brand_intelligence-${row.intelligence.id}`,
+      type: 'brand_intelligence' as const,
+      intelligenceId: row.intelligence.id,
+      title: `Brand Intelligence - ${row.client.name}`,
+      description: this.getBrandIntelligenceDescription(row.intelligence),
+      deadline: this.getBrandIntelligenceDeadline(row.intelligence),
+      assignedTo: row.assignedUser ? {
+        id: row.assignedUser.id,
+        name: row.assignedUser.name,
+        email: row.assignedUser.email
+      } : null,
+      client: {
+        id: row.client.id,
+        name: row.client.name
+      },
+      status: this.mapBrandIntelligenceStatus(row.intelligence),
+      priority: 'normal',
+      researchStatus: row.intelligence.researchStatus,
+      briefStatus: row.intelligence.briefStatus,
+      hasClientInput: !!row.intelligence.clientInput,
+      createdAt: row.intelligence.createdAt,
+      updatedAt: row.intelligence.updatedAt,
+      action: `/clients/${row.client.id}/brand-intelligence`
+    }));
+  }
+
   /**
    * Get workflow statuses that map to given task statuses
    */
   private getWorkflowStatusesForTaskStatuses(taskStatuses: TaskStatus[]): string[] {
     const reverseMap: Record<TaskStatus, string[]> = {
       'pending': ['draft'],
-      'in_progress': ['in_progress', 'review', 'approved'],
+      'in_progress': ['active', 'in_progress', 'review', 'approved'],
       'completed': ['published', 'completed'],
       'blocked': ['rejected'],
       'cancelled': ['cancelled', 'deleted']
@@ -477,6 +741,7 @@ export class TaskService {
     
     const statusMap: Record<string, TaskStatus> = {
       'draft': 'pending',
+      'active': 'in_progress',
       'in_progress': 'in_progress',
       'review': 'in_progress',
       'approved': 'in_progress',
@@ -489,6 +754,27 @@ export class TaskService {
   }
 
   /**
+   * Get line item statuses that map to given task statuses
+   */
+  private getLineItemStatusesForTaskStatuses(taskStatuses: TaskStatus[]): string[] {
+    const reverseMap: Record<TaskStatus, string[]> = {
+      'pending': ['draft', 'pending', 'pending_selection', 'selected'],
+      'in_progress': ['assigned', 'invoiced', 'approved', 'in_progress'],
+      'completed': ['delivered', 'completed'],
+      'blocked': ['disputed'],
+      'cancelled': ['cancelled', 'refunded']
+    };
+    
+    const lineItemStatuses = new Set<string>();
+    for (const taskStatus of taskStatuses) {
+      const mapped = reverseMap[taskStatus] || [];
+      mapped.forEach(s => lineItemStatuses.add(s));
+    }
+    
+    return Array.from(lineItemStatuses);
+  }
+
+  /**
    * Map line item status to task status
    */
   private mapLineItemStatus(lineItemStatus: string | null): TaskStatus {
@@ -496,8 +782,11 @@ export class TaskService {
     
     const statusMap: Record<string, TaskStatus> = {
       'draft': 'pending',
+      'pending': 'pending',
       'pending_selection': 'pending',
       'selected': 'pending',
+      'assigned': 'in_progress',
+      'invoiced': 'in_progress',
       'approved': 'in_progress',
       'in_progress': 'in_progress',
       'delivered': 'completed',
@@ -508,6 +797,160 @@ export class TaskService {
     };
     
     return statusMap[lineItemStatus] || 'pending';
+  }
+
+  /**
+   * Get vetted sites request statuses that map to given task statuses
+   */
+  private getVettedSitesStatusesForTaskStatuses(taskStatuses: TaskStatus[]): string[] {
+    const reverseMap: Record<TaskStatus, string[]> = {
+      'pending': ['submitted', 'under_review'],
+      'in_progress': ['approved'],
+      'completed': ['fulfilled'],
+      'blocked': ['rejected'],
+      'cancelled': ['expired']
+    };
+    
+    const requestStatuses = new Set<string>();
+    for (const taskStatus of taskStatuses) {
+      const mapped = reverseMap[taskStatus] || [];
+      mapped.forEach(s => requestStatuses.add(s));
+    }
+    
+    return Array.from(requestStatuses);
+  }
+
+  /**
+   * Map vetted sites request status to task status
+   */
+  private mapVettedSitesStatus(requestStatus: string | null): TaskStatus {
+    if (!requestStatus) return 'pending';
+    
+    const statusMap: Record<string, TaskStatus> = {
+      'submitted': 'pending',
+      'under_review': 'pending',
+      'approved': 'in_progress',
+      'fulfilled': 'completed',
+      'rejected': 'blocked',
+      'expired': 'cancelled'
+    };
+    
+    return statusMap[requestStatus] || 'pending';
+  }
+
+  /**
+   * Get brand intelligence statuses that map to given task statuses
+   */
+  private getBrandIntelligenceStatusesForTaskStatuses(taskStatuses: TaskStatus[]): string[] {
+    const statusesToCheck = new Set<string>();
+    
+    for (const taskStatus of taskStatuses) {
+      switch (taskStatus) {
+        case 'pending':
+          statusesToCheck.add('idle');
+          statusesToCheck.add('queued');
+          break;
+        case 'in_progress':
+          statusesToCheck.add('in_progress');
+          break;
+        case 'completed':
+          statusesToCheck.add('completed');
+          break;
+        case 'blocked':
+          statusesToCheck.add('error');
+          break;
+      }
+    }
+    
+    return Array.from(statusesToCheck);
+  }
+
+  /**
+   * Map brand intelligence status to task status based on workflow phase
+   */
+  private mapBrandIntelligenceStatus(intelligence: any): TaskStatus {
+    // Handle research phase
+    if (intelligence.researchStatus === 'error' || intelligence.briefStatus === 'error') {
+      return 'blocked';
+    }
+    
+    if (intelligence.researchStatus === 'in_progress') {
+      return 'in_progress';
+    }
+    
+    // Research completed, waiting for client input
+    if (intelligence.researchStatus === 'completed' && !intelligence.clientInput) {
+      return 'pending';
+    }
+    
+    // Client input received, brief generation in progress
+    if (intelligence.clientInput && intelligence.briefStatus === 'in_progress') {
+      return 'in_progress';
+    }
+    
+    // Brief completed
+    if (intelligence.briefStatus === 'completed') {
+      return 'completed';
+    }
+    
+    // Default: initial state
+    return 'pending';
+  }
+
+  /**
+   * Get brand intelligence description based on current phase
+   */
+  private getBrandIntelligenceDescription(intelligence: any): string {
+    if (intelligence.researchStatus === 'error') {
+      return 'Research phase failed - needs attention';
+    }
+    
+    if (intelligence.researchStatus === 'in_progress') {
+      return 'AI research in progress...';
+    }
+    
+    if (intelligence.researchStatus === 'completed' && !intelligence.clientInput) {
+      return 'Waiting for client input on research findings';
+    }
+    
+    if (intelligence.clientInput && intelligence.briefStatus !== 'completed') {
+      return 'Client input received - generating final brief';
+    }
+    
+    if (intelligence.briefStatus === 'completed') {
+      return 'Brand intelligence brief completed';
+    }
+    
+    if (intelligence.briefStatus === 'error') {
+      return 'Brief generation failed - needs attention';
+    }
+    
+    return 'Brand intelligence workflow starting';
+  }
+
+  /**
+   * Get brand intelligence deadline based on current phase
+   */
+  private getBrandIntelligenceDeadline(intelligence: any): Date {
+    const now = new Date();
+    
+    // If research is in progress, deadline is 1 day from start
+    if (intelligence.researchStatus === 'in_progress' && intelligence.researchStartedAt) {
+      return new Date(new Date(intelligence.researchStartedAt).getTime() + (1 * 24 * 60 * 60 * 1000));
+    }
+    
+    // If waiting for client input, deadline is 7 days from research completion
+    if (intelligence.researchStatus === 'completed' && !intelligence.clientInput && intelligence.researchCompletedAt) {
+      return new Date(new Date(intelligence.researchCompletedAt).getTime() + (7 * 24 * 60 * 60 * 1000));
+    }
+    
+    // If client input received and brief generation in progress, deadline is 1 day from input
+    if (intelligence.clientInput && intelligence.briefStatus !== 'completed' && intelligence.clientInputAt) {
+      return new Date(new Date(intelligence.clientInputAt).getTime() + (1 * 24 * 60 * 60 * 1000));
+    }
+    
+    // Default: 3 days from creation
+    return new Date(new Date(intelligence.createdAt).getTime() + (3 * 24 * 60 * 60 * 1000));
   }
 
   /**
@@ -545,6 +988,9 @@ export class TaskService {
         if (lineItemTask.targetUrl?.toLowerCase().includes(query)) return true;
         if (lineItemTask.assignedDomain?.toLowerCase().includes(query)) return true;
         if (lineItemTask.anchorText?.toLowerCase().includes(query)) return true;
+        // Also search by parent order ID
+        if (lineItemTask.parentOrderId?.toLowerCase().includes(query)) return true;
+        if (lineItemTask.parentOrderNumber?.toLowerCase().includes(query)) return true;
       }
       
       return false;
@@ -574,7 +1020,9 @@ export class TaskService {
       byType: {
         order: 0,
         workflow: 0,
-        line_item: 0
+        line_item: 0,
+        vetted_sites_request: 0,
+        brand_intelligence: 0
       }
     };
 
@@ -595,8 +1043,13 @@ export class TaskService {
       // Status counts
       stats.byStatus[task.status]++;
 
-      // Type counts
-      stats.byType[task.type]++;
+      // Type counts - safely increment with fallback
+      if (stats.byType.hasOwnProperty(task.type)) {
+        stats.byType[task.type]++;
+      } else {
+        // Handle any new task types that might not be in the initial stats object
+        (stats.byType as any)[task.type] = ((stats.byType as any)[task.type] || 0) + 1;
+      }
     });
 
     return stats;
@@ -635,7 +1088,7 @@ export class TaskService {
    * Assign a task to a user
    */
   async assignTask(
-    entityType: 'order' | 'workflow' | 'line_item',
+    entityType: 'order' | 'workflow' | 'line_item' | 'vetted_sites_request' | 'brand_intelligence',
     entityId: string,
     userId: string,
     notes?: string
@@ -674,6 +1127,28 @@ export class TaskService {
             })
             .where(eq(orderLineItems.id, entityId));
           break;
+
+        case 'vetted_sites_request':
+          await db
+            .update(vettedSitesRequests)
+            .set({
+              fulfilledBy: userId,
+              updatedAt: new Date()
+            })
+            .where(eq(vettedSitesRequests.id, entityId));
+          break;
+
+        case 'brand_intelligence':
+          await db
+            .update(clientBrandIntelligence)
+            .set({
+              assignedTo: userId,
+              assignedAt: new Date(),
+              assignmentNotes: notes,
+              updatedAt: new Date()
+            })
+            .where(eq(clientBrandIntelligence.id, entityId));
+          break;
       }
 
       return true;
@@ -687,7 +1162,7 @@ export class TaskService {
    * Bulk assign tasks
    */
   async bulkAssignTasks(
-    entityType: 'order' | 'workflow' | 'line_item',
+    entityType: 'order' | 'workflow' | 'line_item' | 'vetted_sites_request' | 'brand_intelligence',
     entityIds: string[],
     userId: string,
     notes?: string
@@ -725,6 +1200,28 @@ export class TaskService {
               modifiedAt: new Date()
             })
             .where(inArray(orderLineItems.id, entityIds));
+          break;
+
+        case 'vetted_sites_request':
+          await db
+            .update(vettedSitesRequests)
+            .set({
+              fulfilledBy: userId,
+              updatedAt: new Date()
+            })
+            .where(inArray(vettedSitesRequests.id, entityIds));
+          break;
+
+        case 'brand_intelligence':
+          await db
+            .update(clientBrandIntelligence)
+            .set({
+              assignedTo: userId,
+              assignedAt: new Date(),
+              assignmentNotes: notes,
+              updatedAt: new Date()
+            })
+            .where(inArray(clientBrandIntelligence.id, entityIds));
           break;
       }
 

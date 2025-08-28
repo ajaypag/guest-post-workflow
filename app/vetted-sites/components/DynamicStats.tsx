@@ -32,37 +32,15 @@ interface DynamicStatsProps {
 }
 
 export default function DynamicStats({ initialStats, total }: DynamicStatsProps) {
-  const [stats, setStats] = useState<StatsData>(initialStats);
+  const [stats] = useState<StatsData>(initialStats); // Use server-side stats, don't update them
   const [requestStats, setRequestStats] = useState<RequestStats>({ totalRequests: 0, submitted: 0, inProgress: 0, fulfilled: 0 });
-  const [loading, setLoading] = useState(false);
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    const fetchStats = async () => {
-      setLoading(true);
+    // Only fetch request stats on initial load (these aren't provided server-side)
+    // Don't fetch main stats to prevent flashing - they come from server-side rendering
+    const fetchRequestStats = async () => {
       try {
-        // Fetch vetted sites stats
-        const url = new URL('/api/vetted-sites', window.location.origin);
-        searchParams.forEach((value, key) => {
-          url.searchParams.set(key, value);
-        });
-        
-        const response = await fetch(url.toString());
-        if (response.ok) {
-          const data = await response.json();
-          if (data?.stats) {
-            setStats({
-              totalQualified: data.stats.totalQualified || 0,
-              available: data.stats.available || 0,
-              used: data.stats.used || 0,
-              bookmarked: data.stats.bookmarked || 0,
-              hidden: data.stats.hidden || 0,
-              breakdown: data.stats.breakdown,
-            });
-          }
-        }
-        
-        // Fetch request stats
         const requestResponse = await fetch('/api/vetted-sites/requests', {
           credentials: 'include'
         });
@@ -80,14 +58,12 @@ export default function DynamicStats({ initialStats, total }: DynamicStatsProps)
           }
         }
       } catch (error) {
-        console.error('Error fetching stats:', error);
-      } finally {
-        setLoading(false);
+        console.error('Error fetching request stats:', error);
       }
     };
 
-    fetchStats();
-  }, [searchParams]);
+    fetchRequestStats();
+  }, []); // Empty dependency array - only run once on mount
 
   // Determine what quality level is being shown based on filters
   const getQualityLabel = () => {
@@ -104,6 +80,9 @@ export default function DynamicStats({ initialStats, total }: DynamicStatsProps)
   };
 
   const qualityLabel = getQualityLabel();
+  
+  // Check if the available filter is off (showing all sites)
+  const showingAllSites = searchParams.get('available') === 'false';
 
   return (
     <div className="bg-white rounded-lg shadow-sm p-4">
@@ -117,11 +96,6 @@ export default function DynamicStats({ initialStats, total }: DynamicStatsProps)
           )}
         </h2>
         <div className="flex items-center gap-3">
-          {loading && (
-            <span className="text-blue-600">
-              <div className="inline-block animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
-            </span>
-          )}
           <Link
             href="/vetted-sites/requests"
             className="inline-flex items-center px-3 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
@@ -154,10 +128,12 @@ export default function DynamicStats({ initialStats, total }: DynamicStatsProps)
           <div className="font-semibold text-green-600">{stats.available}</div>
           <div className="text-gray-500">Available to Use</div>
         </div>
-        <div className="text-center">
-          <div className="font-semibold text-yellow-600">{stats.used}</div>
-          <div className="text-gray-500">Already in Orders</div>
-        </div>
+        {(showingAllSites || stats.used > 0) && (
+          <div className="text-center">
+            <div className="font-semibold text-yellow-600">{stats.used}</div>
+            <div className="text-gray-500">Already in Orders</div>
+          </div>
+        )}
         {stats.bookmarked > 0 && (
           <div className="text-center">
             <div className="font-semibold text-purple-600">{stats.bookmarked}</div>
@@ -182,7 +158,7 @@ export default function DynamicStats({ initialStats, total }: DynamicStatsProps)
           <div className="font-semibold text-green-600">{stats.available}</div>
           <div className="text-xs text-gray-500">Available</div>
         </div>
-        {stats.used > 0 && (
+        {(showingAllSites || stats.used > 0) && (
           <div className="text-center">
             <div className="font-semibold text-yellow-600">{stats.used}</div>
             <div className="text-xs text-gray-500">In Use</div>

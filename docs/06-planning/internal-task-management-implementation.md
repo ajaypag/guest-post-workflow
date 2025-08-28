@@ -3,9 +3,19 @@
 ## Overview
 Build a deadline-focused task management dashboard for internal users. Skip vetted sites integration for now (different branch).
 
-## Phase 1: Core Infrastructure (Steps 1-10)
+## 🚀 Current Status (Updated 2025-08-27)
+- ✅ **Phase 1 COMPLETE**: Core infrastructure implemented and working
+- ✅ **Homepage Integration**: Task management integrated into main dashboard
+- ✅ **Assignment System**: Task reassignment with UUID parsing fix
+- ✅ **Terminology Update**: "Workflows" → "Guest Posts", "Line Items" → "Paid Links"
+- ✅ **Filter Ordering**: Fixed to Orders → Paid Links → Guest Posts
+- ✅ **Vetted Sites Merge**: Successfully merged business-critical features
+- ✅ **New Task Types**: Added Vetted Sites Requests and Brand Intelligence workflows
+- 🔄 **Phase 2**: Partially complete, some features pending
 
-### Step 1: Create Database Migration
+## Phase 1: Core Infrastructure (Steps 1-10) ✅ COMPLETE
+
+### Step 1: Create Database Migration ✅ COMPLETE
 **File**: `migrations/0072_add_internal_tasks_system.sql`
 ```sql
 -- Create internal tasks table for ad-hoc deadline work
@@ -53,7 +63,7 @@ ALTER TABLE workflows
 ADD COLUMN IF NOT EXISTS expected_completion_date TIMESTAMP;
 ```
 
-### Step 2: Update Database Schema File
+### Step 2: Update Database Schema File ✅ COMPLETE
 **File**: `lib/db/schema.ts`
 ```typescript
 // Add after existing table definitions
@@ -102,7 +112,7 @@ export const internalTasksRelations = relations(internalTasks, ({ one }) => ({
 // Add expectedCompletionDate: timestamp('expected_completion_date') to workflows table
 ```
 
-### Step 3: Create Type Definitions
+### Step 3: Create Type Definitions ✅ COMPLETE
 **File**: `lib/types/tasks.ts`
 ```typescript
 export type TaskType = 'order' | 'workflow' | 'custom';
@@ -174,7 +184,7 @@ export interface TaskFilters {
 }
 ```
 
-### Step 4: Create Task Service
+### Step 4: Create Task Service ✅ COMPLETE
 **File**: `lib/services/taskService.ts`
 ```typescript
 import { db } from '@/lib/db/connection';
@@ -400,7 +410,7 @@ export class TaskService {
 export const taskService = new TaskService();
 ```
 
-### Step 5: Create API Endpoint
+### Step 5: Create API Endpoint ✅ COMPLETE
 **File**: `app/api/internal/tasks/route.ts`
 ```typescript
 import { NextRequest, NextResponse } from 'next/server';
@@ -440,7 +450,7 @@ export async function GET(request: NextRequest) {
 }
 ```
 
-### Step 6: Create Server Component (Page)
+### Step 6: Create Server Component (Page) ✅ COMPLETE
 **File**: `app/internal/tasks/page.tsx`
 ```typescript
 import { AuthServiceServer } from '@/lib/auth-server';
@@ -468,7 +478,7 @@ export default async function InternalTasksPage() {
 }
 ```
 
-### Step 7: Create Client Component
+### Step 7: Create Client Component ✅ COMPLETE
 **File**: `app/internal/tasks/TasksPageClient.tsx`
 ```typescript
 'use client';
@@ -790,7 +800,7 @@ export default function TasksPageClient({
 }
 ```
 
-### Step 8: Add to Internal Navigation
+### Step 8: Add to Internal Navigation ✅ COMPLETE
 **File**: `components/internal/InternalLayout.tsx`
 ```typescript
 // Add to navigation array (around line 35)
@@ -809,21 +819,31 @@ import {
 } from 'lucide-react';
 ```
 
-### Step 9: Run Migration
+### Step 9: Run Migration ✅ COMPLETE
 ```bash
 # Command to execute
 psql $DATABASE_URL -f migrations/0072_add_internal_tasks_system.sql
 ```
 
-### Step 10: Test Basic Functionality
+### Step 10: Test Basic Functionality ✅ COMPLETE
 1. Navigate to `/internal/tasks`
 2. Verify orders and workflows appear
 3. Check deadline grouping works
 4. Test navigation to individual items
 
-## Phase 2: Enhanced Features (Steps 11-20)
+## Phase 2: Enhanced Features (Steps 11-20) 🔄 PARTIALLY COMPLETE
 
-### Step 11: Create Custom Task Modal
+### ✅ **COMPLETED ENHANCEMENTS (Beyond Original Plan):**
+- **Homepage Integration**: Tasks integrated into main dashboard replacing AssignedProjectsNotification
+- **Assignment System with UUID Fix**: Task reassignment working correctly with proper UUID parsing
+- **Terminology Clarity**: Updated "Workflows" → "Guest Posts", "Line Items" → "Paid Links"  
+- **Filter Order Fix**: Logical flow Orders → Paid Links → Guest Posts
+- **Vetted Sites Merge**: Successfully integrated Order Suggestions system, pricing fixes, bulk delete features
+- **Notes Field Removal**: Cleaned up non-functional assignment notes
+
+### 📋 **ORIGINAL PHASE 2 STEPS STATUS:**
+
+### Step 11: Create Custom Task Modal ❌ PENDING
 **File**: `components/internal/CreateTaskModal.tsx`
 ```typescript
 'use client';
@@ -966,7 +986,7 @@ export default function CreateTaskModal({
 }
 ```
 
-### Step 12: Add Create Task API
+### Step 12: Add Create Task API ❌ PENDING
 **File**: `app/api/internal/tasks/custom/route.ts`
 ```typescript
 import { NextRequest, NextResponse } from 'next/server';
@@ -1011,7 +1031,7 @@ export async function POST(request: NextRequest) {
 }
 ```
 
-### Step 13: Update Task Status API
+### Step 13: Update Task Status API ✅ COMPLETE (Assignment functionality working)
 **File**: `app/api/internal/tasks/[id]/status/route.ts`
 ```typescript
 import { NextRequest, NextResponse } from 'next/server';
@@ -1068,21 +1088,46 @@ export async function PUT(
 
 ### Steps 14-20: Additional Features
 
-14. **Add Filter Controls** to TasksPageClient
-15. **Create Team Overview Page** at `/internal/tasks/team`
-16. **Add Deadline Notifications** using existing notification system
-17. **Create Task Assignment Modal** for reassigning tasks
-18. **Add Bulk Actions** (mark complete, reassign multiple)
-19. **Create Task Templates** for recurring tasks
-20. **Add Performance Metrics** dashboard
+14. **Add Filter Controls** to TasksPageClient ✅ COMPLETE (Full filtering system implemented)
+15. **Create Team Overview Page** at `/internal/tasks/team` ❌ PENDING
+16. **Add Deadline Notifications** using existing notification system ❌ PENDING  
+17. **Create Task Assignment Modal** for reassigning tasks ✅ COMPLETE (Assignment system working)
+18. **Add Bulk Actions** (mark complete, reassign multiple) ✅ COMPLETE (Bulk assignment implemented)
+19. **Create Task Templates** for recurring tasks ❌ PENDING
+20. **Add Performance Metrics** dashboard ❌ PENDING
 
-## Phase 3: Testing & Polish (Steps 21-25)
+## Phase 3: Testing & Polish (Steps 21-25) 🔄 PARTIALLY COMPLETE
 
-21. **Add Loading States** and error handling
-22. **Implement Optimistic Updates** for better UX
-23. **Add Keyboard Shortcuts** (n = new task, / = search)
-24. **Create Mobile Responsive** views
-25. **Add Export to CSV** functionality
+21. **Add Loading States** and error handling ✅ COMPLETE (Loading states implemented)
+22. **Implement Optimistic Updates** for better UX ❌ PENDING
+23. **Add Keyboard Shortcuts** (n = new task, / = search) ❌ PENDING
+24. **Create Mobile Responsive** views ❌ PENDING
+25. **Add Export to CSV** functionality ❌ PENDING
+
+## 📊 IMPLEMENTATION SUMMARY
+
+### ✅ **COMPLETED (16/25 steps):**
+- **Phase 1**: All core infrastructure (Steps 1-10) ✅ 100%
+- **Phase 2**: Key features - filtering, assignment, bulk actions, terminology updates
+- **Phase 3**: Basic loading states
+- **Bonus**: Homepage integration, UUID parsing fixes, vetted sites merge
+
+### ❌ **PENDING (9/25 steps):**
+- Custom task creation modal (Steps 11-12)
+- Team overview page (Step 15)  
+- Deadline notifications (Step 16)
+- Task templates (Step 19)
+- Performance metrics (Step 20)
+- Optimistic updates (Step 22)
+- Keyboard shortcuts (Step 23)
+- Mobile responsiveness (Step 24)
+- CSV export (Step 25)
+
+### 🎯 **NEXT PRIORITIES:**
+1. **Custom Task Creation** (Steps 11-12) - Allow ad-hoc task creation
+2. **Mobile Responsiveness** (Step 24) - Critical for production use
+3. **Team Overview** (Step 15) - Management visibility
+4. **Performance Optimizations** (Step 22) - Better UX
 
 ## Key Implementation Notes
 
@@ -1122,3 +1167,91 @@ export async function PUT(
 - [ ] Empty state displays
 - [ ] Error states handled
 - [ ] Performance acceptable with 100+ tasks
+
+## 🆕 NEW TASK TYPES (2025-08-27)
+
+### Overview
+Added two critical task types that were missing from the original system, both representing business workflows that can be easily forgotten without proper task tracking.
+
+### ✅ Vetted Sites Requests
+**Purpose**: Track the lifecycle of vetted sites requests from submission to fulfillment
+**Workflow**: `submitted` → `under_review` → `approved` → `fulfilled` (or `rejected`/`expired`)
+
+**Database Integration**:
+- Uses existing `vetted_sites_requests` table (migration 0068)
+- Fields: target_urls, status, reviewed_at, fulfilled_by, etc.
+- 7-day deadline from approval date
+
+**Task Service Implementation**:
+```typescript
+// Added to getVettedSitesRequestTasks() in taskService.ts
+- Status mapping: submitted/under_review → pending, approved → in_progress, fulfilled → completed
+- Filtering by status, user assignment, and date range
+- Only shows approved requests that need fulfillment by default
+```
+
+**UI Features**:
+- 🏢 Orange-themed filter button "Vetted Sites"
+- Dedicated display section showing target URL count, status badges
+- Shows submission and approval timestamps
+- Links to `/internal/vetted-sites/requests/{id}`
+
+### ✅ Brand Intelligence
+**Purpose**: Track multi-step AI-powered brand research and brief generation workflow
+**Workflow**: `research phase` → `client input phase` → `brief generation phase`
+
+**Database Integration**:
+- Uses existing `client_brand_intelligence` table (migration 0068)
+- Dual status tracking: research_status + brief_status
+- Complex workflow: research completion → client input → brief creation
+
+**Task Service Implementation**:
+```typescript
+// Added to getBrandIntelligenceTasks() in taskService.ts  
+- Multi-phase status logic based on research_status, brief_status, and client_input
+- Smart deadline calculation based on current phase (1-7 days)
+- Descriptive status messages for each workflow phase
+```
+
+**UI Features**:
+- 🧠 Indigo-themed filter button "Brand Intel"
+- Dual status badges showing research + brief phases
+- Client input indicator (waiting vs received)
+- Links to `/clients/{id}/brand-intelligence`
+
+### Implementation Details
+
+**TypeScript Types**:
+```typescript
+// Updated TaskType union
+export type TaskType = 'order' | 'workflow' | 'line_item' | 'vetted_sites_request' | 'brand_intelligence';
+
+// New interfaces
+export interface VettedSitesRequestTask extends BaseTask { ... }
+export interface BrandIntelligenceTask extends BaseTask { ... }
+```
+
+**Task Service Updates**:
+- Added both task types to default fetch list: `['order', 'line_item', 'workflow', 'vetted_sites_request', 'brand_intelligence']`
+- Implemented comprehensive filtering, status mapping, and deadline logic
+- Added helper methods for status conversion and description generation
+
+**UI Integration**:
+- Updated TASK_TYPE_INFO constants with proper colors and labels
+- Added filter buttons with live count display
+- Created dedicated display sections with workflow-specific information
+- Updated task icons (Building for vetted sites, Users for brand intel)
+- Enhanced statistics calculation to include new task types
+
+**Benefits**:
+1. **Prevents Lost Work**: These workflows now have proper deadline tracking
+2. **Better Visibility**: Internal team can see pending requests/intelligence tasks
+3. **Status Clarity**: Clear workflow phases with descriptive status messages
+4. **Unified Interface**: Same assignment, filtering, and management tools
+5. **Business Critical**: Both represent important revenue-generating workflows
+
+### Future Enhancements
+- **Assignment Integration**: Allow reassignment of vetted sites requests
+- **Status Updates**: Enable direct status changes from task interface  
+- **Bulk Operations**: Support bulk assignment of similar task types
+- **Notifications**: Add deadline reminders for time-sensitive phases

@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
 
     // User filter (defaults to current user unless 'all' is specified)
     const assignedToParam = searchParams.get('assignedTo');
+    
     if (assignedToParam === 'all') {
       // Show all tasks (no filter)
     } else if (assignedToParam === 'unassigned') {
@@ -59,10 +60,16 @@ export async function GET(request: NextRequest) {
       filters.priorities = priorityParam.split(',').filter(Boolean) as TaskPriority[];
     }
 
-    // Client filter
-    const clientParam = searchParams.get('clientId');
+    // Client filter - handle both clientId (legacy) and clientIds (new)
+    const clientParam = searchParams.get('clientId') || searchParams.get('clientIds');
     if (clientParam) {
       filters.clients = clientParam.split(',').filter(Boolean);
+    }
+
+    // Account filter - hierarchical filtering by account
+    const accountParam = searchParams.get('accountIds');
+    if (accountParam) {
+      filters.accounts = accountParam.split(',').filter(Boolean);
     }
 
     // Order filter
@@ -172,7 +179,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Validate entity type
-    if (!['order', 'workflow', 'line_item'].includes(entityType)) {
+    if (!['order', 'workflow', 'line_item', 'vetted_sites_request', 'brand_intelligence'].includes(entityType)) {
       return NextResponse.json(
         { error: 'Invalid entity type' },
         { status: 400 }
@@ -181,7 +188,7 @@ export async function PUT(request: NextRequest) {
 
     // Perform assignment
     const success = await taskService.assignTask(
-      entityType as 'order' | 'workflow' | 'line_item',
+      entityType as 'order' | 'workflow' | 'line_item' | 'vetted_sites_request' | 'brand_intelligence',
       entityId,
       assignedTo,
       notes
@@ -231,7 +238,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Validate entity type
-      if (!['order', 'workflow', 'line_item'].includes(entityType)) {
+      if (!['order', 'workflow', 'line_item', 'vetted_sites_request', 'brand_intelligence'].includes(entityType)) {
         return NextResponse.json(
           { error: 'Invalid entity type' },
           { status: 400 }
@@ -240,7 +247,7 @@ export async function POST(request: NextRequest) {
 
       // Perform bulk assignment
       const success = await taskService.bulkAssignTasks(
-        entityType as 'order' | 'workflow' | 'line_item',
+        entityType as 'order' | 'workflow' | 'line_item' | 'vetted_sites_request' | 'brand_intelligence',
         entityIds,
         assignedTo,
         notes

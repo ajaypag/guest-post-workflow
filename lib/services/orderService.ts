@@ -12,6 +12,7 @@ import {
   type NewOrderItem,
   type PricingRule
 } from '@/lib/db/orderSchema';
+import { orderLineItems } from '@/lib/db/orderLineItemSchema';
 import { bulkAnalysisDomains } from '@/lib/db/bulkAnalysisSchema';
 import { websites } from '@/lib/db/websiteSchema';
 import { workflows } from '@/lib/db/schema';
@@ -65,6 +66,7 @@ export class OrderService {
       clientReviewFee: input.includesClientReview ? 50000 : 0, // $500 in cents
       rushDelivery: input.rushDelivery || false,
       rushFee: input.rushDelivery ? 100000 : 0, // $1000 in cents
+      expectedDeliveryDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days default
       createdAt: now,
       updatedAt: now,
     }).returning();
@@ -73,6 +75,36 @@ export class OrderService {
     await this.logStatusChange(orderId, null, 'draft', input.createdBy);
 
     return order;
+  }
+
+  /**
+   * Update order delivery deadline
+   */
+  static async updateOrderDeadline(
+    orderId: string, 
+    newDeadline: Date, 
+    cascadeToLineItems: boolean = false,
+    updatedBy: string
+  ): Promise<void> {
+    const now = new Date();
+    
+    // Update the order
+    await db.update(orders)
+      .set({ 
+        expectedDeliveryDate: newDeadline,
+        updatedAt: now 
+      })
+      .where(eq(orders.id, orderId));
+
+    // Optionally cascade to line items
+    if (cascadeToLineItems) {
+      await db.update(orderLineItems)
+        .set({ 
+          modifiedAt: now,
+          modifiedBy: updatedBy
+        })
+        .where(eq(orderLineItems.orderId, orderId));
+    }
   }
 
   /**
@@ -865,9 +897,8 @@ export class OrderService {
     const { orderLineItems } = await import('@/lib/db/orderLineItemSchema');
     const { and, sql } = await import('drizzle-orm');
     
-    // First get all orders with line item counts and account info
-    // Count non-cancelled/refunded line items
-    const ordersWithCounts = await db
+    // First get all orders with account info (no joins to avoid multiplication)
+    const ordersData = await db
       .select({
         id: orders.id,
         accountId: orders.accountId,
@@ -899,60 +930,44 @@ export class OrderService {
         cancellationReason: orders.cancellationReason,
         createdAt: orders.createdAt,
         updatedAt: orders.updatedAt,
-        // Count active line items (exclude cancelled and refunded)
-        lineItemCount: sql<number>`cast(count(case when ${orderLineItems.status} not in ('cancelled', 'refunded') then 1 end) as int)`,
-        // Also count old orderItems for backward compatibility
-        oldItemCount: sql<number>`cast(count(${orderItems.id}) as int)`,
         // Account data - select individual fields
         accountEmail: accounts.email,
         accountContactName: accounts.contactName,
         accountCompanyName: accounts.companyName,
       })
       .from(orders)
-      .leftJoin(orderLineItems, eq(orders.id, orderLineItems.orderId))
-      .leftJoin(orderItems, eq(orders.id, orderItems.orderId))
       .leftJoin(accounts, eq(orders.accountId, accounts.id))
-      .groupBy(
-        orders.id, 
-        orders.accountId,
-        orders.status,
-        orders.state,
-        orders.subtotalRetail,
-        orders.discountPercent,
-        orders.discountAmount,
-        orders.totalRetail,
-        orders.totalWholesale,
-        orders.profitMargin,
-        orders.includesClientReview,
-        orders.clientReviewFee,
-        orders.rushDelivery,
-        orders.rushFee,
-        orders.requiresClientReview,
-        orders.reviewCompletedAt,
-        orders.shareToken,
-        orders.shareExpiresAt,
-        orders.approvedAt,
-        orders.invoicedAt,
-        orders.paidAt,
-        orders.completedAt,
-        orders.cancelledAt,
-        orders.createdBy,
-        orders.assignedTo,
-        orders.internalNotes,
-        orders.accountNotes,
-        orders.cancellationReason,
-        orders.createdAt,
-        orders.updatedAt,
-        accounts.id, 
-        accounts.email, 
-        accounts.contactName, 
-        accounts.companyName
-      )
       .orderBy(desc(orders.createdAt));
+
+    // Get line item counts separately to avoid multiplication issue
+    const lineItemCounts = await db
+      .select({
+        orderId: orderLineItems.orderId,
+        lineItemCount: sql<number>`cast(count(case when ${orderLineItems.status} not in ('cancelled', 'refunded') then 1 end) as int)`,
+      })
+      .from(orderLineItems)
+      .groupBy(orderLineItems.orderId);
+
+    // Get old order item counts separately
+    const oldItemCounts = await db
+      .select({
+        orderId: orderItems.orderId,
+        oldItemCount: sql<number>`cast(count(*) as int)`,
+      })
+      .from(orderItems)
+      .groupBy(orderItems.orderId);
+
+    // Create lookup maps for efficient merging
+    const lineItemCountMap = new Map(lineItemCounts.map(item => [item.orderId, item.lineItemCount]));
+    const oldItemCountMap = new Map(oldItemCounts.map(item => [item.orderId, item.oldItemCount]));
 
     // Now fetch additional details for each order
     const ordersWithDetails = await Promise.all(
-      ordersWithCounts.map(async (order) => {
+      ordersData.map(async (order) => {
+        // Get the counts from the lookup maps
+        const lineItemCount = lineItemCountMap.get(order.id) || 0;
+        const oldItemCount = oldItemCountMap.get(order.id) || 0;
+        
         // Get order groups for backward compatibility
         const groups = await this.getOrderGroups(order.id);
         
@@ -992,7 +1007,7 @@ export class OrderService {
         } : null;
         
         // Remove the individual account fields and add the account object
-        const { accountEmail, accountContactName, accountCompanyName, lineItemCount, oldItemCount, ...orderData } = order;
+        const { accountEmail, accountContactName, accountCompanyName, ...orderData } = order;
         
         // Use line item count if available, otherwise fall back to old items or order groups
         const totalLinks = lineItemCount || oldItemCount || groups.reduce((sum, g) => sum + g.linkCount, 0) || 0;

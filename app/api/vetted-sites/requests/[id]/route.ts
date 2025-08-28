@@ -3,7 +3,7 @@ import { AuthServiceServer } from '@/lib/auth-server';
 import { db } from '@/lib/db/connection';
 import { vettedSitesRequests, vettedRequestProjects } from '@/lib/db/vettedSitesRequestSchema';
 import { bulkAnalysisProjects } from '@/lib/db/bulkAnalysisSchema';
-import { clients, targetPages } from '@/lib/db/schema';
+import { clients, targetPages, users, accounts } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
@@ -136,8 +136,49 @@ export async function GET(
       .leftJoin(bulkAnalysisProjects, eq(vettedRequestProjects.projectId, bulkAnalysisProjects.id))
       .where(eq(vettedRequestProjects.requestId, requestId));
 
+    // Fetch creator details - check both createdByUser (internal) and accountId (account users)
+    let creatorDetails = null;
+    
+    console.log('Request data:', JSON.stringify({
+      id: requestData.id,
+      createdByUser: requestData.createdByUser,
+      accountId: requestData.accountId
+    }, null, 2));
+    
+    if (requestData.createdByUser) {
+      // Internal user created the request
+      const [internalUser] = await db
+        .select({
+          id: users.id,
+          name: users.name,
+          email: users.email
+        })
+        .from(users)
+        .where(eq(users.id, requestData.createdByUser))
+        .limit(1);
+      
+      creatorDetails = internalUser;
+      console.log('Found internal creator:', creatorDetails);
+    } else if (requestData.accountId) {
+      // Account user created the request
+      const [accountUser] = await db
+        .select({
+          id: accounts.id,
+          name: accounts.contactName,
+          email: accounts.email
+        })
+        .from(accounts)
+        .where(eq(accounts.id, requestData.accountId))
+        .limit(1);
+      
+      creatorDetails = accountUser;
+      console.log('Found account creator:', creatorDetails);
+    }
+
     const response = {
       ...requestData,
+      createdByUserName: creatorDetails?.name || null,
+      createdByUserEmail: creatorDetails?.email || null,
       linkedClients: [], // TODO: Implement if needed
       linkedProjects: linkedProjectsData,
       actualDomainCount: 0, // TODO: Calculate if needed

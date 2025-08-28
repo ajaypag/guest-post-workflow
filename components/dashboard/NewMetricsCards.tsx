@@ -21,6 +21,7 @@ interface NewMetricsCardsProps {
     totalOrders: number;
     activeOrders: number;
     completedOrders: number;
+    qualifiedSites?: number;
   };
   clients: Array<{
     id: string;
@@ -65,6 +66,13 @@ export default function NewMetricsCards({
       sum + (r.qualifiedDomainCount || 0), 0
     )
   };
+
+  // Debug log
+  console.log('🔍 NewMetricsCards Debug:', {
+    requestsCount: vettedSitesRequests.length,
+    vettedStats,
+    sampleRequest: vettedSitesRequests[0]
+  });
 
   // Prepare notification display
   const urgentOrders = notifications?.urgentOrders || [];
@@ -134,6 +142,14 @@ export default function NewMetricsCards({
           <p className="text-sm font-medium text-gray-700">
             Vetted {vettedStats.total === 1 ? 'Request' : 'Requests'}
           </p>
+          
+          {/* Show vetted sites count subtly like other sub-items */}
+          {typeof stats.qualifiedSites === 'number' && stats.qualifiedSites > 0 && (
+            <p className="text-xs text-gray-500">
+              {stats.qualifiedSites} available to use
+            </p>
+          )}
+          
           <div className="text-xs text-gray-500 space-y-0.5">
             {vettedStats.pending > 0 && (
               <div className="flex items-center gap-1">
@@ -147,10 +163,10 @@ export default function NewMetricsCards({
                 {vettedStats.analyzing} analyzing
               </div>
             )}
-            {vettedStats.qualifiedSites > 0 && (
+            {vettedStats.totalSites > 0 && vettedStats.qualifiedSites === 0 && (
               <div className="flex items-center gap-1">
-                <span className="w-1.5 h-1.5 bg-green-400 rounded-full"></span>
-                {vettedStats.qualifiedSites} sites found
+                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>
+                {vettedStats.totalSites} sites analyzed
               </div>
             )}
           </div>

@@ -154,6 +154,7 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
     activeOrders: 0,
     completedOrders: 0,
     totalBrands: 0,
+    qualifiedSites: 0,
   });
   const { notifications } = useNotifications();
 
@@ -195,20 +196,55 @@ function AccountDashboardContent({ user }: AccountDashboardProps) {
       
       if (clientResponse.ok) {
         const { clients: clientData, totalBrands } = await clientResponse.json();
+        console.log('🔍 Dashboard Debug - Client data loaded, totalBrands:', totalBrands);
         setClients(clientData || []);
         
         // Fetch vetted sites requests
         const requestsResponse = await fetch('/api/vetted-sites/requests', {
           credentials: 'include'
         });
+        console.log('🔍 Dashboard Debug - Vetted sites requests response status:', requestsResponse.status);
         if (requestsResponse.ok) {
           const { requests: requestData } = await requestsResponse.json();
+          console.log('🔍 Dashboard Debug - Requests data length:', requestData?.length || 0);
           setVettedSitesRequests(requestData || []);
         }
+        
+        // Fetch actual vetted sites count (available to use)
+        try {
+          console.log('🔍 Dashboard Debug - About to fetch /api/vetted-sites');
+          const vettedSitesResponse = await fetch('/api/vetted-sites', {
+            credentials: 'include'
+          });
+          console.log('🔍 Dashboard Debug - Response status:', vettedSitesResponse.status);
+          if (vettedSitesResponse.ok) {
+            const vettedSitesData = await vettedSitesResponse.json();
+            console.log('🔍 Dashboard Debug - Full API response:', vettedSitesData);
+            console.log('🔍 Dashboard Debug - Stats object:', vettedSitesData?.stats);
+            // Use the 'available' count which shows sites available to use
+            const availableCount = vettedSitesData?.stats?.available || 0;
+            const totalQualified = vettedSitesData?.stats?.totalQualified || 0;
+            console.log('📊 Dashboard Debug - Available sites count:', availableCount);
+            console.log('📊 Dashboard Debug - Total qualified sites count:', totalQualified);
+            // Store this in stats for the metrics component
+            setStats(prev => ({
+              ...prev,
+              qualifiedSites: availableCount,
+            }));
+          } else {
+            const errorText = await vettedSitesResponse.text();
+            console.error('🔍 Dashboard Debug - API Error Response:', errorText);
+          }
+        } catch (error) {
+          console.error('🔍 Dashboard Debug - Fetch error:', error);
+        }
+        console.log('🔍 Dashboard Debug - About to set totalBrands stat:', totalBrands);
         setStats(prev => ({
           ...prev,
           totalBrands: totalBrands || 0,
         }));
+      } else {
+        console.error('🔍 Dashboard Debug - Client response not ok:', clientResponse.status);
       }
       
       
@@ -883,8 +919,8 @@ function ConditionalAccountLayout({ user }: { user: any }) {
       title={`Welcome back, ${user?.name}`}
       subtitle="Get cited by AI and ranked by Google with strategic guest posts"
       showBreadcrumbs={false}
-      sidebarContent={!isNewUser ? <SidebarNotifications /> : undefined}
-      hideSidebar={isNewUser}
+      sidebarContent={undefined}
+      hideSidebar={false}
     >
       <AccountDashboardContent user={user} />
     </AccountLayout>

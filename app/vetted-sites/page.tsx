@@ -130,6 +130,7 @@ async function getInitialData(session: any, searchParams: any) {
     accountId: params.accountId ? params.accountId.split(',').filter(Boolean) : undefined,
     status: params.status ? params.status.split(',').filter(Boolean) : ['high_quality', 'good_quality'],
     view: params.view || 'all',
+    available: params.available === 'false' ? 'false' : 'true',  // Default to 'true' to show only available sites
     search: params.search,
     page: parseInt(params.page || '1'),
     limit: Math.min(parseInt(params.limit || '50'), 100),
@@ -382,7 +383,7 @@ async function getInitialData(session: any, searchParams: any) {
         targetPageIds: bulkAnalysisDomains.targetPageIds,
         
         // Calculate active line items using this domain
-        activeLineItemsCount: sql<number>`(\n          SELECT COUNT(*)::int \n          FROM ${orderLineItems} \n          WHERE ${orderLineItems.assignedDomain} = ${bulkAnalysisDomains.domain} \n          AND ${orderLineItems.status} IN ('approved', 'in_progress', 'delivered')\n        )`
+        activeLineItemsCount: sql<number>`(\n          SELECT COUNT(*)::int \n          FROM ${orderLineItems} \n          WHERE ${orderLineItems.assignedDomain} = ${bulkAnalysisDomains.domain} \n          AND ${orderLineItems.status} IN ('approved', 'invoiced', 'in_progress', 'delivered')\n        )`
       })
       .from(bulkAnalysisDomains)
       .leftJoin(clients, eq(bulkAnalysisDomains.clientId, clients.id))
@@ -483,6 +484,17 @@ async function getInitialData(session: any, searchParams: any) {
     if (filters.search) {
       conditions.push(ilike(bulkAnalysisDomains.domain, `%${filters.search}%`));
     }
+    
+    // Availability filter - only show domains not in active orders
+    if (filters.available === 'true') {
+      conditions.push(sql`
+        NOT EXISTS (
+          SELECT 1 FROM ${orderLineItems}
+          WHERE ${orderLineItems.assignedDomain} = ${bulkAnalysisDomains.domain}
+          AND ${orderLineItems.status} != 'cancelled'
+        )
+      `);
+    }
 
     // Apply conditions
     if (conditions.length > 0) {
@@ -521,13 +533,65 @@ async function getInitialData(session: any, searchParams: any) {
     // Execute query
     const domains = await query;
 
-    // Calculate stats - dynamic based on current filters
+    // Calculate stats - we need a separate conditions array without the availability filter
+    // Build stats conditions (same as main conditions but without availability)
+    const statsConditions = [];
+    
+    // Copy all the same permission and filter conditions EXCEPT availability
+    if (session.userType === 'account') {
+      const accountClients = await db.query.clients.findMany({
+        where: eq(clients.accountId, session.userId),
+        columns: { id: true },
+      });
+      const accountClientIds = accountClients.map(c => c.id);
+      if (accountClientIds.length > 0) {
+        statsConditions.push(inArray(bulkAnalysisDomains.clientId, accountClientIds));
+      }
+    }
+    
+    if (filters.clientId && filters.clientId.length > 0) {
+      statsConditions.push(inArray(bulkAnalysisDomains.clientId, filters.clientId));
+    }
+    if (filters.accountId && filters.accountId.length > 0) {
+      statsConditions.push(inArray(clients.accountId, filters.accountId));
+    }
+    if (filters.projectId) {
+      statsConditions.push(eq(bulkAnalysisDomains.projectId, filters.projectId));
+    }
+    if (filters.requestId) {
+      const linkedProjects = await db
+        .select({ projectId: vettedRequestProjects.projectId })
+        .from(vettedRequestProjects)
+        .where(eq(vettedRequestProjects.requestId, filters.requestId));
+      if (linkedProjects.length > 0) {
+        const linkedProjectIds = linkedProjects.map(p => p.projectId);
+        statsConditions.push(inArray(bulkAnalysisDomains.projectId, linkedProjectIds));
+      }
+    }
+    if (filters.status && filters.status.length > 0) {
+      statsConditions.push(inArray(bulkAnalysisDomains.qualificationStatus, filters.status));
+    }
+    if (filters.view === 'bookmarked') {
+      statsConditions.push(eq(bulkAnalysisDomains.userBookmarked, true));
+    } else if (filters.view === 'hidden') {
+      statsConditions.push(eq(bulkAnalysisDomains.userHidden, true));
+    } else if (filters.view === 'all') {
+      statsConditions.push(or(
+        eq(bulkAnalysisDomains.userHidden, false),
+        isNull(bulkAnalysisDomains.userHidden)
+      ));
+    }
+    if (filters.search) {
+      statsConditions.push(ilike(bulkAnalysisDomains.domain, `%${filters.search}%`));
+    }
+    // IMPORTANT: Do NOT add the availability filter here
+    
     const statsQuery = await db
       .select({
-        // Total in current view (respects all filters)
+        // Total qualified (respects status filters but ignores availability filter)
         totalInView: sql<number>`COUNT(*)::int`,
         
-        // Available in current view (not hidden, not in use)
+        // Available (not hidden, not in use) - counts from all qualified, ignoring availability filter
         availableInView: sql<number>`
           COUNT(*) FILTER (
             WHERE ${bulkAnalysisDomains.userHidden} != true
@@ -539,7 +603,7 @@ async function getInitialData(session: any, searchParams: any) {
           )::int
         `,
         
-        // In use from current view
+        // In use - counts from all qualified, ignoring availability filter
         inUseFromView: sql<number>`
           COUNT(*) FILTER (
             WHERE EXISTS (
@@ -564,28 +628,37 @@ async function getInitialData(session: any, searchParams: any) {
       .leftJoin(clients, eq(bulkAnalysisDomains.clientId, clients.id))
       .leftJoin(accounts, eq(clients.accountId, accounts.id))
       .leftJoin(websites, eq(bulkAnalysisDomains.domain, websites.domain))
-      .where(conditions.length > 0 ? and(...conditions) : undefined);
+      .where(statsConditions.length > 0 ? and(...statsConditions) : undefined);
 
     const stats = statsQuery[0] || {};
+    
+    console.log('📊 Stats calculation:', {
+      totalInView: stats.totalInView,
+      availableInView: stats.availableInView,
+      inUseFromView: stats.inUseFromView,
+      filters: {
+        available: filters.available,
+        status: filters.status,
+      }
+    });
 
     // Fetch target pages for all domains
+    // NOTE: targetPageIds contains URL strings, not UUIDs, so we handle them directly
     const domainTargetPages = new Map();
     if (Array.isArray(domains)) {
       for (const domain of domains) {
         if (domain?.targetPageIds && Array.isArray(domain.targetPageIds) && domain.targetPageIds.length > 0) {
           try {
-            const pages = await db.query.targetPages.findMany({
-              where: inArray(targetPages.id, domain.targetPageIds as string[]),
-              columns: {
-                id: true,
-                url: true,
-                keywords: true,
-                description: true,
-              }
-            });
-            domainTargetPages.set(domain.id, pages);
+            // targetPageIds contains URL strings, convert to target page format
+            const targetPagesForDomain = domain.targetPageIds.map((url: string, index: number) => ({
+              id: `url-${index}`, // synthetic ID since these are URLs, not DB records
+              url: url,
+              keywords: null, // URLs don't have associated keywords in this context
+              description: null, // URLs don't have descriptions in this context
+            }));
+            domainTargetPages.set(domain.id, targetPagesForDomain);
           } catch (pageError) {
-            console.error(`Error fetching target pages for domain ${domain.id}:`, pageError);
+            console.error(`Error processing target pages for domain ${domain.id}:`, pageError);
           }
         }
       }

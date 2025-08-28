@@ -100,6 +100,7 @@ export async function POST(request: NextRequest) {
         clientReviewFee: 0,
         rushDelivery: false,
         rushFee: 0,
+        expectedDeliveryDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days default
         createdAt: now,
         updatedAt: now,
       };
@@ -255,6 +256,7 @@ export async function POST(request: NextRequest) {
       clientReviewFee,
       rushDelivery: rushDelivery || false,
       rushFee,
+      expectedDeliveryDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days default
       createdBy: session.userType === 'account' ? '00000000-0000-0000-0000-000000000000' : session.userId,
       internalNotes: session.userType === 'internal' ? internalNotes : null,
       createdAt: now,
