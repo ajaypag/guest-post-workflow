@@ -98,6 +98,8 @@ export const bulkAnalysisDomains = pgTable('bulk_analysis_domains', {
   // Request tracking fields
   sourceRequestId: uuid('source_request_id'), // References vetted_sites_requests.id
   addedFromRequestAt: timestamp('added_from_request_at'), // When domain was added from a request
+  // Target change detection field
+  targetPageHash: varchar('target_page_hash', { length: 32 }), // MD5 hash of sorted target page IDs for change detection
   createdAt: timestamp('created_at').notNull(),
   updatedAt: timestamp('updated_at').notNull(),
 }, (table) => {

@@ -853,8 +853,8 @@ export class BulkAnalysisService {
           checkedBy: bulkAnalysisDomains.checkedBy,
           // Enhanced fields for duplicate analysis
           targetPageIds: bulkAnalysisDomains.targetPageIds,
-          aiQualifiedAt: bulkAnalysisDomains.aiQualifiedAt,
           targetPageHash: bulkAnalysisDomains.targetPageHash,
+          aiQualifiedAt: bulkAnalysisDomains.aiQualifiedAt,
         })
         .from(bulkAnalysisDomains)
         .leftJoin(bulkAnalysisProjects, eq(bulkAnalysisDomains.projectId, bulkAnalysisProjects.id))

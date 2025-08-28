@@ -6,6 +6,10 @@ import { db } from '@/lib/db/connection';
 import { bulkAnalysisDomains } from '@/lib/db/bulkAnalysisSchema';
 import { eq, and, inArray, or, sql } from 'drizzle-orm';
 import { targetPages } from '@/lib/db/schema';
+import { hashArray, isAnalysisStale } from '@/lib/utils/targetHashUtils';
+
+// Feature flag for enhanced skip logic - DISABLED by default for safety
+const ENHANCED_SKIP_LOGIC = false;
 
 interface DomainQualificationProgress {
   domainId: string;
@@ -53,6 +57,45 @@ export class MasterQualificationService {
   private static dataForSeoLimiter = pLimit(this.DATAFORSEO_CONCURRENT_LIMIT);
   private static openAILimiter = pLimit(this.OPENAI_CONCURRENT_LIMIT);
   private static domainLimiter = pLimit(this.DOMAIN_CONCURRENT_LIMIT);
+
+  /**
+   * Enhanced skip logic - determines if domain needs forced re-analysis.
+   * This is separate from the original logic and only activated when ENHANCED_SKIP_LOGIC = true.
+   * 
+   * @param domain Domain data from database
+   * @param options Qualification options including forceRefresh
+   * @returns true if analysis should be forced to re-run (overrides skip conditions)
+   */
+  private static shouldForceReanalysis(domain: any, options: any): boolean {
+    if (!ENHANCED_SKIP_LOGIC) return false;
+    
+    // Check if target URLs have changed since last analysis
+    const currentTargetHash = hashArray(domain.targetPageIds || []);
+    const storedTargetHash = domain.targetPageHash;
+    const targetHashChanged = storedTargetHash !== currentTargetHash;
+    
+    // Check if analysis is stale (older than 6 months)
+    const analysisIsStale = isAnalysisStale(domain.aiQualifiedAt);
+    
+    // Force re-analysis if targets changed, data is stale, or explicitly requested
+    const shouldForce = targetHashChanged || analysisIsStale || options.forceRefresh;
+    
+    // Log reasoning for debugging
+    if (shouldForce) {
+      const reasons = [];
+      if (targetHashChanged) reasons.push('targets changed');
+      if (analysisIsStale) reasons.push('data stale');
+      if (options.forceRefresh) reasons.push('forced');
+      
+      console.log(`[REANALYSIS] Domain ${domain.domain}: ${reasons.join(', ')}`);
+      console.log(`  - Target hash: ${storedTargetHash} → ${currentTargetHash}`);
+      if (domain.aiQualifiedAt) {
+        console.log(`  - Analysis age: ${Math.floor((Date.now() - domain.aiQualifiedAt.getTime()) / (24 * 60 * 60 * 1000))} days`);
+      }
+    }
+    
+    return shouldForce;
+  }
 
   /**
    * Resolve mixed UUID/URL targetPageIds to proper UUIDs by looking up URLs in target_pages table
@@ -193,9 +236,12 @@ export class MasterQualificationService {
     };
 
     domains.forEach(domain => {
+      // Check if enhanced logic forces re-analysis
+      const forceReanalysis = this.shouldForceReanalysis(domain, options);
+      
       const hasDataForSeo = domain.hasDataForSeoResults;
-      const needsDataForSeo = !options.skipDataForSeo && !hasDataForSeo;
-      const needsAI = !options.skipAI && domain.qualificationStatus === 'pending';
+      const needsDataForSeo = (!hasDataForSeo || forceReanalysis) && !options.skipDataForSeo;
+      const needsAI = (domain.qualificationStatus === 'pending' || forceReanalysis) && !options.skipAI;
       
       // AI REQUIRES DataForSEO results to work properly
       if (needsAI && !hasDataForSeo && !options.skipDataForSeo) {
