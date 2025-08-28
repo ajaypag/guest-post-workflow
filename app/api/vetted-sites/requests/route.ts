@@ -11,6 +11,8 @@ import { z } from 'zod';
 // Request validation schema matching existing database schema
 const CreateVettedSitesRequestSchema = z.object({
   target_urls: z.array(z.string().url()).min(1, 'At least one target URL is required'),
+  account_id: z.string().optional(), // Account ID provided by internal users
+  selected_client_ids: z.array(z.string()).optional(), // Client IDs to prevent duplicate creation
   client_assignments: z.record(z.string(), z.string()).optional(), // URL -> clientId mapping
   filters: z.object({
     price_min: z.number().optional(),
@@ -184,35 +186,66 @@ export async function POST(request: NextRequest) {
     if (session.userType === 'account') {
       // Account users always use their own account ID
       accountId = session.userId;
-    } else if (session.userType === 'internal' && validatedData.target_urls && validatedData.target_urls.length > 0) {
-      // Internal users: look up which account owns these target URLs
-      const { targetPages, clients } = await import('@/lib/db/schema');
-      
-      // Find the first target page that matches one of our URLs
-      for (const targetUrl of validatedData.target_urls) {
-        const targetPageResult = await db
-          .select({
-            accountId: clients.accountId
-          })
-          .from(targetPages)
-          .innerJoin(clients, eq(targetPages.clientId, clients.id))
-          .where(eq(targetPages.url, targetUrl))
+    } else if (session.userType === 'internal') {
+      // Internal users: Use provided account_id first
+      if (validatedData.account_id) {
+        // Verify the account exists
+        const accountExists = await db
+          .select({ id: accounts.id })
+          .from(accounts)
+          .where(eq(accounts.id, validatedData.account_id))
           .limit(1);
         
-        if (targetPageResult.length > 0 && targetPageResult[0].accountId) {
-          accountId = targetPageResult[0].accountId;
-          console.log(`Found account ${accountId} for target URL ${targetUrl}`);
-          break; // Use the first account we find
+        if (accountExists.length > 0) {
+          accountId = validatedData.account_id;
+          console.log(`Using provided account ID: ${accountId}`);
+        } else {
+          console.error(`Provided account ID ${validatedData.account_id} not found`);
+          return NextResponse.json({ error: 'Invalid account ID' }, { status: 400 });
         }
-      }
-      
-      if (!accountId) {
-        console.log('Warning: No account found for target URLs:', validatedData.target_urls);
+      } else if (validatedData.target_urls && validatedData.target_urls.length > 0) {
+        // Fallback: look up which account owns these target URLs
+        const { targetPages, clients } = await import('@/lib/db/schema');
+        
+        // Find the first target page that matches one of our URLs
+        for (const targetUrl of validatedData.target_urls) {
+          const targetPageResult = await db
+            .select({
+              accountId: clients.accountId
+            })
+            .from(targetPages)
+            .innerJoin(clients, eq(targetPages.clientId, clients.id))
+            .where(eq(targetPages.url, targetUrl))
+            .limit(1);
+          
+          if (targetPageResult.length > 0 && targetPageResult[0].accountId) {
+            accountId = targetPageResult[0].accountId;
+            console.log(`Found account ${accountId} for target URL ${targetUrl}`);
+            break; // Use the first account we find
+          }
+        }
+        
+        if (!accountId) {
+          console.log('Warning: No account found for target URLs:', validatedData.target_urls);
+          // For internal users, account is now required
+          return NextResponse.json({ 
+            error: 'Please select an account for this request' 
+          }, { status: 400 });
+        }
+      } else {
+        // Internal users must provide an account
+        return NextResponse.json({ 
+          error: 'Account selection is required for internal users' 
+        }, { status: 400 });
       }
     }
 
     // Create the request
     const requestId = uuidv4();
+    
+    // Use system user ID for account users, consistent with clients and orders
+    const SYSTEM_USER_ID = '00000000-0000-0000-0000-000000000000'; // system@internal.postflow user
+    
     const newRequest = {
       id: requestId,
       accountId: accountId,
@@ -220,7 +253,8 @@ export async function POST(request: NextRequest) {
       filters: transformedFilters,
       notes: validatedData.notes,
       status: 'submitted' as const,
-      createdByUser: session.userType === 'internal' ? session.userId : null,
+      createdByUser: session.userType === 'internal' ? session.userId : 
+                     session.userType === 'account' ? SYSTEM_USER_ID : null,
     };
 
 
@@ -229,14 +263,34 @@ export async function POST(request: NextRequest) {
       .values(newRequest)
       .returning();
 
-    // Store client assignments if provided (store as notes for now)
+    // Store client associations in the junction table
+    const uniqueClientIds = new Set<string>();
+    
+    // Collect client IDs from selected_client_ids
+    if (validatedData.selected_client_ids && validatedData.selected_client_ids.length > 0) {
+      validatedData.selected_client_ids.forEach(id => uniqueClientIds.add(id));
+    }
+    
+    // Collect client IDs from client_assignments
     if (validatedData.client_assignments && Object.keys(validatedData.client_assignments).length > 0) {
-      const assignmentText = Object.entries(validatedData.client_assignments)
-        .map(([url, clientId]) => `${url} -> Client: ${clientId}`)
-        .join('\n');
-      newRequest.notes = newRequest.notes 
-        ? `${newRequest.notes}\n\nClient assignments:\n${assignmentText}`
-        : `Client assignments:\n${assignmentText}`;
+      Object.values(validatedData.client_assignments).forEach(clientId => {
+        uniqueClientIds.add(clientId);
+      });
+    }
+    
+    // Insert client associations into the junction table
+    if (uniqueClientIds.size > 0) {
+      const clientAssociations = Array.from(uniqueClientIds).map(clientId => ({
+        requestId: requestId,
+        clientId: clientId,
+      }));
+      
+      await db
+        .insert(vettedRequestClients)
+        .values(clientAssociations)
+        .onConflictDoNothing(); // Prevent duplicate entries
+      
+      console.log(`Associated ${uniqueClientIds.size} clients with vetted sites request ${requestId}`);
     }
 
     return NextResponse.json({ 

@@ -85,6 +85,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const simple = searchParams.get('simple') === 'true';
     const ids = searchParams.get('ids');
+    const withStats = searchParams.get('withStats') === 'true';
     
     if (simple) {
       // Simple mode for new order system - return accounts (AUTHENTICATED)
@@ -119,7 +120,7 @@ export async function GET(request: NextRequest) {
       orderBy: (accounts, { desc }) => [desc(accounts.createdAt)],
     });
 
-    // Fetch order statistics for each account
+    // Fetch statistics for each account
     const accountsWithStats = await Promise.all(
       accountsList.map(async (account) => {
         // Get order count and total revenue
@@ -132,10 +133,42 @@ export async function GET(request: NextRequest) {
           .where(eq(orders.accountId, account.id))
           .groupBy(orders.accountId);
 
+        // Get client and target URL counts if requested
+        let clientCount = 0;
+        let targetUrlCount = 0;
+        
+        if (withStats || true) { // Always include these stats for vetted sites
+          const { clients, targetPages } = await import('@/lib/db/schema');
+          
+          // Count clients for this account
+          const accountClients = await db
+            .select()
+            .from(clients)
+            .where(eq(clients.accountId, account.id));
+          
+          clientCount = accountClients.length;
+          
+          // Count target URLs for this account's clients
+          if (clientCount > 0) {
+            // Get all target pages for this account's clients
+            const clientIds = accountClients.map(c => c.id);
+            const { inArray } = await import('drizzle-orm');
+            
+            const accountTargetPages = await db
+              .select()
+              .from(targetPages)
+              .where(inArray(targetPages.clientId, clientIds));
+            
+            targetUrlCount = accountTargetPages.length;
+          }
+        }
+
         return {
           ...account,
           orderCount: orderStats[0]?.orderCount || 0,
           totalRevenue: orderStats[0]?.totalRevenue || 0,
+          clientCount,
+          targetUrlCount,
         };
       })
     );

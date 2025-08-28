@@ -4,7 +4,7 @@ import { db } from '@/lib/db/connection';
 import { vettedSitesRequests, vettedRequestProjects } from '@/lib/db/vettedSitesRequestSchema';
 import { bulkAnalysisProjects } from '@/lib/db/bulkAnalysisSchema';
 import { clients, targetPages, users, accounts } from '@/lib/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
 import { getRootDomain } from '@/lib/utils/domainNormalizer';
@@ -240,16 +240,26 @@ export async function PATCH(
           const currentRequest = await db
             .select({
               accountId: vettedSitesRequests.accountId,
-              targetUrls: vettedSitesRequests.targetUrls
+              targetUrls: vettedSitesRequests.targetUrls,
+              notes: vettedSitesRequests.notes
             })
             .from(vettedSitesRequests)
             .where(eq(vettedSitesRequests.id, requestId))
             .limit(1);
           
           if (currentRequest.length > 0) {
-            const { accountId, targetUrls } = currentRequest[0];
+            const { accountId, targetUrls, notes } = currentRequest[0];
             
-            // Group URLs by root domain to create clients
+            // Parse selected client IDs from notes if available
+            const selectedClientIds: string[] = [];
+            if (notes) {
+              const clientIdMatch = notes.match(/Selected client IDs: ([^\n]+)/);
+              if (clientIdMatch) {
+                selectedClientIds.push(...clientIdMatch[1].split(',').map(id => id.trim()));
+              }
+            }
+            
+            // Group URLs by root domain to create/find clients
             const urlsByDomain = new Map<string, string[]>();
             for (const url of targetUrls) {
               try {
@@ -263,27 +273,102 @@ export async function PATCH(
               }
             }
             
-            // Create client and target pages for each domain
+            // Create or find client and target pages for each domain
             for (const [domain, urls] of urlsByDomain) {
-              const clientId = uuidv4();
+              let clientId: string;
               const now = new Date();
               
-              // Create client
-              await db.insert(clients).values({
-                id: clientId,
-                name: domain.charAt(0).toUpperCase() + domain.slice(1),
-                website: `https://${domain}`,
-                description: `Auto-created from vetted sites request`,
-                clientType: 'client',
-                createdBy: session.userId,
-                accountId: accountId,
-                createdAt: now,
-                updatedAt: now,
+              // Check if client already exists for this domain and account
+              // Get all clients for this account, then filter by normalized domain
+              const { normalizeDomain } = await import('@/lib/utils/domainNormalizer');
+              const targetNormalizedDomain = normalizeDomain(`https://${domain}`);
+              
+              const accountClients = await db
+                .select()
+                .from(clients)
+                .where(eq(clients.accountId, accountId || ''));
+                
+              // Find matching client by normalized domain
+              const existingClient = accountClients.filter(client => {
+                if (!client.website) return false;
+                const clientNormalizedDomain = normalizeDomain(client.website);
+                return clientNormalizedDomain === targetNormalizedDomain;
               });
+              
+              if (existingClient.length > 0) {
+                // Use existing client
+                clientId = existingClient[0].id;
+                console.log(`Using existing client ${clientId} for domain ${domain}`);
+              } else if (selectedClientIds.length > 0) {
+                // Check if we should use a selected client for this domain
+                const selectedClients = await db
+                  .select()
+                  .from(clients)
+                  .where(inArray(clients.id, selectedClientIds));
+                  
+                // Find matching selected client by normalized domain
+                const matchingClient = selectedClients.filter(client => {
+                  if (!client.website) return false;
+                  const clientNormalizedDomain = normalizeDomain(client.website);
+                  return clientNormalizedDomain === targetNormalizedDomain;
+                });
+                
+                if (matchingClient.length > 0) {
+                  clientId = matchingClient[0].id;
+                  console.log(`Using selected client ${clientId} for domain ${domain}`);
+                } else {
+                  // Create new client only if no existing one found
+                  clientId = uuidv4();
+                  await db.insert(clients).values({
+                    id: clientId,
+                    name: domain.charAt(0).toUpperCase() + domain.slice(1),
+                    website: `https://${domain}`,
+                    description: `Auto-created from vetted sites request`,
+                    clientType: 'client',
+                    createdBy: session.userId,
+                    accountId: accountId,
+                    createdAt: now,
+                    updatedAt: now,
+                  });
+                  console.log(`Created new client ${clientId} for domain ${domain}`);
+                }
+              } else {
+                // Create new client
+                clientId = uuidv4();
+                await db.insert(clients).values({
+                  id: clientId,
+                  name: domain.charAt(0).toUpperCase() + domain.slice(1),
+                  website: `https://${domain}`,
+                  description: `Auto-created from vetted sites request`,
+                  clientType: 'client',
+                  createdBy: session.userId,
+                  accountId: accountId,
+                  createdAt: now,
+                  updatedAt: now,
+                });
+                console.log(`Created new client ${clientId} for domain ${domain}`);
+              }
               
               // Create target pages for this root domain
               for (const url of urls) {
                 try {
+                  // Check if target page already exists for this client
+                  const existingTargetPage = await db
+                    .select()
+                    .from(targetPages)
+                    .where(
+                      and(
+                        eq(targetPages.clientId, clientId),
+                        eq(targetPages.url, url)
+                      )
+                    )
+                    .limit(1);
+                  
+                  if (existingTargetPage.length > 0) {
+                    console.log(`Target page already exists for URL ${url}`);
+                    continue;
+                  }
+                  
                   const urlDomain = new URL(url).hostname.replace(/^www\./, '');
                   await db.insert(targetPages).values({
                     id: uuidv4(),

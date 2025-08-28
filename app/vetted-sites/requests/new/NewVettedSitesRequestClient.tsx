@@ -23,13 +23,17 @@ interface Account {
   name: string;
   email: string;
   clientCount?: number;
+  targetUrlCount?: number;
+  companyName?: string;
 }
 
 interface Client {
   id: string;
   name: string;
   accountId: string;
+  website?: string;
   targetUrlCount?: number;
+  createdAt?: string;
 }
 
 interface TargetUrl {
@@ -53,7 +57,7 @@ export default function NewVettedSitesRequestClient() {
   const [targetUrls, setTargetUrls] = useState<TargetUrl[]>([]);
   
   // Filter state
-  const [selectedAccounts, setSelectedAccounts] = useState<string[]>([]);
+  const [selectedAccount, setSelectedAccount] = useState<string>('');
   const [selectedClients, setSelectedClients] = useState<string[]>([]);
   
   // Target URL selection state
@@ -132,37 +136,18 @@ export default function NewVettedSitesRequestClient() {
               id: account.id,
               name: account.contactName || account.name || 'Unknown',
               email: account.email,
-              clientCount: account.clientCount
+              clientCount: account.clientCount || 0,
+              targetUrlCount: account.targetUrlCount || 0,
+              companyName: account.companyName || ''
             }));
             setAccounts(mappedAccounts);
           }
         }
         
-        // Load clients
-        const clientsResponse = await fetch('/api/clients');
-        if (clientsResponse.ok) {
-          const clientsData = await clientsResponse.json();
-          console.log('📊 Loaded clients:', clientsData.clients?.length || 0);
-          setClients(clientsData.clients || []);
-        }
+        // Don't load clients initially - wait for account selection
+        // This ensures we get the right clients for the selected account
         
-        // Load target URLs
-        const targetUrlsResponse = await fetch('/api/vetted-sites/target-urls');
-        if (targetUrlsResponse.ok) {
-          const targetUrlsData = await targetUrlsResponse.json();
-          console.log('📊 Loaded target URLs:', {
-            total: targetUrlsData.targetUrls?.length || 0,
-            sampleUrls: targetUrlsData.targetUrls?.slice(0, 3).map((u: any) => ({
-              url: u.url,
-              clientId: u.clientId,
-              clientName: u.clientName,
-              type: u.type
-            })) || []
-          });
-          setTargetUrls(targetUrlsData.targetUrls || []);
-        } else {
-          console.error('Failed to load target URLs:', targetUrlsResponse.status, await targetUrlsResponse.text());
-        }
+        // Don't load target URLs initially either - they depend on clients
       } catch (error) {
         console.error('Error loading initial data:', error);
       }
@@ -173,91 +158,115 @@ export default function NewVettedSitesRequestClient() {
     }
   }, [userType, sessionLoading]);
 
-  // Get client IDs for selected accounts (when no specific clients selected)
+  // Load clients when account is selected
+  useEffect(() => {
+    const loadClientsForAccount = async () => {
+      if (!selectedAccount) {
+        // No account selected - clear clients and target URLs
+        setClients([]);
+        setTargetUrls([]);
+        return;
+      }
+      
+      try {
+        // Load clients for this specific account
+        // Use a high limit to get all clients (no pagination for dropdown)
+        const clientsResponse = await fetch(`/api/clients?accountId=${selectedAccount}&limit=1000`);
+        if (clientsResponse.ok) {
+          const clientsData = await clientsResponse.json();
+          
+          // Enrich clients with target URL count from their targetPages field
+          const enrichedClients = (clientsData.clients || []).map((client: any) => {
+            const targetUrlCount = Array.isArray(client.targetPages) ? client.targetPages.length : 0;
+            return {
+              ...client,
+              targetUrlCount
+            };
+          });
+          
+          // Force a new array reference to ensure React detects the change
+          setClients([...enrichedClients]);
+          
+          // Now load target URLs for these clients
+          if (clientsData.clients && clientsData.clients.length > 0) {
+            const clientIds = clientsData.clients.map((c: any) => c.id).join(',');
+            const targetUrlsResponse = await fetch(`/api/vetted-sites/target-urls?clientId=${clientIds}`);
+            if (targetUrlsResponse.ok) {
+              const targetUrlsData = await targetUrlsResponse.json();
+              console.log('📊 Loaded target URLs for clients:', {
+                targetUrlCount: targetUrlsData.targetUrls?.length || 0
+              });
+              setTargetUrls(targetUrlsData.targetUrls || []);
+            }
+          } else {
+            // No clients for this account - clear target URLs
+            setTargetUrls([]);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading clients for account:', error);
+      }
+    };
+    
+    loadClientsForAccount();
+  }, [selectedAccount]);
+
+  // Get client IDs for selected account (when no specific clients selected)
   const accountClientIds = useMemo(() => {
-    if (selectedAccounts.length === 0) return [];
-    const matchedClients = clients.filter(client => selectedAccounts.includes(client.accountId));
+    if (!selectedAccount) return [];
+    
+    // Debug: Check what accountId field exists on clients
+    if (clients.length > 0 && !clients[0].hasOwnProperty('accountId')) {
+      console.warn('⚠️ Clients do not have accountId field! Sample client:', clients[0]);
+    }
+    
+    const matchedClients = clients.filter(client => client.accountId === selectedAccount);
     const clientIds = matchedClients.map(client => client.id);
     
     console.log('🔍 Account-Client Mapping:', {
-      selectedAccounts,
+      selectedAccount,
       allClients: clients.length,
+      firstClientFields: clients[0] ? Object.keys(clients[0]) : [],
       matchedClients: matchedClients.map(c => ({ id: c.id, name: c.name, accountId: c.accountId })),
       resultClientIds: clientIds
     });
     
     return clientIds;
-  }, [selectedAccounts, clients]);
+  }, [selectedAccount, clients]);
 
-  // Reload target URLs when client or account selection changes
+  // Reload target URLs when specific clients are selected
   useEffect(() => {
-    const reloadTargetUrls = async () => {
-      // Determine which client IDs to filter by
-      let clientIdsToLoad: string[] = [];
-      
+    const reloadTargetUrlsForClients = async () => {
       if (selectedClients.length > 0) {
-        // Specific clients selected
-        clientIdsToLoad = selectedClients;
-      } else if (selectedAccounts.length > 0) {
-        // Account selected
-        if (accountClientIds.length > 0) {
-          // Load all clients for this account
-          clientIdsToLoad = accountClientIds;
-        } else {
-          // Account has no clients - clear target URLs
-          console.log('🔄 Selected account has no clients - clearing target URLs');
-          setTargetUrls([]);
-          return;
-        }
-      }
-      
-      // If we have client IDs to load, fetch their target URLs
-      if (clientIdsToLoad.length > 0) {
+        // Specific clients selected - load their target URLs
         try {
           const params = new URLSearchParams();
-          params.set('clientId', clientIdsToLoad.join(','));
+          params.set('clientId', selectedClients.join(','));
           
-          console.log('🔄 Reloading target URLs for client IDs:', clientIdsToLoad);
+          console.log('🔄 Loading target URLs for selected clients:', selectedClients);
           
           const response = await fetch(`/api/vetted-sites/target-urls?${params}`);
           if (response.ok) {
             const data = await response.json();
-            console.log('🔄 Reloaded target URLs:', {
-              total: data.targetUrls?.length || 0,
-              forClientIds: clientIdsToLoad
-            });
-            setTargetUrls(data.targetUrls || []);
-          } else {
-            console.error('Failed to reload target URLs:', response.status);
-            setTargetUrls([]); // Clear on error
-          }
-        } catch (error) {
-          console.error('Error reloading target URLs:', error);
-          setTargetUrls([]); // Clear on error
-        }
-      } else if (selectedClients.length === 0 && selectedAccounts.length === 0) {
-        // No selection - load all target URLs
-        try {
-          console.log('🔄 No selection - loading all target URLs');
-          const response = await fetch('/api/vetted-sites/target-urls');
-          if (response.ok) {
-            const data = await response.json();
-            console.log('🔄 Loaded all target URLs:', {
+            console.log('🔄 Loaded target URLs for clients:', {
               total: data.targetUrls?.length || 0
             });
             setTargetUrls(data.targetUrls || []);
           }
         } catch (error) {
-          console.error('Error loading all target URLs:', error);
+          console.error('Error loading target URLs:', error);
         }
+      } else if (!selectedAccount) {
+        // Nothing selected - don't show any target URLs initially
+        setTargetUrls([]);
       }
+      // If only account is selected (no specific clients), the account effect handles loading
     };
 
-    // Only reload if we have completed initial loading
-    if (!sessionLoading && clients.length > 0) {
-      reloadTargetUrls();
+    if (!sessionLoading) {
+      reloadTargetUrlsForClients();
     }
-  }, [selectedClients, selectedAccounts, accountClientIds, sessionLoading, clients.length]);
+  }, [selectedClients, selectedAccount, sessionLoading]);
 
   // Filtered accounts for dropdown
   const filteredAccounts = useMemo(() => {
@@ -273,10 +282,12 @@ export default function NewVettedSitesRequestClient() {
   const filteredClients = useMemo(() => {
     let filtered = clients;
     
-    // Filter by selected accounts
-    if (selectedAccounts.length > 0) {
+    // Filter by selected account
+    // NOTE: Since we now load clients specifically for the selected account via API,
+    // all clients already belong to that account, so this filter is redundant but harmless
+    if (selectedAccount) {
       filtered = filtered.filter(client =>
-        selectedAccounts.includes(client.accountId)
+        client.accountId === selectedAccount
       );
     }
     
@@ -289,41 +300,11 @@ export default function NewVettedSitesRequestClient() {
     }
     
     return filtered;
-  }, [clients, selectedAccounts, clientSearch]);
+  }, [clients, selectedAccount, clientSearch]);
 
-  // Filtered target URLs
+  // Filtered target URLs (now much simpler since API does the heavy lifting)
   const filteredTargetUrls = useMemo(() => {
     let filtered = targetUrls;
-    
-    console.log('🔍 === TARGET URL FILTERING DEBUG ===');
-    console.log('🔍 Filter State:', {
-      totalUrls: targetUrls.length,
-      selectedAccounts: selectedAccounts.length,
-      selectedClients: selectedClients.length,
-      accountClientIds: accountClientIds.length,
-      searchQuery: targetUrlSearch
-    });
-    
-    // Priority 1: Filter by selected clients (specific brands)
-    if (selectedClients.length > 0) {
-      console.log('🔍 FILTERING BY SELECTED CLIENTS:', selectedClients);
-      filtered = filtered.filter(url =>
-        selectedClients.includes(url.clientId)
-      );
-      console.log('🔍 After client filter:', filtered.length);
-    }
-    // Priority 2: If no specific clients selected, but accounts selected, show all clients for those accounts
-    else if (selectedAccounts.length > 0 && accountClientIds.length > 0) {
-      console.log('🔍 FILTERING BY ACCOUNT CLIENT IDS:', accountClientIds);
-      filtered = filtered.filter(url =>
-        accountClientIds.includes(url.clientId)
-      );
-      console.log('🔍 After account filter (all brands for account):', filtered.length);
-    }
-    // Priority 3: If nothing selected, show all URLs (current behavior)
-    else {
-      console.log('🔍 NO FILTERING - SHOWING ALL URLS');
-    }
     
     // Apply search filter
     if (targetUrlSearch) {
@@ -331,28 +312,29 @@ export default function NewVettedSitesRequestClient() {
       filtered = filtered.filter(url =>
         url.url.toLowerCase().includes(query)
       );
-      console.log('🔍 After search filter:', filtered.length);
     }
     
     return filtered;
-  }, [targetUrls, selectedClients, selectedAccounts, accountClientIds, targetUrlSearch]);
+  }, [targetUrls, targetUrlSearch]);
 
-  // Handle account selection
+  // Handle account selection (single select)
   const handleAccountSelect = (accountId: string) => {
-    console.log('🔄 Account selection changed:', { accountId, wasSelected: selectedAccounts.includes(accountId) });
+    console.log('🔄 Account selection changed:', { accountId, wasSelected: selectedAccount === accountId });
     
-    if (selectedAccounts.includes(accountId)) {
-      // Remove account
-      const newSelectedAccounts = selectedAccounts.filter(id => id !== accountId);
-      setSelectedAccounts(newSelectedAccounts);
-      
-      // Remove clients that belong to this account
-      const accountClients = clients.filter(client => client.accountId === accountId);
-      const clientIdsToRemove = accountClients.map(client => client.id);
-      console.log('🔄 Removing clients from account:', { accountId, clientIds: clientIdsToRemove });
-      setSelectedClients(prev => prev.filter(clientId => !clientIdsToRemove.includes(clientId)));
+    if (selectedAccount === accountId) {
+      // Deselect current account
+      setSelectedAccount('');
+      // Clear clients when account is deselected
+      setSelectedClients([]);
     } else {
-      setSelectedAccounts(prev => [...prev, accountId]);
+      // Select new account
+      const oldAccount = selectedAccount;
+      setSelectedAccount(accountId);
+      
+      // Clear clients from previous account
+      if (oldAccount) {
+        setSelectedClients([]);
+      }
     }
     setShowAccountDropdown(false);
     setAccountSearch('');
@@ -396,9 +378,31 @@ export default function NewVettedSitesRequestClient() {
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validation for internal users - must select an account
+    if (userType === 'internal' && !selectedAccount) {
+      alert('Please select an account before creating a request');
+      return;
+    }
+    
     if (selectedTargetUrls.length === 0) {
       alert('Please select at least one target URL');
       return;
+    }
+    
+    // Check if any selected target URLs are 'new' (will create new brands)
+    const newUrls = targetUrls.filter(
+      url => selectedTargetUrls.includes(url.url) && url.clientId === 'new'
+    );
+    
+    if (newUrls.length > 0) {
+      const confirmMessage = `Warning: ${newUrls.length} target URL(s) will create new brands/clients.\n\n` +
+        `URLs that will create new brands:\n${newUrls.map(u => u.url).join('\n')}\n\n` +
+        `Do you want to continue?`;
+      
+      if (!confirm(confirmMessage)) {
+        return;
+      }
     }
     
     setLoading(true);
@@ -415,10 +419,27 @@ export default function NewVettedSitesRequestClient() {
         site_types: (filters as any).siteTypes || [],
       };
 
+      // Create a mapping of URLs to their client IDs
+      const urlToClientMap: Record<string, string> = {};
+      selectedTargetUrls.forEach(url => {
+        const targetUrlObj = targetUrls.find(t => t.url === url);
+        if (targetUrlObj && targetUrlObj.clientId && targetUrlObj.clientId !== 'new') {
+          urlToClientMap[url] = targetUrlObj.clientId;
+        }
+      });
+      
       const requestData = {
         target_urls: selectedTargetUrls, // Changed from targetUrls to target_urls
         filters: transformedFilters,
-        notes: (filters as any).notes || ''
+        notes: (filters as any).notes || '',
+        // Include account ID for internal users
+        account_id: userType === 'internal' && selectedAccount 
+          ? selectedAccount 
+          : undefined,
+        // Include selected client IDs to prevent duplicate creation
+        selected_client_ids: selectedClients.length > 0 ? selectedClients : undefined,
+        // Include URL to client mapping
+        client_assignments: Object.keys(urlToClientMap).length > 0 ? urlToClientMap : undefined
       };
       
       const response = await fetch('/api/vetted-sites/requests', {
@@ -490,50 +511,67 @@ export default function NewVettedSitesRequestClient() {
                     <button
                       type="button"
                       onClick={() => setShowAccountDropdown(!showAccountDropdown)}
-                      className="flex items-center gap-2 px-3 py-1.5 text-sm border border-gray-200 rounded-md hover:border-gray-300 bg-white"
+                      className={`flex items-center gap-2 px-3 py-1.5 text-sm border rounded-md ${
+                        !selectedAccount 
+                          ? 'border-red-400 bg-red-50 hover:border-red-500' 
+                          : 'border-gray-200 bg-white hover:border-gray-300'
+                      }`}
                     >
-                      <span className="text-gray-700">
-                        {selectedAccounts.length === 0 
-                          ? 'All accounts' 
-                          : selectedAccounts.length === 1
-                          ? (() => {
-                              const account = accounts.find(a => a.id === selectedAccounts[0]);
+                      <span className={!selectedAccount ? 'text-red-700' : 'text-gray-700'}>
+                        {!selectedAccount 
+                          ? 'Select account (required)' 
+                          : (() => {
+                              const account = accounts.find(a => a.id === selectedAccount);
                               return account?.name || 'Select account';
-                            })()
-                          : `${selectedAccounts.length} accounts`}
+                            })()}
                       </span>
                       <ChevronDown className="h-3.5 w-3.5 text-gray-400" />
                     </button>
                     
                     {showAccountDropdown && (
-                      <div className="absolute z-50 mt-1 w-64 bg-white border border-gray-200 rounded-md shadow-lg max-h-64 overflow-hidden">
-                        <div className="p-1.5 border-b border-gray-100">
+                      <div className="absolute z-50 mt-1 w-80 bg-white border border-gray-200 rounded-md shadow-lg max-h-96 overflow-hidden">
+                        <div className="p-2 border-b border-gray-100">
                           <input
                             type="text"
                             value={accountSearch}
                             onChange={(e) => setAccountSearch(e.target.value)}
                             placeholder="Search accounts..."
-                            className="w-full px-2 py-1 text-xs border border-gray-200 rounded"
+                            className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             onClick={(e) => e.stopPropagation()}
                           />
                         </div>
-                        <div className="max-h-48 overflow-y-auto">
+                        <div className="max-h-80 overflow-y-auto">
                           {filteredAccounts.map(account => {
-                            const isSelected = selectedAccounts.includes(account.id);
+                            const isSelected = selectedAccount === account.id;
+                            const hasData = (account.clientCount || 0) > 0 || (account.targetUrlCount || 0) > 0;
                             return (
                               <button
                                 key={account.id}
                                 type="button"
                                 onClick={() => handleAccountSelect(account.id)}
-                                className={`w-full px-2 py-2 text-left hover:bg-gray-50 flex items-center justify-between ${
-                                  isSelected ? 'bg-blue-50' : ''
+                                className={`w-full px-3 py-2.5 text-left hover:bg-gray-50 flex items-center justify-between ${
+                                  isSelected ? 'bg-blue-50 border-l-2 border-blue-600' : ''
                                 }`}
                               >
                                 <div className="min-w-0 flex-1">
-                                  <div className="text-xs font-medium text-gray-900 truncate">{account.name}</div>
-                                  <div className="text-xs text-gray-500 truncate">{account.email}</div>
+                                  <div className="flex items-center gap-2 mb-0.5">
+                                    <div className="text-sm font-medium text-gray-900 truncate">{account.name}</div>
+                                    {account.companyName && (
+                                      <span className="text-xs text-gray-500">({account.companyName})</span>
+                                    )}
+                                  </div>
+                                  <div className="text-xs text-gray-500 truncate mb-1">{account.email}</div>
+                                  <div className="flex items-center gap-3 text-xs">
+                                    <span className={`${hasData ? 'text-gray-700 font-medium' : 'text-gray-400'}`}>
+                                      {account.clientCount || 0} brand{(account.clientCount || 0) !== 1 ? 's' : ''}
+                                    </span>
+                                    <span className="text-gray-300">•</span>
+                                    <span className={`${hasData ? 'text-gray-700 font-medium' : 'text-gray-400'}`}>
+                                      {account.targetUrlCount || 0} target URL{(account.targetUrlCount || 0) !== 1 ? 's' : ''}
+                                    </span>
+                                  </div>
                                 </div>
-                                {isSelected && <Check className="h-3.5 w-3.5 text-blue-600" />}
+                                {isSelected && <Check className="h-4 w-4 text-blue-600 flex-shrink-0" />}
                               </button>
                             );
                           })}
@@ -548,9 +586,13 @@ export default function NewVettedSitesRequestClient() {
                   <button
                     type="button"
                     onClick={() => setShowClientDropdown(!showClientDropdown)}
-                    className="flex items-center gap-2 px-3 py-1.5 text-sm border border-gray-200 rounded-md hover:border-gray-300 bg-white"
+                    className={`flex items-center gap-2 px-3 py-1.5 text-sm border rounded-md ${
+                      selectedClients.length > 0
+                        ? 'border-blue-400 bg-blue-50 hover:border-blue-500'
+                        : 'border-gray-200 bg-white hover:border-gray-300'
+                    }`}
                   >
-                    <span className="text-gray-700">
+                    <span className={selectedClients.length > 0 ? 'text-blue-700' : 'text-gray-700'}>
                       {selectedClients.length === 0 
                         ? 'All brands'
                         : selectedClients.length === 1
@@ -564,34 +606,69 @@ export default function NewVettedSitesRequestClient() {
                   </button>
                   
                   {showClientDropdown && (
-                    <div className="absolute z-50 mt-1 w-64 bg-white border border-gray-200 rounded-md shadow-lg max-h-64 overflow-hidden">
-                      <div className="p-1.5 border-b border-gray-100">
+                    <div className="absolute z-50 mt-1 w-80 bg-white border border-gray-200 rounded-md shadow-lg max-h-96 overflow-hidden">
+                      <div className="p-2 border-b border-gray-100">
                         <input
                           type="text"
                           value={clientSearch}
                           onChange={(e) => setClientSearch(e.target.value)}
                           placeholder="Search brands..."
-                          className="w-full px-2 py-1 text-xs border border-gray-200 rounded"
+                          className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           onClick={(e) => e.stopPropagation()}
                         />
                       </div>
-                      <div className="max-h-48 overflow-y-auto">
-                        {filteredClients.map(client => {
-                          const isSelected = selectedClients.includes(client.id);
-                          return (
-                            <button
-                              key={client.id}
-                              type="button"
-                              onClick={() => handleClientSelect(client.id)}
-                              className={`w-full px-2 py-2 text-left hover:bg-gray-50 flex items-center justify-between ${
-                                isSelected ? 'bg-blue-50' : ''
-                              }`}
-                            >
-                              <div className="text-xs font-medium text-gray-900 truncate">{client.name}</div>
-                              {isSelected && <Check className="h-3.5 w-3.5 text-blue-600" />}
-                            </button>
-                          );
-                        })}
+                      <div className="max-h-80 overflow-y-auto">
+                        {filteredClients.length === 0 ? (
+                          <div className="px-3 py-4 text-sm text-gray-500 text-center">
+                            {clientSearch ? 'No brands found' : 'No brands available for this account'}
+                          </div>
+                        ) : (
+                          filteredClients.map(client => {
+                            const isSelected = selectedClients.includes(client.id);
+                            const hasTargetUrls = (client.targetUrlCount || 0) > 0;
+                            const domain = client.website ? (() => {
+                              try {
+                                return new URL(client.website).hostname.replace('www.', '');
+                              } catch {
+                                return client.website;
+                              }
+                            })() : null;
+                            
+                            return (
+                              <button
+                                key={client.id}
+                                type="button"
+                                onClick={() => handleClientSelect(client.id)}
+                                className={`w-full px-3 py-2.5 text-left hover:bg-gray-50 flex items-center justify-between ${
+                                  isSelected ? 'bg-blue-50 border-l-2 border-blue-600' : ''
+                                }`}
+                              >
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-2 mb-0.5">
+                                    <div className="text-sm font-medium text-gray-900 truncate">{client.name}</div>
+                                  </div>
+                                  {domain && (
+                                    <div className="text-xs text-gray-500 truncate mb-1">{domain}</div>
+                                  )}
+                                  <div className="flex items-center gap-3 text-xs">
+                                    <span className={`${hasTargetUrls ? 'text-gray-700 font-medium' : 'text-gray-400'}`}>
+                                      {client.targetUrlCount || 0} target URL{(client.targetUrlCount || 0) !== 1 ? 's' : ''}
+                                    </span>
+                                    {client.createdAt && (
+                                      <>
+                                        <span className="text-gray-300">•</span>
+                                        <span className="text-gray-400">
+                                          Added {new Date(client.createdAt).toLocaleDateString()}
+                                        </span>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                                {isSelected && <Check className="h-4 w-4 text-blue-600 flex-shrink-0" />}
+                              </button>
+                            );
+                          })
+                        )}
                       </div>
                     </div>
                   )}
