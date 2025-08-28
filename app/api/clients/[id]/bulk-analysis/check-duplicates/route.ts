@@ -44,6 +44,15 @@ export async function POST(
       projectId
     );
 
+    // Debug logging
+    console.log('Check duplicates request:', { clientId, projectId, domains });
+    console.log('Check duplicates result:', {
+      duplicatesCount: result.duplicates.length,
+      newDomainsCount: result.newDomains.length,
+      alreadyInProjectCount: result.alreadyInProject.length,
+      alreadyInProject: result.alreadyInProject
+    });
+
     return NextResponse.json(result);
   } catch (error: any) {
     console.error('Error checking duplicates:', error);

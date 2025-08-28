@@ -108,7 +108,7 @@ export default function SignupPage() {
       // Execute reCAPTCHA
       const recaptchaToken = await executeRecaptcha('signup');
       
-      const response = await fetch('/api/accounts/signup', {
+      const response = await fetch('/api/auth/account-signup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -116,9 +116,10 @@ export default function SignupPage() {
         body: JSON.stringify({
           email: formData.email.toLowerCase(),
           password: formData.password,
-          contactName: formData.contactName,
-          companyName: null, // Let the API handle smart defaults
+          name: formData.contactName,
+          company: null, // Let the API handle smart defaults
           phone: null,
+          requireVerification: true,
           // Include honeypot fields
           website: formData.website,
           url: formData.url,

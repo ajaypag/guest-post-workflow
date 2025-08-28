@@ -13,7 +13,7 @@ export async function middleware(request: NextRequest) {
     '/api/health',
     '/api/ping',
     '/api/accept-invitation',
-    '/api/accounts/signup',
+    '/api/accounts/vetted-analysis-signup',
     '/api/orders/claim/',
     '/api/publisher/claim',
     '/api/airtable/webhook',
@@ -152,7 +152,7 @@ export async function middleware(request: NextRequest) {
       path.startsWith('/api/websites/') ||
       path.startsWith('/api/account/') ||
       path.startsWith('/api/projects/') ||
-      (path.startsWith('/api/accounts') && path !== '/api/accounts/signup')) {
+      (path.startsWith('/api/accounts') && path !== '/api/accounts/vetted-analysis-signup')) {
     
     if (!hasSession(request)) {
       return NextResponse.json(

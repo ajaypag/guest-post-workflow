@@ -23,7 +23,7 @@ import { BulkAnalysisDomain } from '@/types/bulk-analysis';
 import { ProcessedWebsite } from '@/types/airtable';
 import OrderSelectionModal from '@/components/orders/OrderSelectionModal';
 import DomainAssignmentModal from '@/components/orders/DomainAssignmentModal';
-// import DuplicateResolutionModal from '@/components/ui/DuplicateResolutionModal'; // Component not found
+import DuplicateResolutionModal from '@/components/ui/DuplicateResolutionModal';
 import { OrderBadgeDisplay } from '@/components/bulk-analysis/OrderBadgeDisplay';
 import { 
   ArrowLeft, 
@@ -3601,8 +3601,8 @@ anotherdomain.com"
         />
       )}
 
-      {/* Duplicate Resolution Modal - Component not found, commented out */}
-      {/* <DuplicateResolutionModal
+      {/* Duplicate Resolution Modal */}
+      <DuplicateResolutionModal
         isOpen={showDuplicateModal}
         onClose={() => {
           setShowDuplicateModal(false);
@@ -3611,7 +3611,8 @@ anotherdomain.com"
         }}
         duplicates={duplicatesToResolve}
         targetProjectName={project?.name || 'this project'}
-        onResolve={handleDuplicateResolution} */}
+        onResolve={handleDuplicateResolution}
+      />
       
       {/* Domain Assignment Modal (Smart Assignment) */}
       <DomainAssignmentModal
