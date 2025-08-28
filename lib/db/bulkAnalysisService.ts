@@ -5,7 +5,33 @@ import { orders } from './orderSchema';
 import { orderLineItems } from './orderLineItemSchema';
 import { eq, and, inArray, sql, ne, desc, asc, or, like } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
-import { getAnalysisAgeDays, hasTargetUrlsChanged } from '@/lib/utils/targetHashUtils';
+
+// Helper function to calculate days since analysis
+function getAnalysisAgeDays(date: Date | null): number | null {
+  if (!date) return null;
+  const now = new Date();
+  const diffMs = now.getTime() - new Date(date).getTime();
+  return Math.floor(diffMs / (1000 * 60 * 60 * 24));
+}
+
+// Helper function to check if target URLs have changed
+function hasTargetUrlsChanged(existingTargets: string[], newTargets: string[]): boolean {
+  // If arrays are different lengths, they've changed
+  if (existingTargets.length !== newTargets.length) return true;
+  
+  // Check if all existing targets are in new targets
+  const existingSet = new Set(existingTargets);
+  const newSet = new Set(newTargets);
+  
+  // Check if sets are equal
+  if (existingSet.size !== newSet.size) return true;
+  
+  for (const target of existingSet) {
+    if (!newSet.has(target)) return true;
+  }
+  
+  return false;
+}
 
 export type DuplicateResolution = 'keep_both' | 'move_to_new' | 'skip' | 'update_original';
 
