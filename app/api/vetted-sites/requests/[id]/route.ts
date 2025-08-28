@@ -4,7 +4,7 @@ import { db } from '@/lib/db/connection';
 import { vettedSitesRequests, vettedRequestProjects } from '@/lib/db/vettedSitesRequestSchema';
 import { bulkAnalysisProjects } from '@/lib/db/bulkAnalysisSchema';
 import { clients, targetPages, users, accounts } from '@/lib/db/schema';
-import { eq, and, inArray } from 'drizzle-orm';
+import { eq, and, inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
 import { getRootDomain } from '@/lib/utils/domainNormalizer';
@@ -283,10 +283,11 @@ export async function PATCH(
               const { normalizeDomain } = await import('@/lib/utils/domainNormalizer');
               const targetNormalizedDomain = normalizeDomain(`https://${domain}`);
               
+              // Fixed: Handle NULL accountId properly
               const accountClients = await db
                 .select()
                 .from(clients)
-                .where(eq(clients.accountId, accountId || ''));
+                .where(accountId ? eq(clients.accountId, accountId) : sql`${clients.accountId} IS NULL`);
                 
               // Find matching client by normalized domain
               const existingClient = accountClients.filter(client => {
