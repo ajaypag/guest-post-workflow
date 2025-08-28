@@ -71,8 +71,15 @@ export function TargetPageIntelligenceGenerator({ targetPageId, targetUrl, clien
   const [questionAnswers, setQuestionAnswers] = useState<{ [key: number]: string }>({});
   const [isSubmittingAnswers, setIsSubmittingAnswers] = useState(false);
   
+  // Additional info state for editing
+  const [additionalInfo, setAdditionalInfo] = useState<string>('');
+  
   // Full session data with metadata
   const [sessionData, setSessionData] = useState<any>(null);
+  
+  // Session history from audit logs
+  const [sessionHistory, setSessionHistory] = useState<any[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
   
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -109,6 +116,11 @@ export function TargetPageIntelligenceGenerator({ targetPageId, targetUrl, clien
           // Load existing data
           if (session.researchOutput) {
             setResearchOutput(session.researchOutput);
+          }
+          
+          // Initialize additionalInfo from metadata
+          if (session.metadata?.additionalInfo) {
+            setAdditionalInfo(session.metadata.additionalInfo);
           }
           if (session.clientInput) {
             setClientInput(session.clientInput);
@@ -165,6 +177,7 @@ export function TargetPageIntelligenceGenerator({ targetPageId, targetUrl, clien
     };
     
     loadExistingSession();
+    loadSessionHistory();
     
     // Cleanup on unmount
     return () => {
@@ -173,6 +186,21 @@ export function TargetPageIntelligenceGenerator({ targetPageId, targetUrl, clien
       }
     };
   }, [targetPageId]);
+  
+  // Load session history from audit logs
+  const loadSessionHistory = async () => {
+    try {
+      const response = await fetch(`/api/target-pages/${targetPageId}/intelligence/logs?limit=10`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.logs) {
+          setSessionHistory(data.logs.filter((log: any) => log.sessionType === 'research'));
+        }
+      }
+    } catch (error) {
+      console.error('Error loading session history:', error);
+    }
+  };
 
   const startResearch = async () => {
     try {
@@ -212,15 +240,99 @@ export function TargetPageIntelligenceGenerator({ targetPageId, targetUrl, clien
     }
   };
 
+  const cancelResearch = async () => {
+    try {
+      setError('');
+      setProgress('Checking session status...');
+      
+      const response = await fetch(`/api/target-pages/${targetPageId}/intelligence/cancel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId })
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok && !data.success) {
+        throw new Error(data.error || 'Failed to check research status');
+      }
+      
+      // Handle different status responses
+      switch (data.status) {
+        case 'recovered':
+          // Research completed and was recovered!
+          setProgress('Research completed! Results recovered.');
+          setResearchStatus('completed');
+          // Trigger a page refresh to reload the recovered data
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+          break;
+          
+        case 'still_running':
+          // Research is still running normally
+          setProgress(data.message);
+          // Keep polling
+          break;
+          
+        case 'confirmed_failed':
+          // Research truly failed, can restart
+          setResearchStatus('error');
+          setError(data.message);
+          setCurrentPhase('research');
+          setProgress('');
+          // Stop polling
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+          }
+          break;
+          
+        case 'already_completed':
+          setResearchStatus('completed');
+          setProgress('Research already completed.');
+          window.location.reload();
+          break;
+          
+        case 'already_failed':
+          setResearchStatus('error');
+          setError(data.message);
+          // Stop polling
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+          }
+          break;
+          
+        default:
+          setProgress(data.message || 'Status checked');
+      }
+      
+    } catch (err: any) {
+      console.error('Error checking research status:', err);
+      setError(err.message);
+    }
+  };
+
   const startPolling = (pollSessionId: string) => {
     // Clear any existing polling
     if (pollingIntervalRef.current) {
       clearInterval(pollingIntervalRef.current);
     }
 
-    // Poll every 5 seconds
+    // Poll every 5 seconds with max attempts
+    let consecutiveErrors = 0;
+    const MAX_POLL_ATTEMPTS = 360; // 30 minutes (360 * 5 seconds)
+    
     const pollInterval = setInterval(async () => {
       try {
+        // Stop polling after max attempts
+        if (pollingCount >= MAX_POLL_ATTEMPTS) {
+          clearInterval(pollInterval);
+          pollingIntervalRef.current = null;
+          setResearchStatus('error');
+          setError('Research timed out after 30 minutes. The session may be stuck. Please retry.');
+          return;
+        }
+        
         const response = await fetch(
           `/api/target-pages/${targetPageId}/intelligence/status?sessionId=${pollSessionId}`
         );
@@ -231,6 +343,7 @@ export function TargetPageIntelligenceGenerator({ targetPageId, targetUrl, clien
 
         const data = await response.json();
         setPollingCount(prev => prev + 1);
+        consecutiveErrors = 0; // Reset error counter on success
         
         // Debug logging for polling
         console.log('Polling update:', {
@@ -308,7 +421,15 @@ export function TargetPageIntelligenceGenerator({ targetPageId, targetUrl, clien
 
       } catch (error) {
         console.error('Polling error:', error);
-        // Continue polling even on error
+        consecutiveErrors++;
+        
+        // If we get too many consecutive errors, stop polling and show error
+        if (consecutiveErrors >= 5) {
+          clearInterval(pollInterval);
+          pollingIntervalRef.current = null;
+          setResearchStatus('error');
+          setError('Lost connection to the research session. Please check your connection and retry.');
+        }
       }
     }, 5000); // Poll every 5 seconds
 
@@ -420,10 +541,12 @@ export function TargetPageIntelligenceGenerator({ targetPageId, targetUrl, clien
       setIsSendingEmail(true);
       setError('');
 
-      const response = await fetch(`/api/clients/${clientId}/brand-intelligence/send-questions`, {
+      // TODO: Create target-page-intelligence specific send-questions endpoint
+      // For now, this is using wrong endpoint and will return 404
+      const response = await fetch(`/api/target-pages/${targetPageId}/intelligence/send-questions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId })
+        body: JSON.stringify({ clientId, sessionId })
       });
 
       if (!response.ok) {
@@ -462,30 +585,39 @@ export function TargetPageIntelligenceGenerator({ targetPageId, targetUrl, clien
       setIsSubmittingAnswers(true);
       setError('');
 
-      // Validate that all questions are answered
-      const unansweredQuestions = researchOutput!.gaps.filter((_: any, index: number) => !questionAnswers[index]?.trim());
-      if (unansweredQuestions.length > 0) {
-        throw new Error('Please answer all questions before submitting');
+      // For Target Page Intelligence, we'll update the session directly
+      // Build the complete client input
+      const updatedAnswers = { ...questionAnswers };
+      
+      // Initialize any empty answers with existing metadata values
+      if (sessionData?.metadata?.clientAnswers) {
+        Object.keys(sessionData.metadata.clientAnswers).forEach(key => {
+          if (!updatedAnswers[parseInt(key)]) {
+            updatedAnswers[parseInt(key)] = sessionData.metadata.clientAnswers[key];
+          }
+        });
       }
 
-      const response = await fetch(`/api/clients/${clientId}/brand-intelligence/submit-direct-answers`, {
+      const response = await fetch(`/api/target-pages/${targetPageId}/intelligence/update-answers`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          answers: questionAnswers,
+          answers: updatedAnswers,
+          additionalInfo: additionalInfo,
           sessionId 
         })
       });
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || 'Failed to submit answers');
+        throw new Error(data.error || 'Failed to update answers');
       }
 
-      // Update client input state to move to next phase
-      const answersText = Object.values(questionAnswers).join('\n\n');
-      setClientInput(answersText);
-      setProgress('Answers submitted successfully! Ready to generate target page brief.');
+      const result = await response.json();
+      setProgress('Answers updated successfully! Ready to generate comprehensive brief.');
+      
+      // Reload session data to reflect changes  
+      window.location.reload();
 
     } catch (err: any) {
       console.error('Error submitting answers:', err);
@@ -529,14 +661,25 @@ export function TargetPageIntelligenceGenerator({ targetPageId, targetUrl, clien
         </p>
       </div>
 
-      {/* Phase Progress Indicator */}
+      {/* Phase Progress Indicator - Now Clickable Tabs */}
       <div className="bg-white border border-gray-200 rounded-lg p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex-1">
             <div className="flex items-center justify-between mb-2">
-              <div className={`flex items-center space-x-2 ${
-                currentPhase === 'research' || researchStatus === 'completed' ? 'text-purple-600' : 'text-gray-400'
-              }`}>
+              {/* Deep Research Tab */}
+              <button 
+                onClick={() => {
+                  if (researchStatus === 'completed' || currentPhase === 'research') {
+                    setCurrentPhase('research');
+                  }
+                }}
+                disabled={researchStatus === 'idle' && currentPhase !== 'research'}
+                className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
+                  currentPhase === 'research' ? 'bg-purple-100 text-purple-700' :
+                  researchStatus === 'completed' ? 'text-purple-600 hover:bg-purple-50 cursor-pointer' : 
+                  'text-gray-400 cursor-not-allowed'
+                }`}
+              >
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                   researchStatus === 'completed' ? 'bg-green-100 text-green-600' : 
                   currentPhase === 'research' ? 'bg-purple-100' : 'bg-gray-100'
@@ -544,11 +687,22 @@ export function TargetPageIntelligenceGenerator({ targetPageId, targetUrl, clien
                   {researchStatus === 'completed' ? <CheckCircle className="w-5 h-5" /> : '1'}
                 </div>
                 <span className="text-sm font-medium">Deep Research</span>
-              </div>
+              </button>
               
-              <div className={`flex items-center space-x-2 ${
-                currentPhase === 'input' || clientInput ? 'text-purple-600' : 'text-gray-400'
-              }`}>
+              {/* Questionnaire Tab */}
+              <button 
+                onClick={() => {
+                  if (researchStatus === 'completed' || currentPhase === 'input' || clientInput) {
+                    setCurrentPhase('input');
+                  }
+                }}
+                disabled={researchStatus !== 'completed' && currentPhase !== 'input'}
+                className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
+                  currentPhase === 'input' ? 'bg-purple-100 text-purple-700' :
+                  (researchStatus === 'completed' || clientInput) ? 'text-purple-600 hover:bg-purple-50 cursor-pointer' :
+                  'text-gray-400 cursor-not-allowed'
+                }`}
+              >
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                   clientInput ? 'bg-green-100 text-green-600' : 
                   currentPhase === 'input' ? 'bg-purple-100' : 'bg-gray-100'
@@ -556,11 +710,22 @@ export function TargetPageIntelligenceGenerator({ targetPageId, targetUrl, clien
                   {clientInput ? <CheckCircle className="w-5 h-5" /> : '2'}
                 </div>
                 <span className="text-sm font-medium">Questionnaire</span>
-              </div>
+              </button>
               
-              <div className={`flex items-center space-x-2 ${
-                currentPhase === 'brief' || currentPhase === 'completed' ? 'text-purple-600' : 'text-gray-400'
-              }`}>
+              {/* Brief Creation Tab */}
+              <button 
+                onClick={() => {
+                  if (currentPhase === 'completed' || briefStatus === 'completed' || currentPhase === 'brief') {
+                    setCurrentPhase('completed');
+                  }
+                }}
+                disabled={!clientInput && currentPhase !== 'brief' && currentPhase !== 'completed'}
+                className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
+                  currentPhase === 'completed' || currentPhase === 'brief' ? 'bg-purple-100 text-purple-700' :
+                  (briefStatus === 'completed' || clientInput) ? 'text-purple-600 hover:bg-purple-50 cursor-pointer' :
+                  'text-gray-400 cursor-not-allowed'
+                }`}
+              >
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                   currentPhase === 'completed' ? 'bg-green-100 text-green-600' : 
                   currentPhase === 'brief' ? 'bg-purple-100' : 'bg-gray-100'
@@ -568,7 +733,7 @@ export function TargetPageIntelligenceGenerator({ targetPageId, targetUrl, clien
                   {currentPhase === 'completed' ? <CheckCircle className="w-5 h-5" /> : '3'}
                 </div>
                 <span className="text-sm font-medium">Brief Creation</span>
-              </div>
+              </button>
             </div>
             
             {/* Progress Bar */}
@@ -591,6 +756,83 @@ export function TargetPageIntelligenceGenerator({ targetPageId, targetUrl, clien
           and ensures all content accurately represents this particular offering. It becomes the foundation for highly relevant and targeted content.
         </p>
       </div>
+
+      {/* Session History - Show if there are multiple attempts */}
+      {sessionHistory.length > 0 && (
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="font-medium text-gray-900 flex items-center space-x-2">
+              <Clock className="w-4 h-4" />
+              <span>Session History ({sessionHistory.length} attempts)</span>
+            </h4>
+            <button
+              onClick={() => setShowHistory(!showHistory)}
+              className="text-sm text-blue-600 hover:text-blue-700"
+            >
+              {showHistory ? 'Hide' : 'Show'} History
+            </button>
+          </div>
+          
+          {showHistory && (
+            <div className="space-y-2 mt-3">
+              {sessionHistory.map((log, index) => {
+                const attemptNumber = sessionHistory.length - index;
+                const duration = log.durationSeconds ? 
+                  `${Math.floor(log.durationSeconds / 60)}m ${log.durationSeconds % 60}s` : 
+                  'N/A';
+                
+                return (
+                  <div key={log.id} className="flex items-start space-x-3 text-sm">
+                    <div className={`mt-0.5 w-2 h-2 rounded-full ${
+                      log.status === 'completed' ? 'bg-green-500' :
+                      log.status === 'in_progress' ? 'bg-blue-500' :
+                      log.status === 'failed' || log.status === 'cancelled' ? 'bg-red-500' :
+                      log.status === 'auto_recovered' ? 'bg-purple-500' :
+                      'bg-gray-500'
+                    }`} />
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2">
+                        <span className="font-medium">Attempt #{attemptNumber}</span>
+                        <span className={`px-2 py-0.5 rounded text-xs ${
+                          log.status === 'completed' ? 'bg-green-100 text-green-700' :
+                          log.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
+                          log.status === 'failed' ? 'bg-red-100 text-red-700' :
+                          log.status === 'cancelled' ? 'bg-orange-100 text-orange-700' :
+                          log.status === 'auto_recovered' ? 'bg-purple-100 text-purple-700' :
+                          'bg-gray-100 text-gray-700'
+                        }`}>
+                          {log.status === 'auto_recovered' ? 'Recovered' : log.status}
+                        </span>
+                        <span className="text-gray-500">• {duration}</span>
+                      </div>
+                      {log.errorMessage && (
+                        <p className="text-xs text-red-600 mt-1">{log.errorMessage}</p>
+                      )}
+                      <p className="text-xs text-gray-500 mt-1">
+                        Started: {new Date(log.startedAt).toLocaleString()}
+                        {log.openaiSessionId && (
+                          <span className="ml-2">
+                            • ID: <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(log.openaiSessionId);
+                                // Could add a toast notification here
+                              }}
+                              title={`Click to copy full ID: ${log.openaiSessionId}`}
+                              className="text-xs bg-gray-100 hover:bg-gray-200 px-1 py-0.5 rounded font-mono cursor-pointer"
+                            >
+                              {log.openaiSessionId.substring(0, 8)}...
+                            </button>
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Phase 1: Deep Research */}
       {currentPhase === 'research' && (
@@ -621,6 +863,21 @@ export function TargetPageIntelligenceGenerator({ targetPageId, targetUrl, clien
                   </div>
                 </div>
               </div>
+              
+              {/* Expensive operation warning */}
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm text-red-800 font-medium mb-1">⚠️ Expensive Operation Warning</p>
+                    <p className="text-sm text-red-700">
+                      This uses OpenAI's o3 reasoning model and consumes significant API credits (~$5-15 per research). 
+                      Only proceed if you need comprehensive intelligence for this specific page.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
               {userType === 'internal' ? (
                 <button
                   onClick={startResearch}
@@ -644,12 +901,69 @@ export function TargetPageIntelligenceGenerator({ targetPageId, targetUrl, clien
             <div className="space-y-4">
               <div className="flex items-center space-x-3">
                 <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
-                <span className="font-medium">Research in Progress</span>
+                <span className="font-medium">
+                  Research in Progress
+                  {sessionHistory.length > 0 && (
+                    <span className="ml-2 text-sm text-gray-500">
+                      (Attempt #{sessionHistory.length + 1})
+                    </span>
+                  )}
+                </span>
               </div>
               <p className="text-sm text-gray-600">{progress}</p>
               <div className="text-xs text-gray-500">
                 Status checks: #{pollingCount} • Elapsed: {formatTime(pollingCount * 5)}
+                {researchSessionId && (
+                  <span className="ml-2">
+                    • Session: <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(researchSessionId);
+                      }}
+                      title={`Click to copy: ${researchSessionId}`}
+                      className="bg-gray-100 hover:bg-gray-200 px-1 py-0.5 rounded font-mono cursor-pointer"
+                    >
+                      {researchSessionId.substring(0, 8)}...
+                    </button>
+                  </span>
+                )}
               </div>
+              
+              {/* Show timeout warning and cancel button if session is stuck */}
+              {sessionData?.researchStartedAt && (() => {
+                const startTime = new Date(sessionData.researchStartedAt);
+                const minutesElapsed = Math.floor((Date.now() - startTime.getTime()) / (1000 * 60));
+                const isStuck = minutesElapsed > 60; // Consider stuck after 1 hour
+                
+                return (
+                  <>
+                    {minutesElapsed > 30 && (
+                      <div className={`p-3 rounded-lg border ${isStuck ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200'}`}>
+                        <div className="flex items-start space-x-2">
+                          <AlertCircle className={`w-4 h-4 mt-0.5 ${isStuck ? 'text-red-600' : 'text-amber-600'}`} />
+                          <div className="flex-1">
+                            <p className={`text-sm font-medium ${isStuck ? 'text-red-800' : 'text-amber-800'}`}>
+                              {isStuck ? 'Session appears to be stuck' : 'Research is taking longer than expected'}
+                            </p>
+                            <p className={`text-xs mt-1 ${isStuck ? 'text-red-700' : 'text-amber-700'}`}>
+                              Started {minutesElapsed} minutes ago. Normal research takes 15-30 minutes.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {(isStuck || userType === 'internal') && (
+                      <button
+                        onClick={() => cancelResearch()}
+                        className="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+                      >
+                        <AlertCircle className="w-4 h-4" />
+                        <span>{isStuck ? 'Check & Recover Session' : 'Check Session Status'}</span>
+                      </button>
+                    )}
+                  </>
+                );
+              })()}
             </div>
           )}
 
@@ -672,6 +986,62 @@ export function TargetPageIntelligenceGenerator({ targetPageId, targetUrl, clien
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Phase 1: Research Results View (when navigated back to completed research) */}
+      {currentPhase === 'research' && researchStatus === 'completed' && researchOutput && (
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <div className="flex items-center space-x-3 mb-4">
+            <CheckCircle className="w-5 h-5 text-green-500" />
+            <div>
+              <h4 className="font-medium text-gray-900">Deep Research Complete</h4>
+              <p className="text-xs text-gray-500">Research findings for this target page</p>
+            </div>
+          </div>
+          
+          <div className="space-y-4">
+            <div>
+              <h5 className="font-medium text-gray-900 mb-2">Target Page Analysis</h5>
+              <div className="prose prose-sm max-w-none bg-gray-50 p-4 rounded-lg">
+                <MarkdownPreview content={researchOutput.analysis} />
+              </div>
+            </div>
+
+            {researchOutput.gaps && researchOutput.gaps.length > 0 && (
+              <div>
+                <h5 className="font-medium text-gray-900 mb-2">Information Gaps Identified</h5>
+                <div className="space-y-2">
+                  {researchOutput.gaps.map((gap, idx) => (
+                    <div key={idx} className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <span className="text-xs font-medium px-2 py-1 bg-yellow-200 text-yellow-800 rounded">
+                          {gap.importance ? gap.importance.toUpperCase() : 'MEDIUM'}
+                        </span>
+                        <span className="text-sm font-medium text-gray-900">{gap.category || 'General'}</span>
+                      </div>
+                      <p className="text-sm text-gray-700">{gap.question || 'Question not available'}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {researchOutput.sources && researchOutput.sources.length > 0 && (
+              <div>
+                <h5 className="font-medium text-gray-900 mb-2">Sources</h5>
+                <div className="space-y-1">
+                  {researchOutput.sources.map((source, idx) => (
+                    <div key={idx} className="text-sm text-gray-600 flex items-center space-x-2">
+                      <span className="text-xs bg-gray-200 px-2 py-1 rounded">{source.type}</span>
+                      <span>{source.value}</span>
+                      {source.description && <span className="text-gray-500">- {source.description}</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
       
@@ -911,27 +1281,55 @@ export function TargetPageIntelligenceGenerator({ targetPageId, targetUrl, clien
                               {gap.question || 'Question not available'}
                             </h4>
                             
-                            <div className="bg-white rounded-lg p-3 border border-gray-200">
-                              <p className="text-sm text-gray-800">
-                                {answer || <span className="italic text-gray-500">No answer provided</span>}
-                              </p>
+                            <textarea
+                              value={questionAnswers[index] || answer || ''}
+                              onChange={(e) => handleQuestionAnswerChange(index, e.target.value)}
+                              placeholder="Edit this answer..."
+                              className="w-full h-24 p-3 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                              maxLength={2000}
+                            />
+                            <div className="flex justify-between items-center mt-2">
+                              <span className="text-xs text-gray-500">
+                                {(questionAnswers[index] || answer || '').length}/2,000 characters
+                              </span>
+                              {(questionAnswers[index] || answer) && (
+                                <CheckCircle className="w-4 h-4 text-green-500" />
+                              )}
                             </div>
                           </div>
                         );
                       })}
                     </div>
 
-                    {/* Show additional product/service info if available */}
+                    {/* Show additional product/service info - now editable */}
                     {sessionData.metadata.additionalInfo && (
                       <div className="space-y-2">
                         <h5 className="font-medium text-gray-900">Additional Product/Service Information</h5>
-                        <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
-                          <div className="text-sm text-gray-800 whitespace-pre-wrap">
-                            {sessionData.metadata.additionalInfo}
-                          </div>
+                        <textarea
+                          value={additionalInfo || sessionData.metadata.additionalInfo || ''}
+                          onChange={(e) => setAdditionalInfo(e.target.value)}
+                          placeholder="Edit additional product/service information..."
+                          className="w-full h-32 p-4 border border-gray-300 rounded-lg resize-y focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                          maxLength={5000}
+                        />
+                        <div className="flex justify-between text-xs text-gray-500 mt-2">
+                          <span>Additional context about this specific product/service</span>
+                          <span>{(additionalInfo || sessionData.metadata.additionalInfo || '').length}/5,000 characters</span>
                         </div>
                       </div>
                     )}
+                    
+                    {/* Save Changes Button for Internal Users */}
+                    <div className="flex justify-center pt-4">
+                      <button
+                        onClick={submitQuestionAnswers}
+                        disabled={isSubmittingInput}
+                        className="bg-purple-600 text-white py-2 px-6 rounded-lg hover:bg-purple-700 disabled:bg-gray-400 transition-colors flex items-center space-x-2"
+                      >
+                        {isSubmittingInput && <Loader2 className="w-4 h-4 animate-spin" />}
+                        <span>Save Answer Changes</span>
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   // Fallback to manual input if no structured data
@@ -1220,18 +1618,6 @@ export function TargetPageIntelligenceGenerator({ targetPageId, targetUrl, clien
             </div>
           </div>
 
-          {/* Regenerate Button - Internal Only */}
-          {userType === 'internal' && (
-            <div className="flex justify-center">
-              <button
-                onClick={startResearch}
-                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md flex items-center"
-              >
-                <Sparkles className="w-4 h-4 mr-2" />
-                Generate New Target Page Intelligence
-              </button>
-            </div>
-          )}
         </div>
       )}
 
