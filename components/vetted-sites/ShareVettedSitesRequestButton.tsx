@@ -46,7 +46,7 @@ export default function ShareVettedSitesRequestButton({
       });
       if (response.ok) {
         const data = await response.json();
-        setQualifiedDomainCount(data.stats?.qualified || 0);
+        setQualifiedDomainCount(data.stats?.totalQualified || 0);
       }
     } catch (error) {
       console.error('Error checking qualified domains:', error);
