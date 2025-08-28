@@ -132,7 +132,9 @@ export const orders = pgTable('orders', {
   createdByIdx: index('idx_orders_created_by').on(table.createdBy),
 }));
 
-// Guest post items - individual domains in a guest post order
+// DEPRECATED: Guest post items - individual domains in a guest post order
+// WARNING: This table is LEGACY. Use order_line_items from orderLineItemSchema.ts instead
+// This table remains for backward compatibility only - DO NOT USE FOR NEW CODE
 export const guestPostItems = pgTable('guest_post_items', {
   id: uuid('id').primaryKey(),
   orderId: uuid('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
@@ -178,8 +180,15 @@ export const guestPostItems = pgTable('guest_post_items', {
   statusIdx: index('idx_guest_post_items_status').on(table.status),
 }));
 
-// Legacy export for backward compatibility (will be removed after migration)
-export const orderItems = guestPostItems;
+// DEPRECATED: Legacy export for backward compatibility (will be removed after migration)
+// WARNING: This exports guestPostItems which is LEGACY - use order_line_items from orderLineItemSchema.ts
+// 
+// ⚠️ IMPORTANT: The REAL order items are in a different file:
+// import { orderLineItems } from '@/lib/db/orderLineItemSchema'
+// That's what the production system actually uses!
+//
+// This export is confusing and should NOT be used for new code:
+export const orderItems = guestPostItems;  // <-- DON'T USE THIS!
 
 // Share tokens for pre-account access
 export const orderShareTokens = pgTable('order_share_tokens', {
