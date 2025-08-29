@@ -55,6 +55,7 @@ export default function VerifyWebsitePage({ params }: { params: Promise<{ id: st
   const [emailSent, setEmailSent] = useState(false);
   const [checkingVerification, setCheckingVerification] = useState(false);
   const [customEmail, setCustomEmail] = useState('');
+  const [existingVerification, setExistingVerification] = useState<any>(null);
 
   const verificationMethods: VerificationMethod[] = [
     {
@@ -93,6 +94,7 @@ export default function VerifyWebsitePage({ params }: { params: Promise<{ id: st
 
   useEffect(() => {
     loadWebsite();
+    checkExistingVerification();
     generateVerificationToken();
   }, [websiteId]);
 
@@ -116,6 +118,20 @@ export default function VerifyWebsitePage({ params }: { params: Promise<{ id: st
       setError(err instanceof Error ? err.message : 'Failed to load website');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkExistingVerification = async () => {
+    try {
+      const response = await fetch(`/api/publisher/websites/${websiteId}/verification-status`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.verification?.status === 'pending') {
+          setExistingVerification(data);
+        }
+      }
+    } catch (err) {
+      // Silently fail - not critical
     }
   };
 
@@ -608,6 +624,41 @@ export default function VerifyWebsitePage({ params }: { params: Promise<{ id: st
             <Shield className="h-12 w-12 text-blue-600" />
           </div>
         </div>
+
+        {/* Existing Verification Alert */}
+        {existingVerification && (
+          <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-6 mb-6">
+            <div className="flex items-start">
+              <Clock className="h-6 w-6 text-yellow-600 mt-1 mr-3 animate-pulse" />
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-yellow-900 mb-2">
+                  Verification Already In Progress
+                </h3>
+                <p className="text-yellow-800 mb-4">
+                  You have an active {existingVerification.verification?.method} verification pending for this website.
+                  {existingVerification.verification?.emailSentTo && (
+                    <span> Email was sent to <strong>{existingVerification.verification.emailSentTo}</strong>.</span>
+                  )}
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Link
+                    href={`/publisher/websites/${websiteId}/verification-status`}
+                    className="inline-flex items-center justify-center px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700"
+                  >
+                    <Info className="h-4 w-4 mr-2" />
+                    Check Status & Resend
+                  </Link>
+                  <button
+                    onClick={() => setExistingVerification(null)}
+                    className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                  >
+                    Try Different Method
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Messages */}
         {error && (

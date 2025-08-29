@@ -329,39 +329,62 @@ export default function WebsiteViewPage({ params }: { params: Promise<{ id: stri
                 <div className="text-center py-4">
                   <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-2" />
                   <p className="text-green-700 font-medium">Website Verified</p>
-                  <p className="text-gray-500 text-sm mt-1">
+                  <p className="text-gray-500 text-sm mt-1 mb-4">
                     Verified on {website.verifiedAt ? new Date(website.verifiedAt).toLocaleDateString() : 'N/A'}
                   </p>
+                  <Link
+                    href={`/publisher/websites/${websiteId}/verification-status`}
+                    className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                  >
+                    <Shield className="h-4 w-4 mr-2" />
+                    View Verification Details
+                  </Link>
                 </div>
               ) : website.status === 'pending' ? (
                 <div className="text-center py-4">
-                  <Clock className="h-12 w-12 text-yellow-500 mx-auto mb-2" />
-                  <p className="text-yellow-700 font-medium">Verification Pending</p>
+                  <Clock className="h-12 w-12 text-yellow-500 mx-auto mb-2 animate-pulse" />
+                  <p className="text-yellow-700 font-medium">Verification In Progress</p>
                   <p className="text-gray-500 text-sm mt-1 mb-4">
-                    Please complete the verification process
+                    Check your email for the verification link
                   </p>
-                  <Link
-                    href={`/publisher/websites/${websiteId}/verify`}
-                    className="inline-flex items-center px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700"
-                  >
-                    <Shield className="h-4 w-4 mr-2" />
-                    Continue Verification
-                  </Link>
+                  <div className="space-y-2">
+                    <Link
+                      href={`/publisher/websites/${websiteId}/verification-status`}
+                      className="block w-full px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700"
+                    >
+                      <Shield className="h-4 w-4 inline mr-2" />
+                      Check Verification Status
+                    </Link>
+                    <Link
+                      href={`/publisher/websites/${websiteId}/verify`}
+                      className="block w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                    >
+                      Try Different Method
+                    </Link>
+                  </div>
                 </div>
               ) : (
                 <div className="text-center py-4">
                   <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-2" />
                   <p className="text-red-700 font-medium">Verification Required</p>
                   <p className="text-gray-500 text-sm mt-1 mb-4">
-                    This website needs to be verified
+                    Verify ownership to manage this website
                   </p>
-                  <Link
-                    href={`/publisher/websites/${websiteId}/verify`}
-                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                  >
-                    <Shield className="h-4 w-4 mr-2" />
-                    Verify Website
-                  </Link>
+                  <div className="space-y-2">
+                    <Link
+                      href={`/publisher/websites/${websiteId}/verify`}
+                      className="block w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    >
+                      <Shield className="h-4 w-4 inline mr-2" />
+                      Start Verification
+                    </Link>
+                    <Link
+                      href={`/publisher/websites/${websiteId}/verification-status`}
+                      className="block w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                    >
+                      Check Previous Attempts
+                    </Link>
+                  </div>
                 </div>
               )}
             </div>
