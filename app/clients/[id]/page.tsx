@@ -1265,41 +1265,137 @@ export default function ClientDetailPage() {
                                 <div className="flex items-center justify-between">
                                   <h4 className="text-xs font-medium text-gray-700 uppercase tracking-wide">Intelligence</h4>
                                 </div>
-                                {page.hasIntelligence ? (
-                                  <div className="text-xs">
-                                    <div className="flex items-center justify-between">
-                                      <div className="text-gray-400">
-                                        <div>Brief available</div>
-                                        <div className="text-gray-500 mt-1 text-xs">
-                                          Updated {page.intelligenceUpdatedAt ? new Date(page.intelligenceUpdatedAt).toLocaleDateString() : 'recently'}
+                                {(() => {
+                                  const state = page.intelligenceState || 'none';
+                                  
+                                  switch(state) {
+                                    case 'completed':
+                                      return (
+                                        <div className="text-xs">
+                                          <div className="flex items-center justify-between">
+                                            <div className="text-gray-600">
+                                              <div className="font-medium text-green-700">✓ Brief available</div>
+                                              <div className="text-gray-500 mt-1 text-xs">
+                                                Updated {page.intelligenceUpdatedAt ? new Date(page.intelligenceUpdatedAt).toLocaleDateString() : 'recently'}
+                                              </div>
+                                            </div>
+                                            <Link
+                                              href={`/clients/${client.id}/target-page-intelligence/${page.id}`}
+                                              className="inline-flex items-center px-3 py-1.5 bg-purple-600 text-white text-xs rounded-md hover:bg-purple-700 transition-colors"
+                                            >
+                                              View Brief
+                                            </Link>
+                                          </div>
                                         </div>
-                                      </div>
-                                      <Link
-                                        href={`/clients/${client.id}/target-page-intelligence/${page.id}`}
-                                        className="inline-flex items-center px-3 py-1.5 bg-purple-600 text-white text-xs rounded-md hover:bg-purple-700 transition-colors"
-                                      >
-                                        View Brief
-                                      </Link>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div className="text-xs">
-                                    <div className="flex items-center justify-between">
-                                      <div className="text-gray-400">
-                                        <div className="italic">No intelligence yet</div>
-                                        <div className="text-gray-500 mt-1 text-xs">
-                                          Deep research for this specific page
+                                      );
+                                      
+                                    case 'brief_in_progress':
+                                      return (
+                                        <div className="text-xs">
+                                          <div className="flex items-center justify-between">
+                                            <div className="text-amber-600">
+                                              <div className="flex items-center">
+                                                <span className="animate-spin mr-2">⏳</span>
+                                                <span>Generating brief...</span>
+                                              </div>
+                                              <div className="text-gray-500 mt-1 text-xs">
+                                                Phase 3 of 3
+                                              </div>
+                                            </div>
+                                            <Link
+                                              href={`/clients/${client.id}/target-page-intelligence/${page.id}`}
+                                              className="inline-flex items-center px-3 py-1.5 bg-amber-600 text-white text-xs rounded-md hover:bg-amber-700 transition-colors"
+                                            >
+                                              View Progress
+                                            </Link>
+                                          </div>
                                         </div>
-                                      </div>
-                                      <Link
-                                        href={`/clients/${client.id}/target-page-intelligence/${page.id}`}
-                                        className="inline-flex items-center px-3 py-1.5 bg-gray-600 text-white text-xs rounded-md hover:bg-gray-700 transition-colors"
-                                      >
-                                        Generate Intelligence
-                                      </Link>
-                                    </div>
-                                  </div>
-                                )}
+                                      );
+                                      
+                                    case 'awaiting_input':
+                                      return (
+                                        <div className="text-xs">
+                                          <div className="flex items-center justify-between">
+                                            <div className="text-blue-600">
+                                              <div className="font-medium">📝 Awaiting input</div>
+                                              <div className="text-gray-500 mt-1 text-xs">
+                                                Phase 2 of 3 - Research complete
+                                              </div>
+                                            </div>
+                                            <Link
+                                              href={`/clients/${client.id}/target-page-intelligence/${page.id}`}
+                                              className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-xs rounded-md hover:bg-blue-700 transition-colors"
+                                            >
+                                              Provide Input
+                                            </Link>
+                                          </div>
+                                        </div>
+                                      );
+                                      
+                                    case 'research_completed':
+                                      return (
+                                        <div className="text-xs">
+                                          <div className="flex items-center justify-between">
+                                            <div className="text-green-600">
+                                              <div className="font-medium">✓ Ready for brief</div>
+                                              <div className="text-gray-500 mt-1 text-xs">
+                                                Research & input complete
+                                              </div>
+                                            </div>
+                                            <Link
+                                              href={`/clients/${client.id}/target-page-intelligence/${page.id}`}
+                                              className="inline-flex items-center px-3 py-1.5 bg-green-600 text-white text-xs rounded-md hover:bg-green-700 transition-colors"
+                                            >
+                                              Generate Brief
+                                            </Link>
+                                          </div>
+                                        </div>
+                                      );
+                                      
+                                    case 'research_in_progress':
+                                      return (
+                                        <div className="text-xs">
+                                          <div className="flex items-center justify-between">
+                                            <div className="text-blue-600">
+                                              <div className="flex items-center">
+                                                <span className="animate-spin mr-2">🔍</span>
+                                                <span>Researching...</span>
+                                              </div>
+                                              <div className="text-gray-500 mt-1 text-xs">
+                                                Phase 1 of 3 (15-20 min)
+                                              </div>
+                                            </div>
+                                            <Link
+                                              href={`/clients/${client.id}/target-page-intelligence/${page.id}`}
+                                              className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-xs rounded-md hover:bg-blue-700 transition-colors"
+                                            >
+                                              View Progress
+                                            </Link>
+                                          </div>
+                                        </div>
+                                      );
+                                      
+                                    default:
+                                      return (
+                                        <div className="text-xs">
+                                          <div className="flex items-center justify-between">
+                                            <div className="text-gray-400">
+                                              <div className="italic">No intelligence yet</div>
+                                              <div className="text-gray-500 mt-1 text-xs">
+                                                Deep research for this specific page
+                                              </div>
+                                            </div>
+                                            <Link
+                                              href={`/clients/${client.id}/target-page-intelligence/${page.id}`}
+                                              className="inline-flex items-center px-3 py-1.5 bg-gray-600 text-white text-xs rounded-md hover:bg-gray-700 transition-colors"
+                                            >
+                                              Generate Intelligence
+                                            </Link>
+                                          </div>
+                                        </div>
+                                      );
+                                  }
+                                })()}
                               </div>
                             </div>
                           </div>

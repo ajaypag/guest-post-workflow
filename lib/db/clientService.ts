@@ -185,7 +185,59 @@ export class ClientService {
   // Target pages methods
   static async getTargetPages(clientId: string): Promise<TargetPage[]> {
     try {
-      return await db.select().from(targetPages).where(eq(targetPages.clientId, clientId));
+      // Import the intelligence table at the top of the function
+      const { targetPageIntelligence } = await import('@/lib/db/targetPageIntelligenceSchema');
+      
+      // Get all target pages for the client
+      const pages = await db.select().from(targetPages).where(eq(targetPages.clientId, clientId));
+      
+      // For each page, check if intelligence exists
+      const pagesWithIntelligence = await Promise.all(
+        pages.map(async (page) => {
+          // Check if intelligence exists for this target page
+          const intelligence = await db
+            .select({ 
+              id: targetPageIntelligence.id,
+              researchStatus: targetPageIntelligence.researchStatus,
+              briefStatus: targetPageIntelligence.briefStatus,
+              briefGeneratedAt: targetPageIntelligence.briefGeneratedAt,
+              researchCompletedAt: targetPageIntelligence.researchCompletedAt,
+              clientInput: targetPageIntelligence.clientInput
+            })
+            .from(targetPageIntelligence)
+            .where(eq(targetPageIntelligence.targetPageId, page.id))
+            .limit(1);
+          
+          // Determine intelligence state
+          let intelligenceState: 'none' | 'research_in_progress' | 'research_completed' | 'awaiting_input' | 'brief_in_progress' | 'completed' = 'none';
+          
+          if (intelligence.length > 0) {
+            const intel = intelligence[0];
+            
+            if (intel.briefStatus === 'completed') {
+              intelligenceState = 'completed';
+            } else if (intel.briefStatus === 'in_progress' || intel.briefStatus === 'queued') {
+              intelligenceState = 'brief_in_progress';
+            } else if (intel.researchStatus === 'completed' && !intel.clientInput) {
+              intelligenceState = 'awaiting_input';
+            } else if (intel.researchStatus === 'completed' && intel.clientInput) {
+              intelligenceState = 'research_completed'; // Ready to generate brief
+            } else if (intel.researchStatus === 'in_progress' || intel.researchStatus === 'queued') {
+              intelligenceState = 'research_in_progress';
+            }
+          }
+          
+          // Add intelligence flags and state
+          return {
+            ...page,
+            hasIntelligence: intelligenceState === 'completed',
+            intelligenceState,
+            intelligenceUpdatedAt: intelligence[0]?.briefGeneratedAt || intelligence[0]?.researchCompletedAt || null
+          } as any;
+        })
+      );
+      
+      return pagesWithIntelligence;
     } catch (error) {
       console.error('Error loading target pages:', error);
       return [];
