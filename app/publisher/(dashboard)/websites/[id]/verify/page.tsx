@@ -259,23 +259,40 @@ export default function VerifyWebsitePage({ params }: { params: Promise<{ id: st
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="flex items-center text-green-700">
-                    <CheckCircle className="h-5 w-5 mr-2" />
-                    Email sent to {customEmail}
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="flex items-center text-green-700 mb-2">
+                      <CheckCircle className="h-5 w-5 mr-2" />
+                      <span className="font-medium">Email sent to {customEmail}</span>
+                    </div>
+                    <p className="text-sm text-green-600">
+                      Please check your inbox and click the verification link. 
+                      The link will expire in 24 hours.
+                    </p>
                   </div>
-                  <p className="text-sm text-gray-600">
-                    Please check your inbox and click the verification link. 
-                    The link will expire in 24 hours.
-                  </p>
-                  <button
-                    onClick={() => {
-                      setEmailSent(false);
-                      generateVerificationToken();
-                    }}
-                    className="text-sm text-blue-600 hover:text-blue-700"
-                  >
-                    Didn't receive the email? Send again
-                  </button>
+                  
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <Link
+                      href={`/publisher/websites/${websiteId}/verification-status`}
+                      className="flex-1 text-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      Check Verification Status
+                    </Link>
+                    <button
+                      onClick={() => {
+                        setEmailSent(false);
+                        generateVerificationToken();
+                      }}
+                      className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      Send to Different Email
+                    </button>
+                  </div>
+                  
+                  <div className="text-center">
+                    <p className="text-xs text-gray-500">
+                      • Check spam folder if not received • Max 5 attempts per day • 5-minute cooldown between sends
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
