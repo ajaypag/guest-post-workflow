@@ -300,7 +300,7 @@ export default function WorkflowDetail() {
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div className="bg-gray-50 border border-gray-200 rounded-xl p-5">
                   <div className="flex items-center mb-3">
                     <div className="w-3 h-3 bg-emerald-500 rounded-full mr-3"></div>
@@ -310,6 +310,26 @@ export default function WorkflowDetail() {
                     {workflow.steps.find(s => s.id === 'domain-selection')?.outputs?.domain || 
                      workflow.targetDomain || 
                      'Not selected yet'}
+                  </p>
+                </div>
+
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-5">
+                  <div className="flex items-center mb-3">
+                    <div className="w-3 h-3 bg-orange-500 rounded-full mr-3"></div>
+                    <span className="text-gray-500 text-sm font-medium uppercase tracking-wide">Target URL</span>
+                  </div>
+                  <p className="text-gray-900 font-semibold text-sm leading-tight">
+                    {(() => {
+                      const targetUrl = workflow.steps.find(s => s.id === 'topic-generation')?.outputs?.clientTargetUrl;
+                      if (!targetUrl) return 'Not selected yet';
+                      try {
+                        const url = new URL(targetUrl);
+                        const path = url.pathname;
+                        return path === '/' ? url.hostname : `${url.hostname}${path}`;
+                      } catch {
+                        return targetUrl;
+                      }
+                    })()}
                   </p>
                 </div>
                 
