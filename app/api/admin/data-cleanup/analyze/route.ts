@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
       SELECT 
         c.id,
         c.name,
-        c.normalized_domain,
+        c.website as normalized_domain,
         c.created_at,
         a.name as account_name
       FROM clients c
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
       LEFT JOIN bulk_analysis_projects bap ON c.id = bap.client_id
       LEFT JOIN order_groups og ON c.id = og.client_id
       LEFT JOIN vetted_request_clients vrc ON c.id = vrc.client_id
-      GROUP BY c.id, c.name, c.normalized_domain, c.created_at, a.name
+      GROUP BY c.id, c.name, c.website, c.created_at, a.name
       HAVING 
         COUNT(DISTINCT tp.id) = 0
         AND COUNT(DISTINCT bap.id) = 0
