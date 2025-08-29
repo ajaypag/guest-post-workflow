@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Bot, CheckCircle, AlertCircle, Clock, Loader2, Copy, XCircle, Sparkles, MessageSquare, FileText, Edit3, Mail, Send } from 'lucide-react';
+import { Bot, CheckCircle, AlertCircle, Clock, Loader2, Copy, XCircle, Sparkles, MessageSquare, FileText, Edit3, Mail, Send, X } from 'lucide-react';
 import { MarkdownPreview } from './MarkdownPreview';
 
 interface BrandIntelligenceGeneratorProps {
@@ -849,20 +849,32 @@ export function BrandIntelligenceGenerator({ clientId, onComplete, userType = 'i
                 <div className="flex items-center justify-between mb-2">
                   <h5 className="font-medium text-gray-900">Information Gaps Identified</h5>
                   {researchOutput.gaps && researchOutput.gaps.length > 0 && userType === 'internal' && (
-                    <button
-                      onClick={sendQuestionsToClient}
-                      disabled={isSendingEmail || emailSent}
-                      className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
-                    >
-                      {isSendingEmail ? (
-                        <Loader2 className="w-3 h-3 animate-spin mr-1" />
-                      ) : emailSent ? (
-                        <CheckCircle className="w-3 h-3 mr-1" />
-                      ) : (
-                        <Mail className="w-3 h-3 mr-1" />
+                    <div className="flex items-center space-x-2">
+                      {/* View share link button - only show if link exists and panel is not already open */}
+                      {sessionData?.metadata?.answerToken && !showExistingLink && (
+                        <button
+                          onClick={() => setShowExistingLink(true)}
+                          className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md bg-purple-600 text-white hover:bg-purple-700 transition-colors"
+                        >
+                          <MessageSquare className="w-3 h-3 mr-1" />
+                          View Share Link
+                        </button>
                       )}
-                      {isSendingEmail ? 'Sending...' : emailSent ? 'Email Sent!' : 'Send to Client'}
-                    </button>
+                      <button
+                        onClick={sendQuestionsToClient}
+                        disabled={isSendingEmail || emailSent}
+                        className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
+                      >
+                        {isSendingEmail ? (
+                          <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                        ) : emailSent ? (
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                        ) : (
+                          <Mail className="w-3 h-3 mr-1" />
+                        )}
+                        {isSendingEmail ? 'Sending...' : emailSent ? 'Email Sent!' : 'Send to Client'}
+                      </button>
+                    </div>
                   )}
                   
                   {/* Answer URL Display */}
@@ -889,6 +901,55 @@ export function BrandIntelligenceGenerator({ clientId, onComplete, userType = 'i
                           Copy
                         </button>
                       </div>
+                    </div>
+                  )}
+                  
+                  {/* Existing Share Link Display */}
+                  {showExistingLink && sessionData?.metadata?.answerToken && (
+                    <div className="mt-3 p-3 bg-purple-50 border border-purple-200 rounded-lg relative">
+                      <button
+                        onClick={() => setShowExistingLink(false)}
+                        className="absolute top-3 right-3 text-purple-500 hover:text-purple-700 transition-colors"
+                        aria-label="Close"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                      <div className="flex items-center space-x-2 mb-2">
+                        <MessageSquare className="w-4 h-4 text-purple-600" />
+                        <span className="text-sm font-medium text-purple-800">Existing Share Link</span>
+                      </div>
+                      <p className="text-xs text-purple-700 mb-2">
+                        This link was previously generated for the client to answer questions:
+                      </p>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="text"
+                          value={`${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/brand-intelligence/answer/${sessionData.metadata.answerToken}`}
+                          readOnly
+                          className="flex-1 text-xs font-mono bg-white border border-purple-300 rounded px-2 py-1 text-purple-800"
+                        />
+                        <button
+                          onClick={() => {
+                            const url = `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/brand-intelligence/answer/${sessionData.metadata.answerToken}`;
+                            navigator.clipboard.writeText(url);
+                            // Flash copy success
+                            const btn = document.activeElement as HTMLButtonElement;
+                            const originalText = btn.textContent;
+                            btn.textContent = 'Copied!';
+                            setTimeout(() => {
+                              btn.textContent = originalText;
+                            }, 2000);
+                          }}
+                          className="px-2 py-1 text-xs font-medium bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
+                        >
+                          Copy
+                        </button>
+                      </div>
+                      {sessionData?.metadata?.questionsSentAt && (
+                        <p className="text-xs text-purple-600 mt-2">
+                          Originally sent: {new Date(sessionData.metadata.questionsSentAt).toLocaleDateString()}
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>
