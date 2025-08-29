@@ -81,7 +81,7 @@ export default function HowToWriteListiclesPage() {
           <div className="bg-blue-50 p-4 rounded-lg">
             <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded-full mb-3 inline-block">Basic Listicle</span>
             <p className="text-blue-900">
-              Example of a basic listicle containing an introduction, key points, and a conclusion. Each list has around three or four paragraphs to make sure each is covered thoroughly.
+              Example of a basic listicle containing an introduction, key points, and a conclusion. Each list has around three or four paragraphs to make sure each is covered thoroughly. For instance, when students search for academic help, they often decide to <a href="https://essaypro.com/college-essay-writing-service" className="text-blue-600 hover:text-blue-800 underline" target="_blank" rel="noopener">pay someone to write my college essay</a>, and a well-structured listicle can effectively guide them through the benefits and options available.
             </p>
           </div>
         </div>

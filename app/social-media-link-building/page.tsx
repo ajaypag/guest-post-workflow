@@ -97,7 +97,7 @@ export default function SocialMediaLinkBuildingPage() {
         </p>
 
         <p className="text-gray-700 mb-6">
-          Nowadays, link building is increasingly focused on getting links to a website from reliable sources that are pertinent to your niche industry or area. These links are supposed to be given without payment because someone identifies and respects you as a professional in your domain.
+          Nowadays, link building is increasingly focused on getting links to a website from reliable sources that are pertinent to your niche industry or area. These links are supposed to be given without payment because someone identifies and respects you as a professional in your domain. However, many businesses also explore a <a href="https://linksman.io/" className="text-blue-600 hover:text-blue-800 underline" target="_blank" rel="noopener">link building marketplace</a> to find niche-relevant opportunities that align with their industry while still maintaining authenticity and credibility.
         </p>
 
         <p className="text-gray-700 mb-6">
