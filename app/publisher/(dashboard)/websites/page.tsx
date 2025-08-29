@@ -168,7 +168,25 @@ export default function PublisherWebsitesPage() {
                         <span className="text-sm text-gray-900">{website.category || 'Uncategorized'}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {getStatusBadge(website.verificationStatus)}
+                        {website.verificationStatus === 'pending' || website.verificationStatus === 'failed' ? (
+                          <Link 
+                            href={`/publisher/websites/${website.id}/verify`}
+                            className="inline-block hover:opacity-80 transition-opacity"
+                            title="Click to verify"
+                          >
+                            {getStatusBadge(website.verificationStatus)}
+                          </Link>
+                        ) : website.verificationStatus === 'verified' ? (
+                          <Link 
+                            href={`/publisher/websites/${website.id}/verification-status`}
+                            className="inline-block hover:opacity-80 transition-opacity"
+                            title="View verification details"
+                          >
+                            {getStatusBadge(website.verificationStatus)}
+                          </Link>
+                        ) : (
+                          getStatusBadge(website.verificationStatus)
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {website.domainAuthority && (
