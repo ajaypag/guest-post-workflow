@@ -93,13 +93,28 @@ export const KeywordResearchStepClean = ({ step, workflow, onChange }: KeywordRe
   
   // Auto-select target page if specified in workflow
   useEffect(() => {
-    if (step.outputs.selectedTargetPageId && allActiveTargetPages.length > 0) {
-      const targetPageId = step.outputs.selectedTargetPageId;
+    let targetPageId = null;
+    
+    // Check new system first (workflow metadata)
+    if (workflow.metadata?.targetPageId) {
+      targetPageId = workflow.metadata.targetPageId;
+      console.log('🎯 [KEYWORD RESEARCH] Found target page in workflow metadata:', targetPageId);
+    }
+    // Fallback to legacy system (step outputs)
+    else if (step.outputs.selectedTargetPageId) {
+      targetPageId = step.outputs.selectedTargetPageId;
+      console.log('⚠️ [KEYWORD RESEARCH] Using legacy selectedTargetPageId:', targetPageId);
+    }
+    
+    if (targetPageId && allActiveTargetPages.length > 0) {
       if (allActiveTargetPages.some((page: any) => page.id === targetPageId)) {
         setSelectedTargetPages([targetPageId]);
+        console.log('✅ [KEYWORD RESEARCH] Auto-selected target page:', targetPageId);
+      } else {
+        console.log('❌ [KEYWORD RESEARCH] Target page not found in client target pages:', targetPageId);
       }
     }
-  }, [step.outputs.selectedTargetPageId, allActiveTargetPages]);
+  }, [workflow.metadata?.targetPageId, step.outputs.selectedTargetPageId, allActiveTargetPages]);
   
   const toggleSection = (section: string) => {
     setExpandedSections(prev => ({

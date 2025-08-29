@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { WorkflowStep, GuestPostWorkflow } from '@/types/workflow';
 import { SavedField } from '../SavedField';
+import { TargetPageSelector } from '../TargetPageSelector';
 import { CopyButton } from '../ui/CopyButton';
 import { TutorialVideo } from '../ui/TutorialVideo';
 import { KeywordPreferencesSelector } from '../ui/KeywordPreferencesSelector';
@@ -668,19 +669,32 @@ ${step.outputs.outlinePrompt ? 'Ready for deep research phase' : 'Waiting for de
         </p>
         
         <div className="space-y-4">
-          <SavedField
-            label="Client Target URL"
-            value={step.outputs.clientTargetUrl || ''}
-            placeholder="The specific client URL you want to link to in this guest post"
-            onChange={(value) => {
-              const updatedOutputs: any = { ...step.outputs, clientTargetUrl: value };
+          <TargetPageSelector
+            label="Client Target Page"
+            clientId={clientId}
+            targetPageId={workflow.metadata?.targetPageId}
+            placeholder="Select the target page you want to link to in this guest post"
+            onChange={(targetPageId, targetPageUrl) => {
+              // Update workflow metadata with the selected target page ID
+              console.log('🎯 [TOPIC GENERATION] Setting NEW targetPageId:', targetPageId);
+              console.log('🎯 [TOPIC GENERATION] URL:', targetPageUrl);
+              if (workflow.metadata) {
+                workflow.metadata.targetPageId = targetPageId;
+              } else {
+                console.log('⚠️ [TOPIC GENERATION] No metadata object to store targetPageId!');
+              }
+              
+              // Also update the step output for backward compatibility during transition
+              console.log('🔄 [TOPIC GENERATION] Also setting LEGACY clientTargetUrl for backward compatibility');
+              const updatedOutputs: any = { ...step.outputs, clientTargetUrl: targetPageUrl };
+              
               // Auto-update enhanced prompt if it exists
               if (step.outputs.rawOutlinePrompt) {
-                // Need to use the updated outputs for the function
-                const tempOutputs = { ...step.outputs, clientTargetUrl: value };
+                const tempOutputs = { ...step.outputs, clientTargetUrl: targetPageUrl };
                 const enhanced = buildEnhancedResearchPromptWithOutputs(step.outputs.rawOutlinePrompt, tempOutputs);
                 updatedOutputs.outlinePrompt = enhanced;
               }
+              
               onChange(updatedOutputs);
             }}
           />
@@ -702,7 +716,7 @@ ${step.outputs.outlinePrompt ? 'Ready for deep research phase' : 'Waiting for de
             }}
           />
           
-          {step.outputs.clientTargetUrl && (
+          {(workflow.metadata?.targetPageId || step.outputs.clientTargetUrl) && (
             <div className="bg-blue-50 border border-blue-200 rounded p-3">
               <p className="text-sm text-blue-800">
                 ✅ This client link information will be automatically included in your deep research prompt in Step 2h.

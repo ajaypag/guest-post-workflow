@@ -228,7 +228,7 @@ export default function EnhancedTargetPageSelector({
   const selectedClient = availableClients.find(c => c.id === selectedClientId);
 
   return (
-    <div className={`relative ${className}`}>
+    <div className={`relative ${className}`} style={{ zIndex: 50 }}>
       <div className="space-y-2">
         {/* Success/Error Messages */}
         {successMessage && (
@@ -317,7 +317,7 @@ export default function EnhancedTargetPageSelector({
 
         {/* Dropdown Menu */}
         {isOpen && !disabled && (
-          <div className="absolute z-50 mt-2 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-96 overflow-y-auto">
+          <div className="absolute z-[9999] mt-2 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-96 overflow-y-auto" style={{ zIndex: 9999 }}>
             <div className="sticky top-0 bg-white border-b border-gray-200 p-3">
               <h3 className="text-sm font-medium text-gray-900">
                 Target Pages for {selectedClient?.name || 'Client'}
