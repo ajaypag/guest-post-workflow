@@ -9,6 +9,7 @@ import { KeywordPreferencesSelector } from '../ui/KeywordPreferencesSelector';
 import { generatePromptEnhancement, getWorkflowKeywordPreferences, setWorkflowKeywordPreferences, getClientKeywordPreferences, KeywordPreferences } from '@/types/keywordPreferences';
 import { ExternalLink, ChevronDown, ChevronRight, Target, FileText, CheckCircle, AlertCircle, Lightbulb, Search, LinkIcon, Settings, ArrowRight, RefreshCw, Zap, Brain, BarChart3 } from 'lucide-react';
 import { clientStorage } from '@/lib/userStorage';
+import EnhancedTargetPageSelector from '@/components/orders/EnhancedTargetPageSelector';
 
 interface TopicGenerationImprovedProps {
   step: WorkflowStep;
@@ -936,7 +937,7 @@ Target URL: ${clientTargetUrl}`;
       </div>
 
       {/* Phase 4: Finalization & Research Setup */}
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+      <div className="bg-white border border-gray-200 rounded-xl overflow-visible">
         <PhaseHeader
           phase="4"
           title="Research Setup"
@@ -961,35 +962,94 @@ Target URL: ${clientTargetUrl}`;
                 </p>
                 
                 <div className="space-y-4">
-                  <SavedField
-                    label="Client URL to Link To"
-                    value={step.outputs.clientTargetUrl || ''}
-                    placeholder="The specific client page that fits this topic naturally"
-                    onChange={(value) => {
-                      const updatedOutputs: any = { ...step.outputs, clientTargetUrl: value };
-                      if (step.outputs.rawOutlinePrompt) {
-                        const tempOutputs = { ...step.outputs, clientTargetUrl: value };
-                        const enhanced = buildEnhancedResearchPromptWithOutputs(step.outputs.rawOutlinePrompt, tempOutputs);
-                        updatedOutputs.outlinePrompt = enhanced;
-                      }
-                      onChange(updatedOutputs);
-                    }}
-                  />
+                  {clientId ? (
+                    <div className="relative border-2 border-purple-300 rounded-lg p-3 bg-white shadow-md">
+                      <div className="absolute -top-3 left-3 bg-white px-2">
+                        <span className="text-xs font-semibold text-purple-700">TARGET PAGE SELECTION</span>
+                      </div>
+                      <EnhancedTargetPageSelector
+                        value={{
+                          targetPageUrl: step.outputs.clientTargetUrl || '',
+                          anchorText: step.outputs.desiredAnchorText || '',
+                          targetPageId: workflow.metadata?.targetPageId
+                        }}
+                      onChange={(selection) => {
+                        console.log('🎯 [TOPIC GENERATION] Setting NEW targetPageId:', selection.targetPageId);
+                        console.log('🎯 [TOPIC GENERATION] URL:', selection.targetPageUrl);
+                        
+                        // Update workflow metadata with the selected target page ID
+                        if (workflow.metadata) {
+                          workflow.metadata.targetPageId = selection.targetPageId;
+                        } else {
+                          console.log('⚠️ [TOPIC GENERATION] No metadata object to store targetPageId!');
+                          workflow.metadata = { targetPageId: selection.targetPageId };
+                        }
+                        
+                        // Trigger workflow change to save metadata
+                        if (onWorkflowChange) {
+                          onWorkflowChange(workflow);
+                        }
+                        
+                        // Also update step outputs for backward compatibility
+                        console.log('🔄 [TOPIC GENERATION] Also setting LEGACY clientTargetUrl for backward compatibility');
+                        const updatedOutputs: any = { 
+                          ...step.outputs, 
+                          clientTargetUrl: selection.targetPageUrl,
+                          desiredAnchorText: selection.anchorText
+                        };
+                        
+                        // Re-generate enhanced prompt if raw prompt exists
+                        if (step.outputs.rawOutlinePrompt) {
+                          const tempOutputs = { 
+                            ...step.outputs, 
+                            clientTargetUrl: selection.targetPageUrl,
+                            desiredAnchorText: selection.anchorText
+                          };
+                          const enhanced = buildEnhancedResearchPromptWithOutputs(step.outputs.rawOutlinePrompt, tempOutputs);
+                          updatedOutputs.outlinePrompt = enhanced;
+                        }
+                        
+                        onChange(updatedOutputs);
+                      }}
+                      currentClientId={clientId}
+                      allowClientSwitch={false}
+                      disabled={false}
+                      className=""
+                    />
+                    </div>
+                  ) : (
+                    <SavedField
+                      label="Client URL to Link To"
+                      value={step.outputs.clientTargetUrl || ''}
+                      placeholder="The specific client page that fits this topic naturally"
+                      onChange={(value) => {
+                        const updatedOutputs: any = { ...step.outputs, clientTargetUrl: value };
+                        if (step.outputs.rawOutlinePrompt) {
+                          const tempOutputs = { ...step.outputs, clientTargetUrl: value };
+                          const enhanced = buildEnhancedResearchPromptWithOutputs(step.outputs.rawOutlinePrompt, tempOutputs);
+                          updatedOutputs.outlinePrompt = enhanced;
+                        }
+                        onChange(updatedOutputs);
+                      }}
+                    />
+                  )}
 
-                  <SavedField
-                    label="Desired Anchor Text (Optional)"
-                    value={step.outputs.desiredAnchorText || ''}
-                    placeholder="Preferred anchor text, or leave blank for AI suggestions"
-                    onChange={(value) => {
-                      const updatedOutputs: any = { ...step.outputs, desiredAnchorText: value };
-                      if (step.outputs.rawOutlinePrompt) {
-                        const tempOutputs = { ...step.outputs, desiredAnchorText: value };
-                        const enhanced = buildEnhancedResearchPromptWithOutputs(step.outputs.rawOutlinePrompt, tempOutputs);
-                        updatedOutputs.outlinePrompt = enhanced;
-                      }
-                      onChange(updatedOutputs);
-                    }}
-                  />
+                  {!clientId && (
+                    <SavedField
+                      label="Desired Anchor Text (Optional)"
+                      value={step.outputs.desiredAnchorText || ''}
+                      placeholder="Preferred anchor text, or leave blank for AI suggestions"
+                      onChange={(value) => {
+                        const updatedOutputs: any = { ...step.outputs, desiredAnchorText: value };
+                        if (step.outputs.rawOutlinePrompt) {
+                          const tempOutputs = { ...step.outputs, desiredAnchorText: value };
+                          const enhanced = buildEnhancedResearchPromptWithOutputs(step.outputs.rawOutlinePrompt, tempOutputs);
+                          updatedOutputs.outlinePrompt = enhanced;
+                        }
+                        onChange(updatedOutputs);
+                      }}
+                    />
+                  )}
                   
                   {step.outputs.clientTargetUrl && (
                     <div className="bg-blue-50 border border-blue-200 rounded p-3">

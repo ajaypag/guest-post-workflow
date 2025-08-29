@@ -3,6 +3,7 @@ import { db } from '@/lib/db/connection';
 import { outlineSessions, workflows } from '@/lib/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
+import { resolveTargetUrl } from '@/lib/utils/workflowUtils';
 
 // Helper function to sanitize any input by converting to string and removing control characters
 function sanitizeForPostgres(input: any): string {
@@ -124,10 +125,13 @@ export class AgenticOutlineServiceV2 {
       const content = workflow?.content as any;
       const topicStep = content?.steps?.find((s: any) => s.id === 'topic-generation');
       
+      // Resolve target URL from the new system
+      const targetUrl = await resolveTargetUrl(content);
+      
       const metadata = {
         keyword: topicStep?.outputs?.finalKeyword,
         postTitle: topicStep?.outputs?.postTitle,
-        clientTargetUrl: topicStep?.outputs?.clientTargetUrl,
+        clientTargetUrl: targetUrl,
       };
 
       // Create session in database with active flag

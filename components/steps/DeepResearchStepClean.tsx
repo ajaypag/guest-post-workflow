@@ -9,6 +9,7 @@ import { AgenticOutlineGenerator } from '../ui/AgenticOutlineGenerator';
 import { AgenticOutlineGeneratorV2 } from '../ui/AgenticOutlineGeneratorV2';
 import { ExternalLink, ChevronDown, ChevronRight, FileText, CheckCircle, AlertCircle, Target, ExternalLinkIcon, Bot, CheckSquare } from 'lucide-react';
 import { OutlinePreferences, generateOutlineEnhancement } from '@/types/outlinePreferences';
+import { getTargetUrlFromWorkflow, hasTargetPageId } from '@/lib/utils/workflowClientUtils';
 
 interface DeepResearchStepProps {
   step: WorkflowStep;
@@ -81,8 +82,30 @@ export const DeepResearchStepClean = ({ step, workflow, onChange }: DeepResearch
       
       // 2. Fallback to URL matching if no targetPageId or no intelligence found
       if (intelligenceType === 'none') {
-        const topicGenerationStep = workflow.steps.find(s => s.id === 'topic-generation');
-        const clientTargetUrl = topicGenerationStep?.outputs?.clientTargetUrl;
+        // Resolve target URL - use API if we have targetPageId, otherwise use legacy
+        let clientTargetUrl: string | null = null;
+        
+        if (hasTargetPageId(workflow)) {
+          // Call API to resolve from database
+          try {
+            const response = await fetch('/api/workflows/resolve-target-url', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ workflow })
+            });
+            if (response.ok) {
+              const { targetUrl } = await response.json();
+              clientTargetUrl = targetUrl;
+            }
+          } catch (error) {
+            console.error('Failed to resolve target URL:', error);
+          }
+        } else {
+          // Use legacy client-side resolution
+          clientTargetUrl = getTargetUrlFromWorkflow(workflow);
+        }
+        
+        console.log('[DEEP RESEARCH] Resolved target URL:', clientTargetUrl);
         
         if (clientTargetUrl) {
           try {
@@ -129,7 +152,7 @@ export const DeepResearchStepClean = ({ step, workflow, onChange }: DeepResearch
     };
 
     loadIntelligence();
-  }, [workflow.metadata?.clientId, topicGenerationStep?.outputs?.clientTargetUrl]);
+  }, [workflow.metadata?.clientId, workflow.metadata?.targetPageId, topicGenerationStep?.outputs?.clientTargetUrl]);
 
   // Generate enhanced prompt with preferences and intelligence
   const outlinePrompt = researchPreferences && applyPreferences 

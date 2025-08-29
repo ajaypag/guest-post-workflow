@@ -257,9 +257,9 @@ export class WorkflowGenerationService {
         } : {},
         outputs: index === 0 ? {
           domain: domain.domain
-        } : index === 2 && lineItem.targetPageUrl ? {
-          // Auto-populate Topic Generation (step 2) with target URL and anchor text
-          clientTargetUrl: lineItem.targetPageUrl,
+        } : index === 2 && lineItem.anchorText ? {
+          // Auto-populate Topic Generation (step 2) with anchor text
+          // Note: Target URL is now handled via workflow.metadata.targetPageId
           desiredAnchorText: lineItem.anchorText || ''
         } : {},
         completedAt: isFirstTwoSteps ? new Date() : undefined

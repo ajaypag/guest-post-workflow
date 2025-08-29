@@ -144,10 +144,9 @@ function NewWorkflowContent() {
             notes: notes
           } : index === 1 && targetPageId ? {
             selectedTargetPageId: targetPageId
-          } : index === 2 && (targetPageSelection.targetPageId || selectedTargetPageId) ? {
-            // Pre-fill Topic Generation step if target page was selected
-            clientTargetUrl: targetPageSelection.targetPageUrl || targetPages.find(tp => tp.id === selectedTargetPageId)?.url || ''
           } : {},
+          // Note: Topic Generation (index 2) no longer needs clientTargetUrl in outputs
+          // Target page is now handled via workflow.metadata.targetPageId
           completedAt: undefined
         })),
         metadata: selectedClient ? { 

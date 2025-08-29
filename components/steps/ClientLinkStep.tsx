@@ -6,6 +6,7 @@ import { SavedField } from '../SavedField';
 import { CopyButton } from '../ui/CopyButton';
 import { TutorialVideo } from '../ui/TutorialVideo';
 import { ExternalLink, AlertCircle, X } from 'lucide-react';
+import { getTargetUrlFromWorkflow, hasTargetPageId } from '@/lib/utils/workflowClientUtils';
 
 interface ClientLinkStepProps {
   step: WorkflowStep;
@@ -18,9 +19,41 @@ export const ClientLinkStep = ({ step, workflow, onChange }: ClientLinkStepProps
   const [showAlert, setShowAlert] = useState(!step.outputs.alertDismissed);
   
   // Get client target URL and anchor text from step 2i (topic generation)
+  const [resolvedTargetUrl, setResolvedTargetUrl] = useState<string>('');
   const topicGenerationStep = workflow.steps.find(s => s.id === 'topic-generation');
-  const plannedClientUrl = topicGenerationStep?.outputs?.clientTargetUrl || '';
   const plannedAnchorText = topicGenerationStep?.outputs?.desiredAnchorText || '';
+  
+  // Resolve target URL - use API if we have targetPageId, otherwise use legacy
+  useEffect(() => {
+    const resolveUrl = async () => {
+      if (hasTargetPageId(workflow)) {
+        // Call API to resolve from database
+        try {
+          const response = await fetch('/api/workflows/resolve-target-url', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ workflow })
+          });
+          if (response.ok) {
+            const { targetUrl } = await response.json();
+            console.log('[CLIENT LINK STEP] Resolved target URL from API:', targetUrl);
+            setResolvedTargetUrl(targetUrl || '');
+          }
+        } catch (error) {
+          console.error('Failed to resolve target URL:', error);
+        }
+      } else {
+        // Use legacy client-side resolution
+        const url = getTargetUrlFromWorkflow(workflow);
+        console.log('[CLIENT LINK STEP] Using legacy URL:', url);
+        setResolvedTargetUrl(url || '');
+      }
+    };
+    resolveUrl();
+  }, [workflow.metadata?.targetPageId, topicGenerationStep?.outputs?.clientTargetUrl]);
+  
+  // Use resolved URL as the planned URL
+  const plannedClientUrl = resolvedTargetUrl || topicGenerationStep?.outputs?.clientTargetUrl || '';
   
   // Get current values (editable in this step)
   const clientUrl = step.outputs.clientUrl || plannedClientUrl || workflow.clientUrl;

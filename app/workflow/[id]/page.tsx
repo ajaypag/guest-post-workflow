@@ -320,6 +320,7 @@ export default function WorkflowDetail() {
                   </div>
                   <p className="text-gray-900 font-semibold text-sm leading-tight">
                     {(() => {
+                      // TODO: Update to use metadata.targetPageId once we load target pages
                       const targetUrl = workflow.steps.find(s => s.id === 'topic-generation')?.outputs?.clientTargetUrl;
                       if (!targetUrl) return 'Not selected yet';
                       try {
