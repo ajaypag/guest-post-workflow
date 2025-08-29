@@ -1,6 +1,7 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 
 // Force dynamic rendering since we use search params
 export const dynamic = 'force-dynamic';
@@ -16,7 +17,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 
-export default function VerificationErrorPage() {
+function VerificationErrorContent() {
   const searchParams = useSearchParams();
   const reason = searchParams.get('reason') || 'unknown';
   const websiteId = searchParams.get('websiteId');
@@ -189,5 +190,13 @@ export default function VerificationErrorPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function VerificationErrorPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center">Loading...</div>}>
+      <VerificationErrorContent />
+    </Suspense>
   );
 }
