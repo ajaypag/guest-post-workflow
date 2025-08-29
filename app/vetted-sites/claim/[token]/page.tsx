@@ -246,51 +246,88 @@ export default async function VettedSitesClaimPage({ params }: PageProps) {
       {/* Hero Section with Stats */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">
-            Your Strategic Guest Post Matches
-          </h1>
-          <p className="text-lg text-gray-600 mb-6">
-            We found {data.stats?.totalQualified || 0} sites that already rank for topics similar to yours—boosting your visibility in ChatGPT, Claude, AI Overviews, and AI Mode while improving your traditional search rankings.
-          </p>
+          {data.proposalVideoUrl ? (
+            // Two-column layout when video is present
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-6">
+              {/* Left Column - Content */}
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 mb-4">
+                  Your Strategic Guest Post Matches
+                </h1>
+                <p className="text-lg text-gray-600 mb-6">
+                  We found {data.stats?.totalQualified || 0} sites that already rank for topics similar to yours—boosting your visibility in ChatGPT, Claude, AI Overviews, and AI Mode while improving your traditional search rankings.
+                </p>
+                
+                {/* Stats Bar */}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 text-sm">
+                  <div>
+                    <div className="text-xl font-bold text-green-600">Wholesale + $79</div>
+                    <div className="text-gray-500 text-xs">Fair Pricing</div>
+                  </div>
+                  <div>
+                    <div className="text-xl font-bold text-blue-600">Clear Justifications</div>
+                    <div className="text-gray-500 text-xs">Exact Reason Why</div>
+                  </div>
+                  <div>
+                    <div className="text-xl font-bold text-gray-900">We Handle Everything</div>
+                    <div className="text-gray-500 text-xs">Full Concierge</div>
+                  </div>
+                </div>
+                
+                <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                  <p className="text-gray-700 text-sm">Each site below has been strategically selected based on topical overlap with your content—not just high domain authority.</p>
+                </div>
+              </div>
+              
+              {/* Right Column - Video */}
+              <div>
+                <div className="rounded-lg overflow-hidden shadow-lg h-full">
+                  <iframe
+                    src={data.proposalVideoUrl.replace('/share/', '/embed/')}
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    className="w-full h-full min-h-[350px]"
+                  />
+                </div>
+              </div>
+            </div>
+          ) : (
+            // Original single-column layout when no video
+            <>
+              <h1 className="text-3xl font-bold text-gray-900 mb-4">
+                Your Strategic Guest Post Matches
+              </h1>
+              <p className="text-lg text-gray-600 mb-6">
+                We found {data.stats?.totalQualified || 0} sites that already rank for topics similar to yours—boosting your visibility in ChatGPT, Claude, AI Overviews, and AI Mode while improving your traditional search rankings.
+              </p>
+              
+              {/* Stats Bar */}
+              <div className="flex items-center space-x-8 text-sm">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">Wholesale + $79</div>
+                  <div className="text-gray-500">Fair Pricing</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">Clear Justifications</div>
+                  <div className="text-gray-500">Exact Reason Why</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-gray-900">We Handle Everything</div>
+                  <div className="text-gray-500">Full Concierge</div>
+                </div>
+              </div>
+              
+              <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                <p className="text-gray-700">Each site below has been strategically selected based on topical overlap with your content—not just high domain authority.</p>
+              </div>
+            </>
+          )}
           
-          {/* Stats Bar */}
-          <div className="flex items-center space-x-8 text-sm">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">Wholesale + $79</div>
-              <div className="text-gray-500">Fair Pricing</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">Clear Justifications</div>
-              <div className="text-gray-500">Exact Reason Why</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-gray-900">We Handle Everything</div>
-              <div className="text-gray-500">Full Concierge</div>
-            </div>
-          </div>
-          
-          {/* Proposal Message */}
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-            <p className="text-gray-700">Each site below has been strategically selected based on topical overlap with your content—not just high domain authority.</p>
-          </div>
+          {/* Custom Message - Full width below */}
           {data.proposalMessage && (
             <div className="mt-4 p-4 bg-gray-50 rounded-lg">
               <p className="text-gray-700">{data.proposalMessage}</p>
-            </div>
-          )}
-          
-          {/* Video Embed */}
-          {data.proposalVideoUrl && (
-            <div className="mt-6">
-              <div className="aspect-w-16 aspect-h-9">
-                <iframe
-                  src={data.proposalVideoUrl}
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  className="w-full h-[400px] rounded-lg"
-                />
-              </div>
             </div>
           )}
         </div>
