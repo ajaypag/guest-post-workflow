@@ -298,7 +298,7 @@ export default function DataCleanupPage() {
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <div className="text-2xl font-bold text-red-600">
-                  {data?.targetPages.count || 0} pages found
+                  {data?.targetPages?.count || 0} pages found
                 </div>
                 {selectedTargetPages.size > 0 && (
                   <div className="text-sm text-gray-600">
@@ -379,7 +379,7 @@ export default function DataCleanupPage() {
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <div className="text-2xl font-bold text-red-600">
-                  {data?.projects.count || 0} projects found
+                  {data?.projects?.count || 0} projects found
                 </div>
                 {selectedProjects.size > 0 && (
                   <div className="text-sm text-gray-600">
