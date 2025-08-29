@@ -126,7 +126,9 @@ export default function VerifyWebsitePage({ params }: { params: Promise<{ id: st
       const response = await fetch(`/api/publisher/websites/${websiteId}/verification-status`);
       if (response.ok) {
         const data = await response.json();
-        if (data.verification?.status === 'pending') {
+        // Only show existing verification if a method was actually chosen AND status is pending
+        // Don't show for newly added websites that haven't started verification yet
+        if (data.verification?.status === 'pending' && data.verification?.method) {
           setExistingVerification(data);
         }
       }

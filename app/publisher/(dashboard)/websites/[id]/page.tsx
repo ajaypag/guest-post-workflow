@@ -343,10 +343,10 @@ export default function WebsiteViewPage({ params }: { params: Promise<{ id: stri
                 </div>
               ) : (website.verificationStatus || website.status) === 'pending' ? (
                 <div className="text-center py-4">
-                  <Clock className="h-12 w-12 text-yellow-500 mx-auto mb-2 animate-pulse" />
-                  <p className="text-yellow-700 font-medium">Verification In Progress</p>
+                  <Clock className="h-12 w-12 text-yellow-500 mx-auto mb-2" />
+                  <p className="text-yellow-700 font-medium">Pending Verification</p>
                   <p className="text-gray-500 text-sm mt-1 mb-4">
-                    Check your email for the verification link
+                    You can verify your website ownership using several methods
                   </p>
                   <div className="space-y-2">
                     <Link
@@ -369,7 +369,7 @@ export default function WebsiteViewPage({ params }: { params: Promise<{ id: stri
                   <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-2" />
                   <p className="text-red-700 font-medium">Verification Required</p>
                   <p className="text-gray-500 text-sm mt-1 mb-4">
-                    Verify ownership to manage this website
+                    Choose from multiple verification methods to prove website ownership
                   </p>
                   <div className="space-y-2">
                     <Link
