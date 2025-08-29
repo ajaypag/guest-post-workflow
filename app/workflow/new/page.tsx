@@ -12,6 +12,7 @@ import { clientStorage, sessionStorage } from '@/lib/userStorage';
 import { AuthService } from '@/lib/auth';
 import { Client } from '@/types/user';
 import ClientSelector from '@/components/ClientSelector';
+import EnhancedTargetPageSelector from '@/components/orders/EnhancedTargetPageSelector';
 
 // Safe UUID generator
 function generateUUID(): string {
@@ -32,6 +33,11 @@ function NewWorkflowContent() {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [targetPages, setTargetPages] = useState<any[]>([]);
   const [selectedTargetPageId, setSelectedTargetPageId] = useState<string>('');
+  const [targetPageSelection, setTargetPageSelection] = useState<{
+    targetPageUrl?: string;
+    anchorText?: string;
+    targetPageId?: string;
+  }>({});
   const [formData, setFormData] = useState({
     clientName: '',
     clientUrl: ''
@@ -79,6 +85,7 @@ function NewWorkflowContent() {
     setSelectedClient(client);
     setTargetPages([]);
     setSelectedTargetPageId('');
+    setTargetPageSelection({});
     
     if (client) {
       setFormData({
@@ -86,7 +93,7 @@ function NewWorkflowContent() {
         clientUrl: client.website
       });
       
-      // Fetch target pages for this client
+      // Fetch target pages for this client (for legacy compatibility)
       try {
         const response = await fetch(`/api/clients/${client.id}/target-pages`);
         if (response.ok) {
@@ -137,15 +144,15 @@ function NewWorkflowContent() {
             notes: notes
           } : index === 1 && targetPageId ? {
             selectedTargetPageId: targetPageId
-          } : index === 2 && selectedTargetPageId ? {
+          } : index === 2 && (targetPageSelection.targetPageId || selectedTargetPageId) ? {
             // Pre-fill Topic Generation step if target page was selected
-            clientTargetUrl: targetPages.find(tp => tp.id === selectedTargetPageId)?.url || ''
+            clientTargetUrl: targetPageSelection.targetPageUrl || targetPages.find(tp => tp.id === selectedTargetPageId)?.url || ''
           } : {},
           completedAt: undefined
         })),
         metadata: selectedClient ? { 
           clientId: selectedClient.id,
-          targetPageId: selectedTargetPageId || undefined 
+          targetPageId: targetPageSelection.targetPageId || selectedTargetPageId || undefined 
         } : {}
       } as GuestPostWorkflow & { targetPageId?: string };
 
@@ -259,27 +266,22 @@ function NewWorkflowContent() {
               </div>
 
               {/* Target Page Selection (Optional) */}
-              {selectedClient && targetPages.length > 0 && (
+              {selectedClient && (
                 <div>
-                  <label htmlFor="targetPage" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Target URL (Optional)
                   </label>
-                  <select
-                    id="targetPage"
-                    value={selectedTargetPageId}
-                    onChange={(e) => setSelectedTargetPageId(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="">-- Select a target URL (or choose later) --</option>
-                    {targetPages.map(page => (
-                      <option key={page.id} value={page.id}>
-                        {page.url}
-                        {page.description && ` - ${page.description}`}
-                      </option>
-                    ))}
-                  </select>
+                  <EnhancedTargetPageSelector
+                    value={targetPageSelection}
+                    onChange={setTargetPageSelection}
+                    currentClientId={selectedClient.id}
+                    availableClients={[selectedClient]}
+                    allowClientSwitch={false}
+                    disabled={false}
+                    className="mb-2"
+                  />
                   <p className="text-xs text-gray-500 mt-1">
-                    You can select a target URL now or add it later in Step 3
+                    You can select a target URL now or add it later in Step 3. Use "Add new target page" to create new target URLs for this client.
                   </p>
                 </div>
               )}
