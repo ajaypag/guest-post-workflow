@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
 import { clientBrandIntelligence, clients } from '@/lib/db/schema';
+import { accounts } from '@/lib/db/accountSchema';
 import { eq } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { Resend } from 'resend';
@@ -44,6 +45,20 @@ export async function POST(
     }
 
     const client = clientResults[0];
+
+    // Get account email for the client
+    let recipientEmail = 'info@linkio.com'; // Fallback
+    if (client.accountId) {
+      const accountResults = await db
+        .select()
+        .from(accounts)
+        .where(eq(accounts.id, client.accountId))
+        .limit(1);
+      
+      if (accountResults.length > 0 && accountResults[0].email) {
+        recipientEmail = accountResults[0].email;
+      }
+    }
 
     // Get brand intelligence session with research output
     const brandIntelligenceResults = await db
@@ -151,10 +166,11 @@ export async function POST(
     `;
 
     // Send email using Resend
-    // TODO: Client schema doesn't have email field - need to add contact email to client or use accountId lookup
+    console.log(`Sending brand intelligence questions to: ${recipientEmail} (Client: ${client.name}, Account ID: ${client.accountId || 'none'})`);
+    
     const emailResult = await resend.emails.send({
       from: 'info@linkio.com',
-      to: ['info@linkio.com'], // Placeholder - need to add client email field to schema
+      to: [recipientEmail],
       subject: `Brand Intelligence Questions - ${client.name}`,
       html: emailHtml,
       replyTo: 'info@linkio.com'
