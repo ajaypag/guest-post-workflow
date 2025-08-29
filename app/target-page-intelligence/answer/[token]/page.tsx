@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { CheckCircle, AlertCircle, Loader2, Send, ArrowRight, ExternalLink } from 'lucide-react';
+import { CheckCircle, AlertCircle, Loader2, Send, ArrowRight, ExternalLink, Download } from 'lucide-react';
 import LinkioHeader from '@/components/LinkioHeader';
 import MarketingFooter from '@/components/MarketingFooter';
 
@@ -85,6 +85,42 @@ export default function TargetPageAnswerQuestionsPage() {
       ...prev,
       [index]: value
     }));
+  };
+
+  const exportToCSV = () => {
+    if (!questionData) return;
+
+    // Create CSV content
+    const headers = ['Question Number', 'Category', 'Importance', 'Question', 'Your Answer'];
+    const csvRows = [headers.join(',')];
+
+    questionData.gaps.forEach((gap, index) => {
+      const row = [
+        (index + 1).toString(),
+        `"${gap.category || 'General'}"`,
+        gap.importance.toUpperCase(),
+        `"${gap.question.replace(/"/g, '""')}"`, // Escape quotes in question
+        '""' // Empty answer column for them to fill
+      ];
+      csvRows.push(row.join(','));
+    });
+
+    // Add additional info row
+    csvRows.push('');
+    csvRows.push('"Additional Information","","","Please provide any additional context or information:",""\n');
+
+    const csvContent = csvRows.join('\n');
+
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `target-page-questions-${questionData.client.name.replace(/\s+/g, '-')}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const submitAnswers = async () => {
@@ -307,6 +343,16 @@ export default function TargetPageAnswerQuestionsPage() {
         </div>
 
         {/* Questions */}
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-semibold text-gray-900">Answer the Questions</h2>
+          <button
+            onClick={exportToCSV}
+            className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-colors"
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Export to CSV
+          </button>
+        </div>
         <div className="space-y-8">
           {questionData?.gaps.map((gap, index) => (
             <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
