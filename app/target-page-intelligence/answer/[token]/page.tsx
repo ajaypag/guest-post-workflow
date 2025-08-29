@@ -91,8 +91,39 @@ export default function TargetPageAnswerQuestionsPage() {
     if (!questionData) return;
 
     // Create CSV content
+    const csvRows = [];
+    
+    // Add header with identifying information
+    csvRows.push('"Target Page Intelligence Questions"');
+    csvRows.push('""'); // Empty row
+    csvRows.push(`"Client: ${questionData.client.name}"`);
+    csvRows.push(`"Target Page: ${questionData.targetPage.url}"`);
+    csvRows.push(`"Share Link: ${window.location.href}"`);
+    csvRows.push(`"Generated: ${new Date().toLocaleDateString()}"`);
+    csvRows.push('""'); // Empty row for spacing
+    csvRows.push('""'); // Empty row for spacing
+    
+    // Add AI Research Analysis section
+    csvRows.push('"AI Research Analysis"');
+    csvRows.push('""'); // Empty row for spacing
+    csvRows.push(`"${editedResearch.replace(/"/g, '""') || 'AI research analysis will appear here...'}"`);
+    csvRows.push('""'); // Empty row for spacing
+    csvRows.push('""'); // Empty row for spacing
+    
+    // Add Additional Information section
+    csvRows.push('"Additional Target Page Information"');
+    csvRows.push('""'); // Empty row for spacing
+    csvRows.push('"Please provide any additional context about this specific product/service:"');
+    csvRows.push('""'); // Empty row for answer
+    csvRows.push('""'); // Empty row for spacing
+    csvRows.push('""'); // Empty row for spacing
+    
+    // Add Questions section
+    csvRows.push('"Questions and Answers"');
+    csvRows.push('""'); // Empty row for spacing
+    
     const headers = ['Question Number', 'Category', 'Importance', 'Question', 'Your Answer'];
-    const csvRows = [headers.join(',')];
+    csvRows.push(headers.join(','));
 
     questionData.gaps.forEach((gap, index) => {
       const row = [
@@ -104,10 +135,6 @@ export default function TargetPageAnswerQuestionsPage() {
       ];
       csvRows.push(row.join(','));
     });
-
-    // Add additional info row
-    csvRows.push('');
-    csvRows.push('"Additional Information","","","Please provide any additional context or information:",""\n');
 
     const csvContent = csvRows.join('\n');
 
