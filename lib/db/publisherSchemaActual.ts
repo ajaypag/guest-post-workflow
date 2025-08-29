@@ -125,6 +125,9 @@ export const publisherEmailClaims = pgTable('publisher_email_claims', {
   rejectionReason: text('rejection_reason'),
   claimConfidence: varchar('claim_confidence', { length: 50 }),
   claimSource: varchar('claim_source', { length: 100 }),
+  attemptCount: integer('attempt_count').default(0),
+  lastAttemptAt: timestamp('last_attempt_at'),
+  dailyResetAt: timestamp('daily_reset_at'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });

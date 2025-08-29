@@ -94,13 +94,13 @@ export async function POST(
         
         if (existingClaim) {
           // Check rate limiting - prevent spam
-          if (existingClaim.verificationSentAt) {
-            const lastSent = new Date(existingClaim.verificationSentAt);
-            const minutesSinceLastSent = (Date.now() - lastSent.getTime()) / (1000 * 60);
+          if (existingClaim.lastAttemptAt) {
+            const lastAttempt = new Date(existingClaim.lastAttemptAt);
+            const minutesSinceLastAttempt = (Date.now() - lastAttempt.getTime()) / (1000 * 60);
             
             // Enforce 5-minute cooldown between verification emails
-            if (minutesSinceLastSent < 5) {
-              const waitMinutes = Math.ceil(5 - minutesSinceLastSent);
+            if (minutesSinceLastAttempt < 5) {
+              const waitMinutes = Math.ceil(5 - minutesSinceLastAttempt);
               return NextResponse.json(
                 { 
                   error: `Please wait ${waitMinutes} more minute${waitMinutes > 1 ? 's' : ''} before requesting another verification email.`,
@@ -110,17 +110,35 @@ export async function POST(
               );
             }
             
-            // Check if too many attempts in last 24 hours
-            const hoursSinceLastSent = minutesSinceLastSent / 60;
-            if (hoursSinceLastSent < 24) {
-              // Count how many times they've requested in last 24 hours
-              // For now, we'll allow max 5 attempts per day
-              const attemptCount = existingClaim.customData?.dailyAttempts || 1;
-              if (attemptCount >= 5) {
+            // Check if we need to reset the daily counter
+            const now = new Date();
+            const resetTime = existingClaim.dailyResetAt ? new Date(existingClaim.dailyResetAt) : null;
+            
+            if (!resetTime || now > resetTime) {
+              // Reset counter - it's been 24 hours
+              await db.update(publisherEmailClaims)
+                .set({
+                  verificationToken: token,
+                  verificationSentAt: new Date(),
+                  status: 'pending',
+                  verifiedAt: null,
+                  rejectionReason: null,
+                  attemptCount: 1,
+                  lastAttemptAt: now,
+                  dailyResetAt: new Date(now.getTime() + 24 * 60 * 60 * 1000), // 24 hours from now
+                  updatedAt: new Date()
+                })
+                .where(eq(publisherEmailClaims.id, existingClaim.id));
+            } else {
+              // Within 24-hour period - check attempt count
+              const currentAttempts = existingClaim.attemptCount || 0;
+              
+              if (currentAttempts >= 5) {
+                const hoursUntilReset = (resetTime.getTime() - now.getTime()) / (1000 * 60 * 60);
                 return NextResponse.json(
                   { 
-                    error: 'Maximum verification attempts reached for today. Please try again tomorrow.',
-                    retryAfter: Math.ceil((24 - hoursSinceLastSent) * 3600)
+                    error: `Maximum verification attempts (5) reached for today. Please try again in ${Math.ceil(hoursUntilReset)} hours.`,
+                    retryAfter: Math.ceil((resetTime.getTime() - now.getTime()) / 1000)
                   },
                   { status: 429 }
                 );
@@ -134,34 +152,15 @@ export async function POST(
                   status: 'pending',
                   verifiedAt: null,
                   rejectionReason: null,
-                  customData: {
-                    ...((existingClaim.customData as any) || {}),
-                    dailyAttempts: attemptCount + 1,
-                    lastAttemptAt: new Date().toISOString()
-                  },
-                  updatedAt: new Date()
-                })
-                .where(eq(publisherEmailClaims.id, existingClaim.id));
-            } else {
-              // Reset daily counter after 24 hours
-              await db.update(publisherEmailClaims)
-                .set({
-                  verificationToken: token,
-                  verificationSentAt: new Date(),
-                  status: 'pending',
-                  verifiedAt: null,
-                  rejectionReason: null,
-                  customData: {
-                    ...((existingClaim.customData as any) || {}),
-                    dailyAttempts: 1,
-                    lastAttemptAt: new Date().toISOString()
-                  },
+                  attemptCount: currentAttempts + 1,
+                  lastAttemptAt: now,
                   updatedAt: new Date()
                 })
                 .where(eq(publisherEmailClaims.id, existingClaim.id));
             }
           } else {
             // First time sending verification
+            const now = new Date();
             await db.update(publisherEmailClaims)
               .set({
                 verificationToken: token,
@@ -169,11 +168,9 @@ export async function POST(
                 status: 'pending',
                 verifiedAt: null,
                 rejectionReason: null,
-                customData: {
-                  ...((existingClaim.customData as any) || {}),
-                  dailyAttempts: 1,
-                  lastAttemptAt: new Date().toISOString()
-                },
+                attemptCount: 1,
+                lastAttemptAt: now,
+                dailyResetAt: new Date(now.getTime() + 24 * 60 * 60 * 1000), // 24 hours from now
                 updatedAt: new Date()
               })
               .where(eq(publisherEmailClaims.id, existingClaim.id));
@@ -257,12 +254,13 @@ export async function POST(
 
         // Check if this was a resend
         const isResend = existingClaim && existingClaim.verificationSentAt;
+        const recipientEmail = body.emailAddress || `admin@${website.domain}`;
         
         return NextResponse.json({
           success: true,
           message: isResend 
-            ? `New verification email sent to ${emailAddress}. Previous verification link has been invalidated.`
-            : `Verification email sent to ${emailAddress}`,
+            ? `New verification email sent to ${recipientEmail}. Previous verification link has been invalidated.`
+            : `Verification email sent to ${recipientEmail}`,
           warning: isResend 
             ? 'A new verification token has been generated. The previous verification link will no longer work.'
             : undefined
