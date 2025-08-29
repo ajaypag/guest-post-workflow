@@ -19,6 +19,7 @@ interface HomepageTaskManagerProps {
   currentUserName: string;
   currentUserEmail: string;
   internalUsers: InternalUser[];
+  initialPageSize?: number;
 }
 
 export default function HomepageTaskManager({
@@ -26,7 +27,8 @@ export default function HomepageTaskManager({
   currentUserId,
   currentUserName,
   currentUserEmail,
-  internalUsers
+  internalUsers,
+  initialPageSize = 5  // Default to 5 tasks for homepage
 }: HomepageTaskManagerProps) {
   // Pass through directly to TasksPageClient without wrapper styling
   // The TasksPageClient component handles its own responsive layout
@@ -37,6 +39,7 @@ export default function HomepageTaskManager({
       currentUserName={currentUserName}
       currentUserEmail={currentUserEmail}
       internalUsers={internalUsers}
+      initialPageSize={initialPageSize}
     />
   );
 }
