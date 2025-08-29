@@ -69,6 +69,71 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingAccount) {
+      console.log('🔍 Found existing account:', {
+        email: existingAccount.email,
+        emailVerified: existingAccount.emailVerified,
+        hasToken: !!existingAccount.emailVerificationToken,
+        createdAt: existingAccount.createdAt
+      });
+      
+      // Check if this is a recent unverified account (within last 5 minutes)
+      // This handles duplicate signup attempts
+      if (!existingAccount.emailVerified) {
+        const accountAge = Date.now() - new Date(existingAccount.createdAt).getTime();
+        const fiveMinutes = 5 * 60 * 1000;
+        
+        console.log('⏱️ Account age check:', {
+          ageMs: accountAge,
+          ageMinutes: accountAge / 60000,
+          hasToken: !!existingAccount.emailVerificationToken
+        });
+        
+        if (accountAge < fiveMinutes && existingAccount.emailVerificationToken) {
+          console.log('🔄 Reusing existing verification token for recent signup:', email);
+          
+          // Don't create a new account, just resend the verification email with existing token
+          try {
+            const baseUrl = process.env.NEXTAUTH_URL || 
+              (request.headers.get('x-forwarded-proto') || 'https') + '://' + 
+              request.headers.get('host');
+            const verificationUrl = `${baseUrl}/verify-email?token=${existingAccount.emailVerificationToken}`;
+            
+            // Check if we should send the email (rate limit per email)
+            const lastEmailSent = existingAccount.updatedAt ? 
+              Date.now() - new Date(existingAccount.updatedAt).getTime() : fiveMinutes;
+            
+            if (lastEmailSent >= 60000) { // Only send if last email was more than 1 minute ago
+              await EmailService.sendSignupEmailVerification({
+                email,
+                name,
+                verificationUrl,
+              });
+              
+              // Update the timestamp to track when we last sent an email
+              await db.update(accounts)
+                .set({ updatedAt: new Date() })
+                .where(eq(accounts.id, existingAccount.id));
+                
+              console.log('📧 Verification email resent to:', email);
+            } else {
+              console.log('⏳ Skipping email send - too recent (wait 1 minute):', email);
+            }
+          } catch (emailError) {
+            console.error('Failed to resend verification email:', emailError);
+          }
+          
+          return NextResponse.json({
+            success: true,
+            message: requireVerification 
+              ? 'Account created. Please check your email to verify your account.'
+              : 'Account created successfully',
+            requiresVerification: requireVerification,
+            hasOrdersLinked: false,
+          });
+        }
+      }
+      
+      // Otherwise, account truly exists and is either verified or too old
       return NextResponse.json(
         { error: 'An account with this email already exists' },
         { status: 409 }
