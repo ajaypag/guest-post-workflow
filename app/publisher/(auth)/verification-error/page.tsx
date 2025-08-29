@@ -1,6 +1,9 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
+
+// Force dynamic rendering since we use search params
+export const dynamic = 'force-dynamic';
 import Link from 'next/link';
 import { 
   XCircle,
