@@ -17,8 +17,22 @@ function VettedSitesRequestDetailContent({ requestId }: { requestId: string }) {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const fetchRequest = async () => {
+    const checkUserAndRedirect = async () => {
       try {
+        // First check if user is internal, redirect to internal page if so
+        const sessionResponse = await fetch('/api/auth/session', {
+          credentials: 'include'
+        });
+        
+        if (sessionResponse.ok) {
+          const sessionData = await sessionResponse.json();
+          if (sessionData.userType === 'internal') {
+            router.push(`/internal/vetted-sites/requests/${requestId}`);
+            return;
+          }
+        }
+        
+        // If not internal user or no session, continue with normal flow
         const response = await fetch(`/api/vetted-sites/requests/${requestId}`, {
           credentials: 'include'
         });
@@ -41,7 +55,7 @@ function VettedSitesRequestDetailContent({ requestId }: { requestId: string }) {
       }
     };
 
-    fetchRequest();
+    checkUserAndRedirect();
   }, [requestId, router]);
 
   if (loading) {
