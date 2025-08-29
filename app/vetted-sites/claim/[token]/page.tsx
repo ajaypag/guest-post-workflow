@@ -245,31 +245,31 @@ export default async function VettedSitesClaimPage({ params }: PageProps) {
       
       {/* Hero Section with Stats */}
       <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           {data.proposalVideoUrl ? (
             // Two-column layout when video is present
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 mb-6">
               {/* Left Column - Content */}
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-4">
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3 sm:mb-4">
                   Your Strategic Guest Post Matches
                 </h1>
-                <p className="text-lg text-gray-600 mb-6">
+                <p className="text-base sm:text-lg text-gray-600 mb-4 sm:mb-6">
                   We found {data.stats?.totalQualified || 0} sites that already rank for topics similar to yours—boosting your visibility in ChatGPT, Claude, AI Overviews, and AI Mode while improving your traditional search rankings.
                 </p>
                 
                 {/* Stats Bar */}
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 text-sm">
                   <div>
-                    <div className="text-xl font-bold text-green-600">Wholesale + $79</div>
+                    <div className="text-lg sm:text-xl font-bold text-green-600">Wholesale + $79</div>
                     <div className="text-gray-500 text-xs">Fair Pricing</div>
                   </div>
                   <div>
-                    <div className="text-xl font-bold text-blue-600">Clear Justifications</div>
+                    <div className="text-lg sm:text-xl font-bold text-blue-600">Clear Justifications</div>
                     <div className="text-gray-500 text-xs">Exact Reason Why</div>
                   </div>
                   <div>
-                    <div className="text-xl font-bold text-gray-900">We Handle Everything</div>
+                    <div className="text-lg sm:text-xl font-bold text-gray-900">We Handle Everything</div>
                     <div className="text-gray-500 text-xs">Full Concierge</div>
                   </div>
                 </div>
@@ -295,25 +295,25 @@ export default async function VettedSitesClaimPage({ params }: PageProps) {
           ) : (
             // Original single-column layout when no video
             <>
-              <h1 className="text-3xl font-bold text-gray-900 mb-4">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3 sm:mb-4">
                 Your Strategic Guest Post Matches
               </h1>
-              <p className="text-lg text-gray-600 mb-6">
+              <p className="text-base sm:text-lg text-gray-600 mb-4 sm:mb-6">
                 We found {data.stats?.totalQualified || 0} sites that already rank for topics similar to yours—boosting your visibility in ChatGPT, Claude, AI Overviews, and AI Mode while improving your traditional search rankings.
               </p>
               
               {/* Stats Bar */}
-              <div className="flex items-center space-x-8 text-sm">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">Wholesale + $79</div>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-8 text-sm">
+                <div className="sm:text-center">
+                  <div className="text-lg sm:text-2xl font-bold text-green-600">Wholesale + $79</div>
                   <div className="text-gray-500">Fair Pricing</div>
                 </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">Clear Justifications</div>
+                <div className="sm:text-center">
+                  <div className="text-lg sm:text-2xl font-bold text-blue-600">Clear Justifications</div>
                   <div className="text-gray-500">Exact Reason Why</div>
                 </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-gray-900">We Handle Everything</div>
+                <div className="sm:text-center">
+                  <div className="text-lg sm:text-2xl font-bold text-gray-900">We Handle Everything</div>
                   <div className="text-gray-500">Full Concierge</div>
                 </div>
               </div>
@@ -334,10 +334,23 @@ export default async function VettedSitesClaimPage({ params }: PageProps) {
       </div>
       
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex gap-8">
-          {/* Left Sidebar - Signup Form */}
-          <div className="w-80 flex-shrink-0">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        {/* Mobile: Signup form at top, Desktop: sidebar */}
+        <div className="lg:hidden mb-6">
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">
+              Claim These Results
+            </h2>
+            <p className="text-sm text-gray-600 mb-6">
+              Create your free account to access these guest posting opportunities and start building high-quality backlinks.
+            </p>
+            <ClaimForm token={token} requestId={data.request?.id || ''} />
+          </div>
+        </div>
+        
+        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
+          {/* Desktop Sidebar - Signup Form */}
+          <div className="hidden lg:block lg:w-80 flex-shrink-0">
             <div className="bg-white rounded-lg shadow-sm p-6 sticky top-8">
               <h2 className="text-xl font-bold text-gray-900 mb-4">
                 Claim These Results
