@@ -123,6 +123,7 @@ export default async function HomepageTaskSection({
       currentUserName={userName}
       currentUserEmail={userEmail}
       internalUsers={internalUsers}
+      initialPageSize={5}
     />
   );
 }
