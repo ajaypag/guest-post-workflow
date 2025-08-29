@@ -48,11 +48,11 @@ export async function DELETE(request: NextRequest) {
 
     let deleted = 0;
     if (safeToDelete.length > 0) {
-      // Delete orphaned target pages
+      // Delete orphaned target pages using IN clause
       // PostgreSQL will handle CASCADE deletions for any dependent records
       const deleteResult = await db.execute(sql`
         DELETE FROM target_pages 
-        WHERE id = ANY(${safeToDelete}::uuid[])
+        WHERE id IN (${sql.join(safeToDelete.map(id => sql`${id}::uuid`), sql`, `)})
       `);
       deleted = safeToDelete.length;
     }
