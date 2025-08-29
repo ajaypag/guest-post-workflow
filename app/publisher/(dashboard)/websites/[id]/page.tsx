@@ -32,7 +32,8 @@ interface WebsiteData {
   domainAuthority?: number;
   language?: string;
   country?: string;
-  status: string;
+  status?: string;  // Old field for compatibility
+  verificationStatus?: string;  // New field from API
   verificationMethod?: string;
   verifiedAt?: string;
   createdAt: string;
@@ -93,7 +94,7 @@ export default function WebsiteViewPage({ params }: { params: Promise<{ id: stri
     );
   }
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string | undefined) => {
     switch (status) {
       case 'verified':
         return 'text-green-600 bg-green-100';
@@ -106,7 +107,7 @@ export default function WebsiteViewPage({ params }: { params: Promise<{ id: stri
     }
   };
 
-  const getStatusIcon = (status: string) => {
+  const getStatusIcon = (status: string | undefined) => {
     switch (status) {
       case 'verified':
         return <CheckCircle className="h-4 w-4" />;
@@ -149,9 +150,9 @@ export default function WebsiteViewPage({ params }: { params: Promise<{ id: stri
                     {website.domain}
                     <ExternalLink className="h-3 w-3 ml-1" />
                   </a>
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(website.status)}`}>
-                    {getStatusIcon(website.status)}
-                    <span className="ml-1">{website.status}</span>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(website.verificationStatus || website.status)}`}>
+                    {getStatusIcon(website.verificationStatus || website.status)}
+                    <span className="ml-1">{website.verificationStatus || website.status || 'unverified'}</span>
                   </span>
                 </div>
               </div>
@@ -325,7 +326,7 @@ export default function WebsiteViewPage({ params }: { params: Promise<{ id: stri
             {/* Verification Status */}
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Verification Status</h2>
-              {website.status === 'verified' ? (
+              {(website.verificationStatus || website.status) === 'verified' ? (
                 <div className="text-center py-4">
                   <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-2" />
                   <p className="text-green-700 font-medium">Website Verified</p>
@@ -340,7 +341,7 @@ export default function WebsiteViewPage({ params }: { params: Promise<{ id: stri
                     View Verification Details
                   </Link>
                 </div>
-              ) : website.status === 'pending' ? (
+              ) : (website.verificationStatus || website.status) === 'pending' ? (
                 <div className="text-center py-4">
                   <Clock className="h-12 w-12 text-yellow-500 mx-auto mb-2 animate-pulse" />
                   <p className="text-yellow-700 font-medium">Verification In Progress</p>

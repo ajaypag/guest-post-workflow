@@ -16,9 +16,11 @@ export async function GET(request: NextRequest) {
 
     if (!token || !websiteId || !publisherId) {
       // Redirect to error page
-      const baseUrl = process.env.NEXTAUTH_URL || `https://${request.headers.get('host')}` || request.url;
+      // Use NEXTAUTH_URL if set, otherwise construct from request
+      const baseUrl = process.env.NEXTAUTH_URL || 
+        `${request.nextUrl.protocol}//${request.headers.get('host')}`;
       return NextResponse.redirect(
-        new URL('/publisher/websites/verification-error?reason=invalid_link', baseUrl)
+        new URL('/publisher/verification-error?reason=invalid_link', baseUrl)
       );
     }
 
@@ -38,26 +40,29 @@ export async function GET(request: NextRequest) {
 
     if (!emailClaim) {
       // Token not found or already used
-      const baseUrl = process.env.NEXTAUTH_URL || `https://${request.headers.get('host')}` || request.url;
+      const baseUrl = process.env.NEXTAUTH_URL || 
+        `${request.nextUrl.protocol}//${request.headers.get('host')}`;
       return NextResponse.redirect(
-        new URL('/publisher/websites/verification-error?reason=invalid_token', baseUrl)
+        new URL('/publisher/verification-error?reason=invalid_token', baseUrl)
       );
     }
 
     // Check if token has expired (24 hours)
     if (!emailClaim.verificationSentAt) {
-      const baseUrl = process.env.NEXTAUTH_URL || `https://${request.headers.get('host')}` || request.url;
+      const baseUrl = process.env.NEXTAUTH_URL || 
+        `${request.nextUrl.protocol}//${request.headers.get('host')}`;
       return NextResponse.redirect(
-        new URL('/publisher/websites/verification-error?reason=invalid_token', baseUrl)
+        new URL('/publisher/verification-error?reason=invalid_token', baseUrl)
       );
     }
     
     const sentAt = new Date(emailClaim.verificationSentAt);
     const expiryTime = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
     if (Date.now() - sentAt.getTime() > expiryTime) {
-      const baseUrl = process.env.NEXTAUTH_URL || `https://${request.headers.get('host')}` || request.url;
+      const baseUrl = process.env.NEXTAUTH_URL || 
+        `${request.nextUrl.protocol}//${request.headers.get('host')}`;
       return NextResponse.redirect(
-        new URL('/publisher/websites/verification-error?reason=expired', baseUrl)
+        new URL('/publisher/verification-error?reason=expired', baseUrl)
       );
     }
 
@@ -71,11 +76,11 @@ export async function GET(request: NextRequest) {
       .where(eq(publisherEmailClaims.id, emailClaim.id));
 
     // Update all relationships for this publisher-website pair to verified
+    // Note: verifiedBy is null for self-verification (only set when internal users verify on behalf of publishers)
     await db.update(publisherOfferingRelationships)
       .set({
         verificationStatus: 'verified',
         verifiedAt: new Date(),
-        verifiedBy: publisherId,
         updatedAt: new Date()
       })
       .where(and(
@@ -84,16 +89,18 @@ export async function GET(request: NextRequest) {
       ));
 
     // Redirect to success page
-    const baseUrl = process.env.NEXTAUTH_URL || `https://${request.headers.get('host')}` || request.url;
+    const baseUrl = process.env.NEXTAUTH_URL || 
+      `${request.nextUrl.protocol}//${request.headers.get('host')}`;
     return NextResponse.redirect(
       new URL(`/publisher/websites/${websiteId}?verified=true`, baseUrl)
     );
 
   } catch (error) {
     console.error('Error processing verification click:', error);
-    const baseUrl = process.env.NEXTAUTH_URL || `https://${request.headers.get('host')}` || request.url;
+    const baseUrl = process.env.NEXTAUTH_URL || 
+      `${request.nextUrl.protocol}//${request.headers.get('host')}`;
     return NextResponse.redirect(
-      new URL('/publisher/websites/verification-error?reason=error', baseUrl)
+      new URL('/publisher/verification-error?reason=error', baseUrl)
     );
   }
 }
@@ -159,11 +166,11 @@ export async function POST(request: NextRequest) {
       .where(eq(publisherEmailClaims.id, emailClaim.id));
 
     // Update all relationships for this publisher-website pair to verified
+    // Note: verifiedBy is null for self-verification (only set when internal users verify on behalf of publishers)
     await db.update(publisherOfferingRelationships)
       .set({
         verificationStatus: 'verified',
         verifiedAt: new Date(),
-        verifiedBy: publisherId,
         updatedAt: new Date()
       })
       .where(and(

@@ -16,6 +16,7 @@ export async function middleware(request: NextRequest) {
     '/api/accounts/vetted-analysis-signup',
     '/api/orders/claim/',
     '/api/publisher/claim',
+    '/api/publisher/websites/verify-click',  // Email verification links must work without auth
     '/api/airtable/webhook',
     '/api/webhooks/'
   ];
@@ -87,6 +88,7 @@ export async function middleware(request: NextRequest) {
       !path.startsWith('/publisher/login') && 
       !path.startsWith('/publisher/signup') &&
       !path.startsWith('/publisher/verify') &&
+      !path.startsWith('/publisher/verification-error') &&  // Email verification error page must be public
       !path.startsWith('/publisher/claim') &&
       !path.startsWith('/publisher/forgot-password') &&
       !path.startsWith('/publisher/reset-password')) {
