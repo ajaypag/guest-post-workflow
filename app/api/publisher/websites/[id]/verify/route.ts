@@ -80,21 +80,47 @@ export async function POST(
     // Handle different verification methods
     switch (method) {
       case 'email':
-        // Create email claim record
-        const emailClaimId = uuidv4();
-        await db.insert(publisherEmailClaims).values({
-          id: emailClaimId,
-          publisherId: session.publisherId,
-          websiteId: websiteId,
-          emailDomain: website.domain,
-          verificationToken: token,
-          verificationSentAt: new Date(),
-          status: 'pending',
-          claimSource: 'publisher_portal',
-          claimConfidence: 'high',
-          createdAt: new Date(),
-          updatedAt: new Date()
-        });
+        // Check if an email claim already exists for this publisher-website pair
+        const existingClaims = await db
+          .select()
+          .from(publisherEmailClaims)
+          .where(and(
+            eq(publisherEmailClaims.publisherId, session.publisherId),
+            eq(publisherEmailClaims.websiteId, websiteId)
+          ))
+          .limit(1);
+        
+        const existingClaim = existingClaims[0];
+        
+        if (existingClaim) {
+          // Update existing claim with new token instead of creating a new one
+          await db.update(publisherEmailClaims)
+            .set({
+              verificationToken: token,
+              verificationSentAt: new Date(),
+              status: 'pending',
+              verifiedAt: null,
+              rejectionReason: null,
+              updatedAt: new Date()
+            })
+            .where(eq(publisherEmailClaims.id, existingClaim.id));
+        } else {
+          // Create new email claim record
+          const emailClaimId = uuidv4();
+          await db.insert(publisherEmailClaims).values({
+            id: emailClaimId,
+            publisherId: session.publisherId,
+            websiteId: websiteId,
+            emailDomain: website.domain,
+            verificationToken: token,
+            verificationSentAt: new Date(),
+            status: 'pending',
+            claimSource: 'publisher_portal',
+            claimConfidence: 'high',
+            createdAt: new Date(),
+            updatedAt: new Date()
+          });
+        }
 
         // Send actual verification email
         try {
