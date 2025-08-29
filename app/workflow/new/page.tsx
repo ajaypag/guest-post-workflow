@@ -150,9 +150,33 @@ function NewWorkflowContent() {
       } as GuestPostWorkflow & { targetPageId?: string };
 
       console.log('Creating workflow:', workflow.id, 'for client:', workflow.clientName);
-      await storage.saveWorkflow(workflow);
-      console.log('Workflow saved successfully, navigating to:', `/workflow/${workflow.id}`);
-      router.push(`/workflow/${workflow.id}`);
+      
+      // Save workflow and get the actual database ID from the response
+      const currentSession = AuthService.getSession();
+      if (!currentSession) throw new Error('User not authenticated');
+      
+      const response = await fetch('/api/workflows', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...workflow,
+          userId: currentSession.userId,
+          assignedUserId: workflow.assignedUserId || currentSession.userId
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to create workflow: ${response.status} ${errorText}`);
+      }
+      
+      const result = await response.json();
+      const savedWorkflow = result.workflow;
+      
+      console.log('Workflow saved successfully, navigating to:', `/workflow/${savedWorkflow.id}`);
+      router.push(`/workflow/${savedWorkflow.id}`);
     } catch (error) {
       console.error('Error creating workflow:', error);
       setSubmitError(error instanceof Error ? error.message : 'Failed to create workflow. Please try again.');
