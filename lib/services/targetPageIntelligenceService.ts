@@ -212,13 +212,25 @@ Format your response as JSON with the following structure:
           }
         }
       } else if (outputAny && typeof outputAny === 'object') {
-        researchResult = outputAny.text || 
-                        outputAny.content || 
-                        outputAny.output_text ||
-                        outputAny;
+        // Check if it's already in the expected format
+        if (outputAny.analysis || outputAny.gaps || outputAny.sources) {
+          researchResult = {
+            analysis: outputAny.analysis || '',
+            gaps: outputAny.gaps || [],
+            sources: outputAny.sources || []
+          };
+        } else {
+          // Try to extract from various formats
+          researchResult = {
+            analysis: outputAny.text || outputAny.content || outputAny.output_text || JSON.stringify(outputAny),
+            gaps: outputAny.gaps || [],
+            sources: outputAny.sources || []
+          };
+        }
       } else {
+        // For non-objects, convert to string but don't double-stringify
         researchResult = {
-          analysis: JSON.stringify(outputAny),
+          analysis: String(outputAny),
           gaps: [],
           sources: []
         };
@@ -232,6 +244,70 @@ Format your response as JSON with the following structure:
         completionReason: 'completed'
       };
 
+      // Validate and clean the research result before saving
+      let finalResearchOutput = researchResult;
+      
+      // Check if analysis is double-encoded JSON
+      if (typeof researchResult.analysis === 'string' && 
+          researchResult.analysis.startsWith('{') && 
+          researchResult.analysis.includes('"analysis"')) {
+        try {
+          console.log('🔧 Detected double-encoded JSON in analysis field');
+          const parsed = JSON.parse(researchResult.analysis);
+          if (parsed.analysis) {
+            console.log('✅ Successfully extracted inner content from double-encoded JSON');
+            finalResearchOutput = {
+              analysis: parsed.analysis,
+              gaps: parsed.gaps || researchResult.gaps || [],
+              sources: parsed.sources || researchResult.sources || []
+            };
+            console.log(`📊 Extracted ${finalResearchOutput.gaps.length} gaps from inner JSON`);
+          }
+        } catch (e) {
+          console.error('⚠️ Failed to parse double-encoded JSON:', e);
+          // Try to extract as much as possible
+          try {
+            // Sometimes the analysis is escaped JSON, try unescaping first
+            const unescaped = researchResult.analysis.replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+            const parsed = JSON.parse(unescaped);
+            if (parsed.analysis) {
+              console.log('✅ Successfully extracted after unescaping');
+              finalResearchOutput = {
+                analysis: parsed.analysis,
+                gaps: parsed.gaps || [],
+                sources: parsed.sources || []
+              };
+            }
+          } catch (e2) {
+            // Try fixing common escape sequence issues
+            try {
+              const fixed = researchResult.analysis
+                .replace(/\\ /g, ' ')  // Replace backslash-space with just space
+                .replace(/\\([^"nrt\\])/g, '$1'); // Remove invalid escape sequences
+              
+              const parsed = JSON.parse(fixed);
+              if (parsed.analysis) {
+                console.log('✅ Successfully extracted after fixing escape sequences');
+                finalResearchOutput = {
+                  analysis: parsed.analysis,
+                  gaps: parsed.gaps || [],
+                  sources: parsed.sources || []
+                };
+              }
+            } catch (e3) {
+              console.error('⚠️ Could not fix double-encoding, keeping as is');
+            }
+          }
+        }
+      }
+      
+      // Ensure gaps were extracted if the analysis mentions questions
+      if ((!finalResearchOutput.gaps || finalResearchOutput.gaps.length === 0) && 
+          finalResearchOutput.analysis && 
+          (finalResearchOutput.analysis.includes('?') || finalResearchOutput.analysis.includes('question'))) {
+        console.warn('⚠️ No gaps extracted despite analysis containing questions');
+      }
+      
       // Update database with research results
       const completedAt = new Date();
       await db.update(targetPageIntelligence)
@@ -239,7 +315,7 @@ Format your response as JSON with the following structure:
           researchStatus: 'completed',
           researchCompletedAt: completedAt,
           researchOutput: {
-            ...researchResult,
+            ...finalResearchOutput,
             metadata
           }
         })
@@ -396,13 +472,25 @@ Format your response as JSON with the following structure:
           };
         }
       } else if (outputAny && typeof outputAny === 'object') {
-        researchResult = outputAny.text || 
-                        outputAny.content || 
-                        outputAny.output_text ||
-                        outputAny;
+        // Check if it's already in the expected format
+        if (outputAny.analysis || outputAny.gaps || outputAny.sources) {
+          researchResult = {
+            analysis: outputAny.analysis || '',
+            gaps: outputAny.gaps || [],
+            sources: outputAny.sources || []
+          };
+        } else {
+          // Try to extract from various formats
+          researchResult = {
+            analysis: outputAny.text || outputAny.content || outputAny.output_text || JSON.stringify(outputAny),
+            gaps: outputAny.gaps || [],
+            sources: outputAny.sources || []
+          };
+        }
       } else {
+        // For non-objects, convert to string but don't double-stringify
         researchResult = {
-          analysis: JSON.stringify(outputAny),
+          analysis: String(outputAny),
           gaps: [],
           sources: []
         };

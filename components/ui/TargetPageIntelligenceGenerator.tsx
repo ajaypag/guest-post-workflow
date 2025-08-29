@@ -1275,16 +1275,57 @@ export function TargetPageIntelligenceGenerator({ targetPageId, targetUrl, clien
                     ))}
                   </div>
                 ) : (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                    <div className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <p className="text-sm text-green-800 font-medium mb-1">Research Complete</p>
-                        <p className="text-sm text-green-700">
-                          The research found comprehensive information about this target page. No additional clarification is needed to proceed with the questionnaire.
-                        </p>
+                  <div className="space-y-3">
+                    {/* Check if analysis looks like raw JSON */}
+                    {researchOutput.analysis && researchOutput.analysis.includes('{"analysis"') ? (
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <div className="flex items-start space-x-3">
+                          <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+                          <div className="flex-1">
+                            <p className="text-sm text-red-800 font-medium mb-1">Research Output Error</p>
+                            <p className="text-sm text-red-700 mb-3">
+                              The research completed but the output wasn't processed correctly. This can happen when the AI returns unexpected formatting.
+                            </p>
+                            <button
+                              onClick={() => window.location.reload()}
+                              className="text-sm bg-red-600 text-white px-3 py-1.5 rounded hover:bg-red-700 transition-colors"
+                            >
+                              Retry Research
+                            </button>
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <div className="flex items-start space-x-3">
+                          <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+                          <div>
+                            <p className="text-sm text-green-800 font-medium mb-1">Research Complete</p>
+                            <p className="text-sm text-green-700">
+                              The research found comprehensive information about this target page. You can proceed directly to the next step.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Add a way to proceed even without gaps */}
+                    {userType === 'internal' && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <p className="text-sm text-blue-800 mb-2">
+                          <strong>Note:</strong> No specific questions were identified. You can still add additional information if needed.
+                        </p>
+                        <button
+                          onClick={() => {
+                            setClientInput('No additional information needed - research was comprehensive.');
+                            setCurrentPhase('input');
+                          }}
+                          className="text-sm bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 transition-colors"
+                        >
+                          Skip to Brief Generation
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
