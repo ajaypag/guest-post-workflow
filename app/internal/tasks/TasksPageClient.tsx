@@ -3315,6 +3315,8 @@ export default function TasksPageClient({
                 }}
                 className="border border-gray-200 rounded-lg px-2 py-1 text-sm"
               >
+                <option value={5}>5 per page</option>
+                <option value={10}>10 per page</option>
                 <option value={25}>25 per page</option>
                 <option value={50}>50 per page</option>
                 <option value={100}>100 per page</option>
