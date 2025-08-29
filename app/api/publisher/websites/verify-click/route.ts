@@ -16,8 +16,9 @@ export async function GET(request: NextRequest) {
 
     if (!token || !websiteId || !publisherId) {
       // Redirect to error page
+      const baseUrl = process.env.NEXTAUTH_URL || `https://${request.headers.get('host')}` || request.url;
       return NextResponse.redirect(
-        new URL('/publisher/websites/verification-error?reason=invalid_link', request.url)
+        new URL('/publisher/websites/verification-error?reason=invalid_link', baseUrl)
       );
     }
 
@@ -37,23 +38,26 @@ export async function GET(request: NextRequest) {
 
     if (!emailClaim) {
       // Token not found or already used
+      const baseUrl = process.env.NEXTAUTH_URL || `https://${request.headers.get('host')}` || request.url;
       return NextResponse.redirect(
-        new URL('/publisher/websites/verification-error?reason=invalid_token', request.url)
+        new URL('/publisher/websites/verification-error?reason=invalid_token', baseUrl)
       );
     }
 
     // Check if token has expired (24 hours)
     if (!emailClaim.verificationSentAt) {
+      const baseUrl = process.env.NEXTAUTH_URL || `https://${request.headers.get('host')}` || request.url;
       return NextResponse.redirect(
-        new URL('/publisher/websites/verification-error?reason=invalid_token', request.url)
+        new URL('/publisher/websites/verification-error?reason=invalid_token', baseUrl)
       );
     }
     
     const sentAt = new Date(emailClaim.verificationSentAt);
     const expiryTime = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
     if (Date.now() - sentAt.getTime() > expiryTime) {
+      const baseUrl = process.env.NEXTAUTH_URL || `https://${request.headers.get('host')}` || request.url;
       return NextResponse.redirect(
-        new URL('/publisher/websites/verification-error?reason=expired', request.url)
+        new URL('/publisher/websites/verification-error?reason=expired', baseUrl)
       );
     }
 
@@ -80,14 +84,16 @@ export async function GET(request: NextRequest) {
       ));
 
     // Redirect to success page
+    const baseUrl = process.env.NEXTAUTH_URL || `https://${request.headers.get('host')}` || request.url;
     return NextResponse.redirect(
-      new URL(`/publisher/websites/${websiteId}?verified=true`, request.url)
+      new URL(`/publisher/websites/${websiteId}?verified=true`, baseUrl)
     );
 
   } catch (error) {
     console.error('Error processing verification click:', error);
+    const baseUrl = process.env.NEXTAUTH_URL || `https://${request.headers.get('host')}` || request.url;
     return NextResponse.redirect(
-      new URL('/publisher/websites/verification-error?reason=error', request.url)
+      new URL('/publisher/websites/verification-error?reason=error', baseUrl)
     );
   }
 }
