@@ -78,6 +78,14 @@ export default function ShareVettedSitesRequestButton({
       // Prepare request body
       const requestBody: any = { expiresInDays };
       
+      // Always include customMessage and videoUrl if they exist
+      if (customMessage) {
+        requestBody.customMessage = customMessage;
+      }
+      if (videoUrl) {
+        requestBody.videoUrl = videoUrl;
+      }
+      
       // Add email parameters if email is enabled (only block email, not share link)
       if (sendEmail) {
         // Check qualified domains only for email sending
@@ -90,9 +98,6 @@ export default function ShareVettedSitesRequestButton({
         requestBody.sendEmail = true;
         requestBody.recipientEmail = recipientEmail;
         requestBody.recipientName = recipientName;
-        if (customMessage) {
-          requestBody.customMessage = customMessage;
-        }
       }
       
       const response = await fetch(`/api/vetted-sites/requests/${requestId}/share`, {

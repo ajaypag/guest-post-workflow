@@ -24,7 +24,8 @@ export async function POST(
       expiresInDays, 
       recipientEmail, 
       recipientName, 
-      customMessage, 
+      customMessage,
+      videoUrl, 
       sendEmail = false 
     } = await request.json();
 
@@ -52,12 +53,14 @@ export async function POST(
     const shareExpiresAt = new Date();
     shareExpiresAt.setDate(shareExpiresAt.getDate() + (expiresInDays || 30));
 
-    // Update request with share token
+    // Update request with share token, custom message and video URL if provided
     await db
       .update(vettedSitesRequests)
       .set({
         shareToken,
         shareExpiresAt,
+        proposalMessage: customMessage || null, // Save custom message if provided
+        proposalVideoUrl: videoUrl || null, // Save video URL if provided
         updatedAt: new Date()
       })
       .where(eq(vettedSitesRequests.id, id));
