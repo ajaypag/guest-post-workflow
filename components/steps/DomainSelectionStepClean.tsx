@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { WorkflowStep, GuestPostWorkflow } from '@/types/workflow';
 import { SavedField } from '../SavedField';
 import { TutorialVideo } from '../ui/TutorialVideo';
-import { Globe, CheckCircle, AlertCircle, Info, Target } from 'lucide-react';
+import { WebsiteSelector } from '../ui/WebsiteSelector';
+import { Globe, CheckCircle, AlertCircle, Info, Target, Loader2 } from 'lucide-react';
 
 interface DomainSelectionStepProps {
   step: WorkflowStep;
@@ -13,11 +14,47 @@ interface DomainSelectionStepProps {
 }
 
 export const DomainSelectionStepClean = ({ step, workflow, onChange }: DomainSelectionStepProps) => {
+  const [websites, setWebsites] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Extract values from step outputs
+  const websiteId = step.outputs.websiteId || '';
   const domain = step.outputs.domain || '';
   const notes = step.outputs.notes || '';
+  const websiteData = step.outputs.websiteData || null;
+
+  // Load websites on mount
+  useEffect(() => {
+    fetchWebsites();
+  }, []);
+
+  const fetchWebsites = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/websites/workflow-selector');
+      const data = await response.json();
+      if (data.websites) {
+        setWebsites(data.websites);
+      }
+    } catch (error) {
+      console.error('Failed to fetch websites:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle website selection
+  const handleWebsiteSelect = (website: any) => {
+    onChange({
+      ...step.outputs,
+      websiteId: website.id,        // NEW: Store website ID
+      domain: website.domain,        // LEGACY: Keep domain for backward compatibility
+      websiteData: website          // Cache website data for display
+    });
+  };
 
   // Validation logic
-  const isDomainValid = domain.trim().length > 0;
+  const isDomainValid = websiteId || domain.trim().length > 0; // Accept either new or legacy
   const isComplete = isDomainValid;
 
   const StatusIcon = () => {
@@ -65,21 +102,38 @@ export const DomainSelectionStepClean = ({ step, workflow, onChange }: DomainSel
             </div>
           </div>
 
-          {/* Domain input */}
+          {/* Website Selector */}
           <div className="space-y-2">
-            <SavedField
-              label="Guest Post Website Domain"
-              value={domain}
-              placeholder="e.g., techcrunch.com, industry-magazine.com, blog.example.com"
-              onChange={(value) => onChange({ ...step.outputs, domain: value })}
-            />
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Guest Post Website <span className="text-red-500">*</span>
+            </label>
             
-            {domain && (
+            {isLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                <span className="ml-2 text-gray-500">Loading websites...</span>
+              </div>
+            ) : (
+              <WebsiteSelector
+                websites={websites}
+                value={websiteId}
+                onChange={handleWebsiteSelect}
+                required={true}
+                placeholder="Select a website from the list"
+              />
+            )}
+            
+            {websiteData && (
               <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                 <div className="flex items-center">
                   <CheckCircle className="w-4 h-4 text-green-600 mr-2" />
                   <p className="text-sm text-green-800">
-                    Target publication: <strong>{domain}</strong>
+                    Target publication: <strong>{websiteData.domain}</strong>
+                    {websiteData.domainRating && (
+                      <span className="ml-2 text-green-600">
+                        (DA {websiteData.domainRating})
+                      </span>
+                    )}
                   </p>
                 </div>
               </div>

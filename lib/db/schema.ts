@@ -1,5 +1,6 @@
 import { pgTable, uuid, varchar, text, timestamp, boolean, integer, real, jsonb, decimal } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
+import { websites } from './websiteSchema';
 
 // Users table - INTERNAL STAFF ONLY
 // Note: accounts and publishers have separate tables with their own authentication
@@ -122,6 +123,7 @@ export const workflows = pgTable('workflows', {
   content: jsonb('content'), // Stores the complete GuestPostWorkflow as JSON
   targetPages: jsonb('target_pages'), // Stores target pages as JSON (deprecated - use targetPageId instead)
   targetPageId: uuid('target_page_id').references(() => targetPages.id), // Direct link to target_pages table (added in migration 0076)
+  websiteId: uuid('website_id').references(() => websites.id), // Direct link to websites table for guest post site selection (added in migration 0078)
   orderItemId: uuid('order_item_id'), // Link to order system
   
   // Completion tracking fields (added in migration 0062)
@@ -377,6 +379,10 @@ export const workflowsRelations = relations(workflows, ({ one, many }) => ({
   targetPage: one(targetPages, {
     fields: [workflows.targetPageId],
     references: [targetPages.id],
+  }),
+  website: one(websites, {
+    fields: [workflows.websiteId],
+    references: [websites.id],
   }),
   steps: many(workflowSteps),
   articleSections: many(articleSections),
