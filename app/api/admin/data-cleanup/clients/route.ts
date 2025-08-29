@@ -25,12 +25,12 @@ export async function DELETE(request: NextRequest) {
         COUNT(DISTINCT tp.id) as target_page_count,
         COUNT(DISTINCT bap.id) as project_count,
         COUNT(DISTINCT og.id) as order_count,
-        COUNT(DISTINCT vsr.id) as request_count
+        COUNT(DISTINCT vrc.request_id) as request_count
       FROM clients c
       LEFT JOIN target_pages tp ON c.id = tp.client_id
       LEFT JOIN bulk_analysis_projects bap ON c.id = bap.client_id
       LEFT JOIN order_groups og ON c.id = og.client_id
-      LEFT JOIN vetted_sites_requests vsr ON c.id = vsr.client_id
+      LEFT JOIN vetted_request_clients vrc ON c.id = vrc.client_id
       WHERE c.id IN (${sql.join(clientIds.map(id => sql`${id}`), sql`, `)})
       GROUP BY c.id
     `);

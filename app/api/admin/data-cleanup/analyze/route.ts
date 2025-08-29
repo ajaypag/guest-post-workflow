@@ -73,13 +73,13 @@ export async function GET(request: NextRequest) {
       LEFT JOIN target_pages tp ON c.id = tp.client_id
       LEFT JOIN bulk_analysis_projects bap ON c.id = bap.client_id
       LEFT JOIN order_groups og ON c.id = og.client_id
-      LEFT JOIN vetted_sites_requests vsr ON c.id = vsr.client_id
+      LEFT JOIN vetted_request_clients vrc ON c.id = vrc.client_id
       GROUP BY c.id, c.name, c.normalized_domain, c.created_at, a.name
       HAVING 
         COUNT(DISTINCT tp.id) = 0
         AND COUNT(DISTINCT bap.id) = 0
         AND COUNT(DISTINCT og.id) = 0
-        AND COUNT(DISTINCT vsr.id) = 0
+        AND COUNT(DISTINCT vrc.request_id) = 0
       ORDER BY c.created_at DESC
     `);
 
