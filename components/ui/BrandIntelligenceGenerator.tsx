@@ -64,6 +64,7 @@ export function BrandIntelligenceGenerator({ clientId, onComplete, userType = 'i
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const [answerUrl, setAnswerUrl] = useState<string | null>(null);
+  const [showExistingLink, setShowExistingLink] = useState(false);
   
   // External user question answers
   const [questionAnswers, setQuestionAnswers] = useState<{ [key: number]: string }>({});

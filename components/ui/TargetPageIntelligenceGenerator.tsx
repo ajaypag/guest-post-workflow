@@ -66,6 +66,7 @@ export function TargetPageIntelligenceGenerator({ targetPageId, targetUrl, clien
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const [answerUrl, setAnswerUrl] = useState<string | null>(null);
+  const [showExistingLink, setShowExistingLink] = useState(false);
   
   // External user question answers
   const [questionAnswers, setQuestionAnswers] = useState<{ [key: number]: string }>({});
