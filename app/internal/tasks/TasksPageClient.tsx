@@ -53,6 +53,7 @@ interface TasksPageClientProps {
   currentUserName: string;
   currentUserEmail: string;
   internalUsers: InternalUser[];
+  initialPageSize?: number;
 }
 
 // Filter state interface for localStorage
@@ -87,7 +88,8 @@ export default function TasksPageClient({
   currentUserId,
   currentUserName,
   currentUserEmail,
-  internalUsers
+  internalUsers,
+  initialPageSize = 50
 }: TasksPageClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -98,7 +100,7 @@ export default function TasksPageClient({
   const [allTasksCount, setAllTasksCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(50);
+  const [itemsPerPage, setItemsPerPage] = useState(initialPageSize);
   
   // Load filters with proper priority: URL > localStorage > smart defaults
   const loadFiltersFromURL = (): Partial<FilterState> => {
