@@ -3,7 +3,7 @@ import { vettedSitesRequests, vettedRequestClients } from '@/lib/db/vettedSitesR
 import { bulkAnalysisDomains } from '@/lib/db/bulkAnalysisSchema';
 import { websites } from '@/lib/db/websiteSchema';
 import { clients } from '@/lib/db/schema'; // Main schema file
-import { eq, and, inArray, desc } from 'drizzle-orm';
+import { eq, and, inArray, desc, or, sql } from 'drizzle-orm';
 import { EmailService } from './emailService';
 import { VettedSitesShareEmail } from '@/lib/email/templates/VettedSitesShareEmail';
 import { VettedSitesApprovalEmail } from '@/lib/email/templates/VettedSitesApprovalEmail';
@@ -57,8 +57,19 @@ export class VettedSitesEmailService {
     // Get client website (use first client if available)
     const clientWebsite = requestClientsData[0]?.client?.website || 'your website';
 
-    // Get qualified domains with their rich metrics
-    const domains = await db
+    // Get linked projects (same pattern as claim page)
+    const { vettedRequestProjects } = await import('@/lib/db/vettedSitesRequestSchema');
+    const linkedProjects = await db
+      .select({
+        projectId: vettedRequestProjects.projectId,
+      })
+      .from(vettedRequestProjects)
+      .where(eq(vettedRequestProjects.requestId, requestId));
+    
+    const linkedProjectIds = linkedProjects.map(p => p.projectId);
+
+    // Get qualified domains with their rich metrics (same pattern as claim page)
+    const domains = linkedProjectIds.length > 0 ? await db
       .select({
         domain: bulkAnalysisDomains.domain,
         qualificationStatus: bulkAnalysisDomains.qualificationStatus,
@@ -73,12 +84,16 @@ export class VettedSitesEmailService {
       .leftJoin(websites, eq(bulkAnalysisDomains.domain, websites.domain))
       .where(
         and(
-          eq(bulkAnalysisDomains.sourceRequestId, requestId),
+          // Query domains from linked projects OR with sourceRequestId (same as claim page)
+          or(
+            inArray(bulkAnalysisDomains.projectId, linkedProjectIds),
+            eq(bulkAnalysisDomains.sourceRequestId, requestId)
+          ),
           inArray(bulkAnalysisDomains.qualificationStatus, ['high_quality', 'good_quality'])
         )
       )
       .orderBy(desc(bulkAnalysisDomains.aiQualifiedAt)) // Order by qualification date
-      .limit(5); // Top 5 for email
+      .limit(5) : []; // Top 5 for email
 
     // Transform database results into email format
     const topDomains: DomainMatchData[] = domains.map(d => {
@@ -86,9 +101,9 @@ export class VettedSitesEmailService {
       
       return {
         domain: d.domain,
-        directKeywords: evidence?.directCount || 0,
-        relatedKeywords: evidence?.relatedCount || 0,
-        avgPosition: evidence?.directMedianPosition || undefined,
+        directKeywords: evidence?.direct_count || 0,
+        relatedKeywords: evidence?.related_count || 0,
+        avgPosition: evidence?.direct_median_position || undefined,
         dr: d.domainRating || undefined,
         traffic: d.totalTraffic || undefined,
         cost: d.guestPostCost ? Number(d.guestPostCost) : undefined,
@@ -96,19 +111,23 @@ export class VettedSitesEmailService {
       };
     });
 
-    // Get total count of qualified domains
-    const totalCount = await db
-      .select({ count: bulkAnalysisDomains.id })
+    // Get total count of qualified domains (same pattern as claim page)
+    const totalCountResult = linkedProjectIds.length > 0 ? await db
+      .select({ count: sql<number>`count(*)` })
       .from(bulkAnalysisDomains)
       .where(
         and(
-          eq(bulkAnalysisDomains.sourceRequestId, requestId),
+          // Query domains from linked projects OR with sourceRequestId
+          or(
+            inArray(bulkAnalysisDomains.projectId, linkedProjectIds),
+            eq(bulkAnalysisDomains.sourceRequestId, requestId)
+          ),
           inArray(bulkAnalysisDomains.qualificationStatus, ['high_quality', 'good_quality'])
         )
-      );
+      ) : [{ count: 0 }];
 
     return {
-      totalMatches: totalCount.length,
+      totalMatches: totalCountResult[0]?.count || 0,
       topDomains,
       clientWebsite,
     };
