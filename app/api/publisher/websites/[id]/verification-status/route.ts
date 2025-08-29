@@ -144,7 +144,7 @@ export async function GET(
       },
       verification: {
         status,
-        method: relationship.verificationMethod || 'email',
+        method: relationship.verificationMethod || null,
         requestedAt: relationship.createdAt,
         verifiedAt: relationship.verifiedAt,
         expiresAt,

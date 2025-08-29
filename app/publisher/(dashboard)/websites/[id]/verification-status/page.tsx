@@ -278,11 +278,18 @@ export default function VerificationStatusPage({ params }: { params: Promise<{ i
                   <Info className="w-4 h-4 mr-2" />
                   Next Steps
                 </h3>
-                <ol className="list-decimal list-inside text-sm text-blue-800 space-y-1">
-                  <li>Check your email for the verification link</li>
-                  <li>Click the link in the email to verify ownership</li>
-                  <li>This page will automatically update when verified</li>
-                </ol>
+                {verification.emailSentTo ? (
+                  <ol className="list-decimal list-inside text-sm text-blue-800 space-y-1">
+                    <li>Check your email for the verification link</li>
+                    <li>Click the link in the email to verify ownership</li>
+                    <li>This page will automatically update when verified</li>
+                  </ol>
+                ) : (
+                  <div className="text-sm text-blue-800 space-y-1">
+                    <p>No verification method has been started yet.</p>
+                    <p>Choose a verification method to prove ownership of your website.</p>
+                  </div>
+                )}
               </div>
             )}
 
@@ -317,8 +324,8 @@ export default function VerificationStatusPage({ params }: { params: Promise<{ i
         </div>
       </div>
 
-      {/* Resend Section */}
-      {!isVerified && (
+      {/* Resend Section - Only show if email verification was attempted */}
+      {!isVerified && verification.emailSentTo && (
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             Didn't receive the email?
@@ -396,6 +403,25 @@ export default function VerificationStatusPage({ params }: { params: Promise<{ i
               <ChevronRight className="w-4 h-4 ml-1" />
             </Link>
           </div>
+        </div>
+      )}
+
+      {/* Start Verification Section - Show when no verification has been attempted */}
+      {!isVerified && !verification.emailSentTo && verification.method !== 'email' && (
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Ready to Verify Your Website?
+          </h3>
+          <p className="text-gray-600 mb-4">
+            Choose from multiple verification methods to prove you own {website.domain}
+          </p>
+          <Link
+            href={`/publisher/websites/${websiteId}/verify`}
+            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            <Shield className="w-4 h-4 mr-2" />
+            Choose Verification Method
+          </Link>
         </div>
       )}
 

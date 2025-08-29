@@ -60,7 +60,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!session.publisherId) {
+    const publisherId = session.publisherId;
+    if (!publisherId) {
       return NextResponse.json(
         { error: 'Publisher ID not found in session' },
         { status: 400 }
@@ -73,9 +74,6 @@ export async function POST(request: NextRequest) {
       categories,
       niche,
       websiteType,
-      monthlyTraffic,
-      domainRating,
-      domainAuthority,
       websiteLanguage,
       targetAudience,
       publisherTier,
@@ -135,131 +133,139 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Check if website already exists
-    const existingWebsite = await db
-      .select()
-      .from(websites)
-      .where(eq(websites.domain, normalizedDomain))
-      .limit(1);
+    // Wrap all database operations in a transaction for atomicity
+    const result = await db.transaction(async (tx) => {
+      // Check if website already exists
+      const existingWebsite = await tx
+        .select()
+        .from(websites)
+        .where(eq(websites.domain, normalizedDomain))
+        .limit(1);
 
-    let websiteId: string;
-    const now = new Date();
+      let websiteId: string;
+      const now = new Date();
 
-    if (existingWebsite.length > 0) {
-      // Website already exists - just use it
-      websiteId = existingWebsite[0].id;
+      if (existingWebsite.length > 0) {
+        // Website already exists - just use it
+        websiteId = existingWebsite[0].id;
 
-      // Multiple offerings per website are now allowed, so no need to check for existing relationships
-    } else {
-      // Create new website with all the provided fields
-      const newWebsiteId = uuidv4();
+        // Multiple offerings per website are now allowed, so no need to check for existing relationships
+      } else {
+        // Create new website with all the provided fields
+        const newWebsiteId = uuidv4();
+        
+        const [newWebsite] = await tx
+          .insert(websites)
+          .values({
+            id: newWebsiteId,
+            domain: normalizedDomain,
+            // Categories and arrays
+            categories: categories && categories.length > 0 ? categories : null,
+            niche: niche && niche.length > 0 ? niche : null,
+            websiteType: websiteType && websiteType.length > 0 ? websiteType : null,
+            // Metrics will be calculated by system, not user-submitted
+            totalTraffic: null,
+            domainRating: null,
+            // Publishing info
+            websiteLanguage: websiteLanguage || 'en',
+            targetAudience: targetAudience || null,
+            publisherTier: publisherTier || 'standard',
+            typicalTurnaroundDays: typicalTurnaroundDays || null,
+            // Remove per-offering requirements from website level (now stored per-offering)
+            acceptsDoFollow: true, // Default, overridden per-offering
+            requiresAuthorBio: false, // Default, overridden per-offering  
+            maxLinksPerPost: 2, // Default, overridden per-offering
+            contentGuidelinesUrl: contentGuidelinesUrl || null,
+            editorialCalendarUrl: editorialCalendarUrl || null,
+            // Metadata
+            source: 'publisher',
+            addedByPublisherId: publisherId,
+            sourceMetadata: JSON.stringify({
+              addedBy: session.email,
+              addedAt: now.toISOString()
+            }),
+            status: 'Active',
+            hasGuestPost: offeringsToProcess.some((o: any) => o.offeringType === 'guest_post'),
+            hasLinkInsert: offeringsToProcess.some((o: any) => o.offeringType === 'link_insertion'),
+            // Timestamps
+            airtableCreatedAt: now,
+            airtableUpdatedAt: now,
+            createdAt: now,
+            updatedAt: now
+          })
+          .returning();
+
+        websiteId = newWebsite.id;
+      }
+
+      // Create multiple publisher offerings with all the details from the form
+      const newOfferings = [];
       
-      const [newWebsite] = await db
-        .insert(websites)
-        .values({
-          id: newWebsiteId,
-          domain: normalizedDomain,
-          // Categories and arrays
-          categories: categories && categories.length > 0 ? categories : null,
-          niche: niche && niche.length > 0 ? niche : null,
-          websiteType: websiteType && websiteType.length > 0 ? websiteType : null,
-          // Metrics
-          totalTraffic: monthlyTraffic || null,
-          domainRating: domainRating || null,
-          // Note: domainAuthority doesn't exist in the current schema, 
-          // but we're capturing it for when it's added
-          // Publishing info
-          websiteLanguage: websiteLanguage || 'en',
-          targetAudience: targetAudience || null,
-          publisherTier: publisherTier || 'standard',
-          typicalTurnaroundDays: typicalTurnaroundDays || null,
-          // Remove per-offering requirements from website level (now stored per-offering)
-          acceptsDoFollow: true, // Default, overridden per-offering
-          requiresAuthorBio: false, // Default, overridden per-offering  
-          maxLinksPerPost: 2, // Default, overridden per-offering
-          contentGuidelinesUrl: contentGuidelinesUrl || null,
-          editorialCalendarUrl: editorialCalendarUrl || null,
-          // Metadata
-          source: 'publisher',
-          addedByPublisherId: session.publisherId,
-          sourceMetadata: JSON.stringify({
-            addedBy: session.email,
-            addedAt: now.toISOString(),
-            domainAuthority: domainAuthority // Store here for now
-          }),
-          status: 'Active',
-          hasGuestPost: offeringsToProcess.some((o: any) => o.offeringType === 'guest_post'),
-          hasLinkInsert: offeringsToProcess.some((o: any) => o.offeringType === 'link_insertion'),
-          // Timestamps
-          airtableCreatedAt: now,
-          airtableUpdatedAt: now,
-          createdAt: now,
-          updatedAt: now
-        })
-        .returning();
+      for (const offeringData of offeringsToProcess) {
+        const [newOffering] = await tx
+          .insert(publisherOfferings)
+          .values({
+            publisherId: publisherId,
+            offeringType: offeringData.offeringType || 'guest_post',
+            basePrice: offeringData.basePrice || 10000, // Already in cents from form
+            currency: offeringData.currency || 'USD',
+            turnaroundDays: offeringData.turnaroundDays || null,
+            minWordCount: offeringData.minWordCount || null,
+            maxWordCount: offeringData.maxWordCount || null,
+            currentAvailability: offeringData.currentAvailability || 'available',
+            expressAvailable: offeringData.expressAvailable || false,
+            expressPrice: offeringData.expressPrice || null,
+            expressDays: offeringData.expressDays || null,
+            // Store all requirements in attributes JSONB field (per-offering)
+            attributes: {
+              ...offeringData.attributes,
+              acceptsDoFollow: offeringData.acceptsDoFollow !== undefined ? offeringData.acceptsDoFollow : true,
+              requiresAuthorBio: offeringData.requiresAuthorBio || false,
+              maxLinksPerPost: offeringData.maxLinksPerPost || 2,
+            },
+            isActive: true,
+            createdAt: now,
+            updatedAt: now
+          })
+          .returning();
 
-      websiteId = newWebsite.id;
-    }
+        newOfferings.push(newOffering);
 
-    // Create multiple publisher offerings with all the details from the form
-    const newOfferings = [];
-    
-    for (const offeringData of offeringsToProcess) {
-      const [newOffering] = await db
-        .insert(publisherOfferings)
-        .values({
-          publisherId: session.publisherId,
-          offeringType: offeringData.offeringType || 'guest_post',
-          basePrice: offeringData.basePrice || 10000, // Already in cents from form
-          currency: offeringData.currency || 'USD',
-          turnaroundDays: offeringData.turnaroundDays || null,
-          minWordCount: offeringData.minWordCount || null,
-          maxWordCount: offeringData.maxWordCount || null,
-          currentAvailability: offeringData.currentAvailability || 'available',
-          expressAvailable: offeringData.expressAvailable || false,
-          expressPrice: offeringData.expressPrice || null,
-          expressDays: offeringData.expressDays || null,
-          // Store all requirements in attributes JSONB field (per-offering)
-          attributes: {
-            ...offeringData.attributes,
-            acceptsDoFollow: offeringData.acceptsDoFollow !== undefined ? offeringData.acceptsDoFollow : true,
-            requiresAuthorBio: offeringData.requiresAuthorBio || false,
-            maxLinksPerPost: offeringData.maxLinksPerPost || 2,
-          },
-          isActive: true,
-          createdAt: now,
-          updatedAt: now
-        })
-        .returning();
+        // Create the relationship between publisher, offering, and website
+        await tx
+          .insert(publisherOfferingRelationships)
+          .values({
+            publisherId: publisherId,
+            offeringId: newOffering.id,
+            websiteId: websiteId,
+            isPrimary: newOfferings.length === 1, // First offering is primary
+            isActive: true,
+            relationshipType: existingWebsite.length > 0 ? 'reseller' : 'owner',
+            verificationStatus: 'pending', // Publishers can self-verify using multiple methods
+            verificationMethod: null, // Will be set when publisher completes verification
+            verifiedAt: null,
+            createdAt: now,
+            updatedAt: now
+          });
+      }
 
-      newOfferings.push(newOffering);
-
-      // Create the relationship between publisher, offering, and website
-      await db
-        .insert(publisherOfferingRelationships)
-        .values({
-          publisherId: session.publisherId,
-          offeringId: newOffering.id,
-          websiteId: websiteId,
-          isPrimary: newOfferings.length === 1, // First offering is primary
-          isActive: true,
-          relationshipType: existingWebsite.length > 0 ? 'reseller' : 'owner',
-          verificationStatus: existingWebsite.length > 0 ? 'pending' : 'verified',
-          verificationMethod: existingWebsite.length > 0 ? null : 'publisher_added',
-          verifiedAt: existingWebsite.length > 0 ? null : now,
-          createdAt: now,
-          updatedAt: now
-        });
-    }
+      // Return the results from the transaction
+      return {
+        websiteId,
+        offeringIds: newOfferings.map(o => o.id),
+        offeringsCount: newOfferings.length,
+        isExistingWebsite: existingWebsite.length > 0
+      };
+    });
 
     return NextResponse.json({
       success: true,
-      websiteId,
-      offeringIds: newOfferings.map(o => o.id),
-      offeringsCount: newOfferings.length,
-      message: existingWebsite.length > 0 
-        ? `Successfully created ${newOfferings.length} offering(s) for this existing website` 
-        : `Successfully added website and created ${newOfferings.length} offering(s)`
+      websiteId: result.websiteId,
+      offeringIds: result.offeringIds,
+      offeringsCount: result.offeringsCount,
+      message: result.isExistingWebsite 
+        ? `Successfully created ${result.offeringsCount} offering(s) for this existing website. You can verify ownership using multiple methods.` 
+        : `Successfully added website and created ${result.offeringsCount} offering(s). You can verify ownership using multiple methods.`
     });
 
   } catch (error) {
