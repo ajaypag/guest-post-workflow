@@ -16,7 +16,22 @@ interface UrlSuggestionStepProps {
 export const UrlSuggestionStep = ({ step, workflow, onChange }: UrlSuggestionStepProps) => {
   // Get guest post site from domain selection step
   const domainSelectionStep = workflow.steps.find(s => s.id === 'domain-selection');
-  const guestPostSite = domainSelectionStep?.outputs?.domain || '';
+  // Use website name if available, domain as fallback
+  let guestPostSite = domainSelectionStep?.outputs?.domain || '[Guest Post Site]';
+  let websiteMetadata = '';
+  
+  if (domainSelectionStep?.outputs?.websiteId && workflow.website) {
+    guestPostSite = workflow.website.domain;
+    // Build metadata string for AI context
+    const metadata = [];
+    if (workflow.website.domainRating) metadata.push(`DA: ${workflow.website.domainRating}`);
+    if (workflow.website.totalTraffic) metadata.push(`Traffic: ${workflow.website.totalTraffic.toLocaleString()}`);
+    if (workflow.website.overallQuality) metadata.push(`Quality: ${workflow.website.overallQuality}`);
+    if (metadata.length > 0) {
+      websiteMetadata = ` (${metadata.join(', ')})`;
+    }
+  }
+
   
   // Get the guest post title from topic generation step (Step 2i)
   const topicGenerationStep = workflow.steps.find(s => s.id === 'topic-generation');

@@ -85,7 +85,22 @@ const LinkOrchestrationStep: React.FC<LinkOrchestrationStepProps> = ({
                   semanticSeoStep?.outputs?.fullArticle || 
                   articleDraftStep?.outputs?.fullArticle || '';
   
-  const guestPostSite = domainSelectionStep?.outputs?.domain || '';
+  // Use website name if available, domain as fallback
+  let guestPostSite = domainSelectionStep?.outputs?.domain || '[Guest Post Site]';
+  let websiteMetadata = '';
+  
+  if (domainSelectionStep?.outputs?.websiteId && workflow.website) {
+    guestPostSite = workflow.website.domain;
+    // Build metadata string for AI context
+    const metadata = [];
+    if (workflow.website.domainRating) metadata.push(`DA: ${workflow.website.domainRating}`);
+    if (workflow.website.totalTraffic) metadata.push(`Traffic: ${workflow.website.totalTraffic.toLocaleString()}`);
+    if (workflow.website.overallQuality) metadata.push(`Quality: ${workflow.website.overallQuality}`);
+    if (metadata.length > 0) {
+      websiteMetadata = ` (${metadata.join(', ')})`;
+    }
+  }
+
   const targetKeyword = topicGenerationStep?.outputs?.finalKeyword || '';
   
   // Client info comes from workflow level (if client is associated) or workflow fields
