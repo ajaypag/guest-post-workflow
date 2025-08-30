@@ -1,6 +1,7 @@
 import { eq, desc } from 'drizzle-orm';
 import { db } from './connection';
 import { workflows, workflowSteps, type Workflow, type NewWorkflow, type WorkflowStep, type NewWorkflowStep } from './schema';
+import { websites } from './websiteSchema';
 import { GuestPostWorkflow, WORKFLOW_STEPS } from '@/types/workflow';
 
 export class WorkflowService {
@@ -14,6 +15,7 @@ export class WorkflowService {
     status: string;
     content: any;
     targetPages: any[];
+    websiteId: string | null; // NEW: Added website_id field
     createdAt: Date;
     updatedAt: Date;
     estimatedCompletionDate: Date;
@@ -24,6 +26,14 @@ export class WorkflowService {
     const estimatedCompletion = new Date(now);
     estimatedCompletion.setDate(estimatedCompletion.getDate() + 14);
     
+    // Extract website_id from domain selection step
+    let websiteId: string | null = null;
+    const domainSelectionStep = guestWorkflow.steps?.find(s => s.id === 'domain-selection');
+    if (domainSelectionStep?.outputs?.websiteId) {
+      websiteId = domainSelectionStep.outputs.websiteId;
+      console.log('Found websiteId in domain selection step:', websiteId);
+    }
+    
     return {
       id: crypto.randomUUID(),
       userId: userId,
@@ -33,6 +43,7 @@ export class WorkflowService {
       status: 'active',
       content: guestWorkflow, // Store entire workflow as JSON
       targetPages: [], // Empty for now
+      websiteId: websiteId, // NEW: Store website_id from domain selection
       createdAt: now,
       updatedAt: now,
       estimatedCompletionDate: estimatedCompletion,
@@ -78,16 +89,35 @@ export class WorkflowService {
   // Get all workflows for a user (returns GuestPostWorkflow format)
   static async getUserGuestPostWorkflows(userId: string): Promise<GuestPostWorkflow[]> {
     try {
+      // Load workflows with website data (LEFT JOIN to include workflows without website)
       const workflowList = await db
-        .select()
+        .select({
+          workflow: workflows,
+          website: websites
+        })
         .from(workflows)
+        .leftJoin(websites, eq(workflows.websiteId, websites.id))
         .where(eq(workflows.userId, userId))
         .orderBy(desc(workflows.updatedAt));
 
-      // Transform to GuestPostWorkflow format (no steps table needed)
-      const guestPostWorkflows = workflowList.map(workflow => 
-        this.databaseToGuestPostWorkflow(workflow)
-      );
+      // Transform to GuestPostWorkflow format with website data
+      const guestPostWorkflows = workflowList.map(({ workflow, website }) => {
+        const guestPostWorkflow = this.databaseToGuestPostWorkflow(workflow);
+        
+        // Attach website data if available
+        if (website) {
+          guestPostWorkflow.website = {
+            id: website.id,
+            domain: website.domain,
+            domainRating: website.domainRating,
+            totalTraffic: website.totalTraffic,
+            publisherCompany: website.publisherCompany,
+            overallQuality: website.overallQuality
+          };
+        }
+        
+        return guestPostWorkflow;
+      });
 
       return guestPostWorkflows;
     } catch (error) {
@@ -126,10 +156,34 @@ export class WorkflowService {
   // Get workflow by ID (returns GuestPostWorkflow format)
   static async getGuestPostWorkflow(id: string): Promise<GuestPostWorkflow | null> {
     try {
-      const workflow = await this.getWorkflow(id);
-      if (!workflow) return null;
-
-      return this.databaseToGuestPostWorkflow(workflow);
+      // Load workflow with website data
+      const result = await db
+        .select({
+          workflow: workflows,
+          website: websites
+        })
+        .from(workflows)
+        .leftJoin(websites, eq(workflows.websiteId, websites.id))
+        .where(eq(workflows.id, id));
+      
+      if (!result[0]) return null;
+      
+      const { workflow, website } = result[0];
+      const guestPostWorkflow = this.databaseToGuestPostWorkflow(workflow);
+      
+      // Attach website data if available
+      if (website) {
+        guestPostWorkflow.website = {
+          id: website.id,
+          domain: website.domain,
+          domainRating: website.domainRating,
+          totalTraffic: website.totalTraffic,
+          publisherCompany: website.publisherCompany,
+          overallQuality: website.overallQuality
+        };
+      }
+      
+      return guestPostWorkflow;
     } catch (error) {
       console.error('Error loading guest post workflow:', error);
       return null;

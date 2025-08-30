@@ -17,17 +17,19 @@
 
 ## 📋 PHASE 2: WORKFLOWS WEBSITE CONNECTION
 
-### **Step 2.1: Add website_id to WORKFLOWS Table**
+### ✅ **Step 2.1: Add website_id to WORKFLOWS Table** (COMPLETE - 2025-08-29)
 ```sql
 -- THIS IS FOR WORKFLOWS, NOT ORDERS
 ALTER TABLE workflows 
 ADD COLUMN website_id UUID REFERENCES websites(id);
 ```
-- Adding to **workflows** table (NOT orders table)
-- Direct foreign key to websites table
-- Required for NEW workflows only (existing workflows protected by snapshots)
+- ✅ Added to **workflows** table (NOT orders table)
+- ✅ Direct foreign key to websites table
+- ✅ Migration 0078 applied successfully
+- ✅ Schema updated in lib/db/schema.ts
+- ✅ Required for NEW workflows only (existing workflows protected by snapshots)
 
-### **Step 2.2: WebsiteSelector Component for WORKFLOW Creation**
+### ✅ **Step 2.2: WebsiteSelector Component for WORKFLOW Creation** (COMPLETE - 2025-08-29)
 ```typescript
 <WebsiteSelector
   websites={websites}  // 956 websites via API
@@ -40,15 +42,29 @@ ADD COLUMN website_id UUID REFERENCES websites(id);
   }}
 />
 ```
-- Search by name or domain
-- Display website metadata (DA, traffic, categories)
-- No manual entry (enforcing data integrity)
+- ✅ Created components/ui/WebsiteSelector.tsx
+- ✅ Search by name, domain, company, or category
+- ✅ Display website metadata (DA, traffic, categories, quality)
+- ✅ No manual entry (enforcing data integrity)
+- ✅ Rich UI with loading states and empty states
 
-### **Step 2.3: Update WORKFLOW Domain Selection Step**
-- Location: `DomainSelectionStepClean.tsx` (WORKFLOW step component)
-- Replace manual text input with `WebsiteSelector`
-- Store `website_id` in WORKFLOW
-- This is step 0 of WORKFLOW creation process
+### ✅ **Step 2.3: API Endpoint Created** (COMPLETE - 2025-08-29)
+- ✅ Created `/api/websites/workflow-selector/route.ts`
+- ✅ Returns all websites with guest post capability
+- ✅ Cached responses for performance (10 min cache)
+- ✅ Ordered by quality and domain rating
+
+### ✅ **Step 2.4: Update WORKFLOW Domain Selection Step** (COMPLETE - 2025-08-29)
+- ✅ Updated `DomainSelectionStepClean.tsx` (WORKFLOW step component)
+- ✅ Replaced manual text input with `WebsiteSelector`
+- ✅ Stores `website_id`, `domain`, and `websiteData` in outputs
+- ✅ Backward compatible - accepts either websiteId or domain
+- ✅ This is step 0 of WORKFLOW creation process
+
+### 🔄 **Step 2.5: Update Database Services** (IN PROGRESS)
+- Need to update workflowService.ts to handle website_id
+- Add website JOINs to workflow queries
+- Maintain backward compatibility for existing workflows
 
 ---
 

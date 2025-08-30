@@ -37,6 +37,14 @@ export interface GuestPostWorkflow {
   estimatedCompletionDate?: Date; // Expected delivery date (14 days from assignment)
   assignedAt?: Date; // When the workflow was assigned
   steps: WorkflowStep[];
+  website?: { // NEW: Website data from database JOIN
+    id: string;
+    domain: string;
+    domainRating?: number | null;
+    totalTraffic?: number | null;
+    publisherCompany?: string | null;
+    overallQuality?: string | null;
+  };
   metadata: {
     pitchKeyword?: string;
     pitchTopic?: string;
