@@ -270,11 +270,24 @@ export class WorkflowService {
         updatedAt: new Date(),
       };
 
+      // Debug logging for websiteId
+      console.log('WorkflowService.updateWorkflow - updates received:', {
+        hasWebsiteId: 'websiteId' in updates,
+        websiteId: updates.websiteId,
+        updateDataKeys: Object.keys(updateData)
+      });
+
       const result = await db
         .update(workflows)
         .set(updateData)
         .where(eq(workflows.id, id))
         .returning();
+
+      console.log('WorkflowService.updateWorkflow - result after update:', {
+        hasResult: !!result[0],
+        websiteIdInResult: result[0]?.websiteId,
+        resultKeys: result[0] ? Object.keys(result[0]) : []
+      });
 
       return result[0] || null;
     } catch (error) {

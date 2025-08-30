@@ -26,7 +26,12 @@ export const EmailTemplateStep = ({ step, workflow, onChange }: EmailTemplateSte
   const linkRequestsStep = workflow.steps.find(s => s.id === 'link-requests');
 
   // Extract key information
-  const guestPostSite = domainSelectionStep?.outputs?.domain || '[Guest Post Site]';
+  // Use website name if available, domain as fallback
+  let guestPostSite = domainSelectionStep?.outputs?.domain || '[Guest Post Site]';
+  
+  if (domainSelectionStep?.outputs?.websiteId && workflow.website) {
+    guestPostSite = workflow.website.domain;
+  }
   const articleTitle = topicGenerationStep?.outputs?.postTitle || 
                       finalPolishStep?.outputs?.articleTitle || 
                       '[Article Title]';

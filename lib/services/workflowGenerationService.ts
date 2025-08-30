@@ -1,5 +1,5 @@
 import { db } from '@/lib/db/connection';
-import { workflows, workflowSteps, users } from '@/lib/db/schema';
+import { workflows, workflowSteps, users, websites } from '@/lib/db/schema';
 import { orderSiteSelections, orderGroups } from '@/lib/db/orderGroupSchema';
 import { orderItems, orders, orderStatusHistory } from '@/lib/db/orderSchema';
 import { orderLineItems } from '@/lib/db/orderLineItemSchema';
@@ -10,6 +10,7 @@ import { GuestPostWorkflow, WORKFLOW_STEPS } from '@/types/workflow';
 import { WorkflowService } from '@/lib/db/workflowService';
 import { v4 as uuidv4 } from 'uuid';
 import { WorkflowProgressService } from './workflowProgressService';
+import { normalizeDomain } from '@/lib/utils/domainNormalizer';
 
 export interface WorkflowGenerationResult {
   success: boolean;
@@ -25,6 +26,29 @@ export interface WorkflowGenerationOptions {
 }
 
 export class WorkflowGenerationService {
+  /**
+   * Lookup website by domain name
+   * Used to connect order-generated workflows to websites table
+   */
+  private static async lookupWebsiteByDomain(domainName: string): Promise<string | undefined> {
+    if (!domainName) return undefined;
+    
+    try {
+      // Normalize the domain for lookup
+      const normalizedDomain = normalizeDomain(domainName);
+      
+      // Look up website by normalized domain
+      const website = await db.query.websites.findFirst({
+        where: eq(websites.domain, normalizedDomain.domain)
+      });
+      
+      return website?.id;
+    } catch (error) {
+      console.error('Error looking up website for domain:', domainName, error);
+      return undefined;
+    }
+  }
+
   /**
    * Generate workflows for line items in an order
    */
@@ -197,6 +221,12 @@ export class WorkflowGenerationService {
       const client = lineItem.client;
       const account = order.account;
 
+      // Lookup website by domain to connect workflow to websites table
+      const websiteId = await this.lookupWebsiteByDomain(domain.domain);
+      if (websiteId) {
+        console.log(`Found website ${websiteId} for domain ${domain.domain}`);
+      }
+
       // Build workflow metadata
       const workflowData: GuestPostWorkflow = {
         id: uuidv4(),
@@ -205,6 +235,7 @@ export class WorkflowGenerationService {
         clientName: client.name,
         clientUrl: client.website,
         targetDomain: domain.domain,
+        websiteId, // NEW: Connect to websites table when available
         currentStep: 2, // Start at Topic Generation since first 2 steps completed for order-based workflows
         createdBy: account?.contactName || 'System',
         createdByEmail: account?.email,
@@ -477,6 +508,12 @@ export class WorkflowGenerationService {
       const client = orderGroup.client;
       const account = orderGroup.order.account;
 
+      // Lookup website by domain to connect workflow to websites table
+      const websiteId = await this.lookupWebsiteByDomain(domain.domain);
+      if (websiteId) {
+        console.log(`Found website ${websiteId} for domain ${domain.domain}`);
+      }
+
       // Build workflow metadata
       const workflowData: GuestPostWorkflow = {
         id: uuidv4(),
@@ -485,6 +522,7 @@ export class WorkflowGenerationService {
         clientName: client.name,
         clientUrl: client.website,
         targetDomain: domain.domain,
+        websiteId, // NEW: Connect to websites table when available
         currentStep: 0,
         createdBy: account?.contactName || 'System',
         createdByEmail: account?.email,

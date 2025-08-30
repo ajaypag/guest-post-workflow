@@ -307,7 +307,8 @@ export default function WorkflowDetail() {
                     <span className="text-gray-500 text-sm font-medium uppercase tracking-wide">Target Site</span>
                   </div>
                   <p className="text-gray-900 font-semibold text-lg truncate">
-                    {workflow.steps.find(s => s.id === 'domain-selection')?.outputs?.domain || 
+                    {workflow.website?.domain ||
+                     workflow.steps.find(s => s.id === 'domain-selection')?.outputs?.domain || 
                      workflow.targetDomain || 
                      'Not selected yet'}
                   </p>

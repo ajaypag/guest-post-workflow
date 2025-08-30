@@ -15,6 +15,16 @@ Production-ready workflow system with PostgreSQL, multi-user auth, and AI agent 
 6. **SQL Migrations** - Now using standard SQL migration files (no admin pages needed)
 
 ### Recent Changes (Keep in Mind)
+- ✅ Website-Workflow Connection System Phase 3 (2025-08-30) - FULLY COMPLETE
+  - Phase 1-2: Core connection implemented with website selector dropdown
+  - Phase 3: Fixed Target Site display across all workflow views
+  - Database: Added `website_id` foreign key to workflows table
+  - WebsiteSelector component shows 956 websites with search/filter
+  - All workflow cards/pages now properly display selected website domain
+  - Fallback chain: `workflow.website.domain` → `step.outputs.domain` → `workflow.targetDomain`
+  - Backward compatible - existing workflows with text domains still work
+  - Fixed locations: WorkflowListEnhanced, workflow detail page, overview page
+  - See: `/components/ui/WebsiteSelector.tsx` and migration `0078_add_website_id_to_workflows.sql`
 - ✅ Vetted Sites Request Fulfillment System (2025-08-24) - COMPLETE
   - Full workflow: submitted → approved → in_progress → fulfilled → rejected
   - Creates bulk analysis projects (one per client/brand)

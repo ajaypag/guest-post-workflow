@@ -279,7 +279,7 @@ export default function StepForm({ step, stepIndex, workflow, onSave, onWorkflow
     console.log('🤖 Agent generated:', data.agentGenerated);
     
     // IMPORTANT: Check for changes BEFORE updating state to avoid closure issues
-    const criticalFields = ['finalArticle', 'fullArticle', 'seoOptimizedArticle', 'googleDocUrl'];
+    const criticalFields = ['finalArticle', 'fullArticle', 'seoOptimizedArticle', 'googleDocUrl', 'websiteId', 'domain'];
     const hasChangedCriticalField = criticalFields.some(field => {
       // For seoOptimizedArticle, do a more thorough check
       if (field === 'seoOptimizedArticle' && data[field]) {

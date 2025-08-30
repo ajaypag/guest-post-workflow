@@ -59,18 +59,9 @@ export const TopicGenerationImproved = ({ step, workflow, onChange, onWorkflowCh
   
   // Use website name if available, domain as fallback
   let guestPostSite = domainSelectionStep?.outputs?.domain || 'Guest post website from Step 1';
-  let websiteMetadata = '';
   
   if (domainSelectionStep?.outputs?.websiteId && workflow.website) {
     guestPostSite = workflow.website.domain;
-    // Build metadata string for AI context
-    const metadata = [];
-    if (workflow.website.domainRating) metadata.push(`DA: ${workflow.website.domainRating}`);
-    if (workflow.website.totalTraffic) metadata.push(`Traffic: ${workflow.website.totalTraffic.toLocaleString()}`);
-    if (workflow.website.overallQuality) metadata.push(`Quality: ${workflow.website.overallQuality}`);
-    if (metadata.length > 0) {
-      websiteMetadata = ` (${metadata.join(', ')})`;
-    }
   }
   
   const urlSummaries = keywordResearchStep?.outputs?.urlSummaries || 'List of your target urls + summary';
@@ -416,7 +407,7 @@ Target URL: ${clientTargetUrl}`;
                   </h4>
                   <CopyButton 
                     text={(() => {
-                      const basePrompt = `Guest post site: ${guestPostSite}${websiteMetadata}\n\n${urlSummaries}\n\nFor each of your keyword suggestions and based on your topical cluster analysis of the target site provide justification each keyword in the sense that it has potential to rank. If the keyword doesn't make sense anymore after further review, that's okay too, remove it.\n\nA critical thing to note about keywords you suggest is you have to include the shortest version of the long tail so the likelihood of your suggestions having volume is higher. For example, best grc software for hr compliance will have no volume but hr grc software will have volume - both have the same meaning but one is the shorter version of the long tail.\n\nProper justification means you must take a keyword or list of keywords from the keywords rankings sheet that I provided you about the target site. And prove clear and direct overlap. Keep going until you find 10 justifiable keyword suggestions.\n\nAfter you generate your 10 justifiable keywords suggestions and their variations, output a final master list that lists everything in a long one per line list so I can copy paste elsewhere.`;
+                      const basePrompt = `Guest post site: ${guestPostSite}\n\n${urlSummaries}\n\nFor each of your keyword suggestions and based on your topical cluster analysis of the target site provide justification each keyword in the sense that it has potential to rank. If the keyword doesn't make sense anymore after further review, that's okay too, remove it.\n\nA critical thing to note about keywords you suggest is you have to include the shortest version of the long tail so the likelihood of your suggestions having volume is higher. For example, best grc software for hr compliance will have no volume but hr grc software will have volume - both have the same meaning but one is the shorter version of the long tail.\n\nProper justification means you must take a keyword or list of keywords from the keywords rankings sheet that I provided you about the target site. And prove clear and direct overlap. Keep going until you find 10 justifiable keyword suggestions.\n\nAfter you generate your 10 justifiable keywords suggestions and their variations, output a final master list that lists everything in a long one per line list so I can copy paste elsewhere.`;
                       
                       if (keywordPreferences) {
                         const targetUrl = step.outputs.clientTargetUrl;
@@ -430,7 +421,6 @@ Target URL: ${clientTargetUrl}`;
                 <div className="p-4">
                   <div className="font-mono text-sm bg-gray-50 border rounded p-3 max-h-64 overflow-y-auto">
                     <p>Guest post site: <span className="text-blue-700 font-semibold">{guestPostSite}</span>
-                      {websiteMetadata && <span className="text-gray-600 text-sm ml-2">{websiteMetadata}</span>}
                     </p>
                     <div className="mt-2">
                       {urlSummaries === 'List of your target urls + summary' ? (

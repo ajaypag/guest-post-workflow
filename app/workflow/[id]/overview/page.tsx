@@ -136,7 +136,10 @@ export default function WorkflowOverview() {
                   <span className="text-blue-100 text-sm font-medium">Target Site</span>
                 </div>
                 <p className="font-semibold text-lg truncate">
-                  {domainData.domain || 'Not selected'}
+                  {workflow.website?.domain || 
+                   domainData.domain || 
+                   workflow.targetDomain || 
+                   'Not selected'}
                 </p>
               </div>
               

@@ -317,10 +317,16 @@ export class TaskService {
       const steps = workflowContent?.steps || [];
       
       // Extract guest post site from domain-selection step (step 0)
+      // Use website name if available, domain as fallback
       let guestPostSite = null;
       const domainSelectionStep = steps.find((step: any) => step.id === 'domain-selection');
       if (domainSelectionStep?.outputs?.domain) {
         guestPostSite = domainSelectionStep.outputs.domain;
+      }
+      
+      // Check for website connection (though we don't have website JOIN here)
+      if (domainSelectionStep?.outputs?.websiteId && workflowContent?.website) {
+        guestPostSite = workflowContent.website.domain;
       }
       
       // Extract client info from root workflow content (already working)

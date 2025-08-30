@@ -27,7 +27,12 @@ export const PublicationOutreachStep = ({ step, workflow, onChange }: Publicatio
   const publisherPreApprovalStep = workflow.steps.find(s => s.id === 'publisher-pre-approval');
 
   // Extract key information
-  const guestPostSite = domainSelectionStep?.outputs?.domain || '[Guest Post Site]';
+  // Use website name if available, domain as fallback
+  let guestPostSite = domainSelectionStep?.outputs?.domain || '[Guest Post Site]';
+  
+  if (domainSelectionStep?.outputs?.websiteId && workflow.website) {
+    guestPostSite = workflow.website.domain;
+  }
   const articleTitle = topicGenerationStep?.outputs?.postTitle || 
                       finalPolishStep?.outputs?.articleTitle || 
                       '[Article Title]';

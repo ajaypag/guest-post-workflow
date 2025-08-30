@@ -61,6 +61,14 @@ export async function PUT(
 
     console.log('Existing workflow found, updating...');
 
+    // Extract website_id from Domain Selection step
+    let websiteId = existingWorkflow.websiteId;
+    const domainSelectionStep = data.steps?.find((s: any) => s.id === 'domain-selection');
+    if (domainSelectionStep?.outputs?.websiteId) {
+      websiteId = domainSelectionStep.outputs.websiteId;
+      console.log('Found websiteId in Domain Selection step:', websiteId);
+    }
+    
     // Check if Step 3 (Topic Generation) has a clientTargetUrl
     let targetPageId = existingWorkflow.targetPageId;
     
@@ -114,7 +122,9 @@ export async function PUT(
       // Update title if provided
       ...(data.clientName && { title: data.clientName }),
       // Update targetPageId if we found/created one
-      ...(targetPageId && { targetPageId })
+      ...(targetPageId && { targetPageId }),
+      // Update websiteId if we found one
+      ...(websiteId && { websiteId })
     };
 
     console.log('Final update data:', JSON.stringify(updateData, null, 2));

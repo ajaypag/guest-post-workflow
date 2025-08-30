@@ -29,6 +29,7 @@ export interface GuestPostWorkflow {
   clientName: string;
   clientUrl: string;
   targetDomain: string;
+  websiteId?: string; // NEW: Foreign key to websites table
   currentStep: number;
   createdBy: string; // User name who created the workflow
   createdByEmail?: string; // Optional: User email for more identification

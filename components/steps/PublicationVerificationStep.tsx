@@ -18,7 +18,12 @@ export const PublicationVerificationStep = ({ step, workflow, onChange }: Public
   const domainSelectionStep = workflow.steps.find(s => s.id === 'domain-selection');
 
   const publishedUrl = publicationOutreachStep?.outputs?.publishedUrl || '';
-  const guestPostSite = domainSelectionStep?.outputs?.domain || '[Guest Post Site]';
+  // Use website name if available, domain as fallback
+  let guestPostSite = domainSelectionStep?.outputs?.domain || '[Guest Post Site]';
+  
+  if (domainSelectionStep?.outputs?.websiteId && workflow.website) {
+    guestPostSite = workflow.website.domain;
+  }
   const agreedPrice = publisherPreApprovalStep?.outputs?.agreedPrice || '';
 
   const handleQACheck = (checkName: string, value: boolean) => {

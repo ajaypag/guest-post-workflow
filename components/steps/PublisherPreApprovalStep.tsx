@@ -22,7 +22,12 @@ export const PublisherPreApprovalStep = ({ step, workflow, onChange }: Publisher
   const topicGenerationStep = workflow.steps.find(s => s.id === 'topic-generation');
 
   // Extract key information
-  const guestPostSite = domainSelectionStep?.outputs?.domain || '[Guest Post Site]';
+  // Use website name if available, domain as fallback
+  let guestPostSite = domainSelectionStep?.outputs?.domain || '[Guest Post Site]';
+  
+  if (domainSelectionStep?.outputs?.websiteId && workflow.website) {
+    guestPostSite = workflow.website.domain;
+  }
   const articleTitle = topicGenerationStep?.outputs?.postTitle || '[Article Title]';
   const articleSummary = topicGenerationStep?.outputs?.postSummary || '[Article Summary]';
   const keywordTarget = topicGenerationStep?.outputs?.keyword || '[Target Keyword]';
