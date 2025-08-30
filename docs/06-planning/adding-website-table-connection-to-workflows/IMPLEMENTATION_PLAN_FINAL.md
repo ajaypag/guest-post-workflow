@@ -61,10 +61,13 @@ ADD COLUMN website_id UUID REFERENCES websites(id);
 - ✅ Backward compatible - accepts either websiteId or domain
 - ✅ This is step 0 of WORKFLOW creation process
 
-### 🔄 **Step 2.5: Update Database Services** (IN PROGRESS)
-- Need to update workflowService.ts to handle website_id
-- Add website JOINs to workflow queries
-- Maintain backward compatibility for existing workflows
+### ✅ **Step 2.5: Update Database Services** (COMPLETE - 2025-08-29)
+- ✅ Updated workflowService.ts to extract and store website_id
+- ✅ Added website JOINs to getUserGuestPostWorkflows
+- ✅ Added website JOINs to getGuestPostWorkflow
+- ✅ Updated GuestPostWorkflow interface with website type
+- ✅ Maintained backward compatibility with LEFT JOINs
+- ✅ TypeScript compilation passing
 
 ---
 
