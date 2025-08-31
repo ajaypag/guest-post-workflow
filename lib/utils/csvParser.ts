@@ -14,6 +14,33 @@ export interface AirtableRecord {
   postflowGuestPostPrices: (number | null)[];
   postflowBloggerRequirements: string[];
   postflowContactStatus: string[];
+  postflowContactNames?: string[]; // Optional - for when you add names to CSV
+}
+
+/**
+ * Get all unique emails from an Airtable record
+ */
+export function getAllEmailsFromRecord(record: AirtableRecord): string[] {
+  const allEmails = new Set<string>();
+  
+  // Add emails from postflowContactEmails
+  record.postflowContactEmails.forEach(email => {
+    if (email && email.trim()) {
+      allEmails.add(email.trim().toLowerCase());
+    }
+  });
+  
+  // Add emails from guestPostContact
+  if (record.guestPostContact) {
+    const contactEmails = record.guestPostContact.split(',').map(e => e.trim().toLowerCase());
+    contactEmails.forEach(email => {
+      if (email && email.includes('@')) {
+        allEmails.add(email);
+      }
+    });
+  }
+  
+  return Array.from(allEmails);
 }
 
 export function parseAirtableCSV(): AirtableRecord[] {
@@ -46,6 +73,8 @@ export function parseAirtableCSV(): AirtableRecord[] {
     const postflowPrices = parseMultipleValues(values[11]).map(p => parsePriceToNumber(p));
     const postflowRequirements = parseMultipleValues(values[12]);
     const postflowStatuses = parseMultipleValues(values[13]);
+    // Parse names if column exists (column 14 - you can add this to CSV)
+    const postflowNames = values[14] ? parseMultipleValues(values[14]) : [];
     
     records.push({
       website,
@@ -59,7 +88,8 @@ export function parseAirtableCSV(): AirtableRecord[] {
       postflowContactEmails: postflowEmails,
       postflowGuestPostPrices: postflowPrices,
       postflowBloggerRequirements: postflowRequirements,
-      postflowContactStatus: postflowStatuses
+      postflowContactStatus: postflowStatuses,
+      postflowContactNames: postflowNames
     });
   }
   
@@ -91,11 +121,11 @@ function parseCSVLine(line: string): string[] {
 function parseMultipleValues(value: string): string[] {
   if (!value || value === '') return [];
   
-  // Handle multiple values separated by comma (and quoted)
-  if (value.includes('"') && value.includes(',')) {
-    // Remove outer quotes if present
-    value = value.replace(/^"|"$/g, '');
-    // Split by comma but handle spaces
+  // Remove outer quotes if present
+  value = value.replace(/^"|"$/g, '');
+  
+  // If value contains commas, split by comma
+  if (value.includes(',')) {
     return value.split(',').map(v => v.trim()).filter(v => v);
   }
   

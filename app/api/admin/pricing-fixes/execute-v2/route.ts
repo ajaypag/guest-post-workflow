@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
 import { websites, publisherWebsites, publisherOfferings, publisherOfferingRelationships, publishers } from '@/lib/db/schema';
 import { eq, sql, and, isNull, or, ilike } from 'drizzle-orm';
-import { parseAirtableCSV } from '@/lib/utils/csvParser';
+import { parseAirtableCSV, getAllEmailsFromRecord } from '@/lib/utils/csvParser';
+import { extractNameFromEmail } from '@/lib/utils/nameExtractor';
 
 export async function POST(request: Request) {
   try {
@@ -61,55 +62,147 @@ export async function POST(request: Request) {
     // Handle different issue types
     switch (issueType) {
       case 'no_publisher':
-        // Get email from Airtable
-        const emails = [
-          ...(airtableData?.postflowContactEmails || []),
-          airtableData?.guestPostContact
-        ].filter(e => e);
-        
-        if (emails.length === 0) {
-          result.error = 'No email found in Airtable data';
+        // CONSERVATIVE APPROACH: Only create publishers for contacts with explicit pricing
+        // Get emails and prices from Airtable
+        if (!airtableData) {
+          result.error = 'No Airtable data found for domain';
           result.requiresManualReview = true;
           break;
         }
-        
-        const email = emails[0].toLowerCase();
-        
-        // Check if publisher already exists with this email
-        const existingPublisher = await db
-          .select()
-          .from(publishers)
-          .where(eq(publishers.email, email))
-          .limit(1);
 
-        let publisherId;
+        // Get contacts and prices
+        const postflowEmails = airtableData.postflowContactEmails;
+        const postflowPrices = airtableData.postflowGuestPostPrices;
+        const postflowNames = airtableData.postflowContactNames || [];
         
-        if (existingPublisher[0]) {
-          // Publisher exists - just link it
-          publisherId = existingPublisher[0].id;
-          result.operations.push({
-            type: 'link_existing_publisher',
-            publisherId,
-            email,
-            status: existingPublisher[0].accountStatus
-          });
-          
-          // Check if already linked
-          const existingLink = await db
-            .select()
-            .from(publisherWebsites)
-            .where(and(
-              eq(publisherWebsites.publisherId, publisherId),
-              eq(publisherWebsites.websiteId, website.websiteId)
-            ))
-            .limit(1);
-          
-          if (existingLink[0]) {
-            result.operations.push({
-              type: 'already_linked',
-              message: 'Publisher already linked to website'
+        // Count how many publishers we can create (min of emails and prices)
+        const emailsWithPrices: Array<{email: string, price: number, name?: string}> = [];
+        
+        // Match emails to prices by index (conservative - only where price exists)
+        postflowEmails.forEach((email, idx) => {
+          const price = postflowPrices[idx];
+          if (email && price && price > 0) {
+            emailsWithPrices.push({
+              email: email.toLowerCase(),
+              price: price,
+              name: postflowNames[idx] || undefined
             });
+          }
+        });
+        
+        // If no postflow data with prices, check guestPostContact with main price
+        if (emailsWithPrices.length === 0 && airtableData.guestPostContact && airtableData.guestPostCost && airtableData.guestPostCost > 0) {
+          // Only use the FIRST email from guestPostContact
+          const firstEmail = airtableData.guestPostContact.split(',')[0].trim().toLowerCase();
+          if (firstEmail && firstEmail.includes('@')) {
+            emailsWithPrices.push({
+              email: firstEmail,
+              price: airtableData.guestPostCost
+            });
+          }
+        }
+        
+        if (emailsWithPrices.length === 0) {
+          result.error = 'No contacts with valid pricing found';
+          result.requiresManualReview = true;
+          result.details = {
+            postflowEmails: postflowEmails,
+            postflowPrices: postflowPrices,
+            guestPostContact: airtableData.guestPostContact,
+            guestPostCost: airtableData.guestPostCost
+          };
+          break;
+        }
+        
+        // Process each email-price pair
+        result.publishersCreated = [];
+        
+        for (const contact of emailsWithPrices) {
+          const contactPriceCents = Math.round(contact.price * 100);
+          
+          // Check if publisher already exists with this email
+          const existingPublisher = await db
+            .select()
+            .from(publishers)
+            .where(eq(publishers.email, contact.email))
+            .limit(1);
+
+          let publisherId;
+          
+          if (existingPublisher[0]) {
+            // Publisher exists - just link it
+            publisherId = existingPublisher[0].id;
+            result.operations.push({
+              type: 'link_existing_publisher',
+              publisherId,
+              email: contact.email,
+              status: existingPublisher[0].accountStatus
+            });
+            
+            // Check if already linked
+            const existingLink = await db
+              .select()
+              .from(publisherWebsites)
+              .where(and(
+                eq(publisherWebsites.publisherId, publisherId),
+                eq(publisherWebsites.websiteId, website.websiteId)
+              ))
+              .limit(1);
+            
+            if (existingLink[0]) {
+              result.operations.push({
+                type: 'already_linked',
+                message: `Publisher ${contact.email} already linked to website`
+              });
+            } else {
+              if (!dryRun) {
+                // Create publisher-website link
+                await db.insert(publisherWebsites).values({
+                  publisherId,
+                  websiteId: website.websiteId,
+                  canEditPricing: true,
+                  canEditAvailability: true,
+                  canViewAnalytics: true,
+                  status: 'active'
+                });
+              }
+              result.operations.push({
+                type: 'created_publisher_website_link',
+                email: contact.email
+              });
+            }
           } else {
+            // Create new shadow publisher
+            const contactName = contact.name || extractNameFromEmail(contact.email);
+            
+            if (!dryRun) {
+              const newPublisher = await db
+                .insert(publishers)
+                .values({
+                  email: contact.email,
+                  contactName: contactName,
+                  accountStatus: 'shadow',
+                  source: 'airtable_import',
+                  sourceMetadata: JSON.stringify({ 
+                    domain: normalizedDomain,
+                    importDate: new Date().toISOString(),
+                    airtablePrice: contact.price,
+                    originalIndex: emailsWithPrices.indexOf(contact)
+                  })
+                })
+                .returning();
+              publisherId = newPublisher[0].id;
+            } else {
+              publisherId = `DRY_RUN_ID_${emailsWithPrices.indexOf(contact)}`;
+            }
+            
+            result.operations.push({
+              type: 'created_shadow_publisher',
+              email: contact.email,
+              name: contactName,
+              publisherId
+            });
+            
             if (!dryRun) {
               // Create publisher-website link
               await db.insert(publisherWebsites).values({
@@ -122,94 +215,70 @@ export async function POST(request: Request) {
               });
             }
             result.operations.push({
-              type: 'created_publisher_website_link'
+              type: 'created_publisher_website_link',
+              email: contact.email
             });
           }
-        } else {
-          // Create new shadow publisher
+
+          // Create offering for this publisher
           if (!dryRun) {
-            const newPublisher = await db
-              .insert(publishers)
-              .values({
-                email,
-                contactName: 'Unknown',
-                accountStatus: 'shadow',
-                source: 'airtable_import',
-                sourceMetadata: JSON.stringify({ 
-                  domain: normalizedDomain,
-                  importDate: new Date().toISOString(),
-                  airtablePrice: airtableData?.guestPostCost
-                })
-              })
-              .returning();
-            publisherId = newPublisher[0].id;
+            const offering = await db.insert(publisherOfferings).values({
+              publisherId,
+              offeringType: 'guest_post',
+              basePrice: contactPriceCents,
+              currency: 'USD',
+              currentAvailability: 'available',
+              isActive: true
+            }).returning();
+
+            // Create offering relationship - only set required fields
+            await db.insert(publisherOfferingRelationships).values({
+              publisherId,
+              offeringId: offering[0].id,
+              websiteId: website.websiteId
+            });
+            
+            result.operations.push({
+              type: 'created_offering',
+              offeringId: offering[0].id,
+              email: contact.email,
+              price: contact.price
+            });
+            result.operations.push({
+              type: 'created_offering_relationship',
+              email: contact.email
+            });
           } else {
-            publisherId = 'DRY_RUN_ID';
+            result.operations.push({
+              type: 'would_create_offering',
+              email: contact.email,
+              price: contact.price
+            });
+            result.operations.push({
+              type: 'would_create_offering_relationship',
+              email: contact.email
+            });
           }
           
-          result.operations.push({
-            type: 'created_shadow_publisher',
-            email,
+          result.publishersCreated.push({
+            email: contact.email,
+            price: contact.price,
             publisherId
           });
-          
-          if (!dryRun) {
-            // Create publisher-website link
-            await db.insert(publisherWebsites).values({
-              publisherId,
-              websiteId: website.websiteId,
-              canEditPricing: true,
-              canEditAvailability: true,
-              canViewAnalytics: true,
-              status: 'active'
-            });
-          }
+        }
+        
+        // Report any skipped contacts (those without prices)
+        const skippedContacts = postflowEmails.slice(emailsWithPrices.length);
+        if (skippedContacts.length > 0) {
+          result.skippedContacts = skippedContacts;
           result.operations.push({
-            type: 'created_publisher_website_link'
+            type: 'contacts_skipped',
+            count: skippedContacts.length,
+            reason: 'No pricing data available',
+            emails: skippedContacts
           });
         }
-
-        // Create offering
-        // NOTE: We assume 'guest_post' type since 99.7% of existing offerings are guest posts
-        // This could be made configurable if needed for other offering types
-        if (!dryRun) {
-          const offering = await db.insert(publisherOfferings).values({
-            publisherId,
-            offeringType: 'guest_post', // Assumption based on existing data
-            basePrice: priceCents,
-            currency: 'USD',
-            currentAvailability: 'available',
-            isActive: true
-            // Removed: offeringName (usually NULL), turnaroundDays (varies)
-          }).returning();
-
-          // Create offering relationship - only set required fields
-          // Let database defaults handle: isPrimary (false), relationshipType ('contact'), 
-          // verificationStatus ('claimed'), priorityRank (100), isPreferred (false)
-          await db.insert(publisherOfferingRelationships).values({
-            publisherId,
-            offeringId: offering[0].id,
-            websiteId: website.websiteId
-            // isActive defaults to true, which is appropriate
-          });
-          
-          result.operations.push({
-            type: 'created_offering',
-            offeringId: offering[0].id,
-            price: proposedPrice
-          });
-          result.operations.push({
-            type: 'created_offering_relationship'
-          });
-        } else {
-          result.operations.push({
-            type: 'would_create_offering',
-            price: proposedPrice
-          });
-          result.operations.push({
-            type: 'would_create_offering_relationship'
-          });
-        }
+        
         break;
 
       case 'no_offering':
