@@ -7,7 +7,12 @@ import { extractNameFromEmail } from '@/lib/utils/nameExtractor';
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const body = await request.json().catch((e) => {
+      console.error('JSON parse error:', e);
+      throw new Error('Invalid JSON in request body');
+    });
+    
+    console.log('Request body:', body);
     const { websiteId, proposedPrice, issueType, dryRun = false } = body;
 
     if (!websiteId) {
@@ -222,32 +227,68 @@ export async function POST(request: Request) {
 
           // Create offering for this publisher
           if (!dryRun) {
-            const offering = await db.insert(publisherOfferings).values({
-              publisherId,
-              offeringType: 'guest_post',
-              basePrice: contactPriceCents,
-              currency: 'USD',
-              currentAvailability: 'available',
-              isActive: true
-            }).returning();
+            try {
+              // Check if offering relationship already exists
+              const existingOfferingRel = await db
+                .select()
+                .from(publisherOfferingRelationships)
+                .where(and(
+                  eq(publisherOfferingRelationships.publisherId, publisherId),
+                  eq(publisherOfferingRelationships.websiteId, website.websiteId)
+                ))
+                .limit(1);
+              
+              if (existingOfferingRel[0]) {
+                console.log(`Publisher ${contact.email} already has an offering for this website`);
+                result.operations.push({
+                  type: 'offering_already_exists',
+                  email: contact.email,
+                  message: 'Publisher already has offering for this website'
+                });
+              } else {
+                console.log(`Creating offering for publisher ${publisherId} at price ${contactPriceCents}`);
+                const offering = await db.insert(publisherOfferings).values({
+                  publisherId,
+                  offeringType: 'guest_post',
+                  basePrice: contactPriceCents,
+                  currency: 'USD',
+                  currentAvailability: 'available',
+                  isActive: true
+                }).returning();
 
-            // Create offering relationship - only set required fields
-            await db.insert(publisherOfferingRelationships).values({
-              publisherId,
-              offeringId: offering[0].id,
-              websiteId: website.websiteId
-            });
-            
-            result.operations.push({
-              type: 'created_offering',
-              offeringId: offering[0].id,
-              email: contact.email,
-              price: contact.price
-            });
-            result.operations.push({
-              type: 'created_offering_relationship',
-              email: contact.email
-            });
+                console.log(`Created offering ${offering[0].id}`);
+                
+                // Create offering relationship - only set required fields
+                await db.insert(publisherOfferingRelationships).values({
+                  publisherId,
+                  offeringId: offering[0].id,
+                  websiteId: website.websiteId
+                });
+                
+                console.log(`Created offering relationship`);
+              
+                result.operations.push({
+                  type: 'created_offering',
+                  offeringId: offering[0].id,
+                  email: contact.email,
+                  price: contact.price
+                });
+                result.operations.push({
+                  type: 'created_offering_relationship',
+                  email: contact.email
+                });
+              }
+            } catch (offeringError) {
+              console.error('Failed to create offering:', offeringError);
+              result.operations.push({
+                type: 'offering_creation_failed',
+                error: offeringError instanceof Error ? offeringError.message : 'Unknown error',
+                publisherId,
+                price: contactPriceCents
+              });
+              // Continue with other contacts instead of failing entirely
+              continue;
+            }
           } else {
             result.operations.push({
               type: 'would_create_offering',

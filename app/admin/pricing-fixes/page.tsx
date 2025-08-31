@@ -230,17 +230,55 @@ export default function PricingFixesAdmin() {
   };
 
   const executeApprovedFixes = async () => {
-    if (!confirm('This will apply all approved fixes to the database. Are you sure?')) return;
+    const approvedIssues = issues.filter(i => i.status === 'approved');
+    if (approvedIssues.length === 0) {
+      alert('No approved fixes to execute');
+      return;
+    }
+    
+    if (!confirm(`This will apply ${approvedIssues.length} approved fixes to the database. Are you sure?`)) return;
     
     setExecuting(true);
+    let successCount = 0;
+    let failureCount = 0;
+    
     try {
-      const response = await fetch('/api/admin/pricing-fixes/execute', { method: 'POST' });
-      const result = await response.json();
-      alert(`Executed ${result.executed} fixes successfully!`);
+      for (const issue of approvedIssues) {
+        try {
+          const response = await fetch('/api/admin/pricing-fixes/execute-v2', { 
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              websiteId: issue.id,
+              proposedPrice: issue.proposedPrice,
+              issueType: issue.issueType,
+              dryRun: false
+            })
+          });
+          
+          if (response.ok) {
+            const result = await response.json();
+            if (result.success) {
+              successCount++;
+            } else {
+              console.error(`Failed to execute ${issue.domain}:`, result.result?.error);
+              failureCount++;
+            }
+          } else {
+            console.error(`HTTP error for ${issue.domain}:`, response.status);
+            failureCount++;
+          }
+        } catch (itemError) {
+          console.error(`Error executing ${issue.domain}:`, itemError);
+          failureCount++;
+        }
+      }
+      
+      alert(`Execution complete!\n✅ Successful: ${successCount}\n❌ Failed: ${failureCount}`);
       loadPricingIssues();
     } catch (error) {
       console.error('Failed to execute fixes:', error);
-      alert('Failed to execute fixes. Check console for details.');
+      alert(`Execution failed after ${successCount} successes. Check console for details.`);
     } finally {
       setExecuting(false);
     }
