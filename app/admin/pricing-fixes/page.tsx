@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { 
@@ -26,6 +25,13 @@ import {
   RefreshCw
 } from 'lucide-react';
 
+interface ExecutionStep {
+  step: number;
+  action: string;
+  description: string;
+  details: any;
+}
+
 interface PricingIssue {
   id: string;
   websiteId: string;
@@ -41,6 +47,7 @@ interface PricingIssue {
   publisherName: string | null;
   status: 'pending' | 'approved' | 'rejected' | 'modified';
   confidence: 'high' | 'medium' | 'low';
+  executionPlan?: ExecutionStep[];
 }
 
 export default function PricingFixesAdmin() {
@@ -51,6 +58,7 @@ export default function PricingFixesAdmin() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<{ price?: number; email?: string }>({});
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -77,7 +85,7 @@ export default function PricingFixesAdmin() {
   const loadPricingIssues = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/admin/pricing-fixes/analyze');
+      const response = await fetch('/api/admin/pricing-fixes/analyze-with-plan');
       const data = await response.json();
       setIssues(data.issues);
       setStats(data.stats);
@@ -511,16 +519,61 @@ export default function PricingFixesAdmin() {
       </div>
 
       {/* Tabs for filtering */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="mb-4">
-          <TabsTrigger value="all">All ({issues.length})</TabsTrigger>
-          <TabsTrigger value="no_offering">No Offering ({stats.noOffering})</TabsTrigger>
-          <TabsTrigger value="price_mismatch">Price Mismatch ({stats.priceMismatch})</TabsTrigger>
-          <TabsTrigger value="multiple_offerings">Multiple ({stats.multipleOfferings})</TabsTrigger>
-          <TabsTrigger value="no_publisher">No Publisher ({stats.noPublisher})</TabsTrigger>
-        </TabsList>
+      <div className="mb-6">
+        <div className="flex gap-2 border-b mb-4">
+          <button
+            onClick={() => setActiveTab('all')}
+            className={`px-4 py-2 font-medium transition-colors border-b-2 ${
+              activeTab === 'all' 
+                ? 'text-blue-600 border-blue-600' 
+                : 'text-gray-600 border-transparent hover:text-gray-800'
+            }`}
+          >
+            All ({issues.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('no_offering')}
+            className={`px-4 py-2 font-medium transition-colors border-b-2 ${
+              activeTab === 'no_offering' 
+                ? 'text-blue-600 border-blue-600' 
+                : 'text-gray-600 border-transparent hover:text-gray-800'
+            }`}
+          >
+            No Offering ({stats.noOffering})
+          </button>
+          <button
+            onClick={() => setActiveTab('price_mismatch')}
+            className={`px-4 py-2 font-medium transition-colors border-b-2 ${
+              activeTab === 'price_mismatch' 
+                ? 'text-blue-600 border-blue-600' 
+                : 'text-gray-600 border-transparent hover:text-gray-800'
+            }`}
+          >
+            Price Mismatch ({stats.priceMismatch})
+          </button>
+          <button
+            onClick={() => setActiveTab('multiple_offerings')}
+            className={`px-4 py-2 font-medium transition-colors border-b-2 ${
+              activeTab === 'multiple_offerings' 
+                ? 'text-blue-600 border-blue-600' 
+                : 'text-gray-600 border-transparent hover:text-gray-800'
+            }`}
+          >
+            Multiple ({stats.multipleOfferings})
+          </button>
+          <button
+            onClick={() => setActiveTab('no_publisher')}
+            className={`px-4 py-2 font-medium transition-colors border-b-2 ${
+              activeTab === 'no_publisher' 
+                ? 'text-blue-600 border-blue-600' 
+                : 'text-gray-600 border-transparent hover:text-gray-800'
+            }`}
+          >
+            No Publisher ({stats.noPublisher})
+          </button>
+        </div>
 
-        <TabsContent value={activeTab}>
+        <div>
           <div className="text-sm text-gray-600 mb-4">
             Showing {filteredIssues.length} issues
           </div>
@@ -613,10 +666,10 @@ export default function PricingFixesAdmin() {
                       ) : (
                         <div className="grid grid-cols-4 gap-4 text-sm">
                           <div>
-                            <p className="text-gray-500 mb-1">Current Pricing</p>
+                            <p className="text-gray-500 mb-1">Current Database Values</p>
                             <div className="space-y-1">
-                              <p>Website: ${issue.currentGuestPostCost || 'None'}</p>
-                              <p>Offering: ${issue.currentOfferingPrice ? (issue.currentOfferingPrice / 100).toFixed(2) : 'None'}</p>
+                              <p>guest_post_cost: ${issue.currentGuestPostCost || 'None'}</p>
+                              <p>Offering price: ${issue.currentOfferingPrice ? (issue.currentOfferingPrice / 100).toFixed(2) : 'None'}</p>
                             </div>
                           </div>
                           
@@ -655,6 +708,68 @@ export default function PricingFixesAdmin() {
                           )}
                         </div>
                       )}
+                      
+                      {/* Execution Plan Accordion */}
+                      {issue.executionPlan && issue.executionPlan.length > 0 && (
+                        <div className="mt-4 border-t pt-4">
+                          <button
+                            onClick={() => setExpandedId(expandedId === issue.id ? null : issue.id)}
+                            className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+                          >
+                            {expandedId === issue.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                            View Execution Plan ({issue.executionPlan.length} steps)
+                          </button>
+                          
+                          {expandedId === issue.id && (
+                            <div className="mt-3 space-y-2 bg-gray-50 p-4 rounded">
+                              <h4 className="font-semibold text-sm mb-3">What will happen when executed:</h4>
+                              {issue.executionPlan.map((step, idx) => (
+                                <div key={idx} className="flex gap-3">
+                                  <div className="flex-shrink-0">
+                                    <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">
+                                      {step.step}
+                                    </div>
+                                  </div>
+                                  <div className="flex-1">
+                                    <div className="font-medium text-sm">{step.action}</div>
+                                    <div className="text-xs text-gray-600 mt-1">{step.description}</div>
+                                    {step.details && (
+                                      <div className="mt-2 text-xs bg-white p-2 rounded border border-gray-200">
+                                        {step.details.table && (
+                                          <div className="mb-1">
+                                            <span className="font-semibold">Table:</span> {step.details.table}
+                                          </div>
+                                        )}
+                                        {step.details.fields && (
+                                          <div className="mb-1">
+                                            <span className="font-semibold">Fields to set:</span>
+                                            <pre className="mt-1 text-xs overflow-x-auto">
+                                              {JSON.stringify(step.details.fields, null, 2)}
+                                            </pre>
+                                          </div>
+                                        )}
+                                        {step.details.defaults && (
+                                          <div className="mt-1 text-gray-500">
+                                            <span className="font-semibold">Database defaults:</span>
+                                            <pre className="mt-1 text-xs">
+                                              {JSON.stringify(step.details.defaults, null, 2)}
+                                            </pre>
+                                          </div>
+                                        )}
+                                        {step.details.reason && (
+                                          <div className="text-yellow-700">
+                                            <span className="font-semibold">Reason:</span> {step.details.reason}
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </CardContent>
@@ -669,8 +784,8 @@ export default function PricingFixesAdmin() {
               </Card>
             )}
           </div>
-        </TabsContent>
-      </Tabs>
+        </div>
+      </div>
     </div>
   );
 }
