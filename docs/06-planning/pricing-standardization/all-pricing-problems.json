@@ -1,0 +1,1261 @@
+{
+  "summary": {
+    "totalProblems": 206,
+    "noOfferings": 107,
+    "mismatches": 96,
+    "multipleOfferingsNoMatch": 3
+  },
+  "noOfferings": [
+    {
+      "domain": "accountiod.com",
+      "guestPostCost": "110.00"
+    },
+    {
+      "domain": "adotrip.com",
+      "guestPostCost": "99.00"
+    },
+    {
+      "domain": "agreenhand.com",
+      "guestPostCost": "126.00"
+    },
+    {
+      "domain": "amazingarchitecture.com",
+      "guestPostCost": "185.00"
+    },
+    {
+      "domain": "amountainmomma.com",
+      "guestPostCost": "50.00"
+    },
+    {
+      "domain": "bedfordindependent.co.uk",
+      "guestPostCost": "245.00"
+    },
+    {
+      "domain": "buildremote.co",
+      "guestPostCost": "224.00"
+    },
+    {
+      "domain": "business-money.com",
+      "guestPostCost": "45.00"
+    },
+    {
+      "domain": "calbizjournal.com",
+      "guestPostCost": "199.00"
+    },
+    {
+      "domain": "cascadebusnews.com",
+      "guestPostCost": "50.00"
+    },
+    {
+      "domain": "clarenich@googlemail.com",
+      "guestPostCost": "194.63"
+    },
+    {
+      "domain": "coinchapter.com",
+      "guestPostCost": "150.00"
+    },
+    {
+      "domain": "companionlink.com",
+      "guestPostCost": "250.00"
+    },
+    {
+      "domain": "couplescandy.com",
+      "guestPostCost": "150.00"
+    },
+    {
+      "domain": "coursesity.com",
+      "guestPostCost": "270.00"
+    },
+    {
+      "domain": "coursify.me",
+      "guestPostCost": "120.00"
+    },
+    {
+      "domain": "crispme.com",
+      "guestPostCost": "100.00"
+    },
+    {
+      "domain": "crowdyhome.com",
+      "guestPostCost": "70.00"
+    },
+    {
+      "domain": "cryptobrowser.io",
+      "guestPostCost": "130.00"
+    },
+    {
+      "domain": "digitaltreed.com",
+      "guestPostCost": "120.00"
+    },
+    {
+      "domain": "ecofreek.com",
+      "guestPostCost": "80.00"
+    },
+    {
+      "domain": "elitetrack.com",
+      "guestPostCost": "100.00"
+    },
+    {
+      "domain": "emmaplusthree.com",
+      "guestPostCost": "100.00"
+    },
+    {
+      "domain": "entrepreneurhandbook.co.uk",
+      "guestPostCost": "205.00"
+    },
+    {
+      "domain": "europeanbusinessreview.com",
+      "guestPostCost": "100.00"
+    },
+    {
+      "domain": "everester.org",
+      "guestPostCost": "100.00"
+    },
+    {
+      "domain": "experteasy.com.au",
+      "guestPostCost": "100.00"
+    },
+    {
+      "domain": "fashionablymale.net",
+      "guestPostCost": "50.00"
+    },
+    {
+      "domain": "findingbeyond.com",
+      "guestPostCost": "200.00"
+    },
+    {
+      "domain": "finsync.com",
+      "guestPostCost": "100.00"
+    },
+    {
+      "domain": "fizzypeaches.com",
+      "guestPostCost": "93.00"
+    },
+    {
+      "domain": "followeraudit.com",
+      "guestPostCost": "100.00"
+    },
+    {
+      "domain": "fordhamram.com",
+      "guestPostCost": "79.00"
+    },
+    {
+      "domain": "funnewjersey.com",
+      "guestPostCost": "125.00"
+    },
+    {
+      "domain": "furnpeak.com",
+      "guestPostCost": "250.00"
+    },
+    {
+      "domain": "gamelevate.com",
+      "guestPostCost": "200.00"
+    },
+    {
+      "domain": "geekermag.com",
+      "guestPostCost": "138.00"
+    },
+    {
+      "domain": "healthcarebusinesstoday.com",
+      "guestPostCost": "200.00"
+    },
+    {
+      "domain": "healthyvoyager.com",
+      "guestPostCost": "150.00"
+    },
+    {
+      "domain": "homesenator.com",
+      "guestPostCost": "70.00"
+    },
+    {
+      "domain": "houseofcoco.net",
+      "guestPostCost": "250.00"
+    },
+    {
+      "domain": "journohq.com",
+      "guestPostCost": "195.00"
+    },
+    {
+      "domain": "justalittlebite.com",
+      "guestPostCost": "120.00"
+    },
+    {
+      "domain": "kanbanzone.com",
+      "guestPostCost": "150.00"
+    },
+    {
+      "domain": "killerstartups.com",
+      "guestPostCost": "200.00"
+    },
+    {
+      "domain": "latesthealthtricks.com",
+      "guestPostCost": "80.00"
+    },
+    {
+      "domain": "loveisabird.com",
+      "guestPostCost": "50.00"
+    },
+    {
+      "domain": "menafn.com",
+      "guestPostCost": "215.00"
+    },
+    {
+      "domain": "mollysdailykiss.com",
+      "guestPostCost": "150.00"
+    },
+    {
+      "domain": "monetizepros.com",
+      "guestPostCost": "250.00"
+    },
+    {
+      "domain": "movia.media",
+      "guestPostCost": "45.00"
+    },
+    {
+      "domain": "mybeautifuladventures.com",
+      "guestPostCost": "50.00"
+    },
+    {
+      "domain": "nannytomommy.com",
+      "guestPostCost": "125.00"
+    },
+    {
+      "domain": "nase.org",
+      "guestPostCost": "110.00"
+    },
+    {
+      "domain": "naturalbeautywithbaby.com",
+      "guestPostCost": "40.00"
+    },
+    {
+      "domain": "negup.com",
+      "guestPostCost": "30.00"
+    },
+    {
+      "domain": "northernfeeling.com",
+      "guestPostCost": "189.00"
+    },
+    {
+      "domain": "pinktownusa.com",
+      "guestPostCost": "90.00"
+    },
+    {
+      "domain": "pinuphouses.com",
+      "guestPostCost": "200.00"
+    },
+    {
+      "domain": "pixelixe.com",
+      "guestPostCost": "60.00"
+    },
+    {
+      "domain": "pommietravels.com",
+      "guestPostCost": "60.00"
+    },
+    {
+      "domain": "poshbeautyblog.com",
+      "guestPostCost": "75.00"
+    },
+    {
+      "domain": "prettyprogressive.com",
+      "guestPostCost": "139.00"
+    },
+    {
+      "domain": "programminginsider.com",
+      "guestPostCost": "50.00"
+    },
+    {
+      "domain": "propertypressonline.co.uk",
+      "guestPostCost": "184.00"
+    },
+    {
+      "domain": "psychologycharts.com",
+      "guestPostCost": "80.00"
+    },
+    {
+      "domain": "reviewsxp.com",
+      "guestPostCost": "199.00"
+    },
+    {
+      "domain": "rezerv.co",
+      "guestPostCost": "65.00"
+    },
+    {
+      "domain": "schimiggy.com",
+      "guestPostCost": "125.00"
+    },
+    {
+      "domain": "scoopearth.com",
+      "guestPostCost": "50.00"
+    },
+    {
+      "domain": "sendbridge.com",
+      "guestPostCost": "70.00"
+    },
+    {
+      "domain": "sexpert.com",
+      "guestPostCost": "100.00"
+    },
+    {
+      "domain": "shaadiwish.com",
+      "guestPostCost": "200.00"
+    },
+    {
+      "domain": "shippingcontainertool.com",
+      "guestPostCost": "30.00"
+    },
+    {
+      "domain": "slothmove.com",
+      "guestPostCost": "219.69"
+    },
+    {
+      "domain": "solosuit.com",
+      "guestPostCost": "100.00"
+    },
+    {
+      "domain": "statanalytica.com",
+      "guestPostCost": "250.00"
+    },
+    {
+      "domain": "strangebuildings.com",
+      "guestPostCost": "90.00"
+    },
+    {
+      "domain": "supermonitoring.com",
+      "guestPostCost": "30.00"
+    },
+    {
+      "domain": "techbullion.com",
+      "guestPostCost": "200.00"
+    },
+    {
+      "domain": "techguruplus.com",
+      "guestPostCost": "120.00"
+    },
+    {
+      "domain": "techrechard.com",
+      "guestPostCost": "150.00"
+    },
+    {
+      "domain": "tekedia.com",
+      "guestPostCost": "120.00"
+    },
+    {
+      "domain": "thecontentauthority.com",
+      "guestPostCost": "100.00"
+    },
+    {
+      "domain": "theenterpriseworld.com",
+      "guestPostCost": "150.00"
+    },
+    {
+      "domain": "thegracefulchapter.com",
+      "guestPostCost": "122.00"
+    },
+    {
+      "domain": "theinscribermag.com",
+      "guestPostCost": "60.00"
+    },
+    {
+      "domain": "themerex.net",
+      "guestPostCost": "200.00"
+    },
+    {
+      "domain": "truismfitness.com",
+      "guestPostCost": "25.00"
+    },
+    {
+      "domain": "tweakyourbiz.com",
+      "guestPostCost": "125.00"
+    },
+    {
+      "domain": "valiantceo.com",
+      "guestPostCost": "50.00"
+    },
+    {
+      "domain": "visionary-finance.com",
+      "guestPostCost": "80.00"
+    },
+    {
+      "domain": "vlaurie.com",
+      "guestPostCost": "100.00"
+    },
+    {
+      "domain": "w3speedup.com",
+      "guestPostCost": "50.00"
+    },
+    {
+      "domain": "wakingupwild.com",
+      "guestPostCost": "150.00"
+    },
+    {
+      "domain": "weetechsolution.com",
+      "guestPostCost": "100.00"
+    },
+    {
+      "domain": "welpmagazine.com",
+      "guestPostCost": "199.00"
+    },
+    {
+      "domain": "woculus.com",
+      "guestPostCost": "150.00"
+    },
+    {
+      "domain": "worldconstructiontoday.com",
+      "guestPostCost": "150.00"
+    },
+    {
+      "domain": "www.a3logics.com",
+      "guestPostCost": "100.00"
+    },
+    {
+      "domain": "www.chivalrymen.com",
+      "guestPostCost": "100.00"
+    },
+    {
+      "domain": "www.happywedding.app",
+      "guestPostCost": "100.00"
+    },
+    {
+      "domain": "www.magpiewedding.com",
+      "guestPostCost": "200.00"
+    },
+    {
+      "domain": "www.mothersalwaysright.com",
+      "guestPostCost": "100.00"
+    },
+    {
+      "domain": "www.salonprivemag.com",
+      "guestPostCost": "170.00"
+    },
+    {
+      "domain": "www.techrounder.com",
+      "guestPostCost": "150.00"
+    },
+    {
+      "domain": "zero1magazine.com",
+      "guestPostCost": "100.00"
+    }
+  ],
+  "mismatches": [
+    {
+      "domain": "logomakerr.ai",
+      "guestPostCost": "250.00",
+      "guestPostCostCents": 25000,
+      "offeringPrice": 7500,
+      "offeringPriceDollars": "75.00",
+      "difference": "-175.00"
+    },
+    {
+      "domain": "savingadvice.com",
+      "guestPostCost": "275.00",
+      "guestPostCostCents": 27500,
+      "offeringPrice": 15000,
+      "offeringPriceDollars": "150.00",
+      "difference": "-125.00"
+    },
+    {
+      "domain": "designscene.net",
+      "guestPostCost": "270.00",
+      "guestPostCostCents": 27000,
+      "offeringPrice": 16000,
+      "offeringPriceDollars": "160.00",
+      "difference": "-110.00"
+    },
+    {
+      "domain": "coinlib.io",
+      "guestPostCost": "200.00",
+      "guestPostCostCents": 20000,
+      "offeringPrice": 10000,
+      "offeringPriceDollars": "100.00",
+      "difference": "-100.00"
+    },
+    {
+      "domain": "cpomagazine.com",
+      "guestPostCost": "250.00",
+      "guestPostCostCents": 25000,
+      "offeringPrice": 15000,
+      "offeringPriceDollars": "150.00",
+      "difference": "-100.00"
+    },
+    {
+      "domain": "techpreview.org",
+      "guestPostCost": "150.00",
+      "guestPostCostCents": 15000,
+      "offeringPrice": 25000,
+      "offeringPriceDollars": "250.00",
+      "difference": "100.00"
+    },
+    {
+      "domain": "toulouse7.com",
+      "guestPostCost": "200.00",
+      "guestPostCostCents": 20000,
+      "offeringPrice": 10000,
+      "offeringPriceDollars": "100.00",
+      "difference": "-100.00"
+    },
+    {
+      "domain": "wanderingtrader.com",
+      "guestPostCost": "100.00",
+      "guestPostCostCents": 10000,
+      "offeringPrice": 20000,
+      "offeringPriceDollars": "200.00",
+      "difference": "100.00"
+    },
+    {
+      "domain": "ecommercefastlane.com",
+      "guestPostCost": "150.00",
+      "guestPostCostCents": 15000,
+      "offeringPrice": 5900,
+      "offeringPriceDollars": "59.00",
+      "difference": "-91.00"
+    },
+    {
+      "domain": "melissajanelee.com",
+      "guestPostCost": "120.00",
+      "guestPostCostCents": 12000,
+      "offeringPrice": 20000,
+      "offeringPriceDollars": "200.00",
+      "difference": "80.00"
+    },
+    {
+      "domain": "codeavail.com",
+      "guestPostCost": "150.00",
+      "guestPostCostCents": 15000,
+      "offeringPrice": 7500,
+      "offeringPriceDollars": "75.00",
+      "difference": "-75.00"
+    },
+    {
+      "domain": "edtechrce.org",
+      "guestPostCost": "45.00",
+      "guestPostCostCents": 4500,
+      "offeringPrice": 12000,
+      "offeringPriceDollars": "120.00",
+      "difference": "75.00"
+    },
+    {
+      "domain": "archiscene.net",
+      "guestPostCost": "230.00",
+      "guestPostCostCents": 23000,
+      "offeringPrice": 16000,
+      "offeringPriceDollars": "160.00",
+      "difference": "-70.00"
+    },
+    {
+      "domain": "totsfamily.com",
+      "guestPostCost": "195.00",
+      "guestPostCostCents": 19500,
+      "offeringPrice": 12500,
+      "offeringPriceDollars": "125.00",
+      "difference": "-70.00"
+    },
+    {
+      "domain": "traveldailynews.com",
+      "guestPostCost": "130.00",
+      "guestPostCostCents": 13000,
+      "offeringPrice": 20000,
+      "offeringPriceDollars": "200.00",
+      "difference": "70.00"
+    },
+    {
+      "domain": "hayaudio.com",
+      "guestPostCost": "120.00",
+      "guestPostCostCents": 12000,
+      "offeringPrice": 6000,
+      "offeringPriceDollars": "60.00",
+      "difference": "-60.00"
+    },
+    {
+      "domain": "solana-summer.com",
+      "guestPostCost": "120.00",
+      "guestPostCostCents": 12000,
+      "offeringPrice": 6000,
+      "offeringPriceDollars": "60.00",
+      "difference": "-60.00"
+    },
+    {
+      "domain": "spursforlife.com",
+      "guestPostCost": "60.00",
+      "guestPostCostCents": 6000,
+      "offeringPrice": 12000,
+      "offeringPriceDollars": "120.00",
+      "difference": "60.00"
+    },
+    {
+      "domain": "visualmodo.com",
+      "guestPostCost": "220.00",
+      "guestPostCostCents": 22000,
+      "offeringPrice": 16000,
+      "offeringPriceDollars": "160.00",
+      "difference": "-60.00"
+    },
+    {
+      "domain": "welovebrum.co.uk",
+      "guestPostCost": "60.00",
+      "guestPostCostCents": 6000,
+      "offeringPrice": 12000,
+      "offeringPriceDollars": "120.00",
+      "difference": "60.00"
+    },
+    {
+      "domain": "goodnever.com",
+      "guestPostCost": "135.00",
+      "guestPostCostCents": 13500,
+      "offeringPrice": 8000,
+      "offeringPriceDollars": "80.00",
+      "difference": "-55.00"
+    },
+    {
+      "domain": "coruzant.com",
+      "guestPostCost": "100.00",
+      "guestPostCostCents": 10000,
+      "offeringPrice": 4900,
+      "offeringPriceDollars": "49.00",
+      "difference": "-51.00"
+    },
+    {
+      "domain": "aischedul.com",
+      "guestPostCost": "150.00",
+      "guestPostCostCents": 15000,
+      "offeringPrice": 20000,
+      "offeringPriceDollars": "200.00",
+      "difference": "50.00"
+    },
+    {
+      "domain": "alternativas.eu",
+      "guestPostCost": "50.00",
+      "guestPostCostCents": 5000,
+      "offeringPrice": 10000,
+      "offeringPriceDollars": "100.00",
+      "difference": "50.00"
+    },
+    {
+      "domain": "askthemoneycoach.com",
+      "guestPostCost": "150.00",
+      "guestPostCostCents": 15000,
+      "offeringPrice": 10000,
+      "offeringPriceDollars": "100.00",
+      "difference": "-50.00"
+    },
+    {
+      "domain": "beautyscene.net",
+      "guestPostCost": "110.00",
+      "guestPostCostCents": 11000,
+      "offeringPrice": 16000,
+      "offeringPriceDollars": "160.00",
+      "difference": "50.00"
+    },
+    {
+      "domain": "disquantified.org",
+      "guestPostCost": "40.00",
+      "guestPostCostCents": 4000,
+      "offeringPrice": 9000,
+      "offeringPriceDollars": "90.00",
+      "difference": "50.00"
+    },
+    {
+      "domain": "dmpro.app",
+      "guestPostCost": "150.00",
+      "guestPostCostCents": 15000,
+      "offeringPrice": 20000,
+      "offeringPriceDollars": "200.00",
+      "difference": "50.00"
+    },
+    {
+      "domain": "mailtopython.org",
+      "guestPostCost": "130.00",
+      "guestPostCostCents": 13000,
+      "offeringPrice": 8000,
+      "offeringPriceDollars": "80.00",
+      "difference": "-50.00"
+    },
+    {
+      "domain": "renotalk.com",
+      "guestPostCost": "150.00",
+      "guestPostCostCents": 15000,
+      "offeringPrice": 10000,
+      "offeringPriceDollars": "100.00",
+      "difference": "-50.00"
+    },
+    {
+      "domain": "thekickassentrepreneur.com",
+      "guestPostCost": "130.00",
+      "guestPostCostCents": 13000,
+      "offeringPrice": 8000,
+      "offeringPriceDollars": "80.00",
+      "difference": "-50.00"
+    },
+    {
+      "domain": "tinyhouseplans.com",
+      "guestPostCost": "150.00",
+      "guestPostCostCents": 15000,
+      "offeringPrice": 20000,
+      "offeringPriceDollars": "200.00",
+      "difference": "50.00"
+    },
+    {
+      "domain": "ukrainetrek.com",
+      "guestPostCost": "100.00",
+      "guestPostCostCents": 10000,
+      "offeringPrice": 15000,
+      "offeringPriceDollars": "150.00",
+      "difference": "50.00"
+    },
+    {
+      "domain": "fintechzoom.io",
+      "guestPostCost": "120.00",
+      "guestPostCostCents": 12000,
+      "offeringPrice": 7500,
+      "offeringPriceDollars": "75.00",
+      "difference": "-45.00"
+    },
+    {
+      "domain": "realafrica.co.uk",
+      "guestPostCost": "30.00",
+      "guestPostCostCents": 3000,
+      "offeringPrice": 7500,
+      "offeringPriceDollars": "75.00",
+      "difference": "45.00"
+    },
+    {
+      "domain": "soup.io",
+      "guestPostCost": "120.00",
+      "guestPostCostCents": 12000,
+      "offeringPrice": 7500,
+      "offeringPriceDollars": "75.00",
+      "difference": "-45.00"
+    },
+    {
+      "domain": "www.voipbusiness.com",
+      "guestPostCost": "120.00",
+      "guestPostCostCents": 12000,
+      "offeringPrice": 7500,
+      "offeringPriceDollars": "75.00",
+      "difference": "-45.00"
+    },
+    {
+      "domain": "retrofuturista.com",
+      "guestPostCost": "85.00",
+      "guestPostCostCents": 8500,
+      "offeringPrice": 12700,
+      "offeringPriceDollars": "127.00",
+      "difference": "42.00"
+    },
+    {
+      "domain": "gemmaetc.com",
+      "guestPostCost": "160.00",
+      "guestPostCostCents": 16000,
+      "offeringPrice": 20000,
+      "offeringPriceDollars": "200.00",
+      "difference": "40.00"
+    },
+    {
+      "domain": "ruggedmotorbikejeans.com",
+      "guestPostCost": "60.00",
+      "guestPostCostCents": 6000,
+      "offeringPrice": 10000,
+      "offeringPriceDollars": "100.00",
+      "difference": "40.00"
+    },
+    {
+      "domain": "triphippies.com",
+      "guestPostCost": "160.00",
+      "guestPostCostCents": 16000,
+      "offeringPrice": 20000,
+      "offeringPriceDollars": "200.00",
+      "difference": "40.00"
+    },
+    {
+      "domain": "yourviews.mindstick.com",
+      "guestPostCost": "59.00",
+      "guestPostCostCents": 5900,
+      "offeringPrice": 9900,
+      "offeringPriceDollars": "99.00",
+      "difference": "40.00"
+    },
+    {
+      "domain": "famousparenting.com",
+      "guestPostCost": "115.00",
+      "guestPostCostCents": 11500,
+      "offeringPrice": 8000,
+      "offeringPriceDollars": "80.00",
+      "difference": "-35.00"
+    },
+    {
+      "domain": "radioandmusic.com",
+      "guestPostCost": "140.00",
+      "guestPostCostCents": 14000,
+      "offeringPrice": 17500,
+      "offeringPriceDollars": "175.00",
+      "difference": "35.00"
+    },
+    {
+      "domain": "conversationswithstephanie.com",
+      "guestPostCost": "90.00",
+      "guestPostCostCents": 9000,
+      "offeringPrice": 6000,
+      "offeringPriceDollars": "60.00",
+      "difference": "-30.00"
+    },
+    {
+      "domain": "dillisatta.com",
+      "guestPostCost": "110.00",
+      "guestPostCostCents": 11000,
+      "offeringPrice": 8000,
+      "offeringPriceDollars": "80.00",
+      "difference": "-30.00"
+    },
+    {
+      "domain": "letwomenspeak.com",
+      "guestPostCost": "60.00",
+      "guestPostCostCents": 6000,
+      "offeringPrice": 9000,
+      "offeringPriceDollars": "90.00",
+      "difference": "30.00"
+    },
+    {
+      "domain": "newsslash.com",
+      "guestPostCost": "130.00",
+      "guestPostCostCents": 13000,
+      "offeringPrice": 10000,
+      "offeringPriceDollars": "100.00",
+      "difference": "-30.00"
+    },
+    {
+      "domain": "simplyseven.net",
+      "guestPostCost": "50.00",
+      "guestPostCostCents": 5000,
+      "offeringPrice": 8000,
+      "offeringPriceDollars": "80.00",
+      "difference": "30.00"
+    },
+    {
+      "domain": "springhillmedgroup.com",
+      "guestPostCost": "70.00",
+      "guestPostCostCents": 7000,
+      "offeringPrice": 10000,
+      "offeringPriceDollars": "100.00",
+      "difference": "30.00"
+    },
+    {
+      "domain": "trychitter.com",
+      "guestPostCost": "90.00",
+      "guestPostCostCents": 9000,
+      "offeringPrice": 6000,
+      "offeringPriceDollars": "60.00",
+      "difference": "-30.00"
+    },
+    {
+      "domain": "www.customerservicemanager.com",
+      "guestPostCost": "150.00",
+      "guestPostCostCents": 15000,
+      "offeringPrice": 12000,
+      "offeringPriceDollars": "120.00",
+      "difference": "-30.00"
+    },
+    {
+      "domain": "coed.com",
+      "guestPostCost": "200.00",
+      "guestPostCostCents": 20000,
+      "offeringPrice": 17500,
+      "offeringPriceDollars": "175.00",
+      "difference": "-25.00"
+    },
+    {
+      "domain": "ipwithease.com",
+      "guestPostCost": "100.00",
+      "guestPostCostCents": 10000,
+      "offeringPrice": 7500,
+      "offeringPriceDollars": "75.00",
+      "difference": "-25.00"
+    },
+    {
+      "domain": "luhhu.com",
+      "guestPostCost": "100.00",
+      "guestPostCostCents": 10000,
+      "offeringPrice": 7500,
+      "offeringPriceDollars": "75.00",
+      "difference": "-25.00"
+    },
+    {
+      "domain": "privacyend.com",
+      "guestPostCost": "100.00",
+      "guestPostCostCents": 10000,
+      "offeringPrice": 7500,
+      "offeringPriceDollars": "75.00",
+      "difference": "-25.00"
+    },
+    {
+      "domain": "thekeyfact.com",
+      "guestPostCost": "75.00",
+      "guestPostCostCents": 7500,
+      "offeringPrice": 10000,
+      "offeringPriceDollars": "100.00",
+      "difference": "25.00"
+    },
+    {
+      "domain": "weareteacherfinder.com",
+      "guestPostCost": "100.00",
+      "guestPostCostCents": 10000,
+      "offeringPrice": 7500,
+      "offeringPriceDollars": "75.00",
+      "difference": "-25.00"
+    },
+    {
+      "domain": "yeahlifestyle.com",
+      "guestPostCost": "143.00",
+      "guestPostCostCents": 14300,
+      "offeringPrice": 12000,
+      "offeringPriceDollars": "120.00",
+      "difference": "-23.00"
+    },
+    {
+      "domain": "weirditaly.com",
+      "guestPostCost": "106.00",
+      "guestPostCostCents": 10600,
+      "offeringPrice": 12700,
+      "offeringPriceDollars": "127.00",
+      "difference": "21.00"
+    },
+    {
+      "domain": "conversationswithjessica.com",
+      "guestPostCost": "80.00",
+      "guestPostCostCents": 8000,
+      "offeringPrice": 6000,
+      "offeringPriceDollars": "60.00",
+      "difference": "-20.00"
+    },
+    {
+      "domain": "deepinmummymatters.com",
+      "guestPostCost": "90.00",
+      "guestPostCostCents": 9000,
+      "offeringPrice": 7000,
+      "offeringPriceDollars": "70.00",
+      "difference": "-20.00"
+    },
+    {
+      "domain": "fundz.net",
+      "guestPostCost": "60.00",
+      "guestPostCostCents": 6000,
+      "offeringPrice": 4000,
+      "offeringPriceDollars": "40.00",
+      "difference": "-20.00"
+    },
+    {
+      "domain": "goodmenproject.com",
+      "guestPostCost": "150.00",
+      "guestPostCostCents": 15000,
+      "offeringPrice": 13000,
+      "offeringPriceDollars": "130.00",
+      "difference": "-20.00"
+    },
+    {
+      "domain": "malemodelscene.net",
+      "guestPostCost": "180.00",
+      "guestPostCostCents": 18000,
+      "offeringPrice": 16000,
+      "offeringPriceDollars": "160.00",
+      "difference": "-20.00"
+    },
+    {
+      "domain": "musiccrowns.org",
+      "guestPostCost": "120.00",
+      "guestPostCostCents": 12000,
+      "offeringPrice": 10000,
+      "offeringPriceDollars": "100.00",
+      "difference": "-20.00"
+    },
+    {
+      "domain": "odysseystoryshop.com",
+      "guestPostCost": "80.00",
+      "guestPostCostCents": 8000,
+      "offeringPrice": 6000,
+      "offeringPriceDollars": "60.00",
+      "difference": "-20.00"
+    },
+    {
+      "domain": "sleek-chic.co.uk",
+      "guestPostCost": "220.00",
+      "guestPostCostCents": 22000,
+      "offeringPrice": 20000,
+      "offeringPriceDollars": "200.00",
+      "difference": "-20.00"
+    },
+    {
+      "domain": "spiffyspools.com",
+      "guestPostCost": "100.00",
+      "guestPostCostCents": 10000,
+      "offeringPrice": 12000,
+      "offeringPriceDollars": "120.00",
+      "difference": "20.00"
+    },
+    {
+      "domain": "termclear.com",
+      "guestPostCost": "110.00",
+      "guestPostCostCents": 11000,
+      "offeringPrice": 9000,
+      "offeringPriceDollars": "90.00",
+      "difference": "-20.00"
+    },
+    {
+      "domain": "thehealthcareblog.com",
+      "guestPostCost": "100.00",
+      "guestPostCostCents": 10000,
+      "offeringPrice": 12000,
+      "offeringPriceDollars": "120.00",
+      "difference": "20.00"
+    },
+    {
+      "domain": "travelsfornow.com",
+      "guestPostCost": "70.00",
+      "guestPostCostCents": 7000,
+      "offeringPrice": 9000,
+      "offeringPriceDollars": "90.00",
+      "difference": "20.00"
+    },
+    {
+      "domain": "www.beaconinside.com",
+      "guestPostCost": "120.00",
+      "guestPostCostCents": 12000,
+      "offeringPrice": 10000,
+      "offeringPriceDollars": "100.00",
+      "difference": "-20.00"
+    },
+    {
+      "domain": "www.menutiger.com",
+      "guestPostCost": "120.00",
+      "guestPostCostCents": 12000,
+      "offeringPrice": 10000,
+      "offeringPriceDollars": "100.00",
+      "difference": "-20.00"
+    },
+    {
+      "domain": "cinaoggi.it",
+      "guestPostCost": "111.00",
+      "guestPostCostCents": 11100,
+      "offeringPrice": 12700,
+      "offeringPriceDollars": "127.00",
+      "difference": "16.00"
+    },
+    {
+      "domain": "petmedaily.com",
+      "guestPostCost": "110.00",
+      "guestPostCostCents": 11000,
+      "offeringPrice": 12500,
+      "offeringPriceDollars": "125.00",
+      "difference": "15.00"
+    },
+    {
+      "domain": "aggreg8.net",
+      "guestPostCost": "80.00",
+      "guestPostCostCents": 8000,
+      "offeringPrice": 7000,
+      "offeringPriceDollars": "70.00",
+      "difference": "-10.00"
+    },
+    {
+      "domain": "bizboostpro.com",
+      "guestPostCost": "50.00",
+      "guestPostCostCents": 5000,
+      "offeringPrice": 6000,
+      "offeringPriceDollars": "60.00",
+      "difference": "10.00"
+    },
+    {
+      "domain": "bizfusionworks.com",
+      "guestPostCost": "50.00",
+      "guestPostCostCents": 5000,
+      "offeringPrice": 6000,
+      "offeringPriceDollars": "60.00",
+      "difference": "10.00"
+    },
+    {
+      "domain": "chivmen.com",
+      "guestPostCost": "99.00",
+      "guestPostCostCents": 9900,
+      "offeringPrice": 8900,
+      "offeringPriceDollars": "89.00",
+      "difference": "-10.00"
+    },
+    {
+      "domain": "conversationswithheather.com",
+      "guestPostCost": "50.00",
+      "guestPostCostCents": 5000,
+      "offeringPrice": 6000,
+      "offeringPriceDollars": "60.00",
+      "difference": "10.00"
+    },
+    {
+      "domain": "cryptocrowns.org",
+      "guestPostCost": "40.00",
+      "guestPostCostCents": 4000,
+      "offeringPrice": 5000,
+      "offeringPriceDollars": "50.00",
+      "difference": "10.00"
+    },
+    {
+      "domain": "entretech.org",
+      "guestPostCost": "70.00",
+      "guestPostCostCents": 7000,
+      "offeringPrice": 8000,
+      "offeringPriceDollars": "80.00",
+      "difference": "10.00"
+    },
+    {
+      "domain": "etruesports.com",
+      "guestPostCost": "80.00",
+      "guestPostCostCents": 8000,
+      "offeringPrice": 9000,
+      "offeringPriceDollars": "90.00",
+      "difference": "10.00"
+    },
+    {
+      "domain": "evolvedgross.com",
+      "guestPostCost": "60.00",
+      "guestPostCostCents": 6000,
+      "offeringPrice": 5000,
+      "offeringPriceDollars": "50.00",
+      "difference": "-10.00"
+    },
+    {
+      "domain": "gravityinternet.net",
+      "guestPostCost": "70.00",
+      "guestPostCostCents": 7000,
+      "offeringPrice": 8000,
+      "offeringPriceDollars": "80.00",
+      "difference": "10.00"
+    },
+    {
+      "domain": "harmoniclast.com",
+      "guestPostCost": "100.00",
+      "guestPostCostCents": 10000,
+      "offeringPrice": 9000,
+      "offeringPriceDollars": "90.00",
+      "difference": "-10.00"
+    },
+    {
+      "domain": "hearthstats.net",
+      "guestPostCost": "110.00",
+      "guestPostCostCents": 11000,
+      "offeringPrice": 10000,
+      "offeringPriceDollars": "100.00",
+      "difference": "-10.00"
+    },
+    {
+      "domain": "homeandmommyblog.com",
+      "guestPostCost": "70.00",
+      "guestPostCostCents": 7000,
+      "offeringPrice": 8000,
+      "offeringPriceDollars": "80.00",
+      "difference": "10.00"
+    },
+    {
+      "domain": "lookwhatmomfound.com",
+      "guestPostCost": "100.00",
+      "guestPostCostCents": 10000,
+      "offeringPrice": 9000,
+      "offeringPriceDollars": "90.00",
+      "difference": "-10.00"
+    },
+    {
+      "domain": "mygardenandpatio.com",
+      "guestPostCost": "90.00",
+      "guestPostCostCents": 9000,
+      "offeringPrice": 8000,
+      "offeringPriceDollars": "80.00",
+      "difference": "-10.00"
+    },
+    {
+      "domain": "netcurtains.org",
+      "guestPostCost": "60.00",
+      "guestPostCostCents": 6000,
+      "offeringPrice": 5000,
+      "offeringPriceDollars": "50.00",
+      "difference": "-10.00"
+    },
+    {
+      "domain": "trekkersunite.com",
+      "guestPostCost": "70.00",
+      "guestPostCostCents": 7000,
+      "offeringPrice": 8000,
+      "offeringPriceDollars": "80.00",
+      "difference": "10.00"
+    },
+    {
+      "domain": "mathcracker.com",
+      "guestPostCost": "125.00",
+      "guestPostCostCents": 12500,
+      "offeringPrice": 12000,
+      "offeringPriceDollars": "120.00",
+      "difference": "-5.00"
+    },
+    {
+      "domain": "ouishave.com",
+      "guestPostCost": "75.00",
+      "guestPostCostCents": 7500,
+      "offeringPrice": 8000,
+      "offeringPriceDollars": "80.00",
+      "difference": "5.00"
+    },
+    {
+      "domain": "startupguys.net",
+      "guestPostCost": "75.00",
+      "guestPostCostCents": 7500,
+      "offeringPrice": 8000,
+      "offeringPriceDollars": "80.00",
+      "difference": "5.00"
+    }
+  ],
+  "multipleOfferings": [
+    {
+      "domain": "h2horganizing.com",
+      "guestPostCost": "90.00",
+      "guestPostCostCents": 9000,
+      "offerings": [
+        {
+          "name": "Guest Post - h2horganizing.com",
+          "basePrice": 5000,
+          "priceDollars": "50.00"
+        },
+        {
+          "name": "Guest Post - clairemac.co.uk",
+          "basePrice": 4000,
+          "priceDollars": "40.00"
+        }
+      ]
+    },
+    {
+      "domain": "thehake.com",
+      "guestPostCost": "150.00",
+      "guestPostCostCents": 15000,
+      "offerings": [
+        {
+          "name": "Guest Post - accordshort.com",
+          "basePrice": 8000,
+          "priceDollars": "80.00"
+        },
+        {
+          "name": "Guest Post - gearfuse.com",
+          "basePrice": 23000,
+          "priceDollars": "230.00"
+        }
+      ]
+    },
+    {
+      "domain": "woodenearth.com",
+      "guestPostCost": "140.00",
+      "guestPostCostCents": 14000,
+      "offerings": [
+        {
+          "name": "Guest Post - cheapsnowgear.com",
+          "basePrice": 10000,
+          "priceDollars": "100.00"
+        },
+        {
+          "name": "Guest Post - cheapsnowgear.com",
+          "basePrice": 12500,
+          "priceDollars": "125.00"
+        }
+      ]
+    }
+  ]
+}

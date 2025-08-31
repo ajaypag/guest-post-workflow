@@ -58,3 +58,8 @@ reset-*.js
 reset-*.sql
 cookies.txt
 database_backup/
+
+# Proprietary data - NEVER commit
+docs/06-planning/pricing-standardization/*.csv
+Website-PostFlow.csv
+**/Website-PostFlow.csv
