@@ -4,6 +4,7 @@ import { websites, publisherWebsites, publisherOfferings, publisherOfferingRelat
 import { eq, sql, and, isNull, or, ilike } from 'drizzle-orm';
 import { parseAirtableCSV, getAllEmailsFromRecord } from '@/lib/utils/csvParser';
 import { extractNameFromEmail } from '@/lib/utils/nameExtractor';
+import { randomUUID } from 'crypto';
 
 export async function POST(request: Request) {
   try {
@@ -52,14 +53,52 @@ export async function POST(request: Request) {
     const website = websiteData[0];
     const normalizedDomain = website.domain.toLowerCase().replace(/^www\./, '');
     const airtableData = airtableMap.get(normalizedDomain);
-    const priceCents = Math.round(parseFloat(proposedPrice) * 100);
+    
+    // Calculate correct price using CSV as source of truth - prefer individual prices when available
+    let correctPrice: number;
+    if (airtableData) {
+      // Smart price selection: prefer individual prices for single-contact scenarios
+      if (airtableData.postflowGuestPostPrices.length === 1) {
+        // Single contact - use the more accurate individual price
+        correctPrice = airtableData.postflowGuestPostPrices[0];
+      } else if (airtableData.postflowGuestPostPrices.length > 1) {
+        // Multiple contacts - use the main field (already highest price per audit)
+        correctPrice = airtableData.guestPostCost;
+      } else if (airtableData.guestPostCost) {
+        // No individual prices - use main field
+        correctPrice = airtableData.guestPostCost;
+      } else {
+        // No CSV pricing data - use database value
+        correctPrice = parseFloat(website.guestPostCost);
+      }
+    } else {
+      // No CSV data - fall back to current database value
+      correctPrice = parseFloat(website.guestPostCost);
+    }
+    const priceCents = Math.round(correctPrice * 100);
+
+    // Determine price source for debugging
+    let priceSource = 'database';
+    if (airtableData) {
+      if (airtableData.postflowGuestPostPrices.length === 1) {
+        priceSource = 'csv_individual';
+      } else if (airtableData.postflowGuestPostPrices.length > 1) {
+        priceSource = 'csv_main';
+      } else if (airtableData.guestPostCost) {
+        priceSource = 'csv_main';
+      }
+    }
 
     let result: any = {
       websiteId,
       domain: website.domain,
       action: issueType,
       previousPrice: website.guestPostCost,
-      newPrice: proposedPrice,
+      newPrice: correctPrice,
+      priceSource,
+      csvMainPrice: airtableData?.guestPostCost || null,
+      csvIndividualPrices: airtableData?.postflowGuestPostPrices || [],
+      frontendProposedPrice: proposedPrice,
       dryRun,
       operations: []
     };
@@ -163,6 +202,7 @@ export async function POST(request: Request) {
               if (!dryRun) {
                 // Create publisher-website link
                 await db.insert(publisherWebsites).values({
+                  id: randomUUID(),
                   publisherId,
                   websiteId: website.websiteId,
                   canEditPricing: true,
@@ -184,6 +224,7 @@ export async function POST(request: Request) {
               const newPublisher = await db
                 .insert(publishers)
                 .values({
+                  id: randomUUID(),
                   email: contact.email,
                   contactName: contactName,
                   accountStatus: 'shadow',
@@ -211,6 +252,7 @@ export async function POST(request: Request) {
             if (!dryRun) {
               // Create publisher-website link
               await db.insert(publisherWebsites).values({
+                id: randomUUID(),
                 publisherId,
                 websiteId: website.websiteId,
                 canEditPricing: true,
@@ -391,7 +433,8 @@ export async function POST(request: Request) {
           type: dryRun ? 'would_update_price' : 'updated_price',
           offeringId: website.offeringId,
           oldPrice: website.offeringPrice ? website.offeringPrice / 100 : null,
-          newPrice: proposedPrice
+          newPrice: correctPrice,
+          source: airtableData?.guestPostCost ? 'csv' : 'database'
         });
         break;
 
@@ -410,19 +453,21 @@ export async function POST(request: Request) {
       await db
         .update(websites)
         .set({ 
-          guestPostCost: proposedPrice.toString(),
+          guestPostCost: correctPrice.toString(),
           updatedAt: new Date()
         })
         .where(eq(websites.id, websiteId));
       
       result.operations.push({
         type: 'updated_guest_post_cost',
-        newValue: proposedPrice
+        newValue: correctPrice,
+        source: airtableData?.guestPostCost ? 'csv' : 'database'
       });
     } else if (!result.error) {
       result.operations.push({
         type: 'would_update_guest_post_cost',
-        newValue: proposedPrice
+        newValue: correctPrice,
+        source: airtableData?.guestPostCost ? 'csv' : 'database'
       });
     }
 
