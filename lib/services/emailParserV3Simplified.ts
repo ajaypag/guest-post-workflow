@@ -13,6 +13,7 @@ export interface SimplifiedParsedEmailData {
     websites?: string[];
     paymentMethods?: string[];
     paymentTerms?: string;
+    paymentEmail?: string;
   };
   websites?: Array<{
     domain: string;
@@ -20,11 +21,11 @@ export interface SimplifiedParsedEmailData {
     niche?: string[];
     suggestedNewNiches?: string[];
     websiteType?: string[];
-    totalTraffic?: number;
     domainRating?: number;
     internalNotes?: string;
   }>;
   offerings?: Array<{
+    websiteDomain: string; // Which website this offering applies to
     offeringType: 'guest_post' | 'link_insertion' | 'link_exchange';
     basePrice?: number;
     currency?: string;
@@ -54,21 +55,50 @@ export interface SimplifiedParsedEmailData {
 
 
 export class EmailParserV3Simplified {
-  async parseEmail(htmlContent: string, outreachSenderEmail?: string): Promise<SimplifiedParsedEmailData> {
+  async parseEmail(
+    htmlContent: string, 
+    outreachSenderEmail?: string,
+    emailHeaders?: {
+      from?: string;
+      to?: string;
+      subject?: string;
+    }
+  ): Promise<SimplifiedParsedEmailData> {
     try {
-      // Strip HTML to get plain text
-      const textContent = htmlContent
+      // Process HTML to preserve important links while cleaning text
+      let processedContent = htmlContent
         .replace(/<style[^>]*>.*?<\/style>/gi, '') // Remove style tags
         .replace(/<script[^>]*>.*?<\/script>/gi, '') // Remove script tags
-        .replace(/<[^>]*>/g, ' ') // Remove HTML tags
+        
+        // Preserve hyperlinks: <a href="URL">text</a> → text (URL)
+        .replace(/<a[^>]+href=["']([^"']+)["'][^>]*>([^<]+)<\/a>/gi, '$2 ($1)')
+        
+        // Remove other HTML tags
+        .replace(/<[^>]*>/g, ' ')
+        
+        // Decode HTML entities
         .replace(/&nbsp;/g, ' ')
         .replace(/&amp;/g, '&')
         .replace(/&lt;/g, '<')
         .replace(/&gt;/g, '>')
         .replace(/&quot;/g, '"')
         .replace(/&#39;/g, "'")
-        .replace(/\s+/g, ' ') // Normalize whitespace
+        
+        // Normalize whitespace
+        .replace(/\s+/g, ' ')
         .trim();
+
+      // Add email headers if available
+      let textContent = processedContent;
+      if (emailHeaders) {
+        const headerText = [
+          emailHeaders.from ? `From: ${emailHeaders.from}` : '',
+          emailHeaders.to ? `To: ${emailHeaders.to}` : '',
+          emailHeaders.subject ? `Subject: ${emailHeaders.subject}` : ''
+        ].filter(Boolean).join('\n');
+        
+        textContent = headerText + (headerText ? '\n\n' : '') + processedContent;
+      }
 
       // Truncate if too long (GPT-4 can handle ~8k tokens)
       const maxLength = 4000;
@@ -77,6 +107,10 @@ export class EmailParserV3Simplified {
         : textContent;
 
       console.log('🤖 Parsing email with o3-2025-04-16 model (with web search)...');
+      console.log('📧 Email content being sent to AI:');
+      console.log('=' .repeat(50));
+      console.log(truncatedContent.substring(0, 1000));
+      console.log('=' .repeat(50));
       
       // Fetch current metadata from database
       const metadata = await getWebsiteMetadata();
@@ -163,7 +197,26 @@ IMPORTANT: Use web search to analyze each website domain and determine its categ
         .replace(/^```\s*/, '') // Remove any other opening code block
         .trim();
       
-      const parsed = JSON.parse(cleanedContent);
+      // Parse JSON with better error handling
+      let parsed;
+      try {
+        parsed = JSON.parse(cleanedContent);
+      } catch (parseError) {
+        console.error('❌ JSON Parse Error:', parseError);
+        console.log('📝 Raw content that failed to parse:', cleanedContent);
+        console.log('📝 Content preview (first 1000 chars):', cleanedContent.substring(0, 1000));
+        
+        // Return safe fallback with error info
+        return {
+          hasOffer: false,
+          rawExtraction: cleanedContent,
+          extractionMetadata: {
+            extractionNotes: `JSON parsing failed: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`,
+            confidence: 0,
+            keyQuotes: ['Parse error - check rawExtraction field for AI response']
+          }
+        };
+      }
       
       // Add raw extraction for debugging
       parsed.rawExtraction = rawContent;
