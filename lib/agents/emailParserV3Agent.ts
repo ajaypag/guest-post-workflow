@@ -45,7 +45,7 @@ COMMON EMAIL PATTERNS TO RECOGNIZE (mark hasOffer as false for these):
 IMPORTANT: Only extract information from the PUBLISHER'S REPLY, not from our outreach. Look for:
 - The publisher's email address (from the From: field or signature)
 - The publisher's email signature and contact details
-- Their website information, traffic metrics, and basic restrictions
+- Their website information and basic restrictions
 - Simple pricing mentions (we'll analyze complex pricing later)
 
 FOCUS: Extract PUBLISHER INFO (Table 1) and WEBSITE INFO (Table 2) only. Skip detailed offerings, complex pricing, and business terms for now.
@@ -57,6 +57,8 @@ IMPORTANT: For each website mentioned, analyze what type of content they publish
 - Don't just guess from domain names - actually search and verify
 - Choose the most appropriate categories, niches, and website types from the provided lists
 
+IMPORTANT: Return ONLY valid JSON with no extra text, code blocks, or explanations. Ensure all strings are properly escaped.
+
 Return a JSON object with this structure:
 {
   "hasOffer": boolean, // true if they provide any pricing or service info
@@ -66,8 +68,9 @@ Return a JSON object with this structure:
     "companyName": "business/company name or null", 
     "phone": "phone number or null",
     "websites": ["array of normalized domains they manage"],
-    "paymentMethods": ["PayPal", "Stripe", "Bank Transfer", "Crypto", etc],
-    "paymentTerms": "payment timing requirements or null"
+    "paymentMethods": ["SELECT FROM: paypal, bank_transfer, payoneer, wise, stripe, credit_card, other"],
+    "paymentTerms": "payment timing requirements or null",
+    "paymentEmail": "separate payment email if different from contact email, or null"
   },
   "websites": [
     {
@@ -76,13 +79,13 @@ Return a JSON object with this structure:
       "niche": ["SELECT MULTIPLE from the niches list provided"], 
       "suggestedNewNiches": ["Any relevant niches not in our list"],
       "websiteType": ["SELECT MULTIPLE from the website types list provided"],
-      "totalTraffic": "monthly traffic number or null",
       "domainRating": "DR/DA number or null",
       "internalNotes": "notes about the website or null"
     }
   ],
   "offerings": [
     {
+      "websiteDomain": "domain this offer applies to (normalized, no www/https)",
       "offeringType": "guest_post" | "link_insertion" | "link_exchange",
       "basePrice": number or null,
       "currency": "USD" | "EUR" | "GBP" etc,
@@ -114,6 +117,11 @@ Return a JSON object with this structure:
 EXTRACTION RULES:
 1. DOMAINS: Normalize domains (remove www, https, trailing slashes)
 2. CONTACT: Extract name, company, phone from signature
+   - CONTACT NAME FALLBACKS (in order of preference):
+     a) Personal name from signature or email body ("John Smith", "Sarah")
+     b) If no personal name but have company name → use company name as contactName
+     c) If generic email (sales@, info@, contact@) but no company → use email prefix ("sales", "info")
+     d) Last resort → use email address
 3. CATEGORIES: Select ALL that apply from the provided list (can be multiple)
 4. NICHE: Select ALL that apply from the provided list (can be multiple)
 5. SUGGESTED NEW NICHES: Add any relevant niches not in our database
@@ -123,6 +131,12 @@ EXTRACTION RULES:
    - "guest_post": PAID service where they publish our article on their site for money
    - "link_insertion": PAID service where they add our link to existing content for money  
    - "link_exchange": FREE reciprocal arrangement - we trade links with each other
+   
+   WEBSITE ASSOCIATION RULES:
+   - Each offering MUST specify websiteDomain - which website the offer applies to
+   - If publisher mentions multiple websites but only gives pricing for one, associate with that one
+   - If they give general pricing without specifying website, use the primary website mentioned
+   - If no specific website is mentioned but email domain suggests one, use that
    
    IMPORTANT: Each email should typically have ONLY ONE offering type:
    - If they ask for money = guest_post or link_insertion (NEVER link_exchange)
@@ -146,19 +160,32 @@ EXAMPLES:
 SCENARIO: Our outreach lists linkio.com, factbites.com, etc. Publisher replies "What is your budget?"
 → hasOffer: true (they're interested)
 → websites: [] (no publisher website mentioned yet)
-→ offerings: [{offeringType: "guest_post", basePrice: null}] (pricing TBD)
+→ offerings: [] (no website specified yet, so no offerings to extract)
 
 SCENARIO: Our outreach lists our sites. Publisher replies "I run techblog.com, $200 for guest posts"
 → hasOffer: true
 → websites: [{domain: "techblog.com"}] (THEIR site, not ours)
-→ offerings: [{offeringType: "guest_post", basePrice: 200}]
+→ offerings: [{websiteDomain: "techblog.com", offeringType: "guest_post", basePrice: 200}]
 
 SCENARIO: Publisher email signature shows "chirag@textify.ai" 
 → websites: [{domain: "textify.ai"}] (extract from email domain)
 → DO NOT extract linkio.com, factbites.com etc from our outreach!
 
-"I run techblog.com (50k monthly visitors) and businessnews.net"
-→ websites: [{domain: "techblog.com", totalTraffic: 50000, categories: ["Technology"], websiteType: ["Blog"]}, {domain: "businessnews.net", categories: ["Business"], websiteType: ["News"]}]
+CONTACT NAME FALLBACK EXAMPLES:
+"From: John Smith <john@company.com>" + Company: "Acme Corp"
+→ contactName: "John Smith" (personal name found)
+
+"From: sales@roboticsandautomationnews.com" + Company: "Monsoon Media" 
+→ contactName: "Monsoon Media" (no personal name, use company)
+
+"From: info@example.com" + No company found
+→ contactName: "info" (use email prefix)
+
+"From: randomuser123@gmail.com" + No company, no clear prefix
+→ contactName: "randomuser123@gmail.com" (use full email)
+
+"I run techblog.com and businessnews.net"
+→ websites: [{domain: "techblog.com", categories: ["Technology"], websiteType: ["Blog"]}, {domain: "businessnews.net", categories: ["Business"], websiteType: ["News"]}]
 
 "We don't accept CBD, gambling, or adult content"  
 → offerings[].requirements.prohibitedTopics: "CBD, Cannabis, Gambling, Adult Content"
@@ -166,19 +193,20 @@ SCENARIO: Publisher email signature shows "chirag@textify.ai"
 "Guest posts starting at $200, link insertions $50"
 → hasOffer: true (basic pricing mentioned)
 
-"We can run a guest article for $40"
+"We can run a guest article for $40 on mysite.com"
 → hasOffer: true
-→ offerings: [{offeringType: "guest_post", basePrice: 40, currency: "USD"}]
+→ offerings: [{websiteDomain: "mysite.com", offeringType: "guest_post", basePrice: 40, currency: "USD"}]
 
-"Guest posts $200, link insertions $50, 3-day turnaround"
+"Guest posts $200, link insertions $50, 3-day turnaround on techblog.com"
 → offerings: [
-  {offeringType: "guest_post", basePrice: 200, currency: "USD", turnaroundDays: 3},
-  {offeringType: "link_insertion", basePrice: 50, currency: "USD", turnaroundDays: 3}
+  {websiteDomain: "techblog.com", offeringType: "guest_post", basePrice: 200, currency: "USD", turnaroundDays: 3},
+  {websiteDomain: "techblog.com", offeringType: "link_insertion", basePrice: 50, currency: "USD", turnaroundDays: 3}
 ]
 
-"Would this be a link exchange? What URLs do you offer?"
+"Would this be a link exchange? What URLs do you offer?" (from contact@example.com)
 → hasOffer: true
-→ offerings: [{offeringType: "link_exchange", basePrice: 0, currency: "USD"}]
+→ offerings: [{websiteDomain: "example.com", offeringType: "link_exchange", basePrice: 0, currency: "USD"}]
+→ NOTE: Used email domain when no specific website mentioned
 → NOTE: This is ONLY link_exchange, not link_insertion (it's a trade, not paid)
 
 "Yes, we can do a link exchange between our sites"
@@ -192,6 +220,15 @@ SCENARIO: Publisher email signature shows "chirag@textify.ai"
 "We charge $50 to add your link to our existing articles"
 → offerings: [{offeringType: "link_insertion", basePrice: 50}]
 → This IS link_insertion because they're charging money
+
+"We accept PayPal and Wise, payment within 7 days of completion"
+→ publisher: {paymentMethods: ["paypal", "wise"], paymentTerms: "7 days post-completion"}
+
+"Please send payments to billing@company.com via bank transfer"
+→ publisher: {paymentEmail: "billing@company.com", paymentMethods: ["bank_transfer"]}
+
+"We work with Payoneer, payment on delivery in EUR"
+→ publisher: {paymentMethods: ["payoneer"], paymentTerms: "payment on delivery", currency: "EUR"}
 
 "We offer DoFollow guest posts, 800-1500 words, $150"
 → offerings: [{

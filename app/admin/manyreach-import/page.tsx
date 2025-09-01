@@ -783,6 +783,48 @@ function DraftEditor({ draft, onUpdate, onReprocess }: {
                   />
                 </div>
                 <div>
+                  <label className="text-sm font-medium">Payment Email</label>
+                  <input
+                    type="email"
+                    className="w-full p-2 border rounded"
+                    placeholder="Only if different from main email"
+                    value={editedData.publisher?.paymentEmail || ''}
+                    onChange={(e) => setEditedData({
+                      ...editedData,
+                      publisher: { ...editedData.publisher, paymentEmail: e.target.value }
+                    })}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Payment Methods</label>
+                  <input
+                    type="text"
+                    className="w-full p-2 border rounded"
+                    placeholder="e.g. paypal, wise, bank_transfer"
+                    value={editedData.publisher?.paymentMethods?.join(', ') || ''}
+                    onChange={(e) => setEditedData({
+                      ...editedData,
+                      publisher: { 
+                        ...editedData.publisher, 
+                        paymentMethods: e.target.value.split(',').map(m => m.trim()).filter(m => m)
+                      }
+                    })}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Payment Terms</label>
+                  <input
+                    type="text"
+                    className="w-full p-2 border rounded"
+                    placeholder="e.g. 7 days post-completion, payment on delivery"
+                    value={editedData.publisher?.paymentTerms || ''}
+                    onChange={(e) => setEditedData({
+                      ...editedData,
+                      publisher: { ...editedData.publisher, paymentTerms: e.target.value }
+                    })}
+                  />
+                </div>
+                <div>
                   <label className="text-sm font-medium">Primary Website</label>
                   <input
                     type="text"
@@ -813,19 +855,6 @@ function DraftEditor({ draft, onUpdate, onReprocess }: {
                           onChange={(e) => {
                             const newWebsites = [...editedData.websites];
                             newWebsites[index] = { ...website, domain: e.target.value };
-                            setEditedData({ ...editedData, websites: newWebsites });
-                          }}
-                        />
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium">Monthly Traffic</label>
-                        <input
-                          type="number"
-                          className="w-full p-2 border rounded"
-                          value={website.totalTraffic || ''}
-                          onChange={(e) => {
-                            const newWebsites = [...editedData.websites];
-                            newWebsites[index] = { ...website, totalTraffic: parseInt(e.target.value) || null };
                             setEditedData({ ...editedData, websites: newWebsites });
                           }}
                         />
@@ -931,19 +960,35 @@ function DraftEditor({ draft, onUpdate, onReprocess }: {
                 {editedData.offerings.map((offering: any, index: number) => (
                   <div key={index} className="p-3 border rounded mb-2 bg-blue-50">
                     <div className="flex items-center justify-between mb-3">
-                      <select
-                        className="font-medium text-blue-900 bg-transparent border border-blue-300 rounded px-2 py-1"
-                        value={offering.offeringType}
-                        onChange={(e) => {
-                          const newOfferings = [...editedData.offerings];
-                          newOfferings[index] = { ...offering, offeringType: e.target.value };
-                          setEditedData({ ...editedData, offerings: newOfferings });
-                        }}
-                      >
-                        <option value="guest_post">📝 Guest Post</option>
-                        <option value="link_insertion">🔗 Link Insertion</option>
-                        <option value="link_exchange">🔄 Link Exchange</option>
-                      </select>
+                      <div className="flex gap-3 items-center">
+                        <select
+                          className="font-medium text-blue-900 bg-transparent border border-blue-300 rounded px-2 py-1"
+                          value={offering.offeringType}
+                          onChange={(e) => {
+                            const newOfferings = [...editedData.offerings];
+                            newOfferings[index] = { ...offering, offeringType: e.target.value };
+                            setEditedData({ ...editedData, offerings: newOfferings });
+                          }}
+                        >
+                          <option value="guest_post">📝 Guest Post</option>
+                          <option value="link_insertion">🔗 Link Insertion</option>
+                          <option value="link_exchange">🔄 Link Exchange</option>
+                        </select>
+                        <div>
+                          <label className="text-xs text-gray-600">Website</label>
+                          <input
+                            type="text"
+                            className="block w-40 text-sm p-1 border rounded"
+                            value={offering.websiteDomain || ''}
+                            placeholder="domain.com"
+                            onChange={(e) => {
+                              const newOfferings = [...editedData.offerings];
+                              newOfferings[index] = { ...offering, websiteDomain: e.target.value };
+                              setEditedData({ ...editedData, offerings: newOfferings });
+                            }}
+                          />
+                        </div>
+                      </div>
                       <button 
                         onClick={() => {
                           const newOfferings = editedData.offerings.filter((_: any, i: number) => i !== index);

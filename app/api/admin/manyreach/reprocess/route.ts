@@ -22,7 +22,9 @@ export async function POST(request: NextRequest) {
         el.html_content,
         el.campaign_id,
         el.campaign_name,
-        el.email_from
+        el.email_from,
+        el.email_to,
+        el.email_subject
       FROM publisher_drafts pd
       JOIN email_processing_logs el ON pd.email_log_id = el.id
       WHERE pd.id = ${draftId}
@@ -73,7 +75,12 @@ export async function POST(request: NextRequest) {
     const emailParser = new EmailParserV3Simplified();
     const parsedData = await emailParser.parseEmail(
       draft.html_content || '', 
-      campaignSenderEmail
+      campaignSenderEmail,
+      {
+        from: draft.email_from,
+        to: draft.email_to,
+        subject: draft.email_subject
+      }
     );
     
     console.log(`✅ Re-processed email from ${draft.email_from}`);

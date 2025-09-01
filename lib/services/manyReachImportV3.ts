@@ -270,7 +270,15 @@ export class ManyReachImportV3 {
 
       // Single-phase extraction with GPT-4 (combines email parsing + website analysis)
       console.log('🔍 Extracting publisher and website data with GPT-4...');
-      const parsedData = await this.emailParser.parseEmail(message.emailBody, campaignSenderEmail);
+      const parsedData = await this.emailParser.parseEmail(
+        message.emailBody, 
+        campaignSenderEmail,
+        {
+          from: message.from,
+          to: message.to,
+          subject: message.subject
+        }
+      );
       
       if (parsedData.hasOffer && parsedData.websites && parsedData.websites.length > 0) {
         console.log(`✅ Extracted ${parsedData.websites.length} website(s) with categories and types`);
