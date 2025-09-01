@@ -1184,9 +1184,10 @@ HAVING COUNT(DISTINCT po.id) > 1;
 -- Phase 6A: Add tracking columns
 ALTER TABLE websites ADD COLUMN IF NOT EXISTS
   derived_guest_post_cost INTEGER,
-  price_calculation_method VARCHAR(50) DEFAULT 'manual',
+  price_calculation_method VARCHAR(50) DEFAULT 'manual', -- 'manual', 'auto_min', 'override'
   price_calculated_at TIMESTAMP,
-  price_calculation_source UUID, -- publisher_offering.id
+  price_calculation_source UUID, -- publisher_offering.id that was selected
+  price_override_offering_id UUID, -- manually selected offering (if override)
   price_override_reason TEXT;
 
 -- Phase 6B: Add calculation function
@@ -1195,17 +1196,33 @@ RETURNS INTEGER AS $$
 DECLARE
   calculated_price INTEGER;
   offering_id UUID;
+  manual_offering_id UUID;
 BEGIN
-  -- Get minimum price from all associated offerings
-  SELECT MIN(po.base_price), po.id INTO calculated_price, offering_id
-  FROM publisher_offering_relationships por
-  JOIN publisher_offerings po ON por.offering_id = po.id
-  WHERE por.website_id = $1
-    AND po.is_active = true
-    AND po.base_price IS NOT NULL
-  GROUP BY po.id
-  ORDER BY po.base_price
-  LIMIT 1;
+  -- Check for manual override first
+  SELECT price_override_offering_id INTO manual_offering_id
+  FROM websites
+  WHERE id = $1;
+  
+  IF manual_offering_id IS NOT NULL THEN
+    -- Use manually selected offering
+    SELECT po.base_price, po.id INTO calculated_price, offering_id
+    FROM publisher_offerings po
+    WHERE po.id = manual_offering_id
+      AND po.is_active = true
+      AND po.offering_type = 'guest_post';
+  ELSE
+    -- Get minimum price from all guest_post offerings
+    SELECT MIN(po.base_price), po.id INTO calculated_price, offering_id
+    FROM publisher_offering_relationships por
+    JOIN publisher_offerings po ON por.offering_id = po.id
+    WHERE por.website_id = $1
+      AND po.is_active = true
+      AND po.offering_type = 'guest_post'
+      AND po.base_price IS NOT NULL
+    GROUP BY po.id
+    ORDER BY po.base_price
+    LIMIT 1;
+  END IF;
   
   -- Update tracking columns
   UPDATE websites SET
@@ -1221,15 +1238,27 @@ $$ LANGUAGE plpgsql;
 
 -- Phase 6C: Make it a generated column (PostgreSQL 12+)
 -- Note: This is irreversible without data migration
+-- Also note: Generated columns can't reference other tables in some PostgreSQL versions
+-- May need to use triggers instead for complex logic with manual overrides
 ALTER TABLE websites 
 DROP COLUMN guest_post_cost,
 ADD COLUMN guest_post_cost INTEGER GENERATED ALWAYS AS (
-  (SELECT MIN(po.base_price)
-   FROM publisher_offering_relationships por
-   JOIN publisher_offerings po ON por.offering_id = po.id
-   WHERE por.website_id = websites.id
-     AND po.is_active = true
-     AND po.base_price IS NOT NULL)
+  COALESCE(
+    -- First check manual override
+    (SELECT po.base_price 
+     FROM publisher_offerings po 
+     WHERE po.id = websites.price_override_offering_id
+       AND po.is_active = true
+       AND po.offering_type = 'guest_post'),
+    -- Otherwise use minimum guest_post price
+    (SELECT MIN(po.base_price)
+     FROM publisher_offering_relationships por
+     JOIN publisher_offerings po ON por.offering_id = po.id
+     WHERE por.website_id = websites.id
+       AND po.is_active = true
+       AND po.offering_type = 'guest_post'
+       AND po.base_price IS NOT NULL)
+  )
 ) STORED;
 ```
 

@@ -252,11 +252,14 @@ Components that allow editing guest_post_cost must be updated:
 
 ## Decision Points
 
-1. **Calculation Method**: MIN(offering.base_price) vs AVG vs specific publisher?
-2. **Null Handling**: What if no offerings exist?
-3. **Override Mechanism**: Allow manual overrides for special cases?
-4. **History Tracking**: How much price history to maintain?
-5. **Performance Trade-off**: Generated column vs triggers vs application-level?
+1. **Calculation Method**: 
+   - **Automatic**: MIN(base_price) from guest_post offerings only
+   - **Manual Override**: Ability to select specific offering
+2. **No Offering Handling**: If no guest_post offerings exist, guest_post_cost should be NULL
+3. **Offering Type Filter**: Only consider offerings where offering_type = 'guest_post'
+4. **Override Mechanism**: Allow manual selection of specific offering for special cases
+5. **History Tracking**: Log price changes with source (auto vs manual)
+6. **Performance Trade-off**: Generated column vs triggers vs application-level?
 
 ## Conclusion
 

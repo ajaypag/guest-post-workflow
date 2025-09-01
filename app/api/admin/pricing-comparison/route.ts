@@ -58,7 +58,8 @@ export async function GET(request: Request) {
           .where(
             and(
               eq(publisherOfferingRelationships.websiteId, website.id),
-              eq(publisherOfferings.isActive, true)
+              eq(publisherOfferings.isActive, true),
+              eq(publisherOfferings.offeringType, 'guest_post')
             )
           );
 

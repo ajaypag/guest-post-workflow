@@ -53,22 +53,27 @@
 
 ## Calculation Method
 
-**Approach**: `MIN(base_price)` from all active publisher offerings
+**Two Modes**:
+1. **Automatic**: `MIN(base_price)` from guest_post offerings only
+2. **Manual Override**: Admin can select specific offering
 
 **SQL Logic**:
 ```sql
+-- Only consider guest_post offerings
 SELECT MIN(po.base_price)
 FROM publisher_offering_relationships por
 JOIN publisher_offerings po ON por.offering_id = po.id
 WHERE por.website_id = [website_id]
   AND po.is_active = true
+  AND po.offering_type = 'guest_post'
   AND po.base_price IS NOT NULL
 ```
 
-**Rationale**: 
-- Ensures customers always get the best available price
-- Handles multiple publishers offering same website
-- Simple and predictable behavior
+**Business Rules**: 
+- Only `guest_post` offering types are considered
+- If no guest_post offerings exist, guest_post_cost should be NULL
+- Manual override allows selecting specific offering for special deals
+- System tracks whether price is auto-calculated or manually set
 
 ## Current Status
 
