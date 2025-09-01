@@ -43,6 +43,9 @@ export const emailProcessingLogs = pgTable('email_processing_logs', {
   qualificationStatus: varchar('qualification_status', { length: 50 }).default('pending'), // pending, qualified, disqualified, legacy_processed
   disqualificationReason: varchar('disqualification_reason', { length: 100 }),
   
+  // Import tracking (added by migration 0079)
+  import_status: varchar('import_status', { length: 50 }).default('not_imported'), // not_imported, imported, skipped, error
+  
   // Thread tracking
   threadId: varchar('thread_id', { length: 255 }),
   replyCount: integer('reply_count').default(0),

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import StripePaymentForm from './StripePaymentForm';
 import PaymentSuccessModal from './PaymentSuccessModal';
 import { Order } from '@/lib/db/orderSchema';
+import { formatCurrency } from '@/lib/utils';
 
 interface OrderPaymentPageProps {
   order: Order;
@@ -169,34 +170,34 @@ export default function OrderPaymentPage({ order, className }: OrderPaymentPageP
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Subtotal:</span>
-                  <span>${(order.subtotalRetail / 100).toFixed(2)}</span>
+                  <span>{formatCurrency(order.subtotalRetail)}</span>
                 </div>
                 
                 {order.discountAmount > 0 && (
                   <div className="flex justify-between text-green-600">
                     <span>Discount ({order.discountPercent}%):</span>
-                    <span>-${(order.discountAmount / 100).toFixed(2)}</span>
+                    <span>-{formatCurrency(order.discountAmount)}</span>
                   </div>
                 )}
                 
                 {order.rushDelivery && order.rushFee && order.rushFee > 0 && (
                   <div className="flex justify-between">
                     <span className="text-gray-600">Rush Delivery:</span>
-                    <span>${((order.rushFee || 0) / 100).toFixed(2)}</span>
+                    <span>{formatCurrency(order.rushFee || 0)}</span>
                   </div>
                 )}
                 
                 {order.includesClientReview && order.clientReviewFee && order.clientReviewFee > 0 && (
                   <div className="flex justify-between">
                     <span className="text-gray-600">Client Review:</span>
-                    <span>${((order.clientReviewFee || 0) / 100).toFixed(2)}</span>
+                    <span>{formatCurrency(order.clientReviewFee || 0)}</span>
                   </div>
                 )}
                 
                 <div className="border-t border-gray-200 pt-2 mt-2">
                   <div className="flex justify-between text-lg font-semibold">
                     <span>Total:</span>
-                    <span className="text-green-600">${(order.totalRetail / 100).toFixed(2)}</span>
+                    <span className="text-green-600">{formatCurrency(order.totalRetail)}</span>
                   </div>
                 </div>
               </div>

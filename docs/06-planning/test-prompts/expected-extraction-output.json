@@ -1,0 +1,38 @@
+{
+  "publisher": {
+    "email": "john@techpublishers.com",
+    "contactName": "John Martinez",
+    "companyName": "TechPublishers Media",
+    "phone": "+1-415-555-9823",
+    "paymentEmail": "billing@techpublishers.com",
+    "paymentMethod": "PayPal",
+    "internalNotes": "Manages 3 sites, pricing: DevBlog $350, StartupWeekly $275, MarketingTechToday $225. 5-7 day turnaround after approval.",
+    "confidenceScore": 0.95
+  },
+  "websites": [
+    {
+      "domain": "devblog.io",
+      "niche": ["Technology", "Business"],
+      "categories": ["Technology", "Blog"],
+      "websiteType": ["Blog", "News"],
+      "extractionNotes": "Main tech blog covering software development, AI, cloud computing, DevOps. Hybrid news/blog format. $350 per post.",
+      "confidenceScore": 0.95
+    },
+    {
+      "domain": "startupweekly.com",
+      "niche": ["Business", "Finance"],
+      "categories": ["Business", "News"],
+      "websiteType": ["News"],
+      "extractionNotes": "Startup news, entrepreneurship, venture capital focus. Pure news format. $275 per post.",
+      "confidenceScore": 0.95
+    },
+    {
+      "domain": "marketingtechtoday.com",
+      "niche": ["Marketing", "Technology"],
+      "categories": ["Technology", "Business"],
+      "websiteType": ["Blog"],
+      "extractionNotes": "Marketing automation, SEO, SaaS tools coverage. Blog-style publication. $225 per post.",
+      "confidenceScore": 0.95
+    }
+  ]
+}

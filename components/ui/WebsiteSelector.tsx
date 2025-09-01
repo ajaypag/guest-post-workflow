@@ -76,9 +76,10 @@ export function WebsiteSelector({
 
   const formatCost = (cost: string | null | undefined) => {
     if (!cost) return 'N/A';
-    const numCost = parseFloat(cost);
-    if (isNaN(numCost)) return 'N/A';
-    return `$${numCost.toFixed(0)}`;
+    const numCostCents = parseFloat(cost);
+    if (isNaN(numCostCents)) return 'N/A';
+    const numCostDollars = numCostCents / 100;
+    return `$${numCostDollars.toFixed(0)}`;
   };
 
   return (

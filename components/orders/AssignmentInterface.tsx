@@ -6,6 +6,7 @@ import {
   User, DollarSign, Eye, RotateCcw, AlertTriangle,
   CheckCircle, XCircle, Info
 } from 'lucide-react';
+import { formatCurrency } from '@/lib/utils';
 
 interface BulkAnalysisDomain {
   id: string;
@@ -283,7 +284,7 @@ export default function AssignmentInterface({
                     </div>
                     <div className="flex items-center gap-1">
                       <DollarSign className="h-3 w-3" />
-                      ${((lineItem.estimatedPrice || 0) / 100).toFixed(2)}
+                      {formatCurrency(lineItem.estimatedPrice || 0)}
                     </div>
                   </div>
                 </div>

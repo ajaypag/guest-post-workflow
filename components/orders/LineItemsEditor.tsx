@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 // Using native HTML elements for simplicity
 import { Trash2, Plus, Save, AlertCircle } from 'lucide-react';
+import { formatCurrency } from '@/lib/utils';
 // Simple toast notification
 const useToast = () => ({
   toast: ({ title, description, variant }: any) => {
@@ -266,7 +267,7 @@ export function LineItemsEditor({
         <div>
           <h3 className="text-lg font-semibold">Line Items</h3>
           <p className="text-sm text-muted-foreground">
-            {activeitems.length} items • Total: ${(totalValue / 100).toFixed(2)}
+            {activeitems.length} items • Total: {formatCurrency(totalValue)}
           </p>
         </div>
         {editable && (

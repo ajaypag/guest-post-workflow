@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Target, Sparkles, RefreshCw, CheckCircle, AlertCircle, ArrowRight } from 'lucide-react';
 import AssignmentInterface from './AssignmentInterface';
+import { formatCurrency } from '@/lib/utils';
 
 // Import existing types
 interface BulkAnalysisDomain {
@@ -740,7 +741,7 @@ function OrderSelectionStep({
                   <div className="text-right flex-shrink-0 ml-4">
                     <div className="text-lg font-semibold text-gray-900">
                       {order.totalRetail > 0 
-                        ? `$${(order.totalRetail / 100).toFixed(2)}`
+                        ? `${formatCurrency(order.totalRetail)}`
                         : '$0.00'
                       }
                     </div>

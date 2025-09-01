@@ -5,10 +5,10 @@ const approvedFixes = new Map();
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     
     // Mark as approved (in production, update database)
     approvedFixes.set(id, { status: 'approved', timestamp: new Date() });
@@ -22,5 +22,3 @@ export async function POST(
     );
   }
 }
-
-export { approvedFixes };

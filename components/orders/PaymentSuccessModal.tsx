@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { CheckCircle, X } from 'lucide-react';
+import { formatCurrency } from '@/lib/utils';
 
 interface PaymentSuccessModalProps {
   isOpen: boolean;
@@ -71,7 +72,7 @@ export default function PaymentSuccessModal({
                 <div className="flex justify-between">
                   <span className="text-gray-600">Amount Paid:</span>
                   <span className="font-semibold text-green-600">
-                    ${(amount / 100).toFixed(2)} {currency}
+                    {formatCurrency(amount)} {currency}
                   </span>
                 </div>
               )}

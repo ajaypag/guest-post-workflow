@@ -1,0 +1,110 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/db/connection';
+import { sql } from 'drizzle-orm';
+
+export async function GET(request: NextRequest) {
+  try {
+    // TODO: Add proper auth check
+    // For now, allow access for testing
+
+    // Get query params
+    const { searchParams } = new URL(request.url);
+    const status = searchParams.get('status') || 'all';
+    const limit = parseInt(searchParams.get('limit') || '50');
+    const offset = parseInt(searchParams.get('offset') || '0');
+
+    // Build query
+    let query = sql`
+      SELECT 
+        d.id,
+        d.email_log_id,
+        d.parsed_data,
+        d.edited_data,
+        d.status,
+        d.review_notes,
+        d.created_at,
+        d.reviewed_at,
+        d.publisher_id,
+        d.website_id,
+        e.email_from,
+        e.email_subject,
+        e.campaign_name,
+        e.received_at,
+        e.raw_content,
+        e.html_content
+      FROM publisher_drafts d
+      INNER JOIN email_processing_logs e ON d.email_log_id = e.id
+    `;
+
+    if (status !== 'all') {
+      query = sql`${query} WHERE d.status = ${status}`;
+    }
+
+    query = sql`${query} ORDER BY d.created_at DESC LIMIT ${limit} OFFSET ${offset}`;
+
+    const draftsResult = await db.execute(query);
+    const drafts = (draftsResult as any).rows || [];
+
+    // Get total count
+    const countQuery = status === 'all' 
+      ? sql`SELECT COUNT(*) as total FROM publisher_drafts`
+      : sql`SELECT COUNT(*) as total FROM publisher_drafts WHERE status = ${status}`;
+    
+    const countResult = await db.execute(countQuery);
+    const total = (countResult as any)[0]?.total || 0;
+
+    return NextResponse.json({
+      drafts,
+      total,
+      limit,
+      offset
+    });
+
+  } catch (error) {
+    console.error('Error fetching drafts:', error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to fetch drafts' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    // TODO: Add proper auth check
+    // For now, allow access for testing
+
+    const { draftId, editedData, status, reviewNotes } = await request.json();
+
+    if (!draftId) {
+      return NextResponse.json({ error: 'Draft ID required' }, { status: 400 });
+    }
+
+    // Update draft
+    const updateQuery = sql`
+      UPDATE publisher_drafts
+      SET 
+        edited_data = ${editedData ? JSON.stringify(editedData) : null}::jsonb,
+        status = COALESCE(${status}, status),
+        review_notes = COALESCE(${reviewNotes}, review_notes),
+        updated_at = NOW()
+      WHERE id = ${draftId}
+      RETURNING *
+    `;
+
+    const updateResult = await db.execute(updateQuery);
+    const updated = (updateResult as any).rows?.[0];
+
+    return NextResponse.json({ 
+      success: true,
+      draft: updated 
+    });
+
+  } catch (error) {
+    console.error('Error updating draft:', error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Update failed' },
+      { status: 500 }
+    );
+  }
+}
