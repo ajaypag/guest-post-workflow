@@ -402,12 +402,12 @@ export default async function NichePage({ params }: { params: Promise<{ niche: s
                   </td>
                   <td className="px-4 py-3">
                     <div className="font-medium">
-                      {site.guestPostCost ? `$${(parseFloat(site.guestPostCost.toString()) / 100).toFixed(2)}` : 'Free'}
+                      {site.guestPostCost ? `$${(site.guestPostCost / 100).toFixed(2)}` : 'Free'}
                     </div>
                   </td>
                   <td className="px-4 py-3">
                     <div className="font-medium text-green-600">
-                      ${((site.guestPostCost ? parseFloat(site.guestPostCost.toString()) / 100 : 0) + (SERVICE_FEE_CENTS / 100)).toFixed(2)}
+                      ${((site.guestPostCost ? site.guestPostCost / 100 : 0) + (SERVICE_FEE_CENTS / 100)).toFixed(2)}
                     </div>
                   </td>
                   <td className="px-4 py-3">

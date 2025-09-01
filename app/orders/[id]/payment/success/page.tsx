@@ -5,6 +5,7 @@ import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
 import { StripeService } from '@/lib/services/stripeService';
+import { formatCurrency } from '@/lib/utils';
 
 interface PaymentSuccessData {
   orderId: string;
@@ -175,7 +176,7 @@ export default function PaymentSuccessPage() {
               <div className="flex justify-between">
                 <span className="text-gray-600">Amount Paid:</span>
                 <span className="font-semibold">
-                  ${(paymentData.amount / 100).toFixed(2)} {paymentData.currency}
+                  {formatCurrency(paymentData.amount)} {paymentData.currency}
                 </span>
               </div>
               <div className="flex justify-between">

@@ -917,7 +917,7 @@ export default function OrderDetailPage() {
                           >
                             <span className="flex items-center justify-center gap-2">
                               <CreditCard className="h-4 w-4" />
-                              Pay Invoice - ${(((order as any).totalRetail || 0) / 100).toFixed(2)}
+                              Pay Invoice - {formatCurrency((order as any).totalRetail || 0)}
                             </span>
                           </Link>
                         )}

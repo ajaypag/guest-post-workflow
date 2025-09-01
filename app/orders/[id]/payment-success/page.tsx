@@ -5,6 +5,7 @@ import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle, Loader2 } from 'lucide-react';
 import { AuthService } from '@/lib/auth';
+import { formatCurrency } from '@/lib/utils';
 
 export default function PaymentSuccessPage() {
   const params = useParams();
@@ -92,7 +93,7 @@ export default function PaymentSuccessPage() {
               <div className="flex justify-between">
                 <span className="text-gray-600">Amount Paid:</span>
                 <span className="font-semibold text-green-600">
-                  ${((order.totalRetail || order.totalPrice || 0) / 100).toFixed(2)}
+                  {formatCurrency(order.totalRetail || order.totalPrice || 0)}
                 </span>
               </div>
               

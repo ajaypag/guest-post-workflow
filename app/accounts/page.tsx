@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import InternalPageWrapper from '../../components/InternalPageWrapper';
 import Header from '../../components/Header';
 import { UserCheck, Eye, Key, Wand2, CheckCircle, Ban, ExternalLink, Building2 } from 'lucide-react';
+import { formatCurrency } from '@/lib/utils';
 
 interface Account {
   id: string;
@@ -423,7 +424,7 @@ export default function WorkingAccountsPage() {
                         {account.orderCount || 0}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        ${((account.totalRevenue || 0) / 100).toFixed(2)}
+                        {formatCurrency(account.totalRevenue || 0)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex items-center space-x-3">
