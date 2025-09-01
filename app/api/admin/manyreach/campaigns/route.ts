@@ -1,15 +1,75 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ManyReachImportV3 } from '@/lib/services/manyReachImportV3';
+import { ManyReachAPIClient } from '@/lib/services/manyreach/apiClient';
 
 export async function GET(request: NextRequest) {
   try {
     // TODO: Add proper auth check
     // For now, allow access for testing
-
-    const importer = new ManyReachImportV3();
-    const stats = await importer.getImportStats();
     
-    return NextResponse.json({ campaigns: stats });
+    const searchParams = request.nextUrl.searchParams;
+    const workspaceId = searchParams.get('workspace') || 'workspace-1';
+    
+    // Create API client with selected workspace
+    const apiClient = new ManyReachAPIClient(workspaceId);
+    
+    // Get campaigns from the selected workspace
+    const campaigns = await apiClient.getCampaigns();
+    
+    // Get import stats for each campaign
+    const campaignsWithStats = await Promise.all(
+      campaigns.map(async (campaign) => {
+        try {
+          // Check if campaign has valid ID
+          if (!campaign.id) {
+            console.warn('Campaign missing ID:', campaign);
+            return {
+              ...campaign,
+              campaignId: campaign.id || 'unknown',
+              campaignName: campaign.name || 'Unknown Campaign',
+              totalProspects: 0,
+              repliedProspects: 0,
+              processed: 0,
+              pending: 0,
+              lastImport: null,
+              workspace: apiClient.getCurrentWorkspace()?.name
+            };
+          }
+          
+          // Get replied prospects count
+          const prospects = await apiClient.getProspects(campaign.id, {
+            filterReplied: true,
+            limit: 1 // Just to get count
+          });
+          
+          return {
+            ...campaign,
+            campaignId: campaign.id,
+            campaignName: campaign.name,
+            totalProspects: campaign.totalProspects || 0,
+            repliedProspects: campaign.repliedProspects || 0,
+            processed: 0, // Would need to check database for this
+            pending: campaign.repliedProspects || 0,
+            lastImport: null,
+            workspace: apiClient.getCurrentWorkspace()?.name
+          };
+        } catch (error) {
+          console.error(`Error fetching stats for campaign ${campaign.id}:`, error);
+          return {
+            ...campaign,
+            campaignId: campaign.id,
+            campaignName: campaign.name,
+            totalProspects: 0,
+            repliedProspects: 0,
+            processed: 0,
+            pending: 0,
+            lastImport: null,
+            workspace: apiClient.getCurrentWorkspace()?.name
+          };
+        }
+      })
+    );
+    
+    return NextResponse.json({ campaigns: campaignsWithStats });
   } catch (error) {
     console.error('Error fetching campaigns:', error);
     return NextResponse.json(
