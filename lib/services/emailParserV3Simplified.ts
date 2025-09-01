@@ -55,7 +55,7 @@ export interface SimplifiedParsedEmailData {
 
 
 export class EmailParserV3Simplified {
-  async parseEmail(htmlContent: string): Promise<SimplifiedParsedEmailData> {
+  async parseEmail(htmlContent: string, outreachSenderEmail?: string): Promise<SimplifiedParsedEmailData> {
     try {
       // Strip HTML to get plain text
       const textContent = htmlContent
@@ -83,8 +83,8 @@ export class EmailParserV3Simplified {
       const metadata = await getWebsiteMetadata();
       const metadataPrompt = formatMetadataForPrompt(metadata);
       
-      // Create agent with dynamic metadata
-      const emailParserAgent = createEmailParserAgent(metadataPrompt);
+      // Create agent with dynamic metadata and sender context
+      const emailParserAgent = createEmailParserAgent(metadataPrompt, outreachSenderEmail);
       
       // Create provider and runner
       const provider = new OpenAIProvider({
