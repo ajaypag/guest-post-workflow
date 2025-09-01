@@ -879,16 +879,18 @@ function DraftEditor({ draft, onUpdate }: { draft: Draft; onUpdate: (updates: an
                             <label className="text-xs font-medium">DoFollow Links</label>
                             <select
                               className="w-full p-2 border rounded text-sm"
-                              value={offering.requirements?.acceptsDoFollow ? 'true' : 'false'}
+                              value={offering.requirements?.acceptsDoFollow === null ? 'unknown' : offering.requirements?.acceptsDoFollow ? 'true' : 'false'}
                               onChange={(e) => {
                                 const newOfferings = [...editedData.offerings];
+                                const value = e.target.value === 'unknown' ? null : e.target.value === 'true';
                                 newOfferings[index] = { 
                                   ...offering, 
-                                  requirements: { ...offering.requirements, acceptsDoFollow: e.target.value === 'true' }
+                                  requirements: { ...offering.requirements, acceptsDoFollow: value }
                                 };
                                 setEditedData({ ...editedData, offerings: newOfferings });
                               }}
                             >
+                              <option value="unknown">❓ Not Specified</option>
                               <option value="true">✅ Yes</option>
                               <option value="false">❌ No</option>
                             </select>
@@ -898,16 +900,18 @@ function DraftEditor({ draft, onUpdate }: { draft: Draft; onUpdate: (updates: an
                             <label className="text-xs font-medium">Author Bio Required</label>
                             <select
                               className="w-full p-2 border rounded text-sm"
-                              value={offering.requirements?.requiresAuthorBio ? 'true' : 'false'}
+                              value={offering.requirements?.requiresAuthorBio === null ? 'unknown' : offering.requirements?.requiresAuthorBio ? 'true' : 'false'}
                               onChange={(e) => {
                                 const newOfferings = [...editedData.offerings];
+                                const value = e.target.value === 'unknown' ? null : e.target.value === 'true';
                                 newOfferings[index] = { 
                                   ...offering, 
-                                  requirements: { ...offering.requirements, requiresAuthorBio: e.target.value === 'true' }
+                                  requirements: { ...offering.requirements, requiresAuthorBio: value }
                                 };
                                 setEditedData({ ...editedData, offerings: newOfferings });
                               }}
                             >
+                              <option value="unknown">❓ Not Specified</option>
                               <option value="true">✅ Required</option>
                               <option value="false">❌ Not Required</option>
                             </select>
@@ -935,16 +939,18 @@ function DraftEditor({ draft, onUpdate }: { draft: Draft; onUpdate: (updates: an
                             <label className="text-xs font-medium">Images Required</label>
                             <select
                               className="w-full p-2 border rounded text-sm"
-                              value={offering.requirements?.imagesRequired ? 'true' : 'false'}
+                              value={offering.requirements?.imagesRequired === null ? 'unknown' : offering.requirements?.imagesRequired ? 'true' : 'false'}
                               onChange={(e) => {
                                 const newOfferings = [...editedData.offerings];
+                                const value = e.target.value === 'unknown' ? null : e.target.value === 'true';
                                 newOfferings[index] = { 
                                   ...offering, 
-                                  requirements: { ...offering.requirements, imagesRequired: e.target.value === 'true' }
+                                  requirements: { ...offering.requirements, imagesRequired: value }
                                 };
                                 setEditedData({ ...editedData, offerings: newOfferings });
                               }}
                             >
+                              <option value="unknown">❓ Not Specified</option>
                               <option value="false">❌ No</option>
                               <option value="true">✅ Yes</option>
                             </select>

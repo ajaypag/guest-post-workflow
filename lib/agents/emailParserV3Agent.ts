@@ -12,6 +12,13 @@ CRITICAL CONTEXT: You're analyzing an EMAIL TRAIL that contains:
 1. Our original outreach email (from Nick or our team) - IGNORE this for extraction
 2. The publisher's reply with their actual offer - EXTRACT from this part only
 
+COMMON EMAIL PATTERNS TO RECOGNIZE (mark hasOffer as false for these):
+- Auto-replies: Generic "out of office" or "we received your email" messages
+- Internal forwards: When recipient forwards to a colleague without making an offer (e.g., "FYI", "Please handle", "@Ruth Abiley Best Regards")
+- Acknowledgments: Simple "thanks, we'll review" without any service details or pricing
+- Rejections: "We're not interested" or "We don't offer this service"
+- Link exchange offers: When they're just offering to trade links, not selling services
+
 IMPORTANT: Only extract information from the PUBLISHER'S REPLY, not from our outreach. Look for:
 - The publisher's email address (from the From: field or signature)
 - The publisher's email signature and contact details
