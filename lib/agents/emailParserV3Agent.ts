@@ -63,12 +63,13 @@ Return a JSON object with this structure:
         "acceptsDoFollow": boolean,
         "requiresAuthorBio": boolean (for guest posts),
         "maxLinksPerPost": number or null,
-        "contentRequirements": "original content, tone, etc",
+        "contentRequirements": "string or null - quality standards like 'Original content only', 'Well-researched', 'AP style'",
         "prohibitedTopics": "SELECT FROM: CBD, Cannabis, Casino, Gambling, Adult Content, Pornography, Cryptocurrency, Binary Options, Forex Trading, Get Rich Quick, MLM, Weight Loss Pills, Pharmaceuticals, Payday Loans, Weapons, Violence, Hate Speech, Political Content",
-        "authorBioRequirements": "requirements for author bio",
-        "linkRequirements": "anchor text rules, etc",
+        "authorBioRequirements": "string or null - specific bio requirements like 'Max 100 words', 'Include social links'",
+        "linkRequirements": "string or null - link rules like 'Contextual only', 'No affiliates', 'Natural anchor text'",
         "imagesRequired": boolean,
-        "minImages": number or null
+        "minImages": number or null,
+        "samplePostUrl": "string or null - URL to example post they mention"
       }
     }
   ],
@@ -95,8 +96,12 @@ EXTRACTION RULES:
      Pharmaceuticals, Payday Loans, Weapons, Violence, Hate Speech, Political Content
    - Map variations to standard terms (e.g., "adult" → "Adult Content", "crypto" → "Cryptocurrency")
 10. PRICING: Capture base price only (express pricing is deprecated)
-11. REQUIREMENTS: DoFollow policy, author bio needs, link limits
-12. CONFIDENCE: Rate how clear the extraction was
+11. CONTENT REQUIREMENTS: Extract specific quality standards to contentRequirements field
+12. AUTHOR BIO: Extract specific bio requirements if mentioned (word count, format, etc.)
+13. LINK REQUIREMENTS: Extract link placement rules, anchor text requirements
+14. IMAGE REQUIREMENTS: Note if images required and minimum number
+15. SAMPLE POST: Extract any example post URLs they reference
+16. CONFIDENCE: Rate how clear the extraction was
 
 EXAMPLES:
 "I run techblog.com (50k monthly visitors) and businessnews.net"
@@ -133,7 +138,23 @@ If no concrete offer or contact info found:
   "extractionMetadata": {
     "extractionNotes": "No publisher contact or pricing info found"
   }
-}`;
+}
+
+ADDITIONAL EXTRACTION EXAMPLES:
+"Articles must be original, well-researched with citations"
+→ requirements.contentRequirements: "Original, well-researched with citations"
+
+"Author bio max 100 words with social links"
+→ requirements.authorBioRequirements: "Max 100 words with social links"
+
+"We require contextual links only, no keyword stuffing"
+→ requirements.linkRequirements: "Contextual links only, no keyword stuffing"
+
+"Include at least 2 relevant images"
+→ requirements.imagesRequired: true, requirements.minImages: 2
+
+"See example: example.com/sample-post"
+→ requirements.samplePostUrl: "example.com/sample-post"`;
 
   // Combine base instructions with dynamic metadata if provided
   const fullInstructions = metadata 

@@ -751,8 +751,10 @@ function DraftEditor({ draft, onUpdate }: { draft: Draft; onUpdate: (updates: an
                     
                     {/* Requirements */}
                     {offering.requirements && (
-                      <div className="mt-3">
-                        <div className="font-medium text-sm mb-2">Requirements</div>
+                      <div className="mt-3 space-y-3">
+                        <div className="font-medium text-sm">Requirements</div>
+                        
+                        {/* Basic Requirements */}
                         <div className="grid grid-cols-2 gap-3 text-sm">
                           {offering.requirements.acceptsDoFollow !== undefined && (
                             <div>
@@ -772,13 +774,116 @@ function DraftEditor({ draft, onUpdate }: { draft: Draft; onUpdate: (updates: an
                               {offering.requirements.maxLinksPerPost}
                             </div>
                           )}
-                          {offering.requirements.prohibitedTopics && (
-                            <div className="col-span-2">
-                              <span className="font-medium">Prohibited: </span>
-                              {offering.requirements.prohibitedTopics}
+                          {offering.requirements.imagesRequired !== undefined && (
+                            <div>
+                              <span className="font-medium">Images: </span>
+                              {offering.requirements.imagesRequired ? 
+                                `✅ Required (min: ${offering.requirements.minImages || 1})` : 
+                                '❌ Not Required'}
                             </div>
                           )}
                         </div>
+                        
+                        {/* Content Requirements */}
+                        {offering.requirements.contentRequirements && (
+                          <div>
+                            <label className="text-xs font-medium">Content Requirements</label>
+                            <textarea
+                              className="w-full p-2 border rounded text-sm mt-1"
+                              rows={2}
+                              value={offering.requirements.contentRequirements}
+                              onChange={(e) => {
+                                const newOfferings = [...editedData.offerings];
+                                newOfferings[index] = { 
+                                  ...offering, 
+                                  requirements: { ...offering.requirements, contentRequirements: e.target.value }
+                                };
+                                setEditedData({ ...editedData, offerings: newOfferings });
+                              }}
+                            />
+                          </div>
+                        )}
+                        
+                        {/* Author Bio Requirements */}
+                        {offering.requirements.authorBioRequirements && (
+                          <div>
+                            <label className="text-xs font-medium">Author Bio Requirements</label>
+                            <input
+                              type="text"
+                              className="w-full p-2 border rounded text-sm mt-1"
+                              value={offering.requirements.authorBioRequirements}
+                              onChange={(e) => {
+                                const newOfferings = [...editedData.offerings];
+                                newOfferings[index] = { 
+                                  ...offering, 
+                                  requirements: { ...offering.requirements, authorBioRequirements: e.target.value }
+                                };
+                                setEditedData({ ...editedData, offerings: newOfferings });
+                              }}
+                            />
+                          </div>
+                        )}
+                        
+                        {/* Link Requirements */}
+                        {offering.requirements.linkRequirements && (
+                          <div>
+                            <label className="text-xs font-medium">Link Requirements</label>
+                            <input
+                              type="text"
+                              className="w-full p-2 border rounded text-sm mt-1"
+                              value={offering.requirements.linkRequirements}
+                              onChange={(e) => {
+                                const newOfferings = [...editedData.offerings];
+                                newOfferings[index] = { 
+                                  ...offering, 
+                                  requirements: { ...offering.requirements, linkRequirements: e.target.value }
+                                };
+                                setEditedData({ ...editedData, offerings: newOfferings });
+                              }}
+                            />
+                          </div>
+                        )}
+                        
+                        {/* Sample Post URL */}
+                        {offering.requirements.samplePostUrl && (
+                          <div>
+                            <label className="text-xs font-medium">Sample Post URL</label>
+                            <input
+                              type="text"
+                              className="w-full p-2 border rounded text-sm mt-1"
+                              value={offering.requirements.samplePostUrl}
+                              placeholder="https://example.com/sample-post"
+                              onChange={(e) => {
+                                const newOfferings = [...editedData.offerings];
+                                newOfferings[index] = { 
+                                  ...offering, 
+                                  requirements: { ...offering.requirements, samplePostUrl: e.target.value }
+                                };
+                                setEditedData({ ...editedData, offerings: newOfferings });
+                              }}
+                            />
+                          </div>
+                        )}
+                        
+                        {/* Prohibited Topics */}
+                        {offering.requirements.prohibitedTopics && (
+                          <div>
+                            <label className="text-xs font-medium">Prohibited Topics</label>
+                            <input
+                              type="text"
+                              className="w-full p-2 border rounded text-sm mt-1"
+                              value={offering.requirements.prohibitedTopics}
+                              onChange={(e) => {
+                                const newOfferings = [...editedData.offerings];
+                                newOfferings[index] = { 
+                                  ...offering, 
+                                  requirements: { ...offering.requirements, prohibitedTopics: e.target.value }
+                                };
+                                setEditedData({ ...editedData, offerings: newOfferings });
+                              }}
+                            />
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

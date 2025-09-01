@@ -17,9 +17,13 @@ websites.restrictions.forbiddenNiches → Should be in publisherOfferings.prohib
 publisherOfferings.contentGuidelines (TEXT) - Service-specific content quality standards
 publisherOfferings.prohibitedTopics (TEXT) - Service-specific content restrictions  
 publisherOfferings.turnaroundDays (INTEGER) - Service-specific delivery timeframes
-publisherOfferings.expressAvailable (REMOVED) - Legacy field, no longer needed
-publisherOfferings.expressPrice (REMOVED) - Legacy field, no longer needed
-publisherOfferings.expressDays (REMOVED) - Legacy field, no longer needed
+
+❌ FIELDS TO REMOVE (Legacy/Unused):
+publisherOfferings.expressAvailable - Legacy field, no longer needed
+publisherOfferings.expressPrice - Legacy field, no longer needed
+publisherOfferings.expressDays - Legacy field, no longer needed
+publisherOfferings.currentAvailability - Default to 'available' for active publishers
+publisherOfferings.requirements.requiredElements - Over-specific, not used in practice
 ```
 
 ### Business Logic Justification

@@ -41,6 +41,7 @@ export interface SimplifiedParsedEmailData {
       linkRequirements?: string;
       imagesRequired?: boolean;
       minImages?: number;
+      samplePostUrl?: string;
     };
   }>;
   extractionMetadata?: {
