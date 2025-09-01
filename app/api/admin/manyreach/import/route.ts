@@ -6,15 +6,15 @@ export async function POST(request: NextRequest) {
     // TODO: Add proper auth check
     // For now, allow access for testing
 
-    const { campaignId } = await request.json();
+    const { campaignId, workspaceId } = await request.json();
     
     if (!campaignId) {
       return NextResponse.json({ error: 'Campaign ID required' }, { status: 400 });
     }
 
-    console.log(`🚀 Starting import for campaign ${campaignId}`);
+    console.log(`🚀 Starting import for campaign ${campaignId} from workspace ${workspaceId || 'default'}`);
     
-    const importer = new ManyReachImportV3();
+    const importer = new ManyReachImportV3(workspaceId);
     const result = await importer.importCampaignReplies(campaignId.toString());
     
     return NextResponse.json({ 

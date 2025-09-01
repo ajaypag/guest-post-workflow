@@ -110,7 +110,7 @@ export default function ManyReachImportPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           campaignId,
-          workspace: selectedWorkspace,
+          workspaceId: selectedWorkspace,
           limit: emailLimit,
           onlyReplied,
           previewMode
