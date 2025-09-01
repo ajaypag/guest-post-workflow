@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Download, CheckCircle2, XCircle, AlertCircle, Eye } from 'lucide-react';
+import { Loader2, Download, CheckCircle2, XCircle, AlertCircle, Eye, RefreshCw } from 'lucide-react';
 // Simple toast notification
 const useToast = () => ({
   toast: ({ title, description, variant }: any) => {
@@ -198,6 +198,51 @@ export default function ManyReachImportPage() {
       });
     } finally {
       setClearing(false);
+    }
+  };
+
+  const reprocessDraft = async (draftId: string) => {
+    try {
+      const response = await fetch('/api/admin/manyreach/reprocess', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ draftId })
+      });
+      
+      if (!response.ok) throw new Error('Failed to reprocess draft');
+      
+      const result = await response.json();
+      
+      toast({
+        title: 'Success',
+        description: 'Draft re-processed with updated extraction',
+      });
+      
+      // Update the draft in the list
+      setDrafts(prevDrafts => 
+        prevDrafts.map(d => 
+          d.id === draftId 
+            ? { ...d, parsed_data: result.parsedData, edited_data: null }
+            : d
+        )
+      );
+      
+      // Update selected draft if it's the one being reprocessed
+      if (selectedDraft?.id === draftId) {
+        setSelectedDraft({
+          ...selectedDraft,
+          parsed_data: result.parsedData,
+          edited_data: null
+        });
+      }
+      
+    } catch (error) {
+      console.error('Error reprocessing draft:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to reprocess draft',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -508,6 +553,7 @@ export default function ManyReachImportPage() {
                 <DraftEditor
                   draft={selectedDraft}
                   onUpdate={(updates) => updateDraft(selectedDraft.id, updates)}
+                  onReprocess={() => reprocessDraft(selectedDraft.id)}
                 />
               ) : (
                 <Card>
@@ -526,9 +572,14 @@ export default function ManyReachImportPage() {
   );
 }
 
-function DraftEditor({ draft, onUpdate }: { draft: Draft; onUpdate: (updates: any) => void }) {
+function DraftEditor({ draft, onUpdate, onReprocess }: { 
+  draft: Draft; 
+  onUpdate: (updates: any) => void;
+  onReprocess: () => void;
+}) {
   const [editedData, setEditedData] = useState(draft.edited_data || draft.parsed_data);
   const [showEmail, setShowEmail] = useState(false);
+  const [reprocessing, setReprocessing] = useState(false);
 
   const handleSave = () => {
     onUpdate({ editedData, status: 'reviewing' });
@@ -542,6 +593,19 @@ function DraftEditor({ draft, onUpdate }: { draft: Draft; onUpdate: (updates: an
     onUpdate({ status: 'rejected' });
   };
 
+  const handleReprocess = async () => {
+    setReprocessing(true);
+    await onReprocess();
+    setReprocessing(false);
+    // Reset edited data to the new parsed data
+    setEditedData(draft.parsed_data);
+  };
+
+  // Update editedData when draft changes (after reprocessing)
+  React.useEffect(() => {
+    setEditedData(draft.edited_data || draft.parsed_data);
+  }, [draft.id, draft.parsed_data]);
+
   return (
     <div className="space-y-4">
       {/* Email Preview Toggle */}
@@ -549,14 +613,34 @@ function DraftEditor({ draft, onUpdate }: { draft: Draft; onUpdate: (updates: an
         <CardHeader>
           <div className="flex justify-between items-center">
             <CardTitle>Review Draft</CardTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowEmail(!showEmail)}
-            >
-              <Eye className="mr-2 h-4 w-4" />
-              {showEmail ? 'Hide' : 'Show'} Original Email
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleReprocess}
+                disabled={reprocessing}
+              >
+                {reprocessing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Re-processing...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Re-process with Updated AI
+                  </>
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowEmail(!showEmail)}
+              >
+                <Eye className="mr-2 h-4 w-4" />
+                {showEmail ? 'Hide' : 'Show'} Original Email
+              </Button>
+            </div>
           </div>
         </CardHeader>
       </Card>
