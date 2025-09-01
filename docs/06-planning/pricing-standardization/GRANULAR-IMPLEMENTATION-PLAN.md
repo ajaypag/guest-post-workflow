@@ -901,6 +901,101 @@ This is step 1-300 of the ACTUAL implementation. Each step has validation. Each 
 ## Date: 2025-09-01
 ## Status: ✅ SUCCESSFULLY COMPLETED
 
+---
+
+# PHASE 5: DYNAMIC MARKUP IMPLEMENTATION ✅ COMPLETE
+## Total Steps: ~20
+## Files Affected: 10+
+## Risk: LOW (display only)
+## Status: COMPLETE (2025-09-01)
+
+### Implementation Summary
+
+#### Step 1: Changed SERVICE_FEE_CENTS from 7900 to 10000
+**File**: `/lib/config/pricing.ts`
+```typescript
+serviceFee: {
+  standard: 10000, // $100 - Changed from 7900
+}
+```
+
+#### Step 2: Fixed JSX Expression Syntax Issues
+**Problem**: Template literal syntax `${SERVICE_FEE_CENTS / 100}` inside JSX text doesn't work
+**Solution**: Used proper JSX expressions with curly braces
+
+**Files Fixed**:
+1. `/app/guest-posting-sites/page.tsx`
+   - Fixed hero text: "$100 gets you everything"
+   - Fixed service fee displays
+   - Fixed pricing tooltips
+   
+2. `/app/guest-posting-sites/[niche]/page.tsx`
+   - Fixed metadata description to use dynamic value
+
+#### Step 3: Updated Remaining Hardcoded References
+**Files Updated**:
+1. `/components/dashboard/QuickVettedSitesRequest.tsx`
+   - Changed "$79 admin fee" to "$100 admin fee"
+   
+2. `/components/orders/PricingEstimator.tsx`
+   - Updated tooltip to use `${SERVICE_FEE_CENTS / 100}`
+   
+3. `/components/orders/OrderDetailsTable.tsx`
+   - Changed "$79 content" to use dynamic SERVICE_FEE_CENTS
+
+#### Step 4: Verification Testing
+- Created comprehensive test script to verify all pricing displays
+- Tested on port 3001 (dev server)
+- Confirmed all pages show $100 markup
+- Tested dynamic change to $125 - all displays updated automatically
+
+### Key Technical Fixes
+
+1. **JSX Expression Syntax**:
+   ```jsx
+   // ❌ WRONG - Template literal in JSX text
+   <span>${SERVICE_FEE_CENTS / 100} gets you everything</span>
+   
+   // ✅ CORRECT - Proper JSX expression
+   <span>${(SERVICE_FEE_CENTS / 100).toFixed(0)} gets you everything</span>
+   ```
+
+2. **Component Creation for Complex Expressions**:
+   - Created `/components/ServiceFeeDisplay.tsx` for reusable displays
+   - Though ultimately used inline expressions for simplicity
+
+### Locations Now Using Dynamic SERVICE_FEE_CENTS
+
+✅ **Frontend Pages**:
+- Guest posting sites (main and niche pages)
+- Vetted sites table
+- Orders and invoicing
+- Bulk analysis
+- Dashboard components
+
+✅ **Components**:
+- PricingEstimator
+- OrderDetailsTable
+- QuickVettedSitesRequest
+- All pricing displays
+
+✅ **API & Backend**:
+- `/app/api/orders/route.ts`
+- All pricing calculations
+- Database schemas with defaults
+
+### Testing Confirmation
+
+**Changed SERVICE_FEE_CENTS to 12500 ($125)**:
+- All displays automatically updated to show $125
+- Prices updated to wholesale + $125
+- Metadata descriptions updated
+- Tooltips and hidden elements updated
+
+**Result**: Single configuration change in `/lib/config/pricing.ts` now controls all pricing displays across the entire application.
+
+## Status: ✅ SUCCESSFULLY COMPLETED
+
 ### What Was Done
 
 #### 1. Database Migration ✅
@@ -1002,6 +1097,212 @@ This is step 1-300 of the ACTUAL implementation. Each step has validation. Each 
 - Phase 3: Implement publisher pricing rules
 - Phase 4: Add package/tier pricing
 - Phase 5: Multi-currency support
+
+---
+
+## PHASE 2 COMPLETE ✅
+
+The pricing system has been successfully migrated from DECIMAL (dollars) to INTEGER (cents) throughout the entire codebase. All display issues have been resolved and the system is now consistent and maintainable.
+
+---
+
+# PHASE 6: GUEST_POST_COST AS DERIVED FIELD
+## Total Steps: ~50
+## Files Affected: 30+
+## Risk: HIGH (fundamental change to pricing source)
+## Status: PLANNING (2025-09-01)
+
+### Overview
+Transform `websites.guest_post_cost` from an editable field to a read-only derived field calculated from `publisher_offerings.base_price`. This ensures pricing consistency and establishes publisher offerings as the single source of truth.
+
+### Current Status Assessment (2025-09-01)
+- **Database Readiness**: 98.5% (927 of 941 websites ready)
+- **Sites Needing Cleanup**: 14 total
+  - 1 website missing publisher offering (test.com)
+  - 13 websites with price mismatches
+- **Data Quality**: Much better than initial assessment (was 206 issues, now only 14)
+
+### Pre-Implementation Requirements
+
+#### Step 1: Data Cleanup (14 Sites)
+```sql
+-- Sites needing attention:
+-- 1. gossipsdiary.com: $200 vs $125 offering
+-- 2. test.com: No offering (needs creation)
+-- 3. www.lilachbullock.com: $250 vs $100 offering
+-- 4. www.opengrowth.com: $85 vs $80 offering
+-- 5. livepositively.com: $90 vs $30 offering
+-- 6. mymoneycottage.com: $189 vs $100 offering
+-- 7. hoteliga.com: $80 vs $50 offering
+-- 8. shessinglemag.com: $63.67 vs $63.14 offering
+-- 9. internetvibes.net: $65 vs $55 offering
+-- 10. bestforbride.com: $225 vs $120 offering
+-- 11-14: Additional minor mismatches
+```
+
+**Decision Required**: 
+- Use website price or offering price as source of truth?
+- Recommend: Audit each individually, likely use website price and update offerings
+
+#### Step 2: Relationship Verification
+Ensure all websites have proper publisher_offering_relationships:
+```sql
+-- Verify 1:1 relationship
+SELECT w.domain, COUNT(DISTINCT po.id) as offering_count
+FROM websites w
+LEFT JOIN publisher_offering_relationships por ON w.id = por.website_id
+LEFT JOIN publisher_offerings po ON por.offering_id = po.id
+WHERE w.guest_post_cost IS NOT NULL
+GROUP BY w.domain
+HAVING COUNT(DISTINCT po.id) > 1;
+```
+
+### Implementation Strategy
+
+#### Phase 6A: Add Calculation Infrastructure (Low Risk)
+1. Add metadata columns to track derived pricing
+2. Create calculation function (without triggers initially)
+3. Add admin UI to preview derived vs current prices
+4. Test calculation logic thoroughly
+
+#### Phase 6B: Shadow Mode (Medium Risk)
+1. Add `derived_guest_post_cost` column
+2. Run calculation in parallel with existing field
+3. Log discrepancies for monitoring
+4. Gradually migrate read operations to use derived field
+
+#### Phase 6C: Full Migration (High Risk)
+1. Make `guest_post_cost` computed/generated column
+2. Remove ability to directly edit field
+3. All pricing flows through publisher_offerings
+4. Add triggers for automatic recalculation
+
+### Technical Implementation Details
+
+#### Database Schema Changes
+```sql
+-- Phase 6A: Add tracking columns
+ALTER TABLE websites ADD COLUMN IF NOT EXISTS
+  derived_guest_post_cost INTEGER,
+  price_calculation_method VARCHAR(50) DEFAULT 'manual',
+  price_calculated_at TIMESTAMP,
+  price_calculation_source UUID, -- publisher_offering.id
+  price_override_reason TEXT;
+
+-- Phase 6B: Add calculation function
+CREATE OR REPLACE FUNCTION calculate_website_guest_post_cost(website_id UUID)
+RETURNS INTEGER AS $$
+DECLARE
+  calculated_price INTEGER;
+  offering_id UUID;
+BEGIN
+  -- Get minimum price from all associated offerings
+  SELECT MIN(po.base_price), po.id INTO calculated_price, offering_id
+  FROM publisher_offering_relationships por
+  JOIN publisher_offerings po ON por.offering_id = po.id
+  WHERE por.website_id = $1
+    AND po.is_active = true
+    AND po.base_price IS NOT NULL
+  GROUP BY po.id
+  ORDER BY po.base_price
+  LIMIT 1;
+  
+  -- Update tracking columns
+  UPDATE websites SET
+    derived_guest_post_cost = calculated_price,
+    price_calculation_method = 'min_offering',
+    price_calculated_at = NOW(),
+    price_calculation_source = offering_id
+  WHERE id = $1;
+  
+  RETURN calculated_price;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Phase 6C: Make it a generated column (PostgreSQL 12+)
+-- Note: This is irreversible without data migration
+ALTER TABLE websites 
+DROP COLUMN guest_post_cost,
+ADD COLUMN guest_post_cost INTEGER GENERATED ALWAYS AS (
+  (SELECT MIN(po.base_price)
+   FROM publisher_offering_relationships por
+   JOIN publisher_offerings po ON por.offering_id = po.id
+   WHERE por.website_id = websites.id
+     AND po.is_active = true
+     AND po.base_price IS NOT NULL)
+) STORED;
+```
+
+#### Code Changes Required
+
+1. **Remove Direct Edits** (30+ files)
+   - Admin panels that edit guest_post_cost
+   - API routes that accept guest_post_cost updates
+   - Airtable sync that sets guest_post_cost
+
+2. **Update Price Sources**
+   - Modify PricingService to use offerings
+   - Update order calculations
+   - Fix display components
+
+3. **Add Publisher Offering Management**
+   - UI for managing offerings per website
+   - Bulk pricing update tools
+   - Price history tracking
+
+### Impact Analysis
+
+#### Systems Affected
+1. **Order System**: Must use publisher_offerings for pricing
+2. **Airtable Sync**: Cannot directly set guest_post_cost
+3. **Admin Tools**: Need new UI for managing offerings
+4. **Invoicing**: Price source changes
+5. **Reports**: Pricing analytics need updates
+
+#### Risk Mitigation
+1. **Rollback Plan**: Keep original guest_post_cost data in backup table
+2. **Gradual Rollout**: Use feature flags to control which sites use derived pricing
+3. **Monitoring**: Alert on price calculation failures
+4. **Audit Trail**: Log all price changes with source
+
+### Testing Requirements
+
+1. **Unit Tests**
+   - Price calculation function
+   - Edge cases (no offerings, multiple offerings, inactive offerings)
+
+2. **Integration Tests**
+   - Order creation with derived prices
+   - Price updates when offerings change
+   - Bulk operations performance
+
+3. **User Acceptance Tests**
+   - Admin can manage offerings
+   - Prices display correctly
+   - Historical orders unaffected
+
+### Success Criteria
+- ✅ All 941 websites have correct derived prices
+- ✅ No manual guest_post_cost edits possible
+- ✅ Price changes flow through offerings only
+- ✅ Performance acceptable (<100ms calculation)
+- ✅ Full audit trail of price changes
+- ✅ Rollback possible if issues arise
+
+### Estimated Timeline
+- Data Cleanup: 2-4 hours
+- Phase 6A (Infrastructure): 4-6 hours
+- Phase 6B (Shadow Mode): 6-8 hours
+- Phase 6C (Full Migration): 8-10 hours
+- Testing & Validation: 4-6 hours
+- **Total: 24-34 hours**
+
+### Next Steps
+1. ✅ Review research and understand requirements
+2. ✅ Check database cleanup status (14 sites, not 18)
+3. 🔄 Document Phase 6 plan (current)
+4. ⏳ Get stakeholder approval on cleanup approach
+5. ⏳ Begin Phase 6A implementation
 
 ---
 

@@ -192,7 +192,7 @@ export async function generateMetadata({ params }: { params: Promise<{ niche: st
   
   return {
     title: `${nicheName} Guest Posting Sites - Find Quality ${nicheName} Blogs`,
-    description: `Discover high-quality ${nicheName.toLowerCase()} guest posting sites with transparent pricing. Get wholesale costs + $79 service fee for complete content creation and placement.`,
+    description: `Discover high-quality ${nicheName.toLowerCase()} guest posting sites with transparent pricing. Get wholesale costs + $${SERVICE_FEE_CENTS / 100} service fee for complete content creation and placement.`,
   };
 }
 

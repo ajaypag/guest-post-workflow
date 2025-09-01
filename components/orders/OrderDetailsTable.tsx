@@ -3,6 +3,7 @@
 import React from 'react';
 import { Globe, CheckCircle, Clock, XCircle, AlertCircle, ExternalLink, DollarSign, Package } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils/formatting';
+import { SERVICE_FEE_CENTS } from '@/lib/config/pricing';
 
 interface OrderDetailsTableProps {
   order: any;
@@ -344,7 +345,7 @@ export default function OrderDetailsTable({
                 </div>
                 {item.wholesalePrice && (
                   <div className="text-xs text-gray-500 text-right mt-1">
-                    ${(item.wholesalePrice / 100).toFixed(0)} site + $79 content
+                    ${(item.wholesalePrice / 100).toFixed(0)} site + ${SERVICE_FEE_CENTS / 100} content
                   </div>
                 )}
               </div>

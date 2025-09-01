@@ -338,7 +338,7 @@ https://yoursite.com/another-page"
                 <CheckCircle className="h-8 w-8 text-gray-600" />
               </div>
               <h3 className="font-semibold text-gray-900 text-base mb-2">Fair Pricing</h3>
-              <p className="text-sm text-gray-600 leading-relaxed">Wholesale cost + $79 admin fee (no markups)</p>
+              <p className="text-sm text-gray-600 leading-relaxed">Wholesale cost + $100 admin fee (no markups)</p>
             </div>
           </div>
         </div>

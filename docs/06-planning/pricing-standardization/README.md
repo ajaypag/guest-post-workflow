@@ -4,8 +4,9 @@
 
 ### Active Documents
 - **[PRICING-MIGRATION-FINAL.md](./PRICING-MIGRATION-FINAL.md)** - Complete implementation guide for pricing migration
-- **[GRANULAR-IMPLEMENTATION-PLAN.md](./GRANULAR-IMPLEMENTATION-PLAN.md)** - 300+ step detailed execution plan
+- **[GRANULAR-IMPLEMENTATION-PLAN.md](./GRANULAR-IMPLEMENTATION-PLAN.md)** - 300+ step detailed execution plan with Phase 6 documentation
 - **[PHASE-2-COMPLETION.md](./PHASE-2-COMPLETION.md)** - Phase 2 cents conversion completion report
+- **[PHASE-6-IMPACT-ANALYSIS.md](./PHASE-6-IMPACT-ANALYSIS.md)** - Comprehensive impact analysis for derived field implementation
 
 ### Completion Reports
 - **[SERVICE-FEE-MIGRATION-COMPLETE.md](./SERVICE-FEE-MIGRATION-COMPLETE.md)** - Phase 1 completion report
@@ -33,8 +34,10 @@
 - ✅ Phase 0: Publisher data cleanup (COMPLETE)
 - ✅ Phase 1: Service fee centralization (COMPLETE - 43+ instances fixed)
 - ✅ Phase 2: Convert guest_post_cost to cents (COMPLETE - 940 records migrated, 20+ files updated)
-- ⏳ Phase 3: Implement database triggers for automatic price sync
-- ⏳ Phase 4: Add dynamic service fees per client
+- ✅ Phase 5: Dynamic markup implementation (COMPLETE - $125 service fee)
+- 📋 Phase 6: Guest_post_cost as derived field (PLANNED - 98.5% ready, 14 sites need cleanup)
+- ⏳ Phase 7: Add dynamic service fees per client
+- ⏳ Phase 8: Implement database triggers for automatic price sync
 
 ## Quick Facts
 

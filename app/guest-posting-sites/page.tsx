@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import { db } from '@/lib/db/connection';
 import { SERVICE_FEE_CENTS } from '@/lib/config/pricing';
+import { ServiceFeeDisplay, ServiceFeeFlatDisplay, ServiceFeeLargeDisplay } from '@/components/ServiceFeeDisplay';
 import { websites } from '@/lib/db/websiteSchema';
 import { sql } from 'drizzle-orm';
 import { getMarketingStats, formatSiteCount } from '@/lib/marketing-stats';
@@ -32,7 +33,7 @@ export async function generateMetadata(): Promise<Metadata> {
   
   return {
     title: `Guest Posting Sites List - ${siteCount}+ Sites with Pricing | Linkio`,
-    description: `Browse ${siteCount}+ guest posting sites with transparent pricing. See wholesale costs + $79 service fee. Filter by category, DR, traffic, and more.`,
+    description: `Browse ${siteCount}+ guest posting sites with transparent pricing. See wholesale costs + $${SERVICE_FEE_CENTS / 100} service fee. Filter by category, DR, traffic, and more.`,
   };
 }
 
@@ -241,7 +242,7 @@ export default async function GuestPostingSitesPage() {
           <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
             <div className="px-4 py-3 bg-blue-50 border-b border-blue-100">
               <p className="text-sm text-blue-900">
-                💡 <span className="font-medium">$79 gets you everything:</span> Content research & writing, publisher outreach, negotiation & live placement. 
+                💡 <span className="font-medium">${(SERVICE_FEE_CENTS / 100).toFixed(0)} gets you everything:</span> Content research & writing, publisher outreach, negotiation & live placement. 
                 Just pay wholesale site cost + our flat service fee.
               </p>
             </div>
@@ -422,7 +423,7 @@ export default async function GuestPostingSitesPage() {
                     <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
                     <div>
                       <div className="font-medium text-gray-900">Transparent Wholesale Pricing</div>
-                      <div className="text-sm text-gray-600">Real costs + $79 flat fee (no markup games)</div>
+                      <div className="text-sm text-gray-600">Real costs + ${(SERVICE_FEE_CENTS / 100).toFixed(0)} flat fee (no markup games)</div>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
@@ -600,7 +601,7 @@ export default async function GuestPostingSitesPage() {
               <div className="text-sm text-gray-500">Verified Sites</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-gray-900 mb-1">$79</div>
+              <div className="text-3xl font-bold text-gray-900 mb-1">${(SERVICE_FEE_CENTS / 100).toFixed(0)}</div>
               <div className="text-sm text-gray-500">Flat Service Fee</div>
             </div>
             <div className="text-center">

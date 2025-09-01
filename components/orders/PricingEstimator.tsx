@@ -450,7 +450,7 @@ export default function PricingEstimator({ className = '', onEstimateChange, ini
           <div className="space-y-1 sm:space-y-2">
             <label className="text-xs font-medium text-gray-500 uppercase tracking-wide flex items-center">
               <span className="truncate">Price Range</span>
-              <span className="ml-1 text-blue-500 hidden sm:inline" title="Total cost per link including site cost + $79 content package">ⓘ</span>
+              <span className="ml-1 text-blue-500 hidden sm:inline" title={`Total cost per link including site cost + $${SERVICE_FEE_CENTS / 100} content package`}>ⓘ</span>
             </label>
             <FilterDropdown
               label=""
