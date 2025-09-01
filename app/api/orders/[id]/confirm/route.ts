@@ -8,6 +8,7 @@ import { eq, sql, and } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { generateKeywords, formatKeywordsForStorage } from '@/lib/services/keywordGenerationService';
+import { SERVICE_FEE_CENTS } from '@/lib/config/pricing';
 import { generateDescription } from '@/lib/services/descriptionGenerationService';
 import { ClientService } from '@/lib/db/clientService';
 import { createOrderBenchmark } from '@/lib/orders/benchmarkUtils';
@@ -272,7 +273,7 @@ export async function POST(
           totalRetail += itemPrice;
           
           // Calculate wholesale (subtract service fee)
-          const wholesalePrice = Math.max(itemPrice - 7900, 0);
+          const wholesalePrice = Math.max(itemPrice - SERVICE_FEE_CENTS, 0);
           totalWholesale += wholesalePrice;
         }
         

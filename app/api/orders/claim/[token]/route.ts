@@ -145,7 +145,7 @@ export async function GET(
           
           availableDomains[clientId] = clientDomains.map(domain => {
             const website = websiteMap.get(domain.domain.toLowerCase());
-            const guestPostCost = website?.guestPostCost ? parseFloat(website.guestPostCost) : 30000;
+            const guestPostCost = website?.guestPostCost ? website.guestPostCost : 30000;
             
             // Check if this domain is already assigned to a line item
             const assignedLineItem = lineItemsData.find(li => li.assignedDomainId === domain.id);

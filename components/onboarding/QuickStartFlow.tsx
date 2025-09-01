@@ -6,7 +6,7 @@ import { ArrowRight, Globe, Target, DollarSign, Sparkles, Check, TrendingUp, Inf
 // PricingEstimator removed to prevent unauthorized API calls
 import SimplifiedPricingPreview from '@/components/onboarding/SimplifiedPricingPreview';
 import { formatCurrency } from '@/lib/utils/formatting';
-import { SERVICE_FEE_CENTS } from '@/lib/config/pricing';
+import { SERVICE_FEE_CENTS, DEFAULT_RETAIL_PRICE_CENTS } from '@/lib/config/pricing';
 import { parseUrl, validateUrl } from '@/lib/utils/urlParser';
 
 export default function QuickStartFlow() {
@@ -446,11 +446,11 @@ export default function QuickStartFlow() {
                     <div className="flex items-center justify-between">
                       <span className="text-gray-600">Estimated total:</span>
                       <span className="text-2xl font-bold text-gray-900">
-                        {formatCurrency((pricingEstimate?.clientMedian || 27900) * linkCount)}
+                        {formatCurrency((pricingEstimate?.clientMedian || DEFAULT_RETAIL_PRICE_CENTS) * linkCount)}
                       </span>
                     </div>
                     <p className="text-xs text-gray-500 mt-1">
-                      {linkCount} links × {formatCurrency(pricingEstimate?.clientMedian || 27900)} average per link
+                      {linkCount} links × {formatCurrency(pricingEstimate?.clientMedian || DEFAULT_RETAIL_PRICE_CENTS)} average per link
                     </p>
                   </div>
                 )}
@@ -557,7 +557,7 @@ export default function QuickStartFlow() {
                       <div className="flex justify-between">
                         <span className="text-gray-900 font-medium">Estimated Total:</span>
                         <span className="text-xl font-bold text-gray-900">
-                          {formatCurrency(27900 * linkCount)}
+                          {formatCurrency(DEFAULT_RETAIL_PRICE_CENTS * linkCount)}
                         </span>
                       </div>
                       <p className="text-xs text-gray-500 mt-1 text-right">

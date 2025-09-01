@@ -4,6 +4,7 @@ import { bulkAnalysisDomains } from '../lib/db/bulkAnalysisSchema';
 import { websites } from '../lib/db/websiteSchema';
 import { eq, sql } from 'drizzle-orm';
 import { EnhancedOrderPricingService } from '../lib/services/enhancedOrderPricingService';
+import { SERVICE_FEE_CENTS } from '../lib/config/pricing';
 
 async function simulateAssignment() {
   const lineItemId = '1ab51b13-4b4a-4077-9b55-997a9db761f0'; // Unassigned item
@@ -71,7 +72,7 @@ async function simulateAssignment() {
     
     if (pricingResult.wholesalePrice === 0 && website.guestPostCost) {
       const fallbackWholesale = Math.floor(Number(website.guestPostCost) * 100);
-      const fallbackEstimated = fallbackWholesale + 7900;
+      const fallbackEstimated = fallbackWholesale + SERVICE_FEE_CENTS;
       console.log('   Fallback Calculation:');
       console.log('   - Wholesale:', `$${(fallbackWholesale/100).toFixed(2)}`);
       console.log('   - Estimated:', `$${(fallbackEstimated/100).toFixed(2)}`);

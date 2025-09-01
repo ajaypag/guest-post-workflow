@@ -84,13 +84,13 @@ export async function GET() {
 
     for (const [websiteId, data] of websiteMap) {
       const airtableData = airtableMap.get(data.domain);
-      const guestPostCostCents = Math.round(parseFloat(data.guestPostCost) * 100);
+      const guestPostCostCents = Math.round(data.guestPostCost);
       
       let issue: any = {
         id: websiteId,
         websiteId,
         domain: data.domain,
-        currentGuestPostCost: parseFloat(data.guestPostCost),
+        currentGuestPostCost: data.guestPostCost,
         currentOfferingPrice: null,
         airtablePrice: airtableData?.guestPostCost || null,
         airtableEmail: airtableData?.postflowContactEmails?.[0] || airtableData?.guestPostContact || null,
@@ -294,7 +294,7 @@ export async function GET() {
         }
         
         issue.proposedAction = issue.executionPlan[0].description;
-        issue.proposedPrice = airtableData?.guestPostCost || parseFloat(data.guestPostCost);
+        issue.proposedPrice = airtableData?.guestPostCost || data.guestPostCost;
         stats.noPublisher++;
         
       } else if (data.offerings.length === 0) {
@@ -352,7 +352,7 @@ export async function GET() {
         ];
         
         issue.proposedAction = 'Create offering with price from Airtable';
-        issue.proposedPrice = airtableData?.guestPostCost || parseFloat(data.guestPostCost);
+        issue.proposedPrice = airtableData?.guestPostCost || data.guestPostCost;
         issue.confidence = airtableData ? 'high' : 'medium';
         stats.noOffering++;
         
@@ -377,7 +377,7 @@ export async function GET() {
         ];
         
         issue.proposedAction = 'Manual review required for multiple offerings';
-        issue.proposedPrice = airtableData?.guestPostCost || parseFloat(data.guestPostCost);
+        issue.proposedPrice = airtableData?.guestPostCost || data.guestPostCost;
         issue.confidence = 'low';
         stats.multipleOfferings++;
         
@@ -425,7 +425,7 @@ export async function GET() {
             issue.proposedAction = `Update offering price to match Airtable ($${airtableData.guestPostCost})`;
             issue.confidence = 'high';
           } else {
-            issue.proposedPrice = parseFloat(data.guestPostCost);
+            issue.proposedPrice = data.guestPostCost;
             issue.proposedAction = `Update offering price to match guest_post_cost ($${data.guestPostCost})`;
             issue.confidence = 'medium';
           }

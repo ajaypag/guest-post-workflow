@@ -3,6 +3,7 @@ import { bulkAnalysisDomains } from '../lib/db/bulkAnalysisSchema';
 import { orderLineItems } from '../lib/db/orderLineItemSchema';
 import { websites } from '../lib/db/websiteSchema';
 import { eq, and, isNull } from 'drizzle-orm';
+import { SERVICE_FEE_CENTS } from '../lib/config/pricing';
 
 async function testDomainAssignment() {
   const orderId = 'a3ca24b7-9a92-4c00-952e-bb71606af8b9';
@@ -73,7 +74,7 @@ async function testDomainAssignment() {
   
   if (website && website.guestPostCost) {
     const wholesalePrice = Math.floor(Number(website.guestPostCost) * 100);
-    const estimatedPrice = wholesalePrice + 7900; // $79 markup
+    const estimatedPrice = wholesalePrice + SERVICE_FEE_CENTS; // Service fee markup
     console.log('\nExpected prices after assignment:');
     console.log('  Wholesale:', `$${(wholesalePrice/100).toFixed(2)}`);
     console.log('  Estimated:', `$${(estimatedPrice/100).toFixed(2)}`);

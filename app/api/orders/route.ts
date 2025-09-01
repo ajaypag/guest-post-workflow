@@ -9,9 +9,7 @@ import { eq, inArray } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { shouldUseLineItemsForNewOrders } from '@/lib/config/featureFlags';
 import { PricingService } from '@/lib/services/pricingService';
-
-// Service fee per link (in cents)
-const SERVICE_FEE_CENTS = 7900; // $79.00
+import { SERVICE_FEE_CENTS } from '@/lib/config/pricing';
 
 export async function GET(request: NextRequest) {
   try {
@@ -210,7 +208,7 @@ export async function POST(request: NextRequest) {
         const dr = 50;
         // Set wholesale based on DR tier
         wholesalePrice = dr >= 70 ? 52000 : dr >= 50 ? 42000 : dr >= 30 ? 32000 : 22000;
-        retailPrice = wholesalePrice + 7900; // Add $79 service fee
+        retailPrice = wholesalePrice + SERVICE_FEE_CENTS; // Add service fee
       }
       
       subtotalRetail += retailPrice;
@@ -286,7 +284,7 @@ export async function POST(request: NextRequest) {
           const dr = 50;
           // Set wholesale based on DR tier
           wholesalePrice = dr >= 70 ? 52000 : dr >= 50 ? 42000 : dr >= 30 ? 32000 : 22000;
-          retailPrice = wholesalePrice + 7900; // Add $79 service fee
+          retailPrice = wholesalePrice + SERVICE_FEE_CENTS; // Add service fee
         }
         
         const targetPageId = domainTargetPageMap.get(domain.id) || null;
@@ -333,7 +331,7 @@ export async function POST(request: NextRequest) {
       const dr = 50;
       // Set wholesale based on DR tier
       const wholesalePrice = dr >= 70 ? 52000 : dr >= 50 ? 42000 : dr >= 30 ? 32000 : 22000;
-      const retailPrice = wholesalePrice + 7900; // Add $79 service fee
+      const retailPrice = wholesalePrice + SERVICE_FEE_CENTS; // Add service fee
 
       // Get the target page ID for this domain
       const targetPageId = domainTargetPageMap.get(domain.id) || null;

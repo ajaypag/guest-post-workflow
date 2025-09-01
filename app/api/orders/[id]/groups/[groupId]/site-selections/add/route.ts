@@ -9,6 +9,7 @@ import { orderBenchmarks } from '@/lib/db/orderBenchmarkSchema';
 import { eq, and, inArray, sql, desc } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { v4 as uuidv4 } from 'uuid';
+import { SERVICE_FEE_CENTS } from '@/lib/config/pricing';
 
 /**
  * Flexible domain addition endpoint for link building workflows
@@ -253,7 +254,7 @@ export async function POST(
         }
 
         // Calculate prices if we have website data, with manual fallback support
-        let guestPostCost = website?.guestPostCost ? parseFloat(website.guestPostCost) : 0;
+        let guestPostCost = website?.guestPostCost ? website.guestPostCost : 0;
         let domainRating = website?.domainRating || null;
         let totalTraffic = website?.totalTraffic || null;
         
@@ -271,7 +272,7 @@ export async function POST(
         }
         
         const wholesalePrice = guestPostCost ? Math.round(guestPostCost * 100) : 0; // Convert to cents
-        const serviceFee = 7900; // $79 service fee in cents
+        const serviceFee = SERVICE_FEE_CENTS; // Service fee in cents
         const retailPrice = wholesalePrice + serviceFee;
         
         return {

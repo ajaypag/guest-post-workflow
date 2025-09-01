@@ -4,6 +4,7 @@ import { orders } from '@/lib/db/orderSchema';
 import { orderLineItems } from '@/lib/db/orderLineItemSchema';
 import { eq, or, isNull, and, sql } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
+import { SERVICE_FEE_CENTS } from '@/lib/config/pricing';
 
 export async function POST(request: NextRequest) {
   try {
@@ -70,7 +71,7 @@ export async function POST(request: NextRequest) {
             itemsWithPrice++;
             
             // Calculate wholesale (subtract service fee)
-            const wholesalePrice = Math.max(itemPrice - 7900, 0);
+            const wholesalePrice = Math.max(itemPrice - SERVICE_FEE_CENTS, 0);
             totalWholesale += wholesalePrice;
           }
           

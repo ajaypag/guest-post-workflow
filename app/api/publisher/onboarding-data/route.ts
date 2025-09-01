@@ -192,7 +192,7 @@ export async function GET(request: NextRequest) {
         extractionMethod: sw.extractionMethod || 'unknown',
         verified: sw.verified || false,
         migrationStatus: sw.migrationStatus || 'pending',
-        guestPostCost: sw.guestPostCost ? (typeof sw.guestPostCost === 'string' ? parseFloat(sw.guestPostCost) : sw.guestPostCost) : undefined,
+        guestPostCost: sw.guestPostCost ? (typeof sw.guestPostCost === 'string' ? sw.guestPostCost : sw.guestPostCost) : undefined,
         domainRating: sw.domainRating || undefined,
         totalTraffic: sw.totalTraffic || undefined,
       })),

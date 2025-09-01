@@ -8,6 +8,7 @@ import { websites } from '@/lib/db/websiteSchema';
 import { eq, and, sql } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { EnhancedOrderPricingService } from '@/lib/services/enhancedOrderPricingService';
+import { SERVICE_FEE_CENTS } from '@/lib/config/pricing';
 
 export async function POST(
   request: NextRequest,
@@ -93,7 +94,7 @@ export async function POST(
         } else if (website.guestPostCost) {
           // Fallback to direct calculation if enhanced service returns 0
           wholesalePrice = Math.floor(Number(website.guestPostCost) * 100);
-          estimatedPrice = wholesalePrice + 7900; // $79 service fee in cents
+          estimatedPrice = wholesalePrice + SERVICE_FEE_CENTS; // Service fee in cents
         }
       } else {
         // Try enhanced pricing service without website record

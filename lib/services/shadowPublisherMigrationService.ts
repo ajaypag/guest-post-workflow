@@ -207,7 +207,7 @@ export class ShadowPublisherMigrationService {
                 publisherId: publisherId,
                 offeringType: 'guest_post',
                 offeringName: `Guest Post - ${shadowRow.domain}`,
-                basePrice: parseInt(parseFloat(shadowRow.guest_post_cost) * 100) || 0, // Convert to cents
+                basePrice: parseInt(shadowRow.guest_post_cost) || 0, // Convert to cents
                 currency: 'USD',
                 turnaroundDays: parseInt(shadowRow.typical_turnaround_days) || 7,
                 currentAvailability: 'available',

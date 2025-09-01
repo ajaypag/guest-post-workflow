@@ -287,12 +287,12 @@ export default async function GuestPostingSitesPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="font-medium">
-                        {site.guestPostCost ? `$${site.guestPostCost}` : 'Free'}
+                        {site.guestPostCost ? `$${(site.guestPostCost / 100).toFixed(2)}` : 'Free'}
                       </div>
                     </td>
                     <td className="px-4 py-3">
                       <div className="font-medium text-green-600">
-                        ${(site.guestPostCost || 0) + 79}
+                        ${((site.guestPostCost || 0) / 100 + 79).toFixed(2)}
                       </div>
                     </td>
                     <td className="px-4 py-3">

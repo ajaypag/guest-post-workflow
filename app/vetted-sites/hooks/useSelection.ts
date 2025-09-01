@@ -73,9 +73,10 @@ export function useSelection(userType: 'internal' | 'account' | 'publisher' = 'i
   // Calculate price for a domain - unified pricing for all users
   const calculatePrice = useCallback((guestPostCost: string | null): number => {
     if (!guestPostCost) return 0;
-    const wholesalePrice = parseFloat(guestPostCost);
-    // Unified pricing: guest post cost + $79 for everyone
-    return wholesalePrice + 79;
+    const wholesalePriceCents = parseFloat(guestPostCost);
+    // Convert cents to dollars and add $79 service fee
+    const wholesalePriceDollars = wholesalePriceCents / 100;
+    return wholesalePriceDollars + 79;
   }, []);
 
   // Add domain to selection

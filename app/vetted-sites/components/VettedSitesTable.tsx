@@ -740,11 +740,12 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
                 <td className="px-3 xl:px-4 py-4">
                   <div className="text-sm font-medium text-gray-900">
                     {(() => {
-                      const wholesalePrice = domain.guestPostCost ? parseFloat(domain.guestPostCost) : null;
-                      if (!wholesalePrice) return <span className="text-gray-400">N/A</span>;
+                      const wholesalePriceCents = domain.guestPostCost ? parseFloat(domain.guestPostCost) : null;
+                      if (!wholesalePriceCents) return <span className="text-gray-400">N/A</span>;
                       
-                      // Unified pricing: guest post cost + $79 for everyone
-                      const displayPrice = wholesalePrice + 79;
+                      // Convert cents to dollars and add $79 service fee
+                      const wholesalePriceDollars = wholesalePriceCents / 100;
+                      const displayPrice = wholesalePriceDollars + 79;
                       return `$${displayPrice.toFixed(0)}`;
                     })()}
                   </div>

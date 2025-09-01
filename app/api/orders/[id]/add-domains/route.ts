@@ -8,9 +8,7 @@ import { targetPages } from '@/lib/db/schema';
 import { eq, inArray, and, count } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 import { PricingService } from '@/lib/services/pricingService';
-
-// Service fee per link (in cents)
-const SERVICE_FEE_CENTS = 7900; // $79.00
+import { SERVICE_FEE_CENTS } from '@/lib/config/pricing';
 
 interface RouteParams {
   params: Promise<{

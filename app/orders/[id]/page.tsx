@@ -22,9 +22,7 @@ import {
   Target, ChevronRight, AlertCircle, Activity, Building, User, DollarSign,
   Download, Share2, XCircle, CreditCard, Trash2, ArrowRightLeft, MoreVertical
 } from 'lucide-react';
-
-// Service fee constant - $79 per link for SEO content package
-const SERVICE_FEE_CENTS = 7900;
+import { SERVICE_FEE_CENTS } from '@/lib/config/pricing';
 
 // User-friendly status messaging
 const getStatusMessage = (status: string, state?: string) => {

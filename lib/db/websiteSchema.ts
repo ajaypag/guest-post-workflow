@@ -12,7 +12,7 @@ export const websites = pgTable('websites', {
   domain: varchar('domain', { length: 255 }).notNull().unique(),
   domainRating: integer('domain_rating'),
   totalTraffic: integer('total_traffic'),
-  guestPostCost: decimal('guest_post_cost', { precision: 10, scale: 2 }),
+  guestPostCost: integer('guest_post_cost'), // Now stores cents instead of dollars
   categories: text('categories').array(),
   niche: text('niche').array(), // PostgreSQL array of niches
   type: text('type').array(),

@@ -43,10 +43,10 @@ export const PublisherPreApprovalStep = ({ step, workflow, onChange }: Publisher
         if (response.ok) {
           const data = await response.json();
           if (data.guestPostCost) {
-            setGuestPostCost(`$${data.guestPostCost}`);
+            setGuestPostCost(`$${(data.guestPostCost / 100).toFixed(2)}`);
             // Auto-populate the agreed price if not already set
             if (!step.outputs.agreedPrice) {
-              onChange({ ...step.outputs, agreedPrice: `$${data.guestPostCost}` });
+              onChange({ ...step.outputs, agreedPrice: `$${(data.guestPostCost / 100).toFixed(2)}` });
             }
           }
         }

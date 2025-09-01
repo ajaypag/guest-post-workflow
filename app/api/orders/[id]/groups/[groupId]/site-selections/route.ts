@@ -8,6 +8,7 @@ import { projectOrderAssociations, orderSiteSubmissions } from '@/lib/db/project
 import { websites } from '@/lib/db/websiteSchema';
 import { eq, and, inArray, sql } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
+import { SERVICE_FEE_CENTS } from '@/lib/config/pricing';
 
 export async function GET(
   request: NextRequest, 
@@ -92,7 +93,7 @@ export async function GET(
     // Transform bulk analysis domains to the expected format with real data
     const transformedDomains = analyzedDomainsList.map(domain => {
       const website = websiteMap.get(domain.domain.toLowerCase());
-      const guestPostCost = website?.guestPostCost ? parseFloat(website.guestPostCost) : null;
+      const guestPostCost = website?.guestPostCost ? website.guestPostCost : null;
       
       return {
         id: domain.id,
@@ -155,7 +156,7 @@ export async function GET(
       if (!domain) return null;
       
       const website = submissionWebsiteMap.get(domain.domain.toLowerCase());
-      const guestPostCost = website?.guestPostCost ? parseFloat(website.guestPostCost) : null;
+      const guestPostCost = website?.guestPostCost ? website.guestPostCost : null;
       
       return {
         id: submission.id,
@@ -312,10 +313,9 @@ export async function POST(
           `);
           
           // Map domain prices from website data
-          const SERVICE_FEE_CENTS = 7900;
           approvedDomainsWithPrices.rows.forEach((row: any) => {
             const wholesaleCents = row.guest_post_cost 
-              ? Math.round(parseFloat(row.guest_post_cost) * 100)
+              ? Math.round(row.guest_post_cost)
               : 20000; // Default $200 if no price
             domainPrices[row.id] = {
               wholesalePrice: wholesaleCents,
@@ -343,7 +343,7 @@ export async function POST(
             ...(isApproved && prices && {
               wholesalePriceSnapshot: prices.wholesalePrice,
               retailPriceSnapshot: prices.retailPrice,
-              serviceFeeSnapshot: 7900,
+              serviceFeeSnapshot: SERVICE_FEE_CENTS,
               priceSnapshotAt: now
             }),
             clientReviewedAt: selection.status === 'approved' || selection.status === 'rejected' ? now : null,

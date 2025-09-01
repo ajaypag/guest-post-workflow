@@ -7,6 +7,7 @@ import { bulkAnalysisDomains } from '@/lib/db/bulkAnalysisSchema';
 import { websites } from '@/lib/db/websiteSchema';
 import { eq, and, inArray } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
+import { SERVICE_FEE_CENTS } from '@/lib/config/pricing';
 
 export async function GET(
   request: NextRequest,
@@ -129,7 +130,7 @@ export async function GET(
       // Calculate price - use snapshot if available, otherwise from website data
       let price = 0;
       let wholesalePrice = 0;
-      const serviceFee = submission.serviceFeeSnapshot || 7900;
+      const serviceFee = submission.serviceFeeSnapshot || SERVICE_FEE_CENTS;
       
       if (submission.retailPriceSnapshot) {
         price = submission.retailPriceSnapshot;
@@ -139,7 +140,7 @@ export async function GET(
         price = wholesalePrice + serviceFee;
       } else if (websiteData?.guestPostCost) {
         // Convert from decimal dollars to cents
-        wholesalePrice = Math.round(parseFloat(websiteData.guestPostCost.toString()) * 100);
+        wholesalePrice = Math.round(websiteData.guestPostCost.toString() * 100);
         price = wholesalePrice + serviceFee;
       }
       

@@ -69,11 +69,11 @@ export async function POST(request: Request) {
         correctPrice = airtableData.guestPostCost;
       } else {
         // No CSV pricing data - use database value
-        correctPrice = parseFloat(website.guestPostCost);
+        correctPrice = website.guestPostCost;
       }
     } else {
       // No CSV data - fall back to current database value
-      correctPrice = parseFloat(website.guestPostCost);
+      correctPrice = website.guestPostCost;
     }
     const priceCents = Math.round(correctPrice * 100);
 

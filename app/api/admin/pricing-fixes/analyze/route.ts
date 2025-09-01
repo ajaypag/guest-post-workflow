@@ -76,13 +76,13 @@ export async function GET() {
 
     for (const [websiteId, data] of websiteMap) {
       const airtableData = airtableMap.get(data.domain);
-      const guestPostCostCents = Math.round(parseFloat(data.guestPostCost) * 100);
+      const guestPostCostCents = Math.round(data.guestPostCost);
       
       let issue: any = {
         id: websiteId,
         websiteId,
         domain: data.domain,
-        currentGuestPostCost: parseFloat(data.guestPostCost),
+        currentGuestPostCost: data.guestPostCost,
         currentOfferingPrice: null,
         airtablePrice: airtableData?.guestPostCost || null,
         airtableEmail: airtableData?.postflowContactEmails?.[0] || airtableData?.guestPostContact || null,
@@ -95,20 +95,20 @@ export async function GET() {
       if (data.publishers.length === 0) {
         issue.issueType = 'no_publisher';
         issue.proposedAction = 'Create publisher from Airtable contact and assign';
-        issue.proposedPrice = airtableData?.guestPostCost || parseFloat(data.guestPostCost);
+        issue.proposedPrice = airtableData?.guestPostCost || data.guestPostCost;
         issue.confidence = airtableData ? 'high' : 'low';
         stats.noPublisher++;
       } else if (data.offerings.length === 0) {
         issue.issueType = 'no_offering';
         issue.proposedAction = 'Create offering with price from Airtable';
-        issue.proposedPrice = airtableData?.guestPostCost || parseFloat(data.guestPostCost);
+        issue.proposedPrice = airtableData?.guestPostCost || data.guestPostCost;
         issue.confidence = airtableData ? 'high' : 'medium';
         stats.noOffering++;
       } else if (data.offerings.length > 1) {
         issue.issueType = 'multiple_offerings';
         issue.currentOfferingPrice = data.offerings[0].price;
         issue.proposedAction = 'Keep offering that matches Airtable price, archive others';
-        issue.proposedPrice = airtableData?.guestPostCost || parseFloat(data.guestPostCost);
+        issue.proposedPrice = airtableData?.guestPostCost || data.guestPostCost;
         issue.confidence = 'low';
         stats.multipleOfferings++;
       } else {
@@ -126,7 +126,7 @@ export async function GET() {
             issue.proposedAction = `Update offering price to match Airtable ($${airtableData.guestPostCost})`;
             issue.confidence = 'high';
           } else {
-            issue.proposedPrice = parseFloat(data.guestPostCost);
+            issue.proposedPrice = data.guestPostCost;
             issue.proposedAction = `Update offering price to match guest_post_cost ($${data.guestPostCost})`;
             issue.confidence = 'medium';
           }

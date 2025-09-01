@@ -251,7 +251,7 @@ export default function WebsiteDetailModal({
                         <span className="text-sm">Guest Post Cost</span>
                       </div>
                       <div className="text-2xl font-bold text-gray-900">
-                        {website.guestPostCost ? `$${website.guestPostCost}` : '-'}
+                        {website.guestPostCost ? `$${(website.guestPostCost / 100).toFixed(2)}` : '-'}
                       </div>
                     </div>
                     <div className="bg-gray-50 rounded-lg p-4">
@@ -375,7 +375,7 @@ export default function WebsiteDetailModal({
                               </div>
                               {contact.guestPostCost && (
                                 <div className="text-sm text-gray-600">
-                                  Guest Post Cost: <span className="font-medium">${contact.guestPostCost}</span>
+                                  Guest Post Cost: <span className="font-medium">${(contact.guestPostCost / 100).toFixed(2)}</span>
                                 </div>
                               )}
                               {contact.requirement && (

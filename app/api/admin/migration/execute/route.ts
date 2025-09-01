@@ -9,6 +9,7 @@ import { AuthServiceServer } from '@/lib/auth-server';
 import { v4 as uuidv4 } from 'uuid';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { SERVICE_FEE_CENTS } from '@/lib/config/pricing';
 import fs from 'fs/promises';
 import path from 'path';
 import { updateMigrationState, getMigrationState } from '../status/route';
@@ -267,8 +268,8 @@ async function migrateOrderData() {
           ? Math.round(packagePrice / linkCount) // Price already in cents, divide by links
           : 49900; // Default $499
         
-        const wholesalePrice = Math.max(estimatedPrice - 7900, 0); // Subtract service fee
-        const serviceFee = 7900;
+        const wholesalePrice = Math.max(estimatedPrice - SERVICE_FEE_CENTS, 0); // Subtract service fee
+        const serviceFee = SERVICE_FEE_CENTS;
 
         const [createdLineItem] = await db.insert(orderLineItems).values({
           orderId: order.id,

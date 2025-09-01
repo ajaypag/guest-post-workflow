@@ -321,7 +321,7 @@ export function OrdersTableMultiClient({
                     <div>
                       <p className="text-xs text-gray-500">Value</p>
                       <p className="text-sm font-semibold text-gray-900">
-                        {formatCurrency((order.totalRetail || 0) / 100)}
+                        {formatCurrency(order.totalRetail || 0)}
                       </p>
                     </div>
                   </div>

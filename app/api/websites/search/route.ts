@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
       domain: w.domain,
       domainRating: w.domain_rating,
       totalTraffic: w.total_traffic,
-      guestPostCost: w.guest_post_cost ? parseFloat(w.guest_post_cost) : null,
+      guestPostCost: w.guest_post_cost ? w.guest_post_cost : null,
       categories: w.categories || [],
       type: w.type || [],
       websiteType: w.website_type || [], // SaaS, Blog, News, eCommerce, etc.

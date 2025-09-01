@@ -389,7 +389,7 @@ export default function AirtableImportModal({
                             {website.totalTraffic ? website.totalTraffic.toLocaleString() : '-'}
                           </td>
                           <td className="px-4 py-3 text-gray-500">
-                            {website.guestPostCost ? `$${website.guestPostCost}` : '-'}
+                            {website.guestPostCost ? `$${(website.guestPostCost / 100).toFixed(2)}` : '-'}
                           </td>
                           <td className="px-4 py-3 text-gray-500">
                             <div className="flex flex-wrap gap-1">

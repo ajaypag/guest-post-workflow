@@ -273,7 +273,7 @@ export default async function WebsiteDetailPage({ params }: { params: Promise<{ 
             <div>
               <dt className="text-sm font-medium text-gray-500">Price</dt>
               <dd className="mt-1 text-2xl font-semibold text-gray-900">
-                {website.guestPostCost ? `$${website.guestPostCost}` : '--'}
+                {website.guestPostCost ? `$${(website.guestPostCost / 100).toFixed(2)}` : '--'}
               </dd>
             </div>
             <div>

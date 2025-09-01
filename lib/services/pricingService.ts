@@ -62,9 +62,11 @@ export class PricingService {
       };
     }
 
-    // website.guestPostCost is what we pay publishers (wholesale)
-    const wholesalePrice = website.guestPostCost ? parseFloat(website.guestPostCost) : 0;
-    // Customer price is wholesale + $79 service fee
+    // website.guestPostCost is what we pay publishers (wholesale) - now in cents
+    const wholesalePriceCents = website.guestPostCost || 0;
+    // Convert to dollars for return value (keeping API contract)
+    const wholesalePrice = wholesalePriceCents / 100;
+    // Customer price is wholesale + $79 service fee (in dollars)
     const retailPrice = wholesalePrice + 79;
 
     return {

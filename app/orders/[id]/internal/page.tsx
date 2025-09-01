@@ -13,6 +13,7 @@ import OrderProgressSteps, { getStateDisplay, getProgressSteps } from '@/compone
 import TargetPageSelector from '@/components/orders/TargetPageSelector';
 import { isLineItemsSystemEnabled, enableLineItemsForOrder } from '@/lib/config/featureFlags';
 import ChangeBulkAnalysisProject from '@/components/orders/ChangeBulkAnalysisProject';
+import { SERVICE_FEE_CENTS } from '@/lib/config/pricing';
 import { UserAssignmentModal } from '@/components/UserAssignmentModal';
 import { AuthService, type AuthSession } from '@/lib/auth';
 import { formatCurrency } from '@/lib/utils/formatting';
@@ -198,7 +199,7 @@ const getTotalLinkCount = (order: OrderDetail): number => {
 
 const getTotalServiceFees = (order: OrderDetail): number => {
   const linkCount = getTotalLinkCount(order);
-  return 7900 * linkCount; // $79 per link
+  return SERVICE_FEE_CENTS * linkCount; // Service fee per link
 };
 
 const getTotalRevenue = (order: OrderDetail): number => {
@@ -2855,7 +2856,7 @@ export default function InternalOrderManagementPage() {
                       </div>
                       <div className="flex justify-between text-sm">
                         <dt className="text-gray-600">Service Fee</dt>
-                        <dd className="font-medium text-gray-900">{formatCurrency(7900)}</dd>
+                        <dd className="font-medium text-gray-900">{formatCurrency(SERVICE_FEE_CENTS)}</dd>
                       </div>
                     </dl>
                     

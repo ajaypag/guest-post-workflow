@@ -60,7 +60,7 @@ export default function SimplifiedPricingPreview({
       wholesaleMin: 10000, // $100 wholesale minimum
       wholesaleMax: (priceMax - 79) * 100,
       clientMedian: priceMax * 100, // User's max budget in cents
-      clientMin: 17900, // $179 minimum (100 + 79)
+      clientMin: 10000 + SERVICE_FEE_CENTS, // Minimum wholesale + service fee
       clientMax: priceMax * 100
     };
     

@@ -7,6 +7,7 @@ import { orders } from '@/lib/db/orderSchema';
 import { eq, and } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { isLineItemsSystemEnabled } from '@/lib/config/featureFlags';
+import { SERVICE_FEE_CENTS } from '@/lib/config/pricing';
 
 export async function POST(
   request: NextRequest,
@@ -127,13 +128,13 @@ export async function POST(
       // If price snapshots already exist, use them; otherwise calculate based on DR
       let retailPrice = submission.retailPriceSnapshot;
       let wholesalePrice = submission.wholesalePriceSnapshot;
-      const serviceFee = 7900; // $79 service fee
+      const serviceFee = SERVICE_FEE_CENTS; // Service fee
       
       if (!retailPrice) {
         // Use website's guest post cost if available, otherwise calculate based on DR
         if (websiteData?.guestPostCost) {
           // Convert from decimal dollars to cents
-          wholesalePrice = Math.round(parseFloat(websiteData.guestPostCost.toString()) * 100);
+          wholesalePrice = Math.round(websiteData.guestPostCost.toString() * 100);
           retailPrice = wholesalePrice + serviceFee;
         } else {
           // Calculate based on domain rating if available

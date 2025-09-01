@@ -532,7 +532,7 @@ export default function InlineDatabaseSelector({
                       {website.guestPostCost ? (
                         <span className="flex items-center">
                           <DollarSign className="w-4 h-4 text-gray-400 mr-1" />
-                          ${website.guestPostCost}
+                          ${(website.guestPostCost / 100).toFixed(2)}
                         </span>
                       ) : '-'}
                     </div>

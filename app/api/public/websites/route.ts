@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
       domain: site.domain,
       domainRating: site.domainRating,
       totalTraffic: site.totalTraffic,
-      guestPostCost: site.guestPostCost ? parseFloat(site.guestPostCost.toString()) : null,
+      guestPostCost: site.guestPostCost ? site.guestPostCost.toString() : null,
       categories: site.categories || [],
       overallQuality: site.overallQuality,
       hasGuestPost: site.hasGuestPost,

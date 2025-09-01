@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { SERVICE_FEE_CENTS } from '@/lib/config/pricing';
 import { useParams, useRouter } from 'next/navigation';
 import { Loader2, Clock, CheckCircle, AlertCircle, Search, Users, FileText, ArrowRight, RefreshCw, ExternalLink, BarChart3, Activity, Target, CreditCard } from 'lucide-react';
 import Link from 'next/link';
@@ -272,11 +273,11 @@ export default function OrderStatusPage() {
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-500">Site Costs:</span>
-                  <span className="font-medium">{formatCurrency(order.totalWholesale || (order.totalPrice - 7900 * order.orderGroups.reduce((sum, g) => sum + g.linkCount, 0)))}</span>
+                  <span className="font-medium">{formatCurrency(order.totalWholesale || (order.totalPrice - SERVICE_FEE_CENTS * order.orderGroups.reduce((sum, g) => sum + g.linkCount, 0)))}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">SEO Services:</span>
-                  <span className="font-medium">{formatCurrency(7900 * order.orderGroups.reduce((sum, g) => sum + g.linkCount, 0))}</span>
+                  <span className="font-medium">{formatCurrency(SERVICE_FEE_CENTS * order.orderGroups.reduce((sum, g) => sum + g.linkCount, 0))}</span>
                 </div>
                 <div className="flex justify-between pt-1 border-t">
                   <span className="font-medium">Total:</span>

@@ -4,6 +4,7 @@ import { orderLineItems, lineItemChanges } from '@/lib/db/orderLineItemSchema';
 import { orders } from '@/lib/db/orderSchema';
 import { eq, and, or, desc } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
+import { SERVICE_FEE_CENTS } from '@/lib/config/pricing';
 
 /**
  * GET /api/orders/[id]/line-items
@@ -239,7 +240,7 @@ export async function POST(
             assignedBy: (item.assignedDomain || metadata?.assignedDomain) ? session.userId : undefined,
             estimatedPrice: item.estimatedPrice,
             wholesalePrice: item.wholesalePrice || metadata?.wholesalePrice,
-            serviceFee: 7900, // $79 service fee
+            serviceFee: SERVICE_FEE_CENTS, // Service fee
             metadata,
             addedBy: session.userId,
             displayOrder: nextDisplayOrder,

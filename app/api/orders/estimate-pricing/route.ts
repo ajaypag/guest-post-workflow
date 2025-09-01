@@ -2,9 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
 import { websites } from '@/lib/db/websiteSchema';
 import { and, gte, lte, isNotNull, eq, sql } from 'drizzle-orm';
-
-// Service fee constant - $79 per link
-const SERVICE_FEE_CENTS = 7900;
+import { SERVICE_FEE_CENTS } from '@/lib/config/pricing';
 
 export async function GET(request: NextRequest) {
   try {
@@ -35,12 +33,12 @@ export async function GET(request: NextRequest) {
       conditions.push(gte(websites.totalTraffic, minTraffic));
     }
 
-    // Add price range filter (guestPostCost is in dollars, convert to cents for comparison)
+    // Add price range filter (guestPostCost is now in cents, add service fee for retail comparison)
     if (priceMin > 0) {
-      conditions.push(gte(sql`(${websites.guestPostCost}::decimal * 100 + ${SERVICE_FEE_CENTS})`, priceMin));
+      conditions.push(gte(sql`(${websites.guestPostCost} + ${SERVICE_FEE_CENTS})`, priceMin));
     }
     if (priceMax < 999999) {
-      conditions.push(lte(sql`(${websites.guestPostCost}::decimal * 100 + ${SERVICE_FEE_CENTS})`, priceMax));
+      conditions.push(lte(sql`(${websites.guestPostCost} + ${SERVICE_FEE_CENTS})`, priceMax));
     }
 
     // Add category filter if specified
@@ -98,9 +96,9 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Calculate wholesale prices (convert from decimal to cents)
+    // Calculate wholesale prices (already in cents)
     const wholesalePrices = results
-      .map(r => parseFloat(r.guestPostCost || '0') * 100)
+      .map(r => r.guestPostCost || 0)
       .filter(p => p > 0)
       .sort((a, b) => a - b);
 
@@ -127,8 +125,8 @@ export async function GET(request: NextRequest) {
         domain: site.domain,
         dr: site.domainRating || 0,
         traffic: site.totalTraffic || 0,
-        wholesalePrice: Math.round(parseFloat(site.guestPostCost || '0') * 100),
-        clientPrice: Math.round(parseFloat(site.guestPostCost || '0') * 100) + SERVICE_FEE_CENTS
+        wholesalePrice: site.guestPostCost || 0,
+        clientPrice: (site.guestPostCost || 0) + SERVICE_FEE_CENTS
       }));
 
     return NextResponse.json({

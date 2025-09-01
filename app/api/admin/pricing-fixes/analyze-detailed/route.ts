@@ -79,7 +79,7 @@ export async function GET() {
       const analysis: any = {
         websiteId,
         domain: data.domain,
-        currentGuestPostCost: parseFloat(data.guestPostCost),
+        currentGuestPostCost: data.guestPostCost,
         airtableData: {
           found: !!airtableData,
           price: airtableData?.guestPostCost || null,
@@ -143,7 +143,7 @@ export async function GET() {
         analysis.proposedActions.push({
           action: 'create_offering',
           publisherId: data.publishers[0].id,
-          price: airtableData?.guestPostCost || parseFloat(data.guestPostCost),
+          price: airtableData?.guestPostCost || data.guestPostCost,
           reason: 'Publisher exists but has no offering'
         });
       } else if (data.offerings.length > 1) {
@@ -156,13 +156,13 @@ export async function GET() {
       } else {
         // Single offering - check price match
         const offering = data.offerings[0];
-        const guestPostCostCents = Math.round(parseFloat(data.guestPostCost) * 100);
+        const guestPostCostCents = Math.round(data.guestPostCost);
         
         if (offering.price !== guestPostCostCents) {
           analysis.issueType = 'price_mismatch';
           analysis.priceDifference = (offering.price - guestPostCostCents) / 100;
           
-          const proposedPrice = airtableData?.guestPostCost || parseFloat(data.guestPostCost);
+          const proposedPrice = airtableData?.guestPostCost || data.guestPostCost;
           analysis.proposedActions.push({
             action: 'update_offering_price',
             offeringId: offering.id,

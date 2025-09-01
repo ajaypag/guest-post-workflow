@@ -918,7 +918,7 @@ function WebsitesPageContent() {
                         </span>
                         {website.guestPostCost && (
                           <span className="text-sm text-gray-600">
-                            ${website.guestPostCost}
+                            ${(website.guestPostCost / 100).toFixed(2)}
                           </span>
                         )}
                       </div>

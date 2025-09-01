@@ -11,6 +11,7 @@ import { WorkflowService } from '@/lib/db/workflowService';
 import { v4 as uuidv4 } from 'uuid';
 import { WorkflowProgressService } from './workflowProgressService';
 import { normalizeDomain } from '@/lib/utils/domainNormalizer';
+import { SERVICE_FEE_CENTS, DEFAULT_RETAIL_PRICE_CENTS } from '@/lib/config/pricing';
 
 export interface WorkflowGenerationResult {
   success: boolean;
@@ -346,8 +347,8 @@ export class WorkflowGenerationService {
         // Domain metrics snapshot
         domainRating: domain.dr || 70,
         traffic: domain.totalTraffic || 10000,
-        retailPrice: lineItem.approvedPrice || lineItem.estimatedPrice || 17900, // Default $179 if no price
-        wholesalePrice: lineItem.wholesalePrice || ((lineItem.estimatedPrice || 17900) - 7900), // Retail minus $79 service fee
+        retailPrice: lineItem.approvedPrice || lineItem.estimatedPrice || DEFAULT_RETAIL_PRICE_CENTS, // Default if no price
+        wholesalePrice: lineItem.wholesalePrice || ((lineItem.estimatedPrice || DEFAULT_RETAIL_PRICE_CENTS) - SERVICE_FEE_CENTS), // Retail minus service fee
         
         // Workflow tracking
         workflowId: workflowId,
@@ -674,7 +675,7 @@ export class WorkflowGenerationService {
     try {
       // Calculate prices - wholesale from domain, retail adds $79 service fee
       const wholesalePrice = siteSelection.domain?.price || 10000; // Default $100 wholesale
-      const retailPrice = wholesalePrice + 7900; // Add $79 service fee
+      const retailPrice = wholesalePrice + SERVICE_FEE_CENTS; // Add service fee
 
       const orderItemData = {
         id: uuidv4(),

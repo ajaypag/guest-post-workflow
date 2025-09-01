@@ -3,6 +3,7 @@ import { websites } from '@/lib/db/websiteSchema';
 import { publisherOfferingsService } from './publisherOfferingsService';
 import { OFFERING_TYPES } from '@/lib/db/publisherSchemaActual';
 import { eq, or } from 'drizzle-orm';
+import { SERVICE_FEE_CENTS } from '@/lib/config/pricing';
 
 export class EnhancedOrderPricingService {
   /**
@@ -84,10 +85,9 @@ export class EnhancedOrderPricingService {
             orderContext
           );
           
-          // Convert to cents if needed (assuming finalPrice is in dollars)
-          // finalPrice IS the wholesale price (what we pay publishers)
-          const wholesaleInCents = finalCalculation.finalPrice < 1000 ? Math.floor(finalCalculation.finalPrice * 100) : finalCalculation.finalPrice;
-          const retailInCents = wholesaleInCents + 7900; // Add $79 service fee
+          // finalPrice IS the wholesale price (what we pay publishers) - already in cents
+          const wholesaleInCents = finalCalculation.finalPrice;
+          const retailInCents = wholesaleInCents + SERVICE_FEE_CENTS; // Add service fee
           
           return {
             retailPrice: retailInCents,
@@ -98,10 +98,9 @@ export class EnhancedOrderPricingService {
           };
         } else {
           // No context, just use base price
-          // Convert to cents if needed (assuming bestPrice is in dollars)
-          // bestPrice IS the wholesale price (what we pay publishers)
-          const wholesaleInCents = bestPrice < 1000 ? Math.floor(bestPrice * 100) : bestPrice;
-          const retailInCents = wholesaleInCents + 7900; // Add $79 service fee
+          // bestPrice IS the wholesale price (what we pay publishers) - already in cents
+          const wholesaleInCents = bestPrice;
+          const retailInCents = wholesaleInCents + SERVICE_FEE_CENTS; // Add service fee
           
           return {
             retailPrice: retailInCents,
@@ -117,11 +116,9 @@ export class EnhancedOrderPricingService {
     }
     
     // Fall back to legacy pricing from websites table
-    const legacyPrice = website.guestPostCost ? parseFloat(website.guestPostCost) : 0;
-    
-    // Convert to cents (prices in DB are in dollars)
-    const wholesalePriceInCents = Math.floor(legacyPrice * 100);
-    const retailPriceInCents = wholesalePriceInCents + 7900; // $79 markup
+    // guestPostCost is now stored in cents
+    const wholesalePriceInCents = website.guestPostCost || 0;
+    const retailPriceInCents = wholesalePriceInCents + SERVICE_FEE_CENTS; // Service fee markup
     
     return {
       retailPrice: retailPriceInCents,
@@ -170,7 +167,7 @@ export class EnhancedOrderPricingService {
         
         // bestPrice is the wholesale price (what we pay publishers)
         const wholesaleInCents = bestPrice < 1000 ? Math.floor(bestPrice * 100) : bestPrice;
-        const retailInCents = wholesaleInCents + 7900; // Add $79 service fee
+        const retailInCents = wholesaleInCents + SERVICE_FEE_CENTS; // Add service fee
         
         return {
           retailPrice: retailInCents,
@@ -188,7 +185,7 @@ export class EnhancedOrderPricingService {
     const guestPostPrice = await this.getWebsitePrice(websiteId, '', orderContext);
     // Take 30% off the wholesale price for link insertions
     const linkInsertionWholesale = Math.floor(guestPostPrice.wholesalePrice * 0.7);
-    const linkInsertionRetail = linkInsertionWholesale + 7900; // Add $79 service fee
+    const linkInsertionRetail = linkInsertionWholesale + SERVICE_FEE_CENTS; // Add service fee
     
     return {
       retailPrice: linkInsertionRetail,
