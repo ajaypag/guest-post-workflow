@@ -100,8 +100,12 @@ export class ManyReachImportV3 {
         c.campaignID?.toString() === campaignId.toString()
       );
       
+      let campaignSenderEmail: string | undefined;
       if (campaign) {
         result.campaignName = campaign.name;
+        // Extract sender email from campaign (ManyReach provides this in the 'from' field)
+        campaignSenderEmail = campaign.from;
+        console.log(`📧 Campaign sender: ${campaignSenderEmail || 'unknown'}`);
       }
 
       // Get all prospects in campaign
@@ -172,7 +176,8 @@ export class ManyReachImportV3 {
             prospect,
             latestReply,
             campaignId,
-            result.campaignName
+            result.campaignName,
+            campaignSenderEmail
           );
 
           if (importResult.status === 'created') {
@@ -233,7 +238,8 @@ export class ManyReachImportV3 {
     prospect: ManyReachProspect,
     message: ManyReachMessage,
     campaignId: string,
-    campaignName?: string
+    campaignName?: string,
+    campaignSenderEmail?: string
   ): Promise<DraftCreationResult> {
     try {
       // Store email in database
@@ -258,7 +264,7 @@ export class ManyReachImportV3 {
 
       // Single-phase extraction with GPT-4 (combines email parsing + website analysis)
       console.log('🔍 Extracting publisher and website data with GPT-4...');
-      const parsedData = await this.emailParser.parseEmail(message.emailBody);
+      const parsedData = await this.emailParser.parseEmail(message.emailBody, campaignSenderEmail);
       
       if (parsedData.hasOffer && parsedData.websites && parsedData.websites.length > 0) {
         console.log(`✅ Extracted ${parsedData.websites.length} website(s) with categories and types`);

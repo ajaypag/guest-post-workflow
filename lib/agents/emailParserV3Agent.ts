@@ -5,12 +5,19 @@ import { webSearchTool } from '@openai/agents-openai';
 const webSearch = webSearchTool();
 
 // Factory function to create agent with dynamic metadata
-export function createEmailParserAgent(metadata?: string) {
+export function createEmailParserAgent(metadata?: string, outreachSenderEmail?: string) {
+  const senderContext = outreachSenderEmail 
+    ? `\nOUTREACH SENDER: ${outreachSenderEmail}
+These are OUR team members who sent the original outreach - they are NOT the publishers.
+Any websites or offers mentioned by these senders are OUR offers, not the publisher's.\n`
+    : '';
+
   const baseInstructions = `You are an expert at analyzing email trails between our outreach team and publishers for a guest posting platform.
 
 CRITICAL CONTEXT: You're analyzing an EMAIL TRAIL that contains:
-1. Our original outreach email (from Nick or our team) - IGNORE this for extraction
+1. Our original outreach email (from our team) - IGNORE this for extraction
 2. The publisher's reply with their actual offer - EXTRACT from this part only
+${senderContext}
 
 COMMON EMAIL PATTERNS TO RECOGNIZE (mark hasOffer as false for these):
 - Auto-replies: Generic "out of office" or "we received your email" messages
