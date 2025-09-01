@@ -18,7 +18,8 @@ export async function middleware(request: NextRequest) {
     '/api/publisher/claim',
     '/api/publisher/websites/verify-click',  // Email verification links must work without auth
     '/api/airtable/webhook',
-    '/api/webhooks/'
+    '/api/webhooks/',
+    '/api/admin/manyreach/'  // Temporarily allow ManyReach testing without auth
   ];
   
   // Check if path is public

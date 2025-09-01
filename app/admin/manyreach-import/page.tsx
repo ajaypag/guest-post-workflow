@@ -56,16 +56,24 @@ export default function ManyReachImportPage() {
   const [importing, setImporting] = useState<string | null>(null);
   const [clearing, setClearing] = useState(false);
   const [activeTab, setActiveTab] = useState('campaigns');
+  
+  // Workspace and email processing controls
+  const [selectedWorkspace, setSelectedWorkspace] = useState<string>('workspace-1');
+  const [emailLimit, setEmailLimit] = useState<number>(10);
+  const [onlyReplied, setOnlyReplied] = useState<boolean>(true);
+  const [previewMode, setPreviewMode] = useState<boolean>(false);
+  const [selectedCampaigns, setSelectedCampaigns] = useState<string[]>([]);
+  
   const { toast } = useToast();
 
   useEffect(() => {
     fetchCampaigns();
     fetchDrafts();
-  }, []);
+  }, [selectedWorkspace]); // Re-fetch when workspace changes
 
   const fetchCampaigns = async () => {
     try {
-      const response = await fetch('/api/admin/manyreach/campaigns');
+      const response = await fetch(`/api/admin/manyreach/campaigns?workspace=${selectedWorkspace}`);
       if (!response.ok) throw new Error('Failed to fetch campaigns');
       const data = await response.json();
       setCampaigns(data.campaigns || []);
@@ -100,7 +108,13 @@ export default function ManyReachImportPage() {
       const response = await fetch('/api/admin/manyreach/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ campaignId })
+        body: JSON.stringify({ 
+          campaignId,
+          workspace: selectedWorkspace,
+          limit: emailLimit,
+          onlyReplied,
+          previewMode
+        })
       });
       
       if (!response.ok) throw new Error('Import failed');
@@ -215,6 +229,111 @@ export default function ManyReachImportPage() {
           </Button>
         </div>
       </div>
+
+      {/* Workspace and Processing Controls */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Import Settings</CardTitle>
+          <CardDescription>Configure workspace and email processing options</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-6">
+            {/* Workspace Selector */}
+            <div>
+              <label className="block text-sm font-medium mb-2">Workspace</label>
+              <div className="flex gap-2">
+                <select
+                  className="flex-1 p-2 border rounded-md"
+                  value={selectedWorkspace}
+                  onChange={(e) => {
+                    setSelectedWorkspace(e.target.value);
+                    // Campaigns will auto-refresh due to useEffect
+                  }}
+                >
+                  <option value="workspace-1">Primary Workspace (Default)</option>
+                  <option value="workspace-2">Secondary Workspace (900b0cdf...)</option>
+                </select>
+                <Button
+                  onClick={() => {
+                    setLoading(true);
+                    fetchCampaigns();
+                  }}
+                  variant="outline"
+                  size="sm"
+                  disabled={loading}
+                >
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : '🔄 Refresh'}
+                </Button>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Select which ManyReach workspace to import from</p>
+            </div>
+
+            {/* Email Limit */}
+            <div>
+              <label className="block text-sm font-medium mb-2">Email Limit</label>
+              <input
+                type="number"
+                min="1"
+                max="1000"
+                className="w-full p-2 border rounded-md"
+                value={emailLimit}
+                onChange={(e) => setEmailLimit(parseInt(e.target.value) || 10)}
+              />
+              <p className="text-xs text-gray-500 mt-1">Maximum number of emails to process per campaign</p>
+            </div>
+
+            {/* Processing Options */}
+            <div>
+              <label className="block text-sm font-medium mb-2">Processing Options</label>
+              <div className="space-y-2">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    className="mr-2"
+                    checked={onlyReplied}
+                    onChange={(e) => setOnlyReplied(e.target.checked)}
+                  />
+                  <span className="text-sm">Only process replied prospects</span>
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    className="mr-2"
+                    checked={previewMode}
+                    onChange={(e) => setPreviewMode(e.target.checked)}
+                  />
+                  <span className="text-sm">Preview mode (dry run without saving)</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Campaign Selection */}
+            <div>
+              <label className="block text-sm font-medium mb-2">Campaign Filter</label>
+              <div className="text-sm text-gray-600">
+                {selectedCampaigns.length > 0 
+                  ? `Processing ${selectedCampaigns.length} selected campaigns`
+                  : 'Processing all campaigns'
+                }
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Select specific campaigns from the list below</p>
+            </div>
+          </div>
+
+          {/* Cost Estimate */}
+          <div className="mt-4 p-3 bg-blue-50 rounded-md">
+            <div className="text-sm font-medium text-blue-900">
+              Estimated Processing Cost
+            </div>
+            <div className="text-xs text-blue-700 mt-1">
+              {previewMode 
+                ? 'Preview mode - No API costs will be incurred'
+                : `Processing up to ${emailLimit} emails per campaign × ${selectedCampaigns.length || campaigns.length} campaigns`
+              }
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
@@ -755,135 +874,197 @@ function DraftEditor({ draft, onUpdate }: { draft: Draft; onUpdate: (updates: an
                         <div className="font-medium text-sm">Requirements</div>
                         
                         {/* Basic Requirements */}
-                        <div className="grid grid-cols-2 gap-3 text-sm">
-                          {offering.requirements.acceptsDoFollow !== undefined && (
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-xs font-medium">DoFollow Links</label>
+                            <select
+                              className="w-full p-2 border rounded text-sm"
+                              value={offering.requirements?.acceptsDoFollow ? 'true' : 'false'}
+                              onChange={(e) => {
+                                const newOfferings = [...editedData.offerings];
+                                newOfferings[index] = { 
+                                  ...offering, 
+                                  requirements: { ...offering.requirements, acceptsDoFollow: e.target.value === 'true' }
+                                };
+                                setEditedData({ ...editedData, offerings: newOfferings });
+                              }}
+                            >
+                              <option value="true">✅ Yes</option>
+                              <option value="false">❌ No</option>
+                            </select>
+                          </div>
+                          
+                          <div>
+                            <label className="text-xs font-medium">Author Bio Required</label>
+                            <select
+                              className="w-full p-2 border rounded text-sm"
+                              value={offering.requirements?.requiresAuthorBio ? 'true' : 'false'}
+                              onChange={(e) => {
+                                const newOfferings = [...editedData.offerings];
+                                newOfferings[index] = { 
+                                  ...offering, 
+                                  requirements: { ...offering.requirements, requiresAuthorBio: e.target.value === 'true' }
+                                };
+                                setEditedData({ ...editedData, offerings: newOfferings });
+                              }}
+                            >
+                              <option value="true">✅ Required</option>
+                              <option value="false">❌ Not Required</option>
+                            </select>
+                          </div>
+                          
+                          <div>
+                            <label className="text-xs font-medium">Max Links Per Post</label>
+                            <input
+                              type="number"
+                              className="w-full p-2 border rounded text-sm"
+                              value={offering.requirements?.maxLinksPerPost || ''}
+                              placeholder="2"
+                              onChange={(e) => {
+                                const newOfferings = [...editedData.offerings];
+                                newOfferings[index] = { 
+                                  ...offering, 
+                                  requirements: { ...offering.requirements, maxLinksPerPost: parseInt(e.target.value) || null }
+                                };
+                                setEditedData({ ...editedData, offerings: newOfferings });
+                              }}
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="text-xs font-medium">Images Required</label>
+                            <select
+                              className="w-full p-2 border rounded text-sm"
+                              value={offering.requirements?.imagesRequired ? 'true' : 'false'}
+                              onChange={(e) => {
+                                const newOfferings = [...editedData.offerings];
+                                newOfferings[index] = { 
+                                  ...offering, 
+                                  requirements: { ...offering.requirements, imagesRequired: e.target.value === 'true' }
+                                };
+                                setEditedData({ ...editedData, offerings: newOfferings });
+                              }}
+                            >
+                              <option value="false">❌ No</option>
+                              <option value="true">✅ Yes</option>
+                            </select>
+                          </div>
+                          
+                          {offering.requirements?.imagesRequired && (
                             <div>
-                              <span className="font-medium">DoFollow: </span>
-                              {offering.requirements.acceptsDoFollow ? '✅ Yes' : '❌ No'}
-                            </div>
-                          )}
-                          {offering.requirements.requiresAuthorBio !== undefined && (
-                            <div>
-                              <span className="font-medium">Author Bio: </span>
-                              {offering.requirements.requiresAuthorBio ? '✅ Required' : '❌ Not Required'}
-                            </div>
-                          )}
-                          {offering.requirements.maxLinksPerPost && (
-                            <div>
-                              <span className="font-medium">Max Links: </span>
-                              {offering.requirements.maxLinksPerPost}
-                            </div>
-                          )}
-                          {offering.requirements.imagesRequired !== undefined && (
-                            <div>
-                              <span className="font-medium">Images: </span>
-                              {offering.requirements.imagesRequired ? 
-                                `✅ Required (min: ${offering.requirements.minImages || 1})` : 
-                                '❌ Not Required'}
+                              <label className="text-xs font-medium">Min Images</label>
+                              <input
+                                type="number"
+                                className="w-full p-2 border rounded text-sm"
+                                value={offering.requirements?.minImages || ''}
+                                placeholder="1"
+                                onChange={(e) => {
+                                  const newOfferings = [...editedData.offerings];
+                                  newOfferings[index] = { 
+                                    ...offering, 
+                                    requirements: { ...offering.requirements, minImages: parseInt(e.target.value) || null }
+                                  };
+                                  setEditedData({ ...editedData, offerings: newOfferings });
+                                }}
+                              />
                             </div>
                           )}
                         </div>
                         
                         {/* Content Requirements */}
-                        {offering.requirements.contentRequirements && (
-                          <div>
-                            <label className="text-xs font-medium">Content Requirements</label>
-                            <textarea
-                              className="w-full p-2 border rounded text-sm mt-1"
-                              rows={2}
-                              value={offering.requirements.contentRequirements}
-                              onChange={(e) => {
-                                const newOfferings = [...editedData.offerings];
-                                newOfferings[index] = { 
-                                  ...offering, 
-                                  requirements: { ...offering.requirements, contentRequirements: e.target.value }
-                                };
-                                setEditedData({ ...editedData, offerings: newOfferings });
-                              }}
-                            />
-                          </div>
-                        )}
+                        <div>
+                          <label className="text-xs font-medium">Content Requirements</label>
+                          <textarea
+                            className="w-full p-2 border rounded text-sm mt-1"
+                            rows={2}
+                            value={offering.requirements?.contentRequirements || ''}
+                            placeholder="E.g., Original content only, well-researched, AP style guide..."
+                            onChange={(e) => {
+                              const newOfferings = [...editedData.offerings];
+                              newOfferings[index] = { 
+                                ...offering, 
+                                requirements: { ...offering.requirements, contentRequirements: e.target.value }
+                              };
+                              setEditedData({ ...editedData, offerings: newOfferings });
+                            }}
+                          />
+                        </div>
                         
                         {/* Author Bio Requirements */}
-                        {offering.requirements.authorBioRequirements && (
-                          <div>
-                            <label className="text-xs font-medium">Author Bio Requirements</label>
-                            <input
-                              type="text"
-                              className="w-full p-2 border rounded text-sm mt-1"
-                              value={offering.requirements.authorBioRequirements}
-                              onChange={(e) => {
-                                const newOfferings = [...editedData.offerings];
-                                newOfferings[index] = { 
-                                  ...offering, 
-                                  requirements: { ...offering.requirements, authorBioRequirements: e.target.value }
-                                };
-                                setEditedData({ ...editedData, offerings: newOfferings });
-                              }}
-                            />
-                          </div>
-                        )}
+                        <div>
+                          <label className="text-xs font-medium">Author Bio Requirements</label>
+                          <input
+                            type="text"
+                            className="w-full p-2 border rounded text-sm mt-1"
+                            value={offering.requirements?.authorBioRequirements || ''}
+                            placeholder="E.g., Max 100 words, include social links..."
+                            onChange={(e) => {
+                              const newOfferings = [...editedData.offerings];
+                              newOfferings[index] = { 
+                                ...offering, 
+                                requirements: { ...offering.requirements, authorBioRequirements: e.target.value }
+                              };
+                              setEditedData({ ...editedData, offerings: newOfferings });
+                            }}
+                          />
+                        </div>
                         
                         {/* Link Requirements */}
-                        {offering.requirements.linkRequirements && (
-                          <div>
-                            <label className="text-xs font-medium">Link Requirements</label>
-                            <input
-                              type="text"
-                              className="w-full p-2 border rounded text-sm mt-1"
-                              value={offering.requirements.linkRequirements}
-                              onChange={(e) => {
-                                const newOfferings = [...editedData.offerings];
-                                newOfferings[index] = { 
-                                  ...offering, 
-                                  requirements: { ...offering.requirements, linkRequirements: e.target.value }
-                                };
-                                setEditedData({ ...editedData, offerings: newOfferings });
-                              }}
-                            />
-                          </div>
-                        )}
+                        <div>
+                          <label className="text-xs font-medium">Link Requirements</label>
+                          <input
+                            type="text"
+                            className="w-full p-2 border rounded text-sm mt-1"
+                            value={offering.requirements?.linkRequirements || ''}
+                            placeholder="E.g., Contextual links only, no affiliates, natural anchor text..."
+                            onChange={(e) => {
+                              const newOfferings = [...editedData.offerings];
+                              newOfferings[index] = { 
+                                ...offering, 
+                                requirements: { ...offering.requirements, linkRequirements: e.target.value }
+                              };
+                              setEditedData({ ...editedData, offerings: newOfferings });
+                            }}
+                          />
+                        </div>
                         
                         {/* Sample Post URL */}
-                        {offering.requirements.samplePostUrl && (
-                          <div>
-                            <label className="text-xs font-medium">Sample Post URL</label>
-                            <input
-                              type="text"
-                              className="w-full p-2 border rounded text-sm mt-1"
-                              value={offering.requirements.samplePostUrl}
-                              placeholder="https://example.com/sample-post"
-                              onChange={(e) => {
-                                const newOfferings = [...editedData.offerings];
-                                newOfferings[index] = { 
-                                  ...offering, 
-                                  requirements: { ...offering.requirements, samplePostUrl: e.target.value }
-                                };
-                                setEditedData({ ...editedData, offerings: newOfferings });
-                              }}
-                            />
-                          </div>
-                        )}
+                        <div>
+                          <label className="text-xs font-medium">Sample Post URL</label>
+                          <input
+                            type="text"
+                            className="w-full p-2 border rounded text-sm mt-1"
+                            value={offering.requirements?.samplePostUrl || ''}
+                            placeholder="https://example.com/sample-post"
+                            onChange={(e) => {
+                              const newOfferings = [...editedData.offerings];
+                              newOfferings[index] = { 
+                                ...offering, 
+                                requirements: { ...offering.requirements, samplePostUrl: e.target.value }
+                              };
+                              setEditedData({ ...editedData, offerings: newOfferings });
+                            }}
+                          />
+                        </div>
                         
                         {/* Prohibited Topics */}
-                        {offering.requirements.prohibitedTopics && (
-                          <div>
-                            <label className="text-xs font-medium">Prohibited Topics</label>
-                            <input
-                              type="text"
-                              className="w-full p-2 border rounded text-sm mt-1"
-                              value={offering.requirements.prohibitedTopics}
-                              onChange={(e) => {
-                                const newOfferings = [...editedData.offerings];
-                                newOfferings[index] = { 
-                                  ...offering, 
-                                  requirements: { ...offering.requirements, prohibitedTopics: e.target.value }
-                                };
-                                setEditedData({ ...editedData, offerings: newOfferings });
-                              }}
-                            />
-                          </div>
-                        )}
+                        <div>
+                          <label className="text-xs font-medium">Prohibited Topics</label>
+                          <input
+                            type="text"
+                            className="w-full p-2 border rounded text-sm mt-1"
+                            value={offering.requirements?.prohibitedTopics || ''}
+                            placeholder="E.g., CBD, Gambling, Adult Content..."
+                            onChange={(e) => {
+                              const newOfferings = [...editedData.offerings];
+                              newOfferings[index] = { 
+                                ...offering, 
+                                requirements: { ...offering.requirements, prohibitedTopics: e.target.value }
+                              };
+                              setEditedData({ ...editedData, offerings: newOfferings });
+                            }}
+                          />
+                        </div>
                       </div>
                     )}
                   </div>
