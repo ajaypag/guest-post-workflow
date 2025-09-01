@@ -13,6 +13,9 @@ export const websites = pgTable('websites', {
   domainRating: integer('domain_rating'),
   totalTraffic: integer('total_traffic'),
   guestPostCost: integer('guest_post_cost'), // Now stores cents instead of dollars
+  guestPostCostSource: varchar('guest_post_cost_source', { length: 20 }), // Phase 6C: 'derived_auto', 'derived_override', 'legacy'
+  pricingStrategy: varchar('pricing_strategy', { length: 20 }).default('min_price'), // 'min_price', 'max_price', or 'custom' - determines which offering price to use
+  customOfferingId: uuid('custom_offering_id'), // The specific offering selected when using custom pricing strategy
   categories: text('categories').array(),
   niche: text('niche').array(), // PostgreSQL array of niches
   type: text('type').array(),
