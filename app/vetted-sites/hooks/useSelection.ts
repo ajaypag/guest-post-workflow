@@ -1,5 +1,7 @@
 'use client';
 
+import { SERVICE_FEE_CENTS } from '@/lib/config/pricing';
+
 import { useState, useEffect, useCallback } from 'react';
 
 // Type for selected domain data
@@ -74,9 +76,9 @@ export function useSelection(userType: 'internal' | 'account' | 'publisher' = 'i
   const calculatePrice = useCallback((guestPostCost: string | null): number => {
     if (!guestPostCost) return 0;
     const wholesalePriceCents = parseFloat(guestPostCost);
-    // Convert cents to dollars and add $79 service fee
+    // Convert cents to dollars and add service fee
     const wholesalePriceDollars = wholesalePriceCents / 100;
-    return wholesalePriceDollars + 79;
+    return wholesalePriceDollars + (SERVICE_FEE_CENTS / 100);
   }, []);
 
   // Add domain to selection

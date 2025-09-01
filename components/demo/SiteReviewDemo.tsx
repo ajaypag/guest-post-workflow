@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Check, X, Info, Target, TrendingUp, DollarSign, ExternalLink, ChevronDown, ChevronRight, Users, Sparkles, RefreshCw } from 'lucide-react';
+import { SERVICE_FEE_CENTS } from '@/lib/config/pricing';
 
 // Order groups to show the grouping functionality
 const orderGroups = [
@@ -134,7 +135,7 @@ export default function SiteReviewDemo() {
 
   const getTotalCost = () => {
     return groups.reduce((sum, group) => 
-      sum + group.sites.filter(s => s.status === 'approved').reduce((gSum, site) => gSum + site.price + 79, 0), 0
+      sum + group.sites.filter(s => s.status === 'approved').reduce((gSum, site) => gSum + site.price + (SERVICE_FEE_CENTS / 100), 0), 0
     );
   };
 
@@ -188,7 +189,7 @@ export default function SiteReviewDemo() {
                 </div>
                 <div className="flex items-center gap-4">
                   <span className="text-sm text-gray-600">
-                    Package price: <span className="font-semibold text-gray-900">${group.sites[0].price + 79}</span>
+                    Package price: <span className="font-semibold text-gray-900">${group.sites[0].price + (SERVICE_FEE_CENTS / 100)}</span>
                   </span>
                   {group.sites.every(s => s.status === 'approved') && (
                     <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
@@ -330,7 +331,7 @@ export default function SiteReviewDemo() {
             <div className="text-lg">
               <span className="text-gray-600">Total cost: </span>
               <span className="font-bold text-gray-900">${getTotalCost()}</span>
-              <span className="text-sm text-gray-500 ml-2">(includes $79 content per link)</span>
+              <span className="text-sm text-gray-500 ml-2">(includes ${SERVICE_FEE_CENTS / 100} content per link)</span>
             </div>
           </div>
         </div>

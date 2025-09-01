@@ -3,6 +3,7 @@ import { orders } from './orderSchema';
 import { clients, users, targetPages } from './schema';
 import { bulkAnalysisDomains } from './bulkAnalysisSchema';
 import { relations } from 'drizzle-orm';
+import { SERVICE_FEE_CENTS } from '@/lib/config/pricing';
 
 /**
  * Order Line Items - Each link is a separate line item
@@ -37,7 +38,7 @@ export const orderLineItems = pgTable('order_line_items', {
   estimatedPrice: integer('estimated_price'), // In cents
   approvedPrice: integer('approved_price'), // Locked when client approves
   wholesalePrice: integer('wholesale_price'),
-  serviceFee: integer('service_fee').default(7900), // $79
+  serviceFee: integer('service_fee').default(SERVICE_FEE_CENTS), // Service fee from config
   finalPrice: integer('final_price'), // What was actually charged
   
   // Client Review

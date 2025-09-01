@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 import { db } from '@/lib/db/connection';
+import { SERVICE_FEE_CENTS } from '@/lib/config/pricing';
 import { websites } from '@/lib/db/websiteSchema';
 import { sql } from 'drizzle-orm';
 import { getMarketingStats, formatSiteCount } from '@/lib/marketing-stats';
@@ -150,7 +151,7 @@ export default async function GuestPostingSitesPage() {
               <div className="space-y-3 mb-8">
                 <div className="flex items-center gap-3">
                   <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-                  <span className="text-gray-700">Wholesale site costs + $79 full-service fee (research, writing, outreach & placement)</span>
+                  <span className="text-gray-700">Wholesale site costs + ${(SERVICE_FEE_CENTS / 100).toFixed(0)} full-service fee (research, writing, outreach & placement)</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
@@ -292,7 +293,7 @@ export default async function GuestPostingSitesPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="font-medium text-green-600">
-                        ${((site.guestPostCost || 0) / 100 + 79).toFixed(2)}
+                        ${((site.guestPostCost || 0) / 100 + (SERVICE_FEE_CENTS / 100)).toFixed(2)}
                       </div>
                     </td>
                     <td className="px-4 py-3">

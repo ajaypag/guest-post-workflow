@@ -7,9 +7,9 @@
 
 # PHASE 1: FIX HARDCODED SERVICE FEES ✅ COMPLETE
 ## Total Steps: ~100 ✅ EXECUTED
-## Files Affected: 49 → 31 files actually modified
+## Files Affected: 49 → 35 files actually modified (4 additional on 2025-09-01)
 ## Risk: LOW (just imports)
-## Status: COMPLETE (2025-08-31)
+## Status: COMPLETE (2025-08-31, finalized 2025-09-01)
 
 ### PRE-PHASE 1: Setup & Validation (Steps 1-10) ✅ COMPLETE
 
@@ -275,6 +275,37 @@ npx tsx scripts/test-pricing-calculations.ts
 grep -r "7900" --include="*.ts" --include="*.tsx" --exclude-dir=node_modules --exclude-dir=.next --exclude="pricing.ts" | wc -l
 # Should be 0 (except in migrations/tests)
 ```
+
+---
+
+## PHASE 1 FINAL COMPLETION (2025-09-01)
+
+### Additional Files Fixed
+After initial Phase 1 completion, found and fixed 4 remaining files with hardcoded values:
+
+1. **lib/db/orderLineItemSchema.ts** - Line 40
+   - Changed: `serviceFee: integer('service_fee').default(7900)`
+   - To: `serviceFee: integer('service_fee').default(SERVICE_FEE_CENTS)`
+
+2. **lib/db/projectOrderAssociationsSchema.ts** - Line 80
+   - Changed: `serviceFeeSnapshot: integer('service_fee_snapshot').default(7900)`
+   - To: `serviceFeeSnapshot: integer('service_fee_snapshot').default(SERVICE_FEE_CENTS)`
+
+3. **components/demo/SiteReviewDemo.tsx** - Lines 137, 191, 333
+   - Replaced all hardcoded `+ 79` with `+ (SERVICE_FEE_CENTS / 100)`
+   - Added import for SERVICE_FEE_CENTS
+
+4. **String references in guest-posting-sites pages**
+   - Note: Some "79" references remain in user-facing strings/descriptions
+   - These are intentional display values, not calculations
+
+### Verification
+- All calculation logic now uses centralized SERVICE_FEE_CENTS
+- Database schema defaults use centralized value
+- Demo components use centralized value
+- Only display strings retain hardcoded "$79" for marketing copy
+
+### Status: ✅ FULLY COMPLETE
 
 ---
 

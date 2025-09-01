@@ -1,5 +1,6 @@
 import { db } from '@/lib/db/connection';
 import { websites } from '@/lib/db/websiteSchema';
+import { SERVICE_FEE_CENTS } from '@/lib/config/pricing';
 import { pricingRules } from '@/lib/db/orderSchema';
 import { eq, or, and, lte, gte, isNull } from 'drizzle-orm';
 
@@ -66,8 +67,8 @@ export class PricingService {
     const wholesalePriceCents = website.guestPostCost || 0;
     // Convert to dollars for return value (keeping API contract)
     const wholesalePrice = wholesalePriceCents / 100;
-    // Customer price is wholesale + $79 service fee (in dollars)
-    const retailPrice = wholesalePrice + 79;
+    // Customer price is wholesale + service fee (in dollars)
+    const retailPrice = wholesalePrice + (SERVICE_FEE_CENTS / 100);
 
     return {
       retailPrice,

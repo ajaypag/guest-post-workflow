@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { db } from '@/lib/db/connection';
+import { SERVICE_FEE_CENTS } from '@/lib/config/pricing';
 import { websites } from '@/lib/db/websiteSchema';
 import { sql } from 'drizzle-orm';
 import { 
@@ -302,7 +303,7 @@ export default async function NichePage({ params }: { params: Promise<{ niche: s
                 </div>
                 <div className="flex items-center gap-3">
                   <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-                  <span className="text-gray-700">Wholesale site cost + $79 full-service fee (we handle everything)</span>
+                  <span className="text-gray-700">Wholesale site cost + ${(SERVICE_FEE_CENTS / 100).toFixed(0)} full-service fee (we handle everything)</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
@@ -406,7 +407,7 @@ export default async function NichePage({ params }: { params: Promise<{ niche: s
                   </td>
                   <td className="px-4 py-3">
                     <div className="font-medium text-green-600">
-                      ${((site.guestPostCost ? parseFloat(site.guestPostCost.toString()) / 100 : 0) + 79).toFixed(2)}
+                      ${((site.guestPostCost ? parseFloat(site.guestPostCost.toString()) / 100 : 0) + (SERVICE_FEE_CENTS / 100)).toFixed(2)}
                     </div>
                   </td>
                   <td className="px-4 py-3">

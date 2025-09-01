@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { SERVICE_FEE_CENTS } from '@/lib/config/pricing';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { StarIcon, EyeSlashIcon, EyeIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
@@ -743,9 +744,9 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
                       const wholesalePriceCents = domain.guestPostCost ? parseFloat(domain.guestPostCost) : null;
                       if (!wholesalePriceCents) return <span className="text-gray-400">N/A</span>;
                       
-                      // Convert cents to dollars and add $79 service fee
+                      // Convert cents to dollars and add service fee
                       const wholesalePriceDollars = wholesalePriceCents / 100;
-                      const displayPrice = wholesalePriceDollars + 79;
+                      const displayPrice = wholesalePriceDollars + (SERVICE_FEE_CENTS / 100);
                       return `$${displayPrice.toFixed(0)}`;
                     })()}
                   </div>

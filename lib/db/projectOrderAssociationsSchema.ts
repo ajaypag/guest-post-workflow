@@ -4,6 +4,7 @@ import { orders } from './orderSchema';
 import { orderGroups } from './orderGroupSchema';
 import { bulkAnalysisProjects, bulkAnalysisDomains } from './bulkAnalysisSchema';
 import { users } from './schema';
+import { SERVICE_FEE_CENTS } from '@/lib/config/pricing';
 
 /**
  * Project-Order Associations - Flexible many-to-many relationships
@@ -77,7 +78,7 @@ export const orderSiteSubmissions = pgTable('order_site_submissions', {
   // Price snapshot (captured at approval time)
   wholesalePriceSnapshot: integer('wholesale_price_snapshot'),
   retailPriceSnapshot: integer('retail_price_snapshot'),
-  serviceFeeSnapshot: integer('service_fee_snapshot').default(7900),
+  serviceFeeSnapshot: integer('service_fee_snapshot').default(SERVICE_FEE_CENTS),
   priceSnapshotAt: timestamp('price_snapshot_at'),
   
   // NEW: Pool-based selection system (DEPRECATED - keeping for migration)
