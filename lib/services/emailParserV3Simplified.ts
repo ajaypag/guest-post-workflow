@@ -163,7 +163,48 @@ IMPORTANT: Use web search to analyze each website domain and determine its categ
         .replace(/^```\s*/, '') // Remove any other opening code block
         .trim();
       
-      const parsed = JSON.parse(cleanedContent);
+      let parsed;
+      try {
+        parsed = JSON.parse(cleanedContent);
+      } catch (parseError) {
+        console.error('❌ JSON parse error. Attempting to fix truncated JSON...');
+        
+        // Try to fix common JSON issues
+        let fixedContent = cleanedContent;
+        
+        // If it's truncated, try to close open structures
+        if (!fixedContent.endsWith('}')) {
+          // Count open vs closed braces
+          const openBraces = (fixedContent.match(/{/g) || []).length;
+          const closeBraces = (fixedContent.match(/}/g) || []).length;
+          const openBrackets = (fixedContent.match(/\[/g) || []).length;
+          const closeBrackets = (fixedContent.match(/\]/g) || []).length;
+          
+          // Add missing closing brackets/braces
+          fixedContent += ']'.repeat(Math.max(0, openBrackets - closeBrackets));
+          fixedContent += '}'.repeat(Math.max(0, openBraces - closeBraces));
+        }
+        
+        try {
+          parsed = JSON.parse(fixedContent);
+          console.log('✅ Successfully recovered truncated JSON');
+        } catch (secondError) {
+          console.error('❌ Failed to parse JSON even after fix attempt');
+          console.error('Raw content:', cleanedContent.substring(0, 500) + '...');
+          
+          // Return a safe default
+          return {
+            hasOffer: false,
+            publisher: { email: null },
+            websites: [],
+            offerings: [],
+            extractionMetadata: {
+              error: 'JSON parsing failed',
+              rawContent: cleanedContent.substring(0, 1000)
+            }
+          };
+        }
+      }
       
       // Add raw extraction for debugging
       parsed.rawExtraction = rawContent;

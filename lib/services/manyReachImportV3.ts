@@ -2,6 +2,7 @@ import { db } from '@/lib/db/connection';
 import { emailProcessingLogs, EmailProcessingLog } from '@/lib/db/emailProcessingSchema';
 import { eq, and, sql, desc } from 'drizzle-orm';
 import { EmailParserV3Simplified } from './emailParserV3Simplified';
+import { WorkspaceManager } from './manyreach/workspaceManager';
 
 interface ManyReachProspect {
   email: string;
@@ -42,10 +43,19 @@ export class ManyReachImportV3 {
   private apiKey: string;
   private baseUrl = 'https://app.manyreach.com/api';
   private emailParser: EmailParserV3Simplified;
+  private workspaceManager: WorkspaceManager;
   
-  constructor() {
-    this.apiKey = process.env.MANYREACH_API_KEY || '';
+  constructor(workspaceId?: string) {
+    this.workspaceManager = new WorkspaceManager();
     this.emailParser = new EmailParserV3Simplified();
+    
+    // Get API key from workspace manager
+    if (workspaceId) {
+      this.apiKey = this.workspaceManager.getApiKey(workspaceId) || '';
+    } else {
+      const defaultWorkspace = this.workspaceManager.getDefaultWorkspace();
+      this.apiKey = defaultWorkspace?.apiKey || process.env.MANYREACH_API_KEY || '';
+    }
     
     if (!this.apiKey) {
       console.warn('⚠️ MANYREACH_API_KEY not set - import will fail');

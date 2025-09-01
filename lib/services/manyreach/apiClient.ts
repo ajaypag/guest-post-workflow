@@ -153,7 +153,7 @@ export class ManyReachAPIClient {
     options?: EmailSelectionOptions
   ): Promise<Prospect[]> {
     const response = await fetch(
-      `${this.baseUrl}/prospects/${campaignId}?apikey=${this.getApiKey()}`,
+      `${this.baseUrl}/campaigns/${campaignId}/prospects?apikey=${this.getApiKey()}`,
       {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' }
