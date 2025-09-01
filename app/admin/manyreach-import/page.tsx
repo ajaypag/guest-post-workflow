@@ -509,9 +509,19 @@ export default function ManyReachImportPage() {
                               </Badge>
                             )}
                             
-                            {data.hasOffer && (
+                            {data.hasOffer ? (
                               <Badge variant="outline" className="text-green-600 bg-green-50">
                                 💰 Has Pricing
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-yellow-600 bg-yellow-50">
+                                ⚠️ No Offer
+                              </Badge>
+                            )}
+                            
+                            {!data.hasOffer && data.extractionMetadata?.extractionNotes && (
+                              <Badge variant="outline" className="text-gray-600" title={data.extractionMetadata.extractionNotes}>
+                                📝 {data.extractionMetadata.extractionNotes.substring(0, 30)}...
                               </Badge>
                             )}
                             
@@ -663,6 +673,43 @@ function DraftEditor({ draft, onUpdate, onReprocess }: {
         </Card>
       )}
 
+      {/* No Offer Warning */}
+      {!editedData?.hasOffer && (
+        <Card className="border-yellow-400 bg-yellow-50">
+          <CardHeader>
+            <CardTitle className="text-yellow-800">⚠️ No Concrete Offer Detected</CardTitle>
+            <CardDescription className="text-yellow-700">
+              This email was marked as having no offer. Common reasons:
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="list-disc list-inside space-y-1 text-sm text-yellow-700">
+              <li>Auto-reply or out-of-office message</li>
+              <li>Internal forward without an actual offer</li>
+              <li>Link exchange request instead of paid service</li>
+              <li>Simple acknowledgment without pricing details</li>
+              <li>Rejection of our outreach</li>
+            </ul>
+            {editedData?.extractionMetadata?.extractionNotes && (
+              <div className="mt-3 p-3 bg-white rounded border border-yellow-300">
+                <span className="font-medium">AI Analysis: </span>
+                {editedData.extractionMetadata.extractionNotes}
+              </div>
+            )}
+            {editedData?.extractionMetadata?.keyQuotes && editedData.extractionMetadata.keyQuotes.length > 0 && (
+              <div className="mt-3">
+                <span className="font-medium">Key Quotes from Email:</span>
+                <ul className="mt-1 space-y-1">
+                  {editedData.extractionMetadata.keyQuotes.map((quote: string, i: number) => (
+                    <li key={i} className="text-sm italic">"{quote}"</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Extracted Data Editor */}
       <Card>
         <CardHeader>
@@ -672,6 +719,29 @@ function DraftEditor({ draft, onUpdate, onReprocess }: {
         <CardContent>
         {editedData && (
           <div className="space-y-4">
+            {/* Has Offer Toggle */}
+            <div>
+              <h3 className="font-semibold mb-2">Offer Status</h3>
+              <div className="flex items-center gap-3">
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="mr-2"
+                    checked={editedData.hasOffer}
+                    onChange={(e) => setEditedData({ ...editedData, hasOffer: e.target.checked })}
+                  />
+                  <span className={editedData.hasOffer ? 'text-green-700 font-medium' : 'text-gray-500'}>
+                    {editedData.hasOffer ? '✅ Has Concrete Offer' : '❌ No Concrete Offer'}
+                  </span>
+                </label>
+                {!editedData.hasOffer && (
+                  <span className="text-sm text-gray-500">
+                    (Toggle this if the AI incorrectly marked as no offer)
+                  </span>
+                )}
+              </div>
+            </div>
+
             {/* Publisher Info */}
             <div>
               <h3 className="font-semibold mb-2">Publisher</h3>
@@ -861,9 +931,19 @@ function DraftEditor({ draft, onUpdate, onReprocess }: {
                 {editedData.offerings.map((offering: any, index: number) => (
                   <div key={index} className="p-3 border rounded mb-2 bg-blue-50">
                     <div className="flex items-center justify-between mb-3">
-                      <span className="font-medium text-blue-900">
-                        {offering.offeringType === 'guest_post' ? '📝 Guest Post' : '🔗 Link Insertion'}
-                      </span>
+                      <select
+                        className="font-medium text-blue-900 bg-transparent border border-blue-300 rounded px-2 py-1"
+                        value={offering.offeringType}
+                        onChange={(e) => {
+                          const newOfferings = [...editedData.offerings];
+                          newOfferings[index] = { ...offering, offeringType: e.target.value };
+                          setEditedData({ ...editedData, offerings: newOfferings });
+                        }}
+                      >
+                        <option value="guest_post">📝 Guest Post</option>
+                        <option value="link_insertion">🔗 Link Insertion</option>
+                        <option value="link_exchange">🔄 Link Exchange</option>
+                      </select>
                       <button 
                         onClick={() => {
                           const newOfferings = editedData.offerings.filter((_: any, i: number) => i !== index);
