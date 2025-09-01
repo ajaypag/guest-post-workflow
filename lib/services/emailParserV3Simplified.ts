@@ -25,7 +25,7 @@ export interface SimplifiedParsedEmailData {
     internalNotes?: string;
   }>;
   offerings?: Array<{
-    offeringType: 'guest_post' | 'link_insertion';
+    offeringType: 'guest_post' | 'link_insertion' | 'link_exchange';
     basePrice?: number;
     currency?: string;
     turnaroundDays?: number;

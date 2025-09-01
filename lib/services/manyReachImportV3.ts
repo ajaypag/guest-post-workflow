@@ -43,8 +43,14 @@ export class ManyReachImportV3 {
   private baseUrl = 'https://app.manyreach.com/api';
   private emailParser: EmailParserV3Simplified;
   
-  constructor() {
-    this.apiKey = process.env.MANYREACH_API_KEY || '';
+  constructor(workspaceId?: string) {
+    // Get API key based on workspace
+    if (workspaceId === 'workspace-2') {
+      this.apiKey = '900b0cdf-5769-4df2-84d8-00714914d79f';
+    } else {
+      this.apiKey = process.env.MANYREACH_API_KEY || '2a88c29a-87c0-4420-b286-ab11f134c525';
+    }
+    
     this.emailParser = new EmailParserV3Simplified();
     
     if (!this.apiKey) {
