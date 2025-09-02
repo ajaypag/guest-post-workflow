@@ -38,40 +38,70 @@ export class DerivedPricingService {
   /**
    * Calculate derived price for a single website
    * Implements business rules from Phase 6 planning
+   * FIXED: Now respects pricing_strategy (min_price, max_price, custom)
+   * ENHANCED: Returns selected offering info for attribution
    */
-  static async calculateDerivedPrice(websiteId: string): Promise<number | null> {
+  static async calculateDerivedPrice(websiteId: string): Promise<{
+    price: number | null;
+    selectedOfferingId: string | null;
+    selectedPublisherId: string | null;
+  }> {
     try {
-      // First check if there's a manual override
+      // First get website details including pricing strategy
       const websiteResult = await db.execute(`
-        SELECT price_override_offering_id 
+        SELECT price_override_offering_id, pricing_strategy, custom_offering_id 
         FROM websites 
         WHERE id = '${websiteId}'
       `);
       
       const website = websiteResult.rows[0] as any;
+      if (!website) {
+        return { price: null, selectedOfferingId: null, selectedPublisherId: null };
+      }
+
+      // Check for manual override first (highest priority)
       if (website?.price_override_offering_id) {
         // Use manually selected offering
         const overrideResult = await db.execute(`
-          SELECT base_price 
-          FROM publisher_offerings 
-          WHERE id = '${website.price_override_offering_id}'
-            AND is_active = true
-            AND offering_type = 'guest_post'
+          SELECT po.base_price, po.id, po.publisher_id
+          FROM publisher_offerings po
+          WHERE po.id = '${website.price_override_offering_id}'
+            AND po.is_active = true
+            AND po.offering_type = 'guest_post'
         `);
         
         const override = overrideResult.rows[0] as any;
-        return override?.base_price || null;
+        return {
+          price: override?.base_price || null,
+          selectedOfferingId: override?.id || null,
+          selectedPublisherId: override?.publisher_id || null
+        };
       }
       
-      // Use automatic MIN calculation from qualified guest_post offerings only
-      // Qualification rules:
-      // 1. Must be 'guest_post' offering type
-      // 2. Must be active (is_active = true)  
-      // 3. Must be available (current_availability = 'available')
-      // 4. Must have valid price (base_price > 0)
+      // Handle custom pricing strategy
+      if (website.pricing_strategy === 'custom' && website.custom_offering_id) {
+        const customResult = await db.execute(`
+          SELECT po.base_price, po.id, po.publisher_id
+          FROM publisher_offerings po
+          WHERE po.id = '${website.custom_offering_id}'
+            AND po.is_active = true
+            AND po.offering_type = 'guest_post'
+        `);
+        
+        const custom = customResult.rows[0] as any;
+        return {
+          price: custom?.base_price || null,
+          selectedOfferingId: custom?.id || null,
+          selectedPublisherId: custom?.publisher_id || null
+        };
+      }
+      
+      // Get all qualified guest_post offerings with full details
       const offerings = await db
         .select({
           basePrice: publisherOfferings.basePrice,
+          offeringId: publisherOfferings.id,
+          publisherId: publisherOfferings.publisherId,
         })
         .from(publisherOfferingRelationships)
         .innerJoin(
@@ -90,46 +120,78 @@ export class DerivedPricingService {
         );
       
       if (offerings.length === 0) {
-        return null; // No guest_post offerings found
+        return { price: null, selectedOfferingId: null, selectedPublisherId: null };
       }
       
-      const prices = offerings
-        .map(o => o.basePrice)
-        .filter(p => p !== null && p !== undefined && p > 0) as number[];
+      const validOfferings = offerings.filter(o => o.basePrice !== null && o.basePrice !== undefined && o.basePrice > 0);
       
-      return prices.length > 0 ? Math.min(...prices) : null;
+      if (validOfferings.length === 0) {
+        return { price: null, selectedOfferingId: null, selectedPublisherId: null };
+      }
+
+      // Apply pricing strategy and track which offering was selected
+      const strategy = website.pricing_strategy || 'min_price';
+      let selectedOffering;
+      
+      if (strategy === 'max_price') {
+        const maxPrice = Math.max(...validOfferings.map(o => o.basePrice!));
+        selectedOffering = validOfferings.find(o => o.basePrice === maxPrice);
+      } else {
+        // Default to min_price
+        const minPrice = Math.min(...validOfferings.map(o => o.basePrice!));
+        selectedOffering = validOfferings.find(o => o.basePrice === minPrice);
+      }
+      
+      return {
+        price: selectedOffering?.basePrice || null,
+        selectedOfferingId: selectedOffering?.offeringId || null,
+        selectedPublisherId: selectedOffering?.publisherId || null
+      };
       
     } catch (error) {
       console.error(`Error calculating derived price for website ${websiteId}:`, error);
-      return null;
+      return { price: null, selectedOfferingId: null, selectedPublisherId: null };
     }
   }
   
   /**
    * Update derived price for a single website
+   * FIXED: Now correctly sets calculation method based on strategy
+   * ENHANCED: Stores selected offering and publisher for attribution
    */
   static async updateDerivedPrice(websiteId: string): Promise<void> {
     try {
-      const derivedPrice = await this.calculateDerivedPrice(websiteId);
+      const result = await this.calculateDerivedPrice(websiteId);
       
-      // Check if manual override exists to determine calculation method
+      // Check website configuration to determine calculation method
       const websiteResult = await db.execute(`
-        SELECT price_override_offering_id 
+        SELECT price_override_offering_id, pricing_strategy, custom_offering_id 
         FROM websites 
         WHERE id = '${websiteId}'
       `);
       
       const website = websiteResult.rows[0] as any;
-      const calculationMethod = website?.price_override_offering_id 
-        ? 'manual_override' 
-        : 'auto_min';
+      let calculationMethod = 'auto_min';
+      
+      if (website?.price_override_offering_id) {
+        calculationMethod = 'manual_override';
+      } else if (website?.pricing_strategy === 'custom' && website?.custom_offering_id) {
+        calculationMethod = 'custom';
+      } else if (website?.pricing_strategy === 'max_price') {
+        calculationMethod = 'auto_max';
+      } else {
+        calculationMethod = 'auto_min';
+      }
       
       await db.execute(`
         UPDATE websites 
         SET 
-          derived_guest_post_cost = ${derivedPrice || 'NULL'},
+          derived_guest_post_cost = ${result.price || 'NULL'},
           price_calculation_method = '${calculationMethod}',
-          price_calculated_at = NOW()
+          price_calculated_at = NOW(),
+          selected_offering_id = ${result.selectedOfferingId ? `'${result.selectedOfferingId}'` : 'NULL'},
+          selected_publisher_id = ${result.selectedPublisherId ? `'${result.selectedPublisherId}'` : 'NULL'},
+          selected_at = ${result.selectedOfferingId ? 'NOW()' : 'NULL'}
         WHERE id = '${websiteId}'
       `);
       
