@@ -8,7 +8,7 @@
 import { db } from '../db/connection';
 import { websites } from '../db/websiteSchema';
 import { publisherOfferingRelationships, publisherOfferings } from '../db/publisherSchemaActual';
-import { eq, and, isNotNull } from 'drizzle-orm';
+import { eq, and, isNotNull, gt } from 'drizzle-orm';
 
 export interface PricingComparison {
   id: string;
@@ -48,7 +48,7 @@ export class DerivedPricingService {
         WHERE id = '${websiteId}'
       `);
       
-      const website = websiteResult[0] as any;
+      const website = websiteResult.rows[0] as any;
       if (website?.price_override_offering_id) {
         // Use manually selected offering
         const overrideResult = await db.execute(`
@@ -59,11 +59,16 @@ export class DerivedPricingService {
             AND offering_type = 'guest_post'
         `);
         
-        const override = overrideResult[0] as any;
+        const override = overrideResult.rows[0] as any;
         return override?.base_price || null;
       }
       
-      // Use automatic MIN calculation from guest_post offerings only
+      // Use automatic MIN calculation from qualified guest_post offerings only
+      // Qualification rules:
+      // 1. Must be 'guest_post' offering type
+      // 2. Must be active (is_active = true)  
+      // 3. Must be available (current_availability = 'available')
+      // 4. Must have valid price (base_price > 0)
       const offerings = await db
         .select({
           basePrice: publisherOfferings.basePrice,
@@ -78,7 +83,9 @@ export class DerivedPricingService {
             eq(publisherOfferingRelationships.websiteId, websiteId),
             eq(publisherOfferings.isActive, true),
             eq(publisherOfferings.offeringType, 'guest_post'),
-            isNotNull(publisherOfferings.basePrice)
+            eq(publisherOfferings.currentAvailability, 'available'),
+            isNotNull(publisherOfferings.basePrice),
+            gt(publisherOfferings.basePrice, 0)
           )
         );
       
@@ -88,7 +95,7 @@ export class DerivedPricingService {
       
       const prices = offerings
         .map(o => o.basePrice)
-        .filter(p => p !== null && p !== undefined) as number[];
+        .filter(p => p !== null && p !== undefined && p > 0) as number[];
       
       return prices.length > 0 ? Math.min(...prices) : null;
       
@@ -112,7 +119,7 @@ export class DerivedPricingService {
         WHERE id = '${websiteId}'
       `);
       
-      const website = websiteResult[0] as any;
+      const website = websiteResult.rows[0] as any;
       const calculationMethod = website?.price_override_offering_id 
         ? 'manual_override' 
         : 'auto_min';
@@ -138,7 +145,7 @@ export class DerivedPricingService {
    */
   static async updateAllDerivedPrices(): Promise<{ updated: number; errors: number }> {
     try {
-      const websites = await db
+      const websitesList = await db
         .select({
           id: websites.id,
         })
@@ -148,15 +155,15 @@ export class DerivedPricingService {
       let updated = 0;
       let errors = 0;
       
-      console.log(`Starting bulk update for ${websites.length} websites...`);
+      console.log(`Starting bulk update for ${websitesList.length} websites...`);
       
-      for (const website of websites) {
+      for (const website of websitesList) {
         try {
           await this.updateDerivedPrice(website.id);
           updated++;
           
           if (updated % 100 === 0) {
-            console.log(`Updated ${updated}/${websites.length} websites...`);
+            console.log(`Updated ${updated}/${websitesList.length} websites...`);
           }
         } catch (error) {
           errors++;
@@ -206,11 +213,11 @@ export class DerivedPricingService {
           AND (w.guest_post_cost IS NOT NULL OR w.derived_guest_post_cost IS NOT NULL)
       `);
       
-      if (result.length === 0) {
+      if (result.rows.length === 0) {
         return null;
       }
       
-      const row = result[0] as any;
+      const row = result.rows[0] as any;
       return {
         id: row.id,
         domain: row.domain,
@@ -281,7 +288,7 @@ export class DerivedPricingService {
           w.domain
       `);
       
-      return result.map((row: any) => ({
+      return result.rows.map((row: any) => ({
         id: row.id,
         domain: row.domain,
         currentPrice: row.current_price,
@@ -317,7 +324,7 @@ export class DerivedPricingService {
         WHERE guest_post_cost IS NOT NULL
       `);
       
-      const row = result[0] as any;
+      const row = result.rows[0] as any;
       const readyPercentage = row.total_websites > 0 
         ? (row.matching_prices / row.total_websites) * 100 
         : 0;
@@ -353,20 +360,22 @@ export class DerivedPricingService {
     reason: string
   ): Promise<void> {
     try {
-      // Verify the offering exists and is a guest_post offering
+      // Verify the offering exists and is a valid guest_post offering
       const offering = await db.execute(`
-        SELECT base_price, offering_type
+        SELECT base_price, offering_type, current_availability
         FROM publisher_offerings 
         WHERE id = '${offeringId}' 
           AND is_active = true 
           AND offering_type = 'guest_post'
+          AND current_availability = 'available'
+          AND base_price > 0
       `);
       
-      if (offering.length === 0) {
-        throw new Error('Invalid offering: must be an active guest_post offering');
+      if (offering.rows.length === 0) {
+        throw new Error('Invalid offering: must be an active, available guest_post offering with price > 0');
       }
       
-      const offeringData = offering[0] as any;
+      const offeringData = offering.rows[0] as any;
       
       // Update website with manual override
       await db.execute(`
@@ -424,11 +433,11 @@ export class DerivedPricingService {
         WHERE id = '${websiteId}'
       `);
       
-      if (result.length === 0) {
+      if (result.rows.length === 0) {
         return null;
       }
       
-      const row = result[0] as any;
+      const row = result.rows[0] as any;
       
       if (useDerivePricing && row.derived_guest_post_cost !== null) {
         return row.derived_guest_post_cost;

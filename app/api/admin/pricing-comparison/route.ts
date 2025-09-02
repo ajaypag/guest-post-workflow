@@ -3,7 +3,7 @@ import { db } from '@/lib/db/connection';
 import { websites } from '@/lib/db/websiteSchema';
 import { publisherOfferingRelationships, publisherOfferings } from '@/lib/db/publisherSchemaActual';
 import { publishers } from '@/lib/db/accountSchema';
-import { eq, and, isNotNull } from 'drizzle-orm';
+import { eq, and, isNotNull, gt } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
 
 export async function GET(request: NextRequest) {
@@ -54,15 +54,18 @@ export async function GET(request: NextRequest) {
             and(
               eq(publisherOfferingRelationships.websiteId, website.id),
               eq(publisherOfferings.isActive, true),
-              eq(publisherOfferings.offeringType, 'guest_post')
+              eq(publisherOfferings.offeringType, 'guest_post'),
+              eq(publisherOfferings.currentAvailability, 'available'),
+              isNotNull(publisherOfferings.basePrice),
+              gt(publisherOfferings.basePrice, 0)
             )
           );
 
-        // Calculate derived price (minimum of all active offerings)
-        // Already filtered for isActive in the query
+        // Calculate derived price (minimum of all qualified offerings)
+        // Already filtered for active, available, guest_post with valid price
         const offeringPrices = offerings
           .map(o => o.basePrice)
-          .filter(p => p !== null && p !== undefined) as number[];
+          .filter(p => p !== null && p !== undefined && p > 0) as number[];
         
         const derivedPrice = offeringPrices.length > 0 
           ? Math.min(...offeringPrices)
