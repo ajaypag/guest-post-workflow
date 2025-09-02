@@ -56,10 +56,19 @@ export function MultiSelect({
   const handleToggleDropdown = () => {
     if (!isOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
+      const dropdownHeight = 256; // max-h-64 = 16rem = 256px
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      
+      // If there's not enough space below but more space above, position above
+      const shouldPositionAbove = spaceBelow < dropdownHeight && spaceAbove > spaceBelow;
+      
       setDropdownPosition({
-        top: rect.bottom + window.scrollY,
-        left: rect.left + window.scrollX,
-        width: rect.width
+        top: shouldPositionAbove 
+          ? rect.top + window.scrollY - dropdownHeight - 4
+          : rect.bottom + window.scrollY + 4,
+        left: Math.max(8, rect.left + window.scrollX), // Ensure at least 8px from left edge
+        width: Math.max(rect.width, 200) // Minimum width of 200px
       });
     }
     setIsOpen(!isOpen);
@@ -123,11 +132,12 @@ export function MultiSelect({
 
       {isOpen && typeof window !== 'undefined' && createPortal(
         <div 
-          className="fixed z-[100] bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-y-auto"
+          className="fixed z-[9999] bg-white border border-gray-300 rounded-lg shadow-xl max-h-64 overflow-y-auto"
           style={{
-            top: dropdownPosition.top + 4,
+            top: dropdownPosition.top,
             left: dropdownPosition.left,
-            width: dropdownPosition.width
+            width: dropdownPosition.width,
+            minWidth: '200px'
           }}
           ref={dropdownRef}
         >
