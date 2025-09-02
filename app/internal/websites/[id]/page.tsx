@@ -192,7 +192,7 @@ export default async function WebsiteDetailPage({ params }: { params: Promise<{ 
                         </span>
                       </div>
                       <span className="text-lg font-semibold text-green-600">
-                        ${(offering.basePrice / 100).toFixed(2)}
+                        {offering.basePrice ? `$${(offering.basePrice / 100).toFixed(2)}` : 'N/A'}
                       </span>
                     </div>
                     

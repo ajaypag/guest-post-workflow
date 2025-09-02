@@ -303,7 +303,7 @@ export default async function PublisherDetailPage({
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             <div className="flex items-center gap-1">
                               <DollarSign className="w-4 h-4 text-gray-400" />
-                              {(offering.basePrice / 100).toFixed(2)} {offering.currency || 'USD'}
+                              {offering.basePrice ? (offering.basePrice / 100).toFixed(2) : 'N/A'} {offering.currency || 'USD'}
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">

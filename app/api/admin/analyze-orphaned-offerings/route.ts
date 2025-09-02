@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
       sampleOrphanedOfferings: sampleOrphaned.map(o => ({
         company: o.companyName || 'Unknown',
         offeringType: o.offeringType,
-        price: `${(o.basePrice/100).toFixed(2)} ${o.currency}`,
+        price: o.basePrice ? `${(o.basePrice/100).toFixed(2)} ${o.currency}` : 'N/A',
         created: o.createdAt?.toISOString().split('T')[0],
         offeringId: o.id,
         publisherId: o.publisherId

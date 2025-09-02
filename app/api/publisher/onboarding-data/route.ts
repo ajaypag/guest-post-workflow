@@ -196,11 +196,11 @@ export async function GET(request: NextRequest) {
         domainRating: sw.domainRating || undefined,
         totalTraffic: sw.totalTraffic || undefined,
       })),
-      offerings: offerings.map(o => ({
+      offerings: offerings.filter(o => o.basePrice !== null).map(o => ({
         id: o.id,
         websiteId: (o.attributes as any)?.websiteId || undefined, // Get websiteId from attributes if stored there
         offeringType: o.offeringType,
-        basePrice: o.basePrice, // Keep in cents, frontend will convert
+        basePrice: o.basePrice as number, // Filter ensures this is not null
         currency: o.currency,
         turnaroundDays: o.turnaroundDays || undefined,
         offeringName: o.offeringName || undefined,
