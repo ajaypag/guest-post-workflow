@@ -69,7 +69,7 @@ export async function PATCH(
     // Prepare update data
     const updateData: any = { ...validatedData };
     if (validatedData.basePrice !== undefined) {
-      updateData.basePrice = validatedData.basePrice.toString();
+      updateData.basePrice = validatedData.basePrice !== null ? validatedData.basePrice.toString() : null;
     }
     if (validatedData.expressPrice !== undefined) {
       updateData.expressPrice = validatedData.expressPrice.toString();

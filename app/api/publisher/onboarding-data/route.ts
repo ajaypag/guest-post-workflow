@@ -200,7 +200,7 @@ export async function GET(request: NextRequest) {
         id: o.id,
         websiteId: (o.attributes as any)?.websiteId || undefined, // Get websiteId from attributes if stored there
         offeringType: o.offeringType,
-        basePrice: o.basePrice, // Keep in cents, frontend will convert
+        basePrice: o.basePrice !== null ? o.basePrice : 0, // Handle null as 0 (free), keep in cents
         currency: o.currency,
         turnaroundDays: o.turnaroundDays || undefined,
         offeringName: o.offeringName || undefined,

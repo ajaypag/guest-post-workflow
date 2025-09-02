@@ -4,7 +4,7 @@ import { publishers, publisherWebsites } from '@/lib/db/accountSchema';
 import { websites } from '@/lib/db/websiteSchema';
 import { publisherOfferings, publisherOfferingRelationships } from '@/lib/db/publisherSchemaActual';
 import { emailProcessingLogs } from '@/lib/db/emailProcessingSchema';
-import { eq, sql } from 'drizzle-orm';
+import { eq, sql, and } from 'drizzle-orm';
 
 interface ApprovalResult {
   success: boolean;
@@ -209,7 +209,9 @@ export async function POST(request: NextRequest) {
                 status: 'active',
                 // Add required timestamp fields
                 airtableCreatedAt: new Date(),
-                airtableUpdatedAt: new Date()
+                airtableUpdatedAt: new Date(),
+                createdAt: new Date(),
+                updatedAt: new Date()
               })
               .returning();
             
@@ -223,8 +225,10 @@ export async function POST(request: NextRequest) {
           const existingRelationship = await db
             .select()
             .from(publisherWebsites)
-            .where(eq(publisherWebsites.publisherId, publisherId!))
-            .where(eq(publisherWebsites.websiteId, websiteId))
+            .where(and(
+              eq(publisherWebsites.publisherId, publisherId!),
+              eq(publisherWebsites.websiteId, websiteId)
+            ))
             .limit(1);
           
           if (existingRelationship.length === 0) {
@@ -344,8 +348,10 @@ export async function POST(request: NextRequest) {
           const existingRelationship = await db
             .select()
             .from(publisherOfferingRelationships)
-            .where(eq(publisherOfferingRelationships.publisherId, publisherId!))
-            .where(eq(publisherOfferingRelationships.websiteId, websiteId))
+            .where(and(
+              eq(publisherOfferingRelationships.publisherId, publisherId!),
+              eq(publisherOfferingRelationships.websiteId, websiteId)
+            ))
             .limit(1);
           
           if (existingRelationship.length > 0) {
