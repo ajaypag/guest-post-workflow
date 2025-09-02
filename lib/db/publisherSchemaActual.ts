@@ -13,7 +13,7 @@ export const publisherOfferings = pgTable('publisher_offerings', {
   id: uuid('id').primaryKey().defaultRandom(),
   publisherId: uuid('publisher_id').notNull(), // Direct reference to publisher
   offeringType: varchar('offering_type', { length: 50 }).notNull(),
-  basePrice: integer('base_price').notNull(),
+  basePrice: integer('base_price'), // Nullable: NULL = unknown price, 0 = free, >0 = paid
   currency: varchar('currency', { length: 10 }).notNull().default('USD'),
   turnaroundDays: integer('turnaround_days'),
   currentAvailability: varchar('current_availability', { length: 50 }).notNull().default('available'),
@@ -27,10 +27,10 @@ export const publisherOfferings = pgTable('publisher_offerings', {
   languages: varchar('languages', { length: 10 }).array().default(['en']),
   attributes: jsonb('attributes').default({}),
   isActive: boolean('is_active').default(true),
-  // Source email tracking (added by migration 0058) - NOT IN CURRENT DATABASE
-  // sourceEmailId: uuid('source_email_id'), // References email_processing_logs(id)
-  // sourceEmailContent: text('source_email_content'),
-  // pricingExtractedFrom: text('pricing_extracted_from'),
+  // Source email tracking (added by migration 0058) - EXISTS IN DATABASE
+  sourceEmailId: uuid('source_email_id'), // References email_processing_logs(id)
+  sourceEmailContent: text('source_email_content'),
+  pricingExtractedFrom: text('pricing_extracted_from'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });

@@ -29,7 +29,7 @@ CRITICAL RULES:
 - If you see a list of websites in OUR outreach email = Those are OUR sites (DO NOT extract these)
 - If the publisher mentions their website or domain = That's what you extract
 - "What is your budget?" = This IS an offer (they're interested, just need pricing info)
-- If publisher only mentions a domain in their email signature = That's likely their website
+- Note: Just because a website appears in the blogger's signature doesn't mean it should automatically be added. Consider if it's actually a part of the actual conversation and request. Otherwise, just adding a site because it's mentioned in the signature could lead to lots of bad data imports.
 
 CRITICAL CONTEXT: You're analyzing an EMAIL TRAIL that contains:
 1. Our original outreach email (from our team) - Contains OUR websites for exchange offers
@@ -50,6 +50,8 @@ IMPORTANT: Only extract information from the PUBLISHER'S REPLY, not from our out
 
 FOCUS: Extract PUBLISHER INFO (Table 1) and WEBSITE INFO (Table 2) only. Skip detailed offerings, complex pricing, and business terms for now.
 
+NOTE: The system will automatically track the email source and content for audit purposes. When extracting pricing, include a brief quote in extractionMetadata.pricingSource showing where the price was mentioned.
+
 IMPORTANT: For each website mentioned, analyze what type of content they publish:
 - Use web search to visit and analyze each website domain
 - Search for "[domain] website" or "[domain] about" to understand their content
@@ -57,7 +59,12 @@ IMPORTANT: For each website mentioned, analyze what type of content they publish
 - Don't just guess from domain names - actually search and verify
 - Choose the most appropriate categories, niches, and website types from the provided lists
 
-IMPORTANT: Return ONLY valid JSON with no extra text, code blocks, or explanations. Ensure all strings are properly escaped.
+IMPORTANT: Return ONLY valid JSON with no extra text, code blocks, or explanations. 
+CRITICAL JSON RULES:
+- All quotes inside string values MUST be escaped with backslash (\\")
+- Use double quotes for all JSON strings, never single quotes
+- Ensure all strings are properly escaped (quotes, newlines, backslashes)
+- Example: "He said \\"hello\\"" is correct, "He said "hello"" will break
 
 Return a JSON object with this structure:
 {
@@ -89,6 +96,7 @@ Return a JSON object with this structure:
       "offeringType": "guest_post" | "link_insertion" | "link_exchange",
       "basePrice": number or null,
       "currency": "USD" | "EUR" | "GBP" etc,
+      "currentAvailability": "available" | "needs_info" | "limited" | "paused",
       "turnaroundDays": number or null,
       "minWordCount": number or null (for guest posts),
       "maxWordCount": number or null (for guest posts),
@@ -109,6 +117,7 @@ Return a JSON object with this structure:
   "extractionMetadata": {
     "confidence": "0.0-1.0 confidence in extraction quality",
     "extractionNotes": "what was found vs missing",
+    "pricingSource": "brief quote where pricing was mentioned (for audit trail)",
     "ambiguousFields": ["fields that were unclear"],
     "keyQuotes": ["important direct quotes from email"]
   }
@@ -135,13 +144,20 @@ EXTRACTION RULES:
    WEBSITE ASSOCIATION RULES:
    - Each offering MUST specify websiteDomain - which website the offer applies to
    - If publisher mentions multiple websites but only gives pricing for one, associate with that one
-   - If they give general pricing without specifying website, use the primary website mentioned
-   - If no specific website is mentioned but email domain suggests one, use that
+   - If they give general pricing without specifying website, use the primary website mentioned in the conversation
+   - Only use email domain if they're actively discussing their site but haven't named it explicitly
    
    IMPORTANT: Each email should typically have ONLY ONE offering type:
    - If they ask for money = guest_post or link_insertion (NEVER link_exchange)
    - If they want to trade links = link_exchange ONLY (not link_insertion)
    - Link exchanges have basePrice: 0 (they're free trades, not paid services)
+   
+   AVAILABILITY STATUS RULES (currentAvailability field):
+   - "available": Publisher provides clear pricing and service details, ready to work
+   - "needs_info": Publisher is interested but needs more info ("What's your budget?", "What topics?", asks questions without pricing)
+   - "limited": Publisher has restrictions (fully booked, limited slots, selective acceptance, high demand)
+   - "paused": Publisher mentions temporary suspension, vacation, or will resume later
+   - Default to "available" if they provide pricing, "needs_info" if they're interested but no pricing
 9. PROHIBITED TOPICS: Extract to offerings.requirements.prohibitedTopics using the standard list:
    - Common prohibited topics: CBD, Cannabis, Casino, Gambling, Adult Content, Pornography, 
      Cryptocurrency, Binary Options, Forex Trading, Get Rich Quick, MLM, Weight Loss Pills, 
@@ -161,15 +177,16 @@ SCENARIO: Our outreach lists linkio.com, factbites.com, etc. Publisher replies "
 → hasOffer: true (they're interested)
 → websites: [] (no publisher website mentioned yet)
 → offerings: [] (no website specified yet, so no offerings to extract)
+→ Note: This would be currentAvailability: "needs_info" if they had mentioned their website
 
 SCENARIO: Our outreach lists our sites. Publisher replies "I run techblog.com, $200 for guest posts"
 → hasOffer: true
 → websites: [{domain: "techblog.com"}] (THEIR site, not ours)
-→ offerings: [{websiteDomain: "techblog.com", offeringType: "guest_post", basePrice: 200}]
+→ offerings: [{websiteDomain: "techblog.com", offeringType: "guest_post", basePrice: 200, currentAvailability: "available"}]
 
-SCENARIO: Publisher email signature shows "chirag@textify.ai" 
-→ websites: [{domain: "textify.ai"}] (extract from email domain)
-→ DO NOT extract linkio.com, factbites.com etc from our outreach!
+SCENARIO: Publisher email signature shows "chirag@textify.ai" with no website discussed in email body
+→ websites: [] (DO NOT extract from signature alone - not part of the conversation)
+→ Remember: Only extract websites that are actively discussed in the offer
 
 CONTACT NAME FALLBACK EXAMPLES:
 "From: John Smith <john@company.com>" + Company: "Acme Corp"
@@ -192,33 +209,34 @@ CONTACT NAME FALLBACK EXAMPLES:
 
 "Guest posts starting at $200, link insertions $50"
 → hasOffer: true (basic pricing mentioned)
+→ offerings: [{offeringType: "guest_post", basePrice: 200, currentAvailability: "available"}, {offeringType: "link_insertion", basePrice: 50, currentAvailability: "available"}]
 
 "We can run a guest article for $40 on mysite.com"
 → hasOffer: true
-→ offerings: [{websiteDomain: "mysite.com", offeringType: "guest_post", basePrice: 40, currency: "USD"}]
+→ offerings: [{websiteDomain: "mysite.com", offeringType: "guest_post", basePrice: 40, currency: "USD", currentAvailability: "available"}]
 
 "Guest posts $200, link insertions $50, 3-day turnaround on techblog.com"
 → offerings: [
-  {websiteDomain: "techblog.com", offeringType: "guest_post", basePrice: 200, currency: "USD", turnaroundDays: 3},
-  {websiteDomain: "techblog.com", offeringType: "link_insertion", basePrice: 50, currency: "USD", turnaroundDays: 3}
+  {websiteDomain: "techblog.com", offeringType: "guest_post", basePrice: 200, currency: "USD", currentAvailability: "available", turnaroundDays: 3},
+  {websiteDomain: "techblog.com", offeringType: "link_insertion", basePrice: 50, currency: "USD", currentAvailability: "available", turnaroundDays: 3}
 ]
 
 "Would this be a link exchange? What URLs do you offer?" (from contact@example.com)
 → hasOffer: true
-→ offerings: [{websiteDomain: "example.com", offeringType: "link_exchange", basePrice: 0, currency: "USD"}]
-→ NOTE: Used email domain when no specific website mentioned
-→ NOTE: This is ONLY link_exchange, not link_insertion (it's a trade, not paid)
+→ offerings: [] (no website explicitly discussed yet - wait for them to specify)
+→ NOTE: This is interest in link_exchange, but no specific site confirmed
+→ NOTE: Don't assume example.com is their content site - could be generic email
 
 "Yes, we can do a link exchange between our sites"
 → hasOffer: true
-→ offerings: [{offeringType: "link_exchange", basePrice: 0, currency: "USD"}]
+→ offerings: [{offeringType: "link_exchange", basePrice: 0, currency: "USD", currentAvailability: "available"}]
 
 "Can you add my link to your wordable.io article? I'll add yours to mine"
-→ offerings: [{offeringType: "link_exchange", basePrice: 0}]
+→ offerings: [{offeringType: "link_exchange", basePrice: 0, currentAvailability: "available"}]
 → NOT link_insertion - this is a reciprocal trade!
 
 "We charge $50 to add your link to our existing articles"
-→ offerings: [{offeringType: "link_insertion", basePrice: 50}]
+→ offerings: [{offeringType: "link_insertion", basePrice: 50, currentAvailability: "available"}]
 → This IS link_insertion because they're charging money
 
 "We accept PayPal and Wise, payment within 7 days of completion"
@@ -233,10 +251,32 @@ CONTACT NAME FALLBACK EXAMPLES:
 "We offer DoFollow guest posts, 800-1500 words, $150"
 → offerings: [{
   offeringType: "guest_post", 
-  basePrice: 150, 
+  basePrice: 150,
+  currentAvailability: "available",
   minWordCount: 800, 
   maxWordCount: 1500,
   requirements: {acceptsDoFollow: true}
+}]
+
+"What's your budget for guest posts on our site?"
+→ offerings: [{
+  offeringType: "guest_post",
+  basePrice: null,
+  currentAvailability: "needs_info"
+}]
+
+"We're currently not accepting guest posts until next month"
+→ offerings: [{
+  offeringType: "guest_post",
+  basePrice: null,
+  currentAvailability: "paused"
+}]
+
+"Sorry, we're fully booked and not taking new clients"
+→ offerings: [{
+  offeringType: "guest_post",
+  basePrice: null,
+  currentAvailability: "limited"
 }]
 
 If no concrete offer or contact info found:

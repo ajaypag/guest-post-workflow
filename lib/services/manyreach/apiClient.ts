@@ -91,11 +91,17 @@ export class ManyReachAPIClient {
   /**
    * Get API key for current workspace
    */
-  private getApiKey(): string {
+  private async getApiKey(): Promise<string> {
     if (!this.currentWorkspace) {
       throw new Error('No workspace selected');
     }
-    return this.currentWorkspace.apiKey;
+    
+    const apiKey = await this.workspaceManager.getApiKey(this.currentWorkspace.id);
+    if (!apiKey) {
+      throw new Error(`No API key configured for workspace ${this.currentWorkspace.name}. Please configure it in /admin/manyreach-keys`);
+    }
+    
+    return apiKey;
   }
   
   /**
@@ -104,8 +110,9 @@ export class ManyReachAPIClient {
   async getCampaigns(): Promise<Campaign[]> {
     console.log(`🔍 Fetching campaigns for workspace: ${this.currentWorkspace?.name}`);
     
+    const apiKey = await this.getApiKey();
     const response = await fetch(
-      `${this.baseUrl}/campaigns?apikey=${this.getApiKey()}`,
+      `${this.baseUrl}/campaigns?apikey=${apiKey}`,
       {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' }
@@ -152,8 +159,9 @@ export class ManyReachAPIClient {
     campaignId: string, 
     options?: EmailSelectionOptions
   ): Promise<Prospect[]> {
+    const apiKey = await this.getApiKey();
     const response = await fetch(
-      `${this.baseUrl}/campaigns/${campaignId}/prospects?apikey=${this.getApiKey()}`,
+      `${this.baseUrl}/campaigns/${campaignId}/prospects?apikey=${apiKey}`,
       {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' }
@@ -203,8 +211,9 @@ export class ManyReachAPIClient {
    * Get email thread for a prospect
    */
   async getEmailThread(campaignId: string, prospectEmail: string): Promise<Message[]> {
+    const apiKey = await this.getApiKey();
     const response = await fetch(
-      `${this.baseUrl}/email-thread/${campaignId}/${encodeURIComponent(prospectEmail)}?apikey=${this.getApiKey()}`,
+      `${this.baseUrl}/email-thread/${campaignId}/${encodeURIComponent(prospectEmail)}?apikey=${apiKey}`,
       {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' }

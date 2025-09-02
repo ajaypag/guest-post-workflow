@@ -58,18 +58,46 @@ export default function ManyReachImportPage() {
   const [activeTab, setActiveTab] = useState('campaigns');
   
   // Workspace and email processing controls
-  const [selectedWorkspace, setSelectedWorkspace] = useState<string>('workspace-1');
+  const [workspaces, setWorkspaces] = useState<{workspace_name: string; is_active: boolean}[]>([]);
+  const [selectedWorkspace, setSelectedWorkspace] = useState<string>('main');
   const [emailLimit, setEmailLimit] = useState<number>(10);
+  const [unlimitedEmails, setUnlimitedEmails] = useState<boolean>(false);
   const [onlyReplied, setOnlyReplied] = useState<boolean>(true);
   const [previewMode, setPreviewMode] = useState<boolean>(false);
   const [selectedCampaigns, setSelectedCampaigns] = useState<string[]>([]);
   
+  // Draft filtering
+  const [showOnlyWithOffers, setShowOnlyWithOffers] = useState<boolean>(false);
+  const [showOnlyWithPricing, setShowOnlyWithPricing] = useState<boolean>(false);
+  
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchCampaigns();
+    fetchWorkspaces();
     fetchDrafts();
+  }, []);
+
+  useEffect(() => {
+    if (selectedWorkspace) {
+      fetchCampaigns();
+    }
   }, [selectedWorkspace]); // Re-fetch when workspace changes
+  
+  const fetchWorkspaces = async () => {
+    try {
+      const response = await fetch('/api/admin/manyreach-keys');
+      const data = await response.json();
+      const activeWorkspaces = (data.workspaces || []).filter((ws: any) => ws.is_active);
+      setWorkspaces(activeWorkspaces);
+      
+      // Set default workspace if available
+      if (activeWorkspaces.length > 0 && !selectedWorkspace) {
+        setSelectedWorkspace(activeWorkspaces[0].workspace_name);
+      }
+    } catch (error) {
+      console.error('Error fetching workspaces:', error);
+    }
+  };
 
   const fetchCampaigns = async () => {
     try {
@@ -110,8 +138,8 @@ export default function ManyReachImportPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           campaignId,
-          workspaceId: selectedWorkspace,
-          limit: emailLimit,
+          workspaceName: selectedWorkspace,
+          limit: unlimitedEmails ? null : emailLimit,
           onlyReplied,
           previewMode
         })
@@ -295,8 +323,15 @@ export default function ManyReachImportPage() {
                     // Campaigns will auto-refresh due to useEffect
                   }}
                 >
-                  <option value="workspace-1">Primary Workspace (Default)</option>
-                  <option value="workspace-2">Secondary Workspace (900b0cdf...)</option>
+                  {workspaces.length === 0 ? (
+                    <option value="">No workspaces configured</option>
+                  ) : (
+                    workspaces.map(ws => (
+                      <option key={ws.workspace_name} value={ws.workspace_name}>
+                        {ws.workspace_name}
+                      </option>
+                    ))
+                  )}
                 </select>
                 <Button
                   onClick={() => {
@@ -310,21 +345,45 @@ export default function ManyReachImportPage() {
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : '🔄 Refresh'}
                 </Button>
               </div>
-              <p className="text-xs text-gray-500 mt-1">Select which ManyReach workspace to import from</p>
+              <p className="text-xs text-gray-500 mt-1">
+                Select which ManyReach workspace to import from
+                {workspaces.length === 0 && (
+                  <span> • <a href="/admin/manyreach-keys" className="text-blue-600 hover:underline">Configure API keys</a></span>
+                )}
+              </p>
             </div>
 
             {/* Email Limit */}
             <div>
               <label className="block text-sm font-medium mb-2">Email Limit</label>
-              <input
-                type="number"
-                min="1"
-                max="1000"
-                className="w-full p-2 border rounded-md"
-                value={emailLimit}
-                onChange={(e) => setEmailLimit(parseInt(e.target.value) || 10)}
-              />
-              <p className="text-xs text-gray-500 mt-1">Maximum number of emails to process per campaign</p>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="1"
+                    max="1000"
+                    className="flex-1 p-2 border rounded-md disabled:bg-gray-100"
+                    value={emailLimit}
+                    onChange={(e) => setEmailLimit(parseInt(e.target.value) || 10)}
+                    disabled={unlimitedEmails}
+                  />
+                  <label className="flex items-center whitespace-nowrap">
+                    <input
+                      type="checkbox"
+                      className="mr-2"
+                      checked={unlimitedEmails}
+                      onChange={(e) => setUnlimitedEmails(e.target.checked)}
+                    />
+                    <span className="text-sm">Process All</span>
+                  </label>
+                </div>
+                <p className="text-xs text-gray-500">
+                  {unlimitedEmails 
+                    ? '⚠️ Will process ALL emails (may incur high API costs)'
+                    : 'Maximum number of emails to process per campaign'
+                  }
+                </p>
+              </div>
             </div>
 
             {/* Processing Options */}
@@ -373,6 +432,8 @@ export default function ManyReachImportPage() {
             <div className="text-xs text-blue-700 mt-1">
               {previewMode 
                 ? 'Preview mode - No API costs will be incurred'
+                : unlimitedEmails
+                ? `⚠️ Processing ALL emails from ${selectedCampaigns.length || campaigns.length} campaigns - costs may be significant`
                 : `Processing up to ${emailLimit} emails per campaign × ${selectedCampaigns.length || campaigns.length} campaigns`
               }
             </div>
@@ -458,6 +519,94 @@ export default function ManyReachImportPage() {
         </TabsContent>
 
         <TabsContent value="drafts">
+          {/* Draft Statistics */}
+          <div className="grid grid-cols-4 gap-4 mb-4">
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-2xl font-bold">{drafts.length}</div>
+                <div className="text-sm text-gray-600">Total Drafts</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-2xl font-bold text-blue-600">
+                  {drafts.filter(d => (d.edited_data || d.parsed_data).hasOffer).length}
+                </div>
+                <div className="text-sm text-gray-600">With Offers</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-2xl font-bold text-green-600">
+                  {drafts.filter(d => {
+                    const data = d.edited_data || d.parsed_data;
+                    return data.offerings?.some((o: any) => o.basePrice !== null && o.basePrice !== undefined);
+                  }).length}
+                </div>
+                <div className="text-sm text-gray-600">With Pricing</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-2xl font-bold text-orange-600">
+                  {drafts.filter(d => {
+                    const data = d.edited_data || d.parsed_data;
+                    return data.hasOffer && data.offerings?.some((o: any) => 
+                      o.basePrice === null || o.basePrice === undefined
+                    );
+                  }).length}
+                </div>
+                <div className="text-sm text-gray-600">Need Price Info</div>
+              </CardContent>
+            </Card>
+          </div>
+          
+          {/* Draft Filters */}
+          <Card className="mb-4">
+            <CardHeader>
+              <CardTitle>Filter Drafts</CardTitle>
+              <CardDescription>Show only relevant drafts for review</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex gap-4">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    className="mr-2"
+                    checked={showOnlyWithOffers}
+                    onChange={(e) => setShowOnlyWithOffers(e.target.checked)}
+                  />
+                  <span className="text-sm">Only drafts with offers</span>
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    className="mr-2"
+                    checked={showOnlyWithPricing}
+                    onChange={(e) => setShowOnlyWithPricing(e.target.checked)}
+                  />
+                  <span className="text-sm">Only drafts with pricing</span>
+                </label>
+                <div className="ml-auto text-sm text-gray-600">
+                  Showing {(() => {
+                    const filtered = drafts.filter(draft => {
+                      const data = draft.edited_data || draft.parsed_data;
+                      if (showOnlyWithOffers && !data.hasOffer) return false;
+                      if (showOnlyWithPricing) {
+                        const hasPrice = data.offerings?.some((o: any) => 
+                          o.basePrice !== null && o.basePrice !== undefined
+                        );
+                        if (!hasPrice) return false;
+                      }
+                      return true;
+                    });
+                    return filtered.length;
+                  })()} of {drafts.length} drafts
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
           <div className="grid grid-cols-12 gap-4">
             {/* Draft List */}
             <div className="col-span-4">
@@ -468,7 +617,18 @@ export default function ManyReachImportPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    {Array.isArray(drafts) && drafts.map((draft) => {
+                    {Array.isArray(drafts) && drafts.filter((draft) => {
+                      const data = draft.edited_data || draft.parsed_data;
+                      // Apply filters
+                      if (showOnlyWithOffers && !data.hasOffer) return false;
+                      if (showOnlyWithPricing) {
+                        const hasPrice = data.offerings?.some((o: any) => 
+                          o.basePrice !== null && o.basePrice !== undefined
+                        );
+                        if (!hasPrice) return false;
+                      }
+                      return true;
+                    }).map((draft) => {
                       const data = draft.edited_data || draft.parsed_data;
                       return (
                         <div
@@ -510,9 +670,21 @@ export default function ManyReachImportPage() {
                             )}
                             
                             {data.hasOffer ? (
-                              <Badge variant="outline" className="text-green-600 bg-green-50">
-                                💰 Has Pricing
-                              </Badge>
+                              <>
+                                <Badge variant="outline" className="text-blue-600 bg-blue-50">
+                                  ✅ Has Offer
+                                </Badge>
+                                {data.offerings?.some((o: any) => o.basePrice !== null && o.basePrice !== undefined) && (
+                                  <Badge variant="outline" className="text-green-600 bg-green-50">
+                                    💰 Has Pricing
+                                  </Badge>
+                                )}
+                                {data.offerings?.some((o: any) => o.basePrice === null || o.basePrice === undefined) && (
+                                  <Badge variant="outline" className="text-orange-600 bg-orange-50">
+                                    ❓ Needs Price Info
+                                  </Badge>
+                                )}
+                              </>
                             ) : (
                               <Badge variant="outline" className="text-yellow-600 bg-yellow-50">
                                 ⚠️ No Offer
@@ -601,6 +773,34 @@ function DraftEditor({ draft, onUpdate, onReprocess }: {
 
   const handleReject = () => {
     onUpdate({ status: 'rejected' });
+  };
+  
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewData, setPreviewData] = useState<any>(null);
+  const [loadingPreview, setLoadingPreview] = useState(false);
+  
+  const handlePreview = async () => {
+    setLoadingPreview(true);
+    try {
+      const response = await fetch('/api/admin/manyreach/draft-preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ draftId: draft.id })
+      });
+      
+      const result = await response.json();
+      if (result.success) {
+        setPreviewData(result.preview);
+        setShowPreview(true);
+      } else {
+        alert(`Preview failed: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Preview error:', error);
+      alert('Failed to generate preview');
+    } finally {
+      setLoadingPreview(false);
+    }
   };
 
   const handleReprocess = async () => {
@@ -1000,13 +1200,13 @@ function DraftEditor({ draft, onUpdate, onReprocess }: {
                       </button>
                     </div>
                     
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-4 gap-4">
                       <div>
                         <label className="text-sm font-medium">Base Price</label>
-                        <div className="flex gap-2">
+                        <div className="flex gap-1">
                           <input
                             type="number"
-                            className="w-full p-2 border rounded"
+                            className="w-24 p-2 border rounded"
                             value={offering.basePrice || ''}
                             placeholder="150"
                             onChange={(e) => {
@@ -1016,7 +1216,7 @@ function DraftEditor({ draft, onUpdate, onReprocess }: {
                             }}
                           />
                           <select
-                            className="p-2 border rounded"
+                            className="p-2 border rounded text-sm"
                             value={offering.currency || 'USD'}
                             onChange={(e) => {
                               const newOfferings = [...editedData.offerings];
@@ -1029,6 +1229,24 @@ function DraftEditor({ draft, onUpdate, onReprocess }: {
                             <option value="GBP">GBP</option>
                           </select>
                         </div>
+                      </div>
+                      
+                      <div>
+                        <label className="text-sm font-medium">Availability Status</label>
+                        <select
+                          className="w-full p-2 border rounded"
+                          value={offering.currentAvailability || 'available'}
+                          onChange={(e) => {
+                            const newOfferings = [...editedData.offerings];
+                            newOfferings[index] = { ...offering, currentAvailability: e.target.value };
+                            setEditedData({ ...editedData, offerings: newOfferings });
+                          }}
+                        >
+                          <option value="available">✅ Available</option>
+                          <option value="needs_info">❓ Needs Info</option>
+                          <option value="limited">⚠️ Limited</option>
+                          <option value="paused">⏸️ Paused</option>
+                        </select>
                       </div>
                       
                       <div>
@@ -1330,10 +1548,29 @@ function DraftEditor({ draft, onUpdate, onReprocess }: {
         {editedData && (
           <div className="flex gap-3 mt-6">
             <button
+              onClick={handlePreview}
+              disabled={loadingPreview}
+              className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50"
+            >
+              {loadingPreview ? 'Loading...' : '👁️ Preview Impact'}
+            </button>
+            <button
               onClick={handleSave}
               className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
             >
               Save as Draft
+            </button>
+            <button
+              onClick={handleApprove}
+              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+            >
+              ✅ Approve & Create Records
+            </button>
+            <button
+              onClick={handleReject}
+              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+            >
+              ❌ Reject
             </button>
             <button
               onClick={() => setEditedData(null)}
@@ -1345,6 +1582,181 @@ function DraftEditor({ draft, onUpdate, onReprocess }: {
         )}
         </CardContent>
       </Card>
+      
+      {/* Preview Modal */}
+      {showPreview && previewData && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl max-h-[90vh] overflow-y-auto p-6 w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold">📋 Draft Approval Preview</h2>
+              <button
+                onClick={() => setShowPreview(false)}
+                className="text-gray-500 hover:text-gray-700 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+            
+            {/* Impact Summary */}
+            <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 mb-6">
+              <h3 className="font-semibold text-blue-900 mb-2">🎯 Estimated Impact</h3>
+              <div className="grid grid-cols-4 gap-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">
+                    {previewData.estimatedImpact.newPublishers}
+                  </div>
+                  <div className="text-sm text-gray-600">New Publishers</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">
+                    {previewData.estimatedImpact.newWebsites}
+                  </div>
+                  <div className="text-sm text-gray-600">New Websites</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-purple-600">
+                    {previewData.estimatedImpact.newOfferings}
+                  </div>
+                  <div className="text-sm text-gray-600">New Offerings</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-orange-600">
+                    {previewData.estimatedImpact.updatedRecords}
+                  </div>
+                  <div className="text-sm text-gray-600">Updates</div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Warnings */}
+            {previewData.warnings.length > 0 && (
+              <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-4 mb-6">
+                <h3 className="font-semibold text-yellow-900 mb-2">⚠️ Warnings</h3>
+                <ul className="list-disc list-inside space-y-1">
+                  {previewData.warnings.map((warning: string, i: number) => (
+                    <li key={i} className="text-sm text-yellow-800">{warning}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            
+            {/* Publisher Action */}
+            <div className="mb-6">
+              <h3 className="font-semibold mb-2">👤 Publisher Action</h3>
+              <div className="border rounded-lg p-4">
+                {previewData.proposedActions.publisherAction === 'create' ? (
+                  <div>
+                    <Badge className="bg-green-100 text-green-800 mb-2">New Publisher</Badge>
+                    <div className="space-y-1 text-sm">
+                      <div><strong>Email:</strong> {previewData.proposedActions.publisherDetails?.email}</div>
+                      <div><strong>Contact:</strong> {previewData.proposedActions.publisherDetails?.contactName}</div>
+                      <div><strong>Company:</strong> {previewData.proposedActions.publisherDetails?.companyName || 'N/A'}</div>
+                      <div><strong>Status:</strong> Shadow (unclaimed)</div>
+                    </div>
+                  </div>
+                ) : previewData.proposedActions.publisherAction === 'update' ? (
+                  <div>
+                    <Badge className="bg-blue-100 text-blue-800 mb-2">Update Existing</Badge>
+                    <div className="space-y-1 text-sm">
+                      <div><strong>Current:</strong> {previewData.currentState.publisher?.email}</div>
+                      <div><strong>Updates:</strong></div>
+                      <pre className="bg-gray-50 p-2 rounded text-xs">
+                        {JSON.stringify(previewData.proposedActions.publisherDetails?.updates, null, 2)}
+                      </pre>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-gray-500">No publisher will be created</div>
+                )}
+              </div>
+            </div>
+            
+            {/* Website Actions */}
+            <div className="mb-6">
+              <h3 className="font-semibold mb-2">🌐 Website Actions</h3>
+              <div className="space-y-2">
+                {previewData.proposedActions.websiteActions.map((action: any, i: number) => (
+                  <div key={i} className="border rounded-lg p-3">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <strong>{action.domain}</strong>
+                        {action.action === 'create' && (
+                          <Badge className="ml-2 bg-green-100 text-green-800">New</Badge>
+                        )}
+                        {action.action === 'exists' && (
+                          <Badge className="ml-2 bg-gray-100 text-gray-800">Exists</Badge>
+                        )}
+                        {action.action === 'update' && (
+                          <Badge className="ml-2 bg-blue-100 text-blue-800">Update</Badge>
+                        )}
+                      </div>
+                    </div>
+                    {action.details && (
+                      <div className="mt-2 text-sm text-gray-600">
+                        {action.details.categories && (
+                          <div>Categories: {action.details.categories.join(', ')}</div>
+                        )}
+                        {action.details.niche && (
+                          <div>Niches: {action.details.niche.join(', ')}</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            {/* Offering Actions */}
+            {previewData.proposedActions.offeringActions.length > 0 && (
+              <div className="mb-6">
+                <h3 className="font-semibold mb-2">💰 Offering Actions</h3>
+                <div className="space-y-2">
+                  {previewData.proposedActions.offeringActions.map((offering: any, i: number) => (
+                    <div key={i} className="border rounded-lg p-3">
+                      <div className="flex justify-between">
+                        <div>
+                          <strong>{offering.type}</strong> for <strong>{offering.websiteDomain}</strong>
+                          {offering.action === 'create' && (
+                            <Badge className="ml-2 bg-green-100 text-green-800">New</Badge>
+                          )}
+                          {offering.action === 'skip' && (
+                            <Badge className="ml-2 bg-yellow-100 text-yellow-800">Skip</Badge>
+                          )}
+                        </div>
+                      </div>
+                      {offering.details && offering.details.basePrice !== undefined && (
+                        <div className="mt-2 text-sm text-gray-600">
+                          Price: ${offering.details.basePrice} {offering.details.currency}
+                          {offering.details.turnaroundDays && ` • ${offering.details.turnaroundDays} days`}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+              <button
+                onClick={() => setShowPreview(false)}
+                className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+              >
+                Close Preview
+              </button>
+              <button
+                onClick={() => {
+                  setShowPreview(false);
+                  handleApprove();
+                }}
+                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+              >
+                ✅ Proceed with Approval
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -64,7 +64,7 @@ const createOfferingSchema = z.object({
     'niche_edit'
   ]),
   offeringName: z.string().optional(),
-  basePrice: z.number().positive(),
+  basePrice: z.number().min(0).nullable(), // NULL = unknown, 0 = free, >0 = paid
   currency: z.string().default('USD'),
   priceType: z.enum(['fixed', 'starting_at', 'negotiable', 'contact']).default('fixed'),
   turnaroundDays: z.number().positive().default(7),
@@ -76,7 +76,7 @@ const createOfferingSchema = z.object({
   maxLinksPerPost: z.number().positive().default(1),
   attributes: z.record(z.any()).default({}),
   monthlyCapacity: z.number().positive().optional(),
-  currentAvailability: z.enum(['available', 'limited', 'booked', 'paused']).default('available')
+  currentAvailability: z.enum(['available', 'limited', 'paused', 'needs_info']).default('available')
 });
 
 export async function POST(request: NextRequest) {

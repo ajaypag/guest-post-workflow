@@ -1,0 +1,19 @@
+# ManyReach API Keys Configuration
+# Format: workspace_name:api_key
+# Lines starting with # are comments and will be ignored
+
+# Main workspace (already imported)
+main:2a88c29a-87c0-4420-b286-ab11f134c525
+
+# Add your other workspaces below (replace with actual API keys):
+# workspace-2:YOUR_API_KEY_HERE
+# workspace-3:YOUR_API_KEY_HERE
+# client-acme:YOUR_API_KEY_HERE
+# client-xyz:YOUR_API_KEY_HERE
+# ... add all 30 workspaces here
+
+# Example format:
+# outreach-team-1:900b0cdf-5769-4df2-84d8-00714914d79f
+# outreach-team-2:3c88d29a-98d1-5531-95e7-12824314e636
+# client-techco:4d99e30b-87c1-6642-a6f8-23935425f747
+# client-retailco:5e00f41c-98d2-7753-b709-34046536g858

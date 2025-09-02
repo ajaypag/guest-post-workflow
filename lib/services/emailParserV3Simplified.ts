@@ -203,20 +203,45 @@ IMPORTANT: Use web search to analyze each website domain and determine its categ
       try {
         parsed = JSON.parse(cleanedContent);
       } catch (parseError) {
-        console.error('❌ JSON Parse Error:', parseError);
-        console.log('📝 Raw content that failed to parse:', cleanedContent);
-        console.log('📝 Content preview (first 1000 chars):', cleanedContent.substring(0, 1000));
+        // Try to fix common JSON issues
+        console.log('⚠️ Initial parse failed, attempting to fix JSON...');
         
-        // Return safe fallback with error info
-        return {
-          hasOffer: false,
-          rawExtraction: cleanedContent,
-          extractionMetadata: {
-            extractionNotes: `JSON parsing failed: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`,
-            confidence: 0,
-            keyQuotes: ['Parse error - check rawExtraction field for AI response']
-          }
-        };
+        // Try multiple fixes for common JSON issues
+        let fixedContent = cleanedContent;
+        
+        // Fix 1: Handle unescaped quotes in strings
+        // Look for patterns like ": "text with "quotes" inside"
+        fixedContent = fixedContent.replace(/:\s*"([^"]*)"([^",\}]*)"/g, (match, p1, p2) => {
+          // If p2 contains quotes, they need escaping
+          const fixed = `: "${p1}\\"${p2}"`;
+          return fixed;
+        });
+        
+        // Fix 2: Escape newlines, tabs, etc.
+        fixedContent = fixedContent
+          .replace(/([^\\])\\n/g, '$1\\\\n') // Fix unescaped \n
+          .replace(/([^\\])\\t/g, '$1\\\\t') // Fix unescaped \t
+          .replace(/([^\\])\\r/g, '$1\\\\r'); // Fix unescaped \r
+        
+        try {
+          parsed = JSON.parse(fixedContent);
+          console.log('✅ JSON fixed and parsed successfully');
+        } catch (secondError) {
+          console.error('❌ JSON Parse Error after fix attempt:', secondError);
+          console.log('📝 Raw content that failed to parse:', cleanedContent);
+          console.log('📝 Content preview (first 1000 chars):', cleanedContent.substring(0, 1000));
+          
+          // Return safe fallback with error info
+          return {
+            hasOffer: false,
+            rawExtraction: cleanedContent,
+            extractionMetadata: {
+              extractionNotes: `JSON parsing failed: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`,
+              confidence: 0,
+              keyQuotes: ['Parse error - check rawExtraction field for AI response']
+            }
+          };
+        }
       }
       
       // Add raw extraction for debugging
