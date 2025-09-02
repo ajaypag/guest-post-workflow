@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { 
-  Search, ChevronDown, ChevronRight, ChevronUp, Edit2, Trash2, 
+  Search, ChevronDown, ChevronRight, ChevronUp, Edit2, Edit, Trash2, 
   CheckCircle, XCircle, AlertCircle, Save, X, Plus, Filter,
   Square, CheckSquare, MinusSquare, Loader2, Globe
 } from 'lucide-react';
@@ -1297,14 +1297,24 @@ export default function LineItemsReviewTable({
                           )}
                           {/* Combined Action Column - Now at the end */}
                           <td className="py-3 pr-4">
-                            <ActionColumnToggle
-                              included={itemStatus === 'included'}
-                              onToggle={(included) => handleInclusionToggle(item.id, included)}
-                              status={item.status}
-                              canChangeStatus={permissions.canChangeStatus}
-                              disabled={false}
-                              className="w-full max-w-[120px]"
-                            />
+                            <div className="flex items-center gap-2">
+                              <ActionColumnToggle
+                                included={itemStatus === 'included'}
+                                onToggle={(included) => handleInclusionToggle(item.id, included)}
+                                status={item.status}
+                                canChangeStatus={permissions.canChangeStatus}
+                                disabled={false}
+                                className="flex-1 max-w-[120px]"
+                              />
+                              <Link
+                                href={`/orders/${orderId}/edit`}
+                                className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-600 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors"
+                                title="Edit order setup (targets & anchor text)"
+                              >
+                                <Edit className="w-3 h-3" />
+                                <span className="hidden lg:inline">Setup</span>
+                              </Link>
+                            </div>
                           </td>
                         </tr>
                         {/* Expanded Details Row */}
@@ -1408,6 +1418,14 @@ export default function LineItemsReviewTable({
                           disabled={false}
                           className="max-w-[120px]"
                         />
+                        <Link
+                          href={`/orders/${orderId}/edit`}
+                          className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-600 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors"
+                          title="Edit order setup"
+                        >
+                          <Edit className="w-3 h-3" />
+                          Setup
+                        </Link>
                       </div>
                     </div>
                     

@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
         .from(clients)
         .where(inArray(clients.id, allowedClientIds));
       
-      const accountIds = [...new Set(clientsData.map(c => c.accountId).filter(Boolean))];
+      const accountIds = [...new Set(clientsData.map(c => c.accountId).filter(Boolean))] as string[];
       console.log('[DEBUG] Account IDs from clients:', accountIds);
       
       if (accountIds.length > 0) {

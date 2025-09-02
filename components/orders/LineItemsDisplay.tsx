@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Globe, Link as LinkIcon, Package, DollarSign, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import Link from 'next/link';
+import { Globe, Link as LinkIcon, Package, DollarSign, CheckCircle, Clock, AlertCircle, Edit, Settings } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils/formatting';
 
 interface LineItem {
@@ -21,13 +22,15 @@ interface LineItemsDisplayProps {
   orderStatus: string;
   orderState?: string;
   userType: 'internal' | 'account' | 'publisher';
+  orderId: string;
 }
 
 export default function LineItemsDisplay({ 
   lineItems, 
   orderStatus,
   orderState,
-  userType
+  userType,
+  orderId
 }: LineItemsDisplayProps) {
   
   if (!lineItems || lineItems.length === 0) {
@@ -79,6 +82,14 @@ export default function LineItemsDisplay({
                 Your order has been submitted and is awaiting confirmation from our team.
               </p>
             </div>
+            <Link
+              href={`/orders/${orderId}/edit`}
+              className="px-3 py-1.5 bg-blue-600 text-white hover:bg-blue-700 text-sm font-medium rounded-lg transition-colors flex items-center gap-2 flex-shrink-0"
+              title="Edit your order details"
+            >
+              <Edit className="h-3.5 w-3.5" />
+              Edit Order
+            </Link>
           </div>
         </div>
       )}
@@ -132,6 +143,9 @@ export default function LineItemsDisplay({
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -139,7 +153,7 @@ export default function LineItemsDisplay({
                 <React.Fragment key={clientId}>
                   {/* Client Header Row */}
                   <tr className="bg-gray-50">
-                    <td colSpan={showSites || showPublishedLinks ? (userType === 'internal' ? 6 : 5) : (userType === 'internal' ? 4 : 3)} 
+                    <td colSpan={showSites || showPublishedLinks ? (userType === 'internal' ? 7 : 6) : (userType === 'internal' ? 5 : 4)} 
                         className="px-6 py-2">
                       <div className="flex items-center gap-2">
                         <Globe className="w-4 h-4 text-gray-400" />
@@ -250,6 +264,18 @@ export default function LineItemsDisplay({
                             Draft
                           </span>
                         )}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <Link
+                            href={`/orders/${orderId}/edit`}
+                            className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors"
+                            title="Edit anchor text and target URL"
+                          >
+                            <Edit className="w-3 h-3" />
+                            Edit
+                          </Link>
+                        </div>
                       </td>
                     </tr>
                   ))}
