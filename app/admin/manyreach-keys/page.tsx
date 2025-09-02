@@ -56,43 +56,7 @@ export default function ManyReachKeysPage() {
             keys.push({ workspace, apiKey });
           }
         } else {
-          // Just an API key - try to get a smart name from the API
-          try {
-            const suggestRes = await fetch('/api/admin/manyreach-keys', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                action: 'suggest-name',
-                apiKey: trimmed
-              })
-            });
-            
-            if (suggestRes.ok) {
-              const data = await suggestRes.json();
-              if (data.suggestions && data.suggestions.length > 0) {
-                // Use first suggestion, but add number if already exists
-                let baseName = data.suggestions[0];
-                let finalName = baseName;
-                let counter = 1;
-                
-                while (workspaces.some(ws => ws.workspace_name === finalName) || 
-                       keys.some(k => k.workspace === finalName)) {
-                  finalName = `${baseName}-${counter}`;
-                  counter++;
-                }
-                
-                keys.push({ 
-                  workspace: finalName,
-                  apiKey: trimmed 
-                });
-                continue;
-              }
-            }
-          } catch (e) {
-            // Ignore suggestion errors
-          }
-          
-          // Fallback to generic name
+          // Just an API key - use generic name
           const workspaceNum: number = workspaces.length + keys.length + 1;
           keys.push({ 
             workspace: `workspace-${workspaceNum}`, 

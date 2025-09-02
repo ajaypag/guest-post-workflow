@@ -54,7 +54,13 @@ export class ManyReachAPIClient {
     this.workspaceManager = new WorkspaceManager();
     
     if (workspaceId) {
-      this.setWorkspace(workspaceId);
+      try {
+        this.setWorkspace(workspaceId);
+      } catch (error) {
+        // If workspace doesn't exist, leave currentWorkspace as null
+        // This allows graceful handling in calling code
+        console.warn(`Workspace ${workspaceId} not found, leaving currentWorkspace as null`);
+      }
     } else {
       const defaultWs = this.workspaceManager.getDefaultWorkspace();
       if (defaultWs) {
@@ -108,6 +114,11 @@ export class ManyReachAPIClient {
    * Fetch all campaigns from current workspace
    */
   async getCampaigns(): Promise<Campaign[]> {
+    if (!this.currentWorkspace) {
+      console.warn('No workspace configured, returning empty campaigns list');
+      return [];
+    }
+    
     console.log(`🔍 Fetching campaigns for workspace: ${this.currentWorkspace?.name}`);
     
     const apiKey = await this.getApiKey();

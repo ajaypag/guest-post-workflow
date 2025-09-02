@@ -66,64 +66,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: true });
       }
 
-      case 'suggest-name': {
-        const { apiKey } = body;
-        
-        if (!apiKey) {
-          return NextResponse.json({ error: 'API key required' }, { status: 400 });
-        }
-
-        // Test the API key and get account info
-        const testResponse = await fetch(`https://app.manyreach.com/api/campaigns?apikey=${apiKey}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
-
-        if (!testResponse.ok) {
-          return NextResponse.json({ 
-            success: false,
-            suggestions: ['workspace-1', 'main', 'outreach']
-          });
-        }
-
-        const data = await testResponse.json();
-        const suggestions: string[] = [];
-        
-        // Suggestion from account name
-        if (data.account) {
-          const cleanName = data.account
-            .toLowerCase()
-            .replace(/[^a-z0-9\s-]/g, '')
-            .replace(/\s+/g, '-')
-            .substring(0, 30);
-          suggestions.push(cleanName);
-        }
-        
-        // Suggestion from sender email domain
-        if (data.data && data.data.length > 0) {
-          const firstCampaignWithEmail = data.data.find((c: any) => c.from);
-          if (firstCampaignWithEmail?.from) {
-            const emailParts = firstCampaignWithEmail.from.split('@');
-            if (emailParts[1]) {
-              const domain = emailParts[1].split('.')[0];
-              if (domain && domain !== 'gmail' && domain !== 'outlook') {
-                suggestions.push(domain);
-              }
-            }
-          }
-        }
-        
-        // Add generic suggestions
-        suggestions.push('main', 'outreach-' + (data.data?.length || 1));
-        
-        return NextResponse.json({ 
-          success: true,
-          accountName: data.account,
-          suggestions: [...new Set(suggestions)].slice(0, 4) // Unique, max 4
-        });
-      }
 
       case 'test': {
         const { workspace } = body;
