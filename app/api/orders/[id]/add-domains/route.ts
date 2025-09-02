@@ -52,10 +52,21 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // Validate order can be modified
-    if (!['draft', 'pending'].includes(existingOrder.status)) {
+    // Validate order can be modified - same as edit functionality
+    // Orders are editable until payment is ACTUALLY received (not just invoiced)
+    const editableStatuses = [
+      'draft',                  // Creating order
+      'pending_confirmation',   // Submitted but not confirmed
+      'confirmed',             // Internal confirmed, analyzing
+      'sites_ready',           // Sites selected for review
+      'client_reviewing',      // Client reviewing sites
+      'client_approved',       // Client approved sites
+      'invoiced'               // Invoice sent but not paid - user can still edit
+    ];
+    
+    if (!editableStatuses.includes(existingOrder.status)) {
       return NextResponse.json(
-        { error: 'Order cannot be modified in its current status' },
+        { error: `Order cannot be modified in status: ${existingOrder.status}` },
         { status: 400 }
       );
     }
@@ -140,9 +151,19 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       .from(orderLineItems)
       .where(eq(orderLineItems.orderId, orderId));
 
-    if (existingLineItems.length > 0) {
+    console.log('[AddDomains] Order status:', existingOrder.status);
+    console.log('[AddDomains] Existing line items count:', existingLineItems.length);
+
+    // For orders that can have multiple clients, skip the client compatibility check
+    // This allows adding domains from any client within the same account
+    const allowMultipleClients = session.userType === 'internal' || session.userType === 'account';
+    
+    if (existingLineItems.length > 0 && !allowMultipleClients) {
       const existingClientIds = [...new Set(existingLineItems.map(li => li.clientId))];
       const newClientIds = [...new Set(selectedDomains.map(d => d.clientId).filter(Boolean))];
+      
+      console.log('[AddDomains] Existing client IDs:', existingClientIds);
+      console.log('[AddDomains] New client IDs:', newClientIds);
       
       // Check if new domains have compatible clients
       const hasIncompatibleClients = newClientIds.some(newClientId => 

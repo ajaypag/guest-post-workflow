@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Package, Plus, Clock, CheckCircle, Loader2, AlertCircle, Target, AlertTriangle, XCircle } from 'lucide-react';
+import { X, Package, Plus, Clock, CheckCircle, Loader2, AlertCircle, Target, AlertTriangle, XCircle, ExternalLink } from 'lucide-react';
 
 interface Order {
   id: string;
@@ -25,16 +25,20 @@ interface AddToOrderModalProps {
   isOpen: boolean;
   onClose: () => void;
   selectedDomains: any[];
-  onOrderSelected: (orderId: string, domainTargets?: any[]) => void;
+  onOrderSelectedAndContinue: (orderId: string, domainTargets?: any[]) => void;
+  onOrderSelectedAndReview: (orderId: string, domainTargets?: any[]) => void;
   onCreateNew: () => void;
+  error?: string | null;
 }
 
 export default function AddToOrderModal({
   isOpen,
   onClose,
   selectedDomains,
-  onOrderSelected,
-  onCreateNew
+  onOrderSelectedAndContinue,
+  onOrderSelectedAndReview,
+  onCreateNew,
+  error: externalError
 }: AddToOrderModalProps) {
   const [loading, setLoading] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -57,8 +61,12 @@ export default function AddToOrderModal({
       fetchAvailableOrders();
       fetchTargetUrls();
       initializeDomainSettings();
+      // Show external error if present
+      if (externalError) {
+        setError(externalError);
+      }
     }
-  }, [isOpen, selectedDomains]);
+  }, [isOpen, selectedDomains, externalError]);
 
   const fetchUserType = async () => {
     try {
@@ -124,6 +132,7 @@ export default function AddToOrderModal({
         throw new Error(data.error || 'Failed to fetch orders');
       }
 
+      console.log('[AddToOrderModal] Received orders:', data.orders);
       setOrders(data.orders || []);
     } catch (err: any) {
       setError(err.message || 'Failed to fetch available orders');
@@ -138,7 +147,7 @@ export default function AddToOrderModal({
     setShowDomainConfig(true);
   };
 
-  const handleAddToOrder = async () => {
+  const handleAddToOrderAndContinue = async () => {
     if (!selectedOrderId) {
       setError('Please select an order');
       return;
@@ -155,7 +164,32 @@ export default function AddToOrderModal({
         anchorText: domainSettings.get(d.id)?.anchorText || ''
       }));
 
-      onOrderSelected(selectedOrderId, domainTargets);
+      onOrderSelectedAndContinue(selectedOrderId, domainTargets);
+    } catch (err: any) {
+      setError(err.message || 'Failed to add domains to order');
+    } finally {
+      setAddingToOrder(false);
+    }
+  };
+
+  const handleAddToOrderAndReview = async () => {
+    if (!selectedOrderId) {
+      setError('Please select an order');
+      return;
+    }
+
+    setAddingToOrder(true);
+    setError(null);
+
+    try {
+      // Convert domain settings to array format for API
+      const domainTargets = selectedDomains.map(d => ({
+        domainId: d.id,
+        targetUrl: domainSettings.get(d.id)?.targetUrl || d.suggestedTargetUrl || '',
+        anchorText: domainSettings.get(d.id)?.anchorText || ''
+      }));
+
+      onOrderSelectedAndReview(selectedOrderId, domainTargets);
     } catch (err: any) {
       setError(err.message || 'Failed to add domains to order');
     } finally {
@@ -164,22 +198,73 @@ export default function AddToOrderModal({
   };
 
   const getStatusBadge = (status: string, state: string) => {
-    if (status === 'draft') {
-      return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
-          <Package className="w-3 h-3 mr-1" />
-          Draft
-        </span>
-      );
-    } else if (status === 'pending') {
-      return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
-          <Clock className="w-3 h-3 mr-1" />
-          Pending
-        </span>
-      );
-    }
-    return null;
+    // Map status to display text and colors
+    const statusConfig: Record<string, { label: string; icon: any; bgColor: string; textColor: string }> = {
+      'draft': { 
+        label: 'Draft', 
+        icon: Package, 
+        bgColor: 'bg-gray-100', 
+        textColor: 'text-gray-800' 
+      },
+      'pending_confirmation': { 
+        label: 'Pending Confirmation', 
+        icon: Clock, 
+        bgColor: 'bg-yellow-100', 
+        textColor: 'text-yellow-800' 
+      },
+      'confirmed': { 
+        label: 'Confirmed', 
+        icon: CheckCircle, 
+        bgColor: 'bg-blue-100', 
+        textColor: 'text-blue-800' 
+      },
+      'sites_ready': { 
+        label: 'Sites Ready', 
+        icon: Target, 
+        bgColor: 'bg-indigo-100', 
+        textColor: 'text-indigo-800' 
+      },
+      'client_reviewing': { 
+        label: 'Client Reviewing', 
+        icon: Clock, 
+        bgColor: 'bg-purple-100', 
+        textColor: 'text-purple-800' 
+      },
+      'client_approved': { 
+        label: 'Client Approved', 
+        icon: CheckCircle, 
+        bgColor: 'bg-green-100', 
+        textColor: 'text-green-800' 
+      },
+      'invoiced': { 
+        label: 'Invoiced', 
+        icon: Package, 
+        bgColor: 'bg-orange-100', 
+        textColor: 'text-orange-800' 
+      },
+      'paid': { 
+        label: 'Paid', 
+        icon: CheckCircle, 
+        bgColor: 'bg-green-100', 
+        textColor: 'text-green-800' 
+      }
+    };
+
+    const config = statusConfig[status] || { 
+      label: status, 
+      icon: AlertCircle, 
+      bgColor: 'bg-gray-100', 
+      textColor: 'text-gray-800' 
+    };
+    
+    const Icon = config.icon;
+
+    return (
+      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${config.bgColor} ${config.textColor}`}>
+        <Icon className="w-3 h-3 mr-1" />
+        {config.label}
+      </span>
+    );
   };
 
   if (!isOpen) return null;
@@ -276,10 +361,23 @@ export default function AddToOrderModal({
                               />
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-1">
-                                  <span className="font-medium text-gray-900">
+                                  <a 
+                                    href={`/orders/${order.id}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="font-medium text-gray-900 hover:text-blue-600 transition-colors inline-flex items-center gap-1 group"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
                                     {order.displayName}
-                                  </span>
+                                    <ExternalLink className="w-3 h-3 opacity-50 group-hover:opacity-100" />
+                                  </a>
                                   {getStatusBadge(order.status, order.state)}
+                                  {/* Show state if different from status */}
+                                  {order.state && order.state !== order.status && (
+                                    <span className="text-xs text-gray-500 bg-gray-50 px-2 py-0.5 rounded">
+                                      {order.state.replace(/_/g, ' ')}
+                                    </span>
+                                  )}
                                 </div>
                                 
                                 <div className="text-sm text-gray-600 mb-2">
@@ -551,9 +649,26 @@ export default function AddToOrderModal({
                   Back
                 </button>
                 <button
-                  onClick={handleAddToOrder}
+                  onClick={handleAddToOrderAndReview}
                   disabled={addingToOrder}
-                  className="flex-1 px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {addingToOrder ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Adding...
+                    </>
+                  ) : (
+                    <>
+                      <ExternalLink className="w-4 h-4" />
+                      Add & Review Order
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={handleAddToOrderAndContinue}
+                  disabled={addingToOrder}
+                  className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {addingToOrder ? (
                     <>
@@ -563,7 +678,7 @@ export default function AddToOrderModal({
                   ) : (
                     <>
                       <CheckCircle className="w-4 h-4" />
-                      Add to Order
+                      Add & Continue Browsing
                     </>
                   )}
                 </button>

@@ -11,6 +11,9 @@ export interface SelectedDomain {
   clientId: string;
   clientName: string | null;
   price: number; // In dollars (calculated from guestPostCost)
+  guestPostCost: number | null; // Original price in cents
+  domainRating: number | null; // DR score
+  traffic: number | null; // Monthly traffic
   targetPageIds?: string[]; // From targetPages array
   targetPages?: Array<{
     id: string;
@@ -88,6 +91,8 @@ export function useSelection(userType: 'internal' | 'account' | 'publisher' = 'i
     clientId: string;
     clientName: string | null;
     guestPostCost: number | null;
+    domainRating: number | null;
+    traffic: number | null;
     targetPages?: Array<{ id: string; url: string; keywords: string | null; }>;
     qualificationStatus: string;
     suggestedTargetUrl?: string | null;
@@ -120,6 +125,9 @@ export function useSelection(userType: 'internal' | 'account' | 'publisher' = 'i
           clientId: domain.clientId,
           clientName: domain.clientName,
           price,
+          guestPostCost: domain.guestPostCost,
+          domainRating: domain.domainRating,
+          traffic: domain.traffic,
           targetPageIds: domain.targetPages?.map(tp => tp.id),
           targetPages: domain.targetPages?.map(tp => ({
             id: tp.id,
@@ -181,6 +189,8 @@ export function useSelection(userType: 'internal' | 'account' | 'publisher' = 'i
     clientId: string;
     clientName: string | null;
     guestPostCost: number | null;
+    domainRating: number | null;
+    traffic: number | null;
     targetPages?: Array<{ id: string; url: string; keywords: string | null; }>;
     qualificationStatus: string;
     suggestedTargetUrl?: string | null;
@@ -213,6 +223,8 @@ export function useSelection(userType: 'internal' | 'account' | 'publisher' = 'i
     clientId: string;
     clientName: string | null;
     guestPostCost: number | null;
+    domainRating: number | null;
+    traffic: number | null;
     targetPages?: Array<{ id: string; url: string; keywords: string | null; }>;
     qualificationStatus: string;
     suggestedTargetUrl?: string | null;
@@ -229,6 +241,9 @@ export function useSelection(userType: 'internal' | 'account' | 'publisher' = 'i
           clientId: domain.clientId,
           clientName: domain.clientName,
           price,
+          guestPostCost: domain.guestPostCost,
+          domainRating: domain.domainRating,
+          traffic: domain.traffic,
           targetPageIds: domain.targetPages?.map(tp => tp.id),
           targetPages: domain.targetPages?.map(tp => ({
             id: tp.id,
