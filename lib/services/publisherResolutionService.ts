@@ -1,6 +1,6 @@
 import { db } from '@/lib/db/connection';
 import { publishers } from '@/lib/db/accountSchema';
-import { publisherOfferings } from '@/lib/db/publisherOfferingsSchema';
+import { publisherOfferings } from '@/lib/db/publisherSchemaActual';
 import { eq, inArray } from 'drizzle-orm';
 
 export interface PublisherInfo {
@@ -36,7 +36,8 @@ export class PublisherResolutionService {
       const result = await db
         .select({
           id: publishers.id,
-          name: publishers.name,
+          contactName: publishers.contactName,
+          companyName: publishers.companyName,
           email: publishers.email,
           isShadow: publishers.is_shadow,
         })
@@ -49,10 +50,14 @@ export class PublisherResolutionService {
       const publisher = result[0];
       return {
         id: publisher.id,
-        name: publisher.name || 'Unknown Publisher',
+        name: publisher.contactName || publisher.companyName || 'Unknown Publisher',
         email: publisher.email,
         isShadow: publisher.isShadow || false,
-        displayName: this.formatPublisherName(publisher),
+        displayName: this.formatPublisherName({
+          name: publisher.contactName || publisher.companyName,
+          email: publisher.email,
+          isShadow: publisher.isShadow
+        }),
       };
     } catch (error) {
       console.error('[PublisherResolution] Error resolving publisher:', error);
@@ -72,7 +77,8 @@ export class PublisherResolutionService {
       const results = await db
         .select({
           id: publishers.id,
-          name: publishers.name,
+          contactName: publishers.contactName,
+          companyName: publishers.companyName,
           email: publishers.email,
           isShadow: publishers.is_shadow,
         })
@@ -82,10 +88,14 @@ export class PublisherResolutionService {
       for (const publisher of results) {
         map.set(publisher.id, {
           id: publisher.id,
-          name: publisher.name || 'Unknown Publisher',
+          name: publisher.contactName || publisher.companyName || 'Unknown Publisher',
           email: publisher.email,
           isShadow: publisher.isShadow || false,
-          displayName: this.formatPublisherName(publisher),
+          displayName: this.formatPublisherName({
+            name: publisher.contactName || publisher.companyName,
+            email: publisher.email,
+            isShadow: publisher.isShadow
+          }),
         });
       }
     } catch (error) {
