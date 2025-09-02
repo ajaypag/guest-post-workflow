@@ -84,6 +84,11 @@ export const orderLineItems = pgTable('order_line_items', {
       traffic?: number;
       qualityScore?: number;
     };
+    // Publisher attribution metadata
+    pricingStrategy?: string;
+    attributionSource?: string;
+    attributionError?: string;
+    attributionTimestamp?: string;
     changeHistory?: Array<{
       timestamp: string;
       changeType: string;

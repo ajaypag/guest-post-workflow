@@ -15,6 +15,17 @@ interface LineItem {
   status: string;
   assignedDomain?: string;
   publishedUrl?: string;
+  // Publisher attribution fields
+  publisherId?: string | null;
+  publisherOfferingId?: string | null;
+  publisherPrice?: number | null;
+  publisher?: {
+    id: string;
+    contactName?: string | null;
+    companyName?: string | null;
+    email: string;
+  } | null;
+  metadata?: any;
 }
 
 interface LineItemsDisplayProps {
@@ -24,6 +35,33 @@ interface LineItemsDisplayProps {
   userType: 'internal' | 'account' | 'publisher';
   orderId: string;
 }
+
+// Helper function to format publisher display
+const formatPublisherDisplay = (item: LineItem): string => {
+  if (!item.publisherId) {
+    return 'Not assigned';
+  }
+  
+  if (item.publisher) {
+    const name = item.publisher.companyName || 
+                 item.publisher.contactName || 
+                 item.publisher.email.split('@')[0];
+    
+    // Check if it's an internal/shadow publisher
+    const isInternal = item.metadata?.attributionSource === 'shadow_publisher';
+    return isInternal ? `${name} (Internal)` : name;
+  }
+  
+  return 'Publisher assigned';
+};
+
+// Helper function to get publisher price display
+const formatPublisherPrice = (item: LineItem): string => {
+  if (!item.publisherPrice || item.publisherPrice === 0) {
+    return '';
+  }
+  return `($${(item.publisherPrice / 100).toFixed(2)})`;
+};
 
 export default function LineItemsDisplay({ 
   lineItems, 
@@ -128,6 +166,12 @@ export default function LineItemsDisplay({
                     Assigned Site
                   </th>
                 )}
+                {/* Show publisher for internal users when sites are assigned */}
+                {userType === 'internal' && showSites && (
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Publisher
+                  </th>
+                )}
                 {showPublishedLinks && (
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Published Link
@@ -153,7 +197,7 @@ export default function LineItemsDisplay({
                 <React.Fragment key={clientId}>
                   {/* Client Header Row */}
                   <tr className="bg-gray-50">
-                    <td colSpan={showSites || showPublishedLinks ? (userType === 'internal' ? 7 : 6) : (userType === 'internal' ? 5 : 4)} 
+                    <td colSpan={userType === 'internal' && showSites ? 8 : showSites || showPublishedLinks ? (userType === 'internal' ? 7 : 6) : (userType === 'internal' ? 5 : 4)} 
                         className="px-6 py-2">
                       <div className="flex items-center gap-2">
                         <Globe className="w-4 h-4 text-gray-400" />
@@ -199,6 +243,26 @@ export default function LineItemsDisplay({
                           ) : (
                             <span className="text-sm text-gray-400 italic">Pending</span>
                           )}
+                        </td>
+                      )}
+                      {/* Publisher column for internal users */}
+                      {userType === 'internal' && showSites && (
+                        <td className="px-6 py-4">
+                          <div className="text-sm">
+                            <span className={item.publisherId ? "text-gray-900" : "text-gray-400 italic"}>
+                              {formatPublisherDisplay(item)}
+                            </span>
+                            {item.publisherPrice && item.publisherPrice > 0 && (
+                              <span className="text-xs text-gray-500 ml-1">
+                                {formatPublisherPrice(item)}
+                              </span>
+                            )}
+                            {item.metadata?.pricingStrategy && (
+                              <div className="text-xs text-gray-500 mt-0.5">
+                                {item.metadata.pricingStrategy.replace('_', ' ')}
+                              </div>
+                            )}
+                          </div>
                         </td>
                       )}
                       {showPublishedLinks && (

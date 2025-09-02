@@ -192,10 +192,33 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     let additionalRetail = 0;
     let additionalWholesale = 0;
     const domainPricing: Map<string, { wholesale: number; retail: number }> = new Map();
+    const domainAttribution: Map<string, { 
+      publisherId?: string; 
+      offeringId?: string;
+      pricingStrategy?: string;
+      attributionSource?: string;
+      attributionError?: string;
+    }> = new Map();
 
     for (const domain of selectedDomains) {
-      // Get actual pricing from website table
+      // Get actual pricing from website table with publisher attribution
       const priceInfo = await PricingService.getDomainPrice(domain.domain);
+      
+      // Log attribution for debugging
+      if (priceInfo.selectedPublisherId) {
+        console.log(`[AddDomains] Publisher attribution for ${domain.domain}:`, {
+          publisherId: priceInfo.selectedPublisherId,
+          offeringId: priceInfo.selectedOfferingId,
+          publisherName: priceInfo.selectedPublisherName,
+          strategy: priceInfo.pricingStrategy,
+          source: priceInfo.attributionSource
+        });
+      } else if (priceInfo.found) {
+        console.warn(`[AddDomains] No publisher attribution for ${domain.domain}:`, {
+          error: priceInfo.attributionError,
+          source: priceInfo.attributionSource
+        });
+      }
       
       let wholesalePrice = 0;
       let retailPrice = 0;
@@ -212,6 +235,16 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       }
       
       domainPricing.set(domain.id, { wholesale: wholesalePrice, retail: retailPrice });
+      
+      // Store publisher attribution
+      domainAttribution.set(domain.id, {
+        publisherId: priceInfo.selectedPublisherId,
+        offeringId: priceInfo.selectedOfferingId,
+        pricingStrategy: priceInfo.pricingStrategy,
+        attributionSource: priceInfo.attributionSource,
+        attributionError: priceInfo.attributionError
+      });
+      
       additionalRetail += retailPrice;
       additionalWholesale += wholesalePrice;
     }
@@ -266,6 +299,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     // Add new line items
     for (const domain of selectedDomains) {
       const pricing = domainPricing.get(domain.id)!;
+      const attribution = domainAttribution.get(domain.id);
       const lineItemId = uuidv4();
       
       // Get target configuration for this domain
@@ -275,7 +309,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       const targetUrl = targetConfig?.targetUrl || domain.suggestedTargetUrl || vettedTargetUrl || '';
       const anchorText = targetConfig?.anchorText || '';
 
-      // Create line item
+      // Create line item with publisher attribution
       const lineItemData: NewOrderLineItem = {
         orderId,
         clientId: (domain.clientId || existingLineItems[0]?.clientId || existingOrder.accountId) as string,
@@ -283,6 +317,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         status: 'draft' as const,
         estimatedPrice: pricing.retail,
         wholesalePrice: pricing.wholesale,
+        // Publisher attribution fields
+        publisherId: attribution?.publisherId || null,
+        publisherOfferingId: attribution?.offeringId || null,
+        publisherPrice: pricing.wholesale, // Lock in the publisher price
         displayOrder: nextDisplayOrder,
         assignedDomainId: domain.id as string,
         assignedDomain: domain.domain as string,
@@ -291,6 +329,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         metadata: {
           bulkAnalysisProjectId: domain.projectId || undefined,
           internalNotes: `Added from vetted sites to existing order`,
+          pricingStrategy: attribution?.pricingStrategy,
+          attributionSource: attribution?.attributionSource,
+          attributionError: attribution?.attributionError,
         },
       };
 
