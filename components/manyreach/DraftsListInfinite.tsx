@@ -45,7 +45,7 @@ export function DraftsListInfinite({ onDraftSelect, onDraftUpdate }: DraftsListI
   const [total, setTotal] = useState(0);
   const [offset, setOffset] = useState(0);
   const observerTarget = useRef<HTMLDivElement>(null);
-  const searchTimeout = useRef<NodeJS.Timeout>();
+  const searchTimeout = useRef<NodeJS.Timeout | null>(null);
   
   const LIMIT = 100;
 
