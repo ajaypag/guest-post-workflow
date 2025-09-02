@@ -44,6 +44,7 @@ export function DraftsListInfinite({ onDraftSelect, onDraftUpdate }: DraftsListI
   const [searchInput, setSearchInput] = useState('');
   const [total, setTotal] = useState(0);
   const [offset, setOffset] = useState(0);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const observerTarget = useRef<HTMLDivElement>(null);
   const searchTimeout = useRef<NodeJS.Timeout | null>(null);
   
@@ -64,7 +65,8 @@ export function DraftsListInfinite({ onDraftSelect, onDraftUpdate }: DraftsListI
       const params = new URLSearchParams({
         limit: LIMIT.toString(),
         offset: currentOffset.toString(),
-        ...(search && { search })
+        ...(search && { search }),
+        ...(statusFilter !== 'all' && { status: statusFilter })
       });
       
       const response = await fetch(`/api/admin/manyreach/drafts?${params}`);
@@ -89,12 +91,12 @@ export function DraftsListInfinite({ onDraftSelect, onDraftUpdate }: DraftsListI
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [drafts.length, hasMore, offset, search]);
+  }, [drafts.length, hasMore, offset, search, statusFilter]);
 
   // Initial load
   useEffect(() => {
     fetchDrafts(true);
-  }, [search]);
+  }, [search, statusFilter]);
 
   // Search debounce
   useEffect(() => {
@@ -200,10 +202,58 @@ export function DraftsListInfinite({ onDraftSelect, onDraftUpdate }: DraftsListI
           />
         </div>
         
+        {/* Status Filter Buttons */}
+        <div className="flex gap-2 mt-3">
+          <Button
+            variant={statusFilter === 'all' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => {
+              setStatusFilter('all');
+              setOffset(0);
+            }}
+          >
+            All Drafts
+          </Button>
+          <Button
+            variant={statusFilter === 'pending' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => {
+              setStatusFilter('pending');
+              setOffset(0);
+            }}
+          >
+            <Clock className="h-3 w-3 mr-1" />
+            Pending
+          </Button>
+          <Button
+            variant={statusFilter === 'approved' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => {
+              setStatusFilter('approved');
+              setOffset(0);
+            }}
+          >
+            <CheckCircle className="h-3 w-3 mr-1" />
+            Approved
+          </Button>
+          <Button
+            variant={statusFilter === 'rejected' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => {
+              setStatusFilter('rejected');
+              setOffset(0);
+            }}
+          >
+            <XCircle className="h-3 w-3 mr-1" />
+            Rejected
+          </Button>
+        </div>
+        
         {/* Stats Bar */}
         <div className="flex gap-4 mt-3 text-sm">
           <span className="text-gray-600">
             Showing {drafts.length} of {total}
+            {statusFilter !== 'all' && ` ${statusFilter} drafts`}
           </span>
           {search && (
             <span className="text-blue-600">
