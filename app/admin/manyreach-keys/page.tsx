@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Shield, Key, Trash2, Plus, Eye, EyeOff, CheckCircle, AlertCircle } from 'lucide-react';
+import { Shield, Key, Trash2, Plus, Eye, EyeOff, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
 
 interface Workspace {
   workspace_name: string;
@@ -135,6 +136,15 @@ export default function ManyReachKeysPage() {
 
   return (
     <div className="container mx-auto p-6 max-w-5xl">
+      <div className="mb-4">
+        <Link href="/admin/manyreach-import">
+          <Button variant="ghost" size="sm" className="gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            Back to ManyReach Import
+          </Button>
+        </Link>
+      </div>
+      
       <div className="flex items-center gap-3 mb-6">
         <Shield className="h-8 w-8 text-blue-600" />
         <h1 className="text-3xl font-bold">ManyReach API Keys</h1>
