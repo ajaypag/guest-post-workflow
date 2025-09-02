@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
             domain: testSite.domain,
             domainRating: testSite.dr,
             totalTraffic: testSite.traffic,
-            guestPostCost: testSite.price.toFixed(2),
+            guestPostCost: Math.round(testSite.price * 100), // Convert to cents
             categories: testSite.categories,
             niche: testSite.niches,
             websiteType: testSite.websiteType,

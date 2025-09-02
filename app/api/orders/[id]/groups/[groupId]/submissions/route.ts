@@ -139,8 +139,8 @@ export async function GET(
         wholesalePrice = submission.wholesalePriceSnapshot;
         price = wholesalePrice + serviceFee;
       } else if (websiteData?.guestPostCost) {
-        // Convert from decimal dollars to cents
-        wholesalePrice = Math.round(websiteData.guestPostCost.toString() * 100);
+        // guestPostCost is already in cents as integer
+        wholesalePrice = websiteData.guestPostCost;
         price = wholesalePrice + serviceFee;
       }
       

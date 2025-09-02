@@ -55,7 +55,7 @@ export async function POST(request: Request) {
     const airtableData = airtableMap.get(normalizedDomain);
     
     // Calculate correct price using CSV as source of truth - prefer individual prices when available
-    let correctPrice: number;
+    let correctPrice: number | null = null;
     if (airtableData) {
       // Smart price selection: prefer individual prices for single-contact scenarios
       if (airtableData.postflowGuestPostPrices.length === 1) {
@@ -75,6 +75,14 @@ export async function POST(request: Request) {
       // No CSV data - fall back to current database value
       correctPrice = website.guestPostCost;
     }
+    // Skip if we couldn't determine a valid price
+    if (correctPrice === null) {
+      return NextResponse.json({
+        error: `Could not determine price for ${website.domain}`,
+        domain: website.domain
+      }, { status: 400 });
+    }
+    
     const priceCents = Math.round(correctPrice * 100);
 
     // Determine price source for debugging
@@ -453,7 +461,7 @@ export async function POST(request: Request) {
       await db
         .update(websites)
         .set({ 
-          guestPostCost: correctPrice.toString(),
+          guestPostCost: Math.round(correctPrice * 100), // Convert dollars to cents as integer
           updatedAt: new Date()
         })
         .where(eq(websites.id, websiteId));

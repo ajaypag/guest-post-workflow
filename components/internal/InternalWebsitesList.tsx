@@ -33,7 +33,7 @@ interface Website {
   domain: string;
   domainRating: number | null;
   totalTraffic: number | null;
-  guestPostCost: string | null; // Note: DECIMAL field comes as string
+  guestPostCost: number | null; // Note: INTEGER field storing cents
   internalQualityScore: number | null;
   internalNotes: string | null;
   status?: string | null;

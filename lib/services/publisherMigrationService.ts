@@ -287,7 +287,7 @@ export class PublisherMigrationService {
     
     return result.map(w => ({
       domain: w.domain,
-      currentRate: w.guestPostCost ? parseFloat(w.guestPostCost) : undefined,
+      currentRate: w.guestPostCost ? (w.guestPostCost / 100) : undefined, // Convert cents to dollars
       estimatedTurnaround: w.avgResponseTimeHours ? Math.ceil(w.avgResponseTimeHours / 24) : undefined
     }));
   }

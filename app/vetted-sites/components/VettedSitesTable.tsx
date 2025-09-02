@@ -81,7 +81,7 @@ interface Domain {
   overallQuality: string | null;
   
   // Pricing
-  guestPostCost: string | null;
+  guestPostCost: number | null;
   
   // Publisher performance - RICH DATA
   avgResponseTimeHours: number | null;
@@ -741,7 +741,7 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
                 <td className="px-3 xl:px-4 py-4">
                   <div className="text-sm font-medium text-gray-900">
                     {(() => {
-                      const wholesalePriceCents = domain.guestPostCost ? parseFloat(domain.guestPostCost) : null;
+                      const wholesalePriceCents = domain.guestPostCost;
                       if (!wholesalePriceCents) return <span className="text-gray-400">N/A</span>;
                       
                       // Convert cents to dollars and add service fee

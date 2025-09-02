@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
       testWebsites.push({
         id: websiteId,
         domain: `${publisher.companyName?.toLowerCase().replace(/\s+/g, '-')}.com`,
-        guestPostCost: '250',
+        guestPostCost: 25000, // $250 in cents
         avgResponseTimeHours: 48,
         successRatePercentage: '85',
         source: 'test',

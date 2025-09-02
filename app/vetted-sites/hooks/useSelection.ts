@@ -73,9 +73,9 @@ export function useSelection(userType: 'internal' | 'account' | 'publisher' = 'i
   }, [selection]);
 
   // Calculate price for a domain - unified pricing for all users
-  const calculatePrice = useCallback((guestPostCost: string | null): number => {
+  const calculatePrice = useCallback((guestPostCost: number | null): number => {
     if (!guestPostCost) return 0;
-    const wholesalePriceCents = parseFloat(guestPostCost);
+    const wholesalePriceCents = guestPostCost;
     // Convert cents to dollars and add service fee
     const wholesalePriceDollars = wholesalePriceCents / 100;
     return wholesalePriceDollars + (SERVICE_FEE_CENTS / 100);
@@ -87,7 +87,7 @@ export function useSelection(userType: 'internal' | 'account' | 'publisher' = 'i
     domain: string;
     clientId: string;
     clientName: string | null;
-    guestPostCost: string | null;
+    guestPostCost: number | null;
     targetPages?: Array<{ id: string; url: string; keywords: string | null; }>;
     qualificationStatus: string;
     suggestedTargetUrl?: string | null;
@@ -180,7 +180,7 @@ export function useSelection(userType: 'internal' | 'account' | 'publisher' = 'i
     domain: string;
     clientId: string;
     clientName: string | null;
-    guestPostCost: string | null;
+    guestPostCost: number | null;
     targetPages?: Array<{ id: string; url: string; keywords: string | null; }>;
     qualificationStatus: string;
     suggestedTargetUrl?: string | null;
@@ -212,7 +212,7 @@ export function useSelection(userType: 'internal' | 'account' | 'publisher' = 'i
     domain: string;
     clientId: string;
     clientName: string | null;
-    guestPostCost: string | null;
+    guestPostCost: number | null;
     targetPages?: Array<{ id: string; url: string; keywords: string | null; }>;
     qualificationStatus: string;
     suggestedTargetUrl?: string | null;

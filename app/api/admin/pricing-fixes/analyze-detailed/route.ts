@@ -106,7 +106,7 @@ export async function GET() {
         const airtableEmails = [
           ...(airtableData?.postflowContactEmails || []),
           airtableData?.guestPostContact
-        ].filter(e => e);
+        ].filter((e): e is string => typeof e === 'string' && e.length > 0);
         
         for (const email of airtableEmails) {
           const existingPublisher = publisherByEmail.get(email.toLowerCase());

@@ -133,8 +133,8 @@ export async function POST(
       if (!retailPrice) {
         // Use website's guest post cost if available, otherwise calculate based on DR
         if (websiteData?.guestPostCost) {
-          // Convert from decimal dollars to cents
-          wholesalePrice = Math.round(websiteData.guestPostCost.toString() * 100);
+          // guestPostCost is already in cents as integer
+          wholesalePrice = websiteData.guestPostCost;
           retailPrice = wholesalePrice + serviceFee;
         } else {
           // Calculate based on domain rating if available

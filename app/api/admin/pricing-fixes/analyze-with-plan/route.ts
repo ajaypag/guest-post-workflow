@@ -108,7 +108,7 @@ export async function GET() {
         const emails = [
           ...(airtableData?.postflowContactEmails || []),
           airtableData?.guestPostContact
-        ].filter(e => e);
+        ].filter((e): e is string => typeof e === 'string' && e.length > 0);
         
         if (emails.length > 0) {
           const email = emails[0].toLowerCase();
