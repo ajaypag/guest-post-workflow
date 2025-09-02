@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { db } from '@/lib/db/connection';
 import { emailProcessingLogs, manyreachCampaignImports } from '@/lib/db/emailProcessingSchema';
 import { eq, and, desc, gte } from 'drizzle-orm';
 
@@ -50,8 +50,8 @@ export async function GET(request: NextRequest) {
       .from(emailProcessingLogs)
       .where(
         and(
-          eq(emailProcessingLogs.campaign_id, campaignId),
-          gte(emailProcessingLogs.created_at, new Date(Date.now() - 5 * 60 * 1000)) // Last 5 minutes
+          eq(emailProcessingLogs.campaignId, campaignId),
+          gte(emailProcessingLogs.createdAt, new Date(Date.now() - 5 * 60 * 1000)) // Last 5 minutes
         )
       )
       .limit(1);
@@ -63,8 +63,8 @@ export async function GET(request: NextRequest) {
         .from(manyreachCampaignImports)
         .where(
           and(
-            eq(manyreachCampaignImports.workspace_name, workspace),
-            eq(manyreachCampaignImports.campaign_id, campaignId)
+            eq(manyreachCampaignImports.workspaceName, workspace),
+            eq(manyreachCampaignImports.campaignId, campaignId)
           )
         )
         .limit(1);
@@ -75,8 +75,8 @@ export async function GET(request: NextRequest) {
           progress: {
             campaignId,
             status: 'processing',
-            processed: importData.total_imported || 0,
-            total: importData.total_replied || 0,
+            processed: importData.totalImported || 0,
+            total: importData.totalReplied || 0,
             currentEmail: 'Processing emails...'
           }
         });
@@ -94,8 +94,8 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// Export function to update progress (called from import service)
-export function updateImportProgress(
+// Helper function to update progress (used internally)
+function updateImportProgress(
   workspace: string,
   campaignId: string,
   progress: Partial<{

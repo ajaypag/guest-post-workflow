@@ -39,17 +39,17 @@ interface Campaign {
 
 interface Draft {
   id: string;
-  email_log_id: string;
+  email_log_id?: string;
   parsed_data: any;
   edited_data?: any;
-  status: string;
+  status: 'pending' | 'approved' | 'rejected';
   review_notes?: string;
   created_at: string;
   email_from: string;
   email_subject: string;
   campaign_name: string;
-  raw_content: string;
-  html_content: string;
+  raw_content?: string;
+  html_content?: string;
 }
 
 export default function ManyReachImportPage() {
@@ -943,7 +943,7 @@ function DraftEditor({ draft, onUpdate, onReprocess }: {
           <CardContent>
             <div 
               className="prose max-w-none"
-              dangerouslySetInnerHTML={{ __html: draft.html_content }}
+              dangerouslySetInnerHTML={{ __html: draft.html_content || '' }}
             />
           </CardContent>
         </Card>
