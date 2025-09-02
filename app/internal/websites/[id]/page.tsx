@@ -15,7 +15,7 @@ interface OfferingAttributes {
   requiresAuthorBio?: boolean;
   maxLinksPerPost?: number;
   contentRequirements?: string;
-  prohibitedTopics?: string;
+  prohibitedTopics?: string | string[];
   requiredElements?: string[];
   samplePostUrl?: string;
   authorBioRequirements?: string;
@@ -374,7 +374,11 @@ export default async function WebsiteDetailPage({ params }: { params: Promise<{ 
                             {attrs.prohibitedTopics && (
                               <div>
                                 <dt className="font-medium text-gray-700">Prohibited Topics</dt>
-                                <dd className="text-gray-600 mt-1">{attrs.prohibitedTopics}</dd>
+                                <dd className="text-gray-600 mt-1">
+                                  {Array.isArray(attrs.prohibitedTopics) 
+                                    ? attrs.prohibitedTopics.join(', ')
+                                    : attrs.prohibitedTopics}
+                                </dd>
                               </div>
                             )}
                             {attrs.linkRequirements && (
