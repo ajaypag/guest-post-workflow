@@ -215,23 +215,97 @@ export async function POST(request: NextRequest) {
             
             // Update categories/niches if new ones found
             const existingCategories = existingWebsite[0].categories || [];
+            const existingNiches = existingWebsite[0].niche || [];
             const newCategories = websiteData.categories || [];
-            const hasNewCategories = newCategories.some((cat: string) => !existingCategories.includes(cat));
+            const newNiches = websiteData.niche || [];
+            const suggestedNewNiches = websiteData.suggestedNewNiches || [];
             
-            if (hasNewCategories) {
+            // Process suggested new niches - create them if they don't exist
+            const processedNewNiches: string[] = [];
+            if (suggestedNewNiches.length > 0) {
+              console.log(`🔍 Processing ${suggestedNewNiches.length} suggested new niches for ${normalizedDomain}`);
+              
+              for (const suggestedNiche of suggestedNewNiches) {
+                // Check if this niche already exists in the niches table (case-insensitive)
+                const existingNicheRecord = await db.sql`
+                  SELECT name FROM niches 
+                  WHERE LOWER(name) = LOWER(${suggestedNiche})
+                  LIMIT 1
+                `;
+                
+                if (existingNicheRecord.length === 0) {
+                  // Create the new niche
+                  console.log(`🆕 Creating new niche: ${suggestedNiche}`);
+                  await db.sql`
+                    INSERT INTO niches (name, source, created_at)
+                    VALUES (${suggestedNiche}, 'manyreach_ai', NOW())
+                    ON CONFLICT (LOWER(name)) DO NOTHING
+                  `;
+                  processedNewNiches.push(suggestedNiche);
+                } else {
+                  // Use the existing niche name (maintains case from database)
+                  processedNewNiches.push(existingNicheRecord[0].name);
+                }
+              }
+            }
+            
+            // Merge all niches together
+            const allNiches = [...new Set([...existingNiches, ...newNiches, ...processedNewNiches])];
+            const hasNewCategories = newCategories.some((cat: string) => !existingCategories.includes(cat));
+            const hasNewNiches = allNiches.length > existingNiches.length;
+            
+            if (hasNewCategories || hasNewNiches) {
               const mergedCategories = [...new Set([...existingCategories, ...newCategories])];
               await db.update(websites)
                 .set({
                   categories: mergedCategories,
+                  niche: allNiches,
                   updatedAt: new Date()
                 })
                 .where(eq(websites.id, websiteId));
               
               result.updated.websitesUpdated.push(websiteId);
-              console.log(`✅ Updated website categories: ${normalizedDomain}`);
+              console.log(`✅ Updated website categories/niches: ${normalizedDomain}`);
+              if (processedNewNiches.length > 0) {
+                console.log(`   Added new niches: ${processedNewNiches.join(', ')}`);
+              }
             }
           } else {
             console.log(`🆕 Creating new website: ${normalizedDomain}`);
+            
+            // Process suggested new niches for new website
+            const suggestedNewNiches = websiteData.suggestedNewNiches || [];
+            const processedNewNiches: string[] = [];
+            
+            if (suggestedNewNiches.length > 0) {
+              console.log(`🔍 Processing ${suggestedNewNiches.length} suggested new niches for new website ${normalizedDomain}`);
+              
+              for (const suggestedNiche of suggestedNewNiches) {
+                // Check if this niche already exists in the niches table (case-insensitive)
+                const existingNicheRecord = await db.sql`
+                  SELECT name FROM niches 
+                  WHERE LOWER(name) = LOWER(${suggestedNiche})
+                  LIMIT 1
+                `;
+                
+                if (existingNicheRecord.length === 0) {
+                  // Create the new niche
+                  console.log(`🆕 Creating new niche: ${suggestedNiche}`);
+                  await db.sql`
+                    INSERT INTO niches (name, source, created_at)
+                    VALUES (${suggestedNiche}, 'manyreach_ai', NOW())
+                    ON CONFLICT (LOWER(name)) DO NOTHING
+                  `;
+                  processedNewNiches.push(suggestedNiche);
+                } else {
+                  // Use the existing niche name (maintains case from database)
+                  processedNewNiches.push(existingNicheRecord[0].name);
+                }
+              }
+            }
+            
+            // Combine existing niches with newly created ones
+            const allNiches = [...new Set([...(websiteData.niche || []), ...processedNewNiches])];
             
             const newWebsite = await db.insert(websites)
               .values({
@@ -240,13 +314,13 @@ export async function POST(request: NextRequest) {
                 updatedAt: new Date(),
                 domain: normalizedDomain,
                 categories: websiteData.categories || [],
-                niche: websiteData.niche || [],
+                niche: allNiches,
                 websiteType: websiteData.websiteType || [],
                 domainRating: websiteData.domainRating,
                 internalNotes: websiteData.internalNotes,
                 status: 'active',
-                airtableCreatedAt: new Date(),
-                airtableUpdatedAt: new Date()
+                source: 'manyreach',
+                importedAt: new Date()
               })
               .returning();
             
