@@ -155,11 +155,13 @@ export default function InternalWebsitesList({
     if (!amount) return 'N/A';
     const numericAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
     if (isNaN(numericAmount)) return 'N/A';
+    // Convert from cents to dollars
+    const dollars = numericAmount / 100;
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 0,
-    }).format(numericAmount);
+    }).format(dollars);
   };
 
   // New helper functions for interactive features
@@ -575,7 +577,7 @@ export default function InternalWebsitesList({
                             {offeringData[website.id].offerings?.map((offer: any, idx: number) => (
                               <div key={idx} className="text-blue-800">
                                 <span className="font-medium">{offer.type}</span>: 
-                                <span className="text-blue-600 ml-1">${offer.basePrice || 'Variable'}</span>
+                                <span className="text-blue-600 ml-1">{offer.basePrice ? formatCurrency(offer.basePrice) : 'Variable'}</span>
                                 {offer.turnaroundDays && <span className="text-blue-500 ml-2">({offer.turnaroundDays} days)</span>}
                               </div>
                             )) || <div className="text-blue-800">Loading offerings...</div>}
