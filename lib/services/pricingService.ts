@@ -2,7 +2,9 @@ import { db } from '@/lib/db/connection';
 import { websites } from '@/lib/db/websiteSchema';
 import { SERVICE_FEE_CENTS } from '@/lib/config/pricing';
 import { pricingRules } from '@/lib/db/orderSchema';
-import { eq, or, and, lte, gte, isNull } from 'drizzle-orm';
+import { eq, or, and, lte, gte, isNull, gt, isNotNull } from 'drizzle-orm';
+import { publisherOfferingRelationships, publisherOfferings } from '@/lib/db/publisherSchemaActual';
+import { publishers } from '@/lib/db/accountSchema';
 
 export interface PriceInfo {
   retailPrice: number;
@@ -10,6 +12,13 @@ export interface PriceInfo {
   domainRating?: number;
   traffic?: number;
   found: boolean;
+  // Publisher attribution fields
+  selectedOfferingId?: string;
+  selectedPublisherId?: string;
+  selectedPublisherName?: string;
+  pricingStrategy?: 'min_price' | 'max_price' | 'custom';
+  attributionSource?: string;
+  attributionError?: string;
 }
 
 export interface DiscountInfo {
@@ -37,7 +46,8 @@ export class PricingService {
   }
 
   /**
-   * Get retail price for a domain
+   * Get retail price for a domain with publisher attribution
+   * ENHANCED: Now includes publisher/offering attribution data
    */
   static async getDomainPrice(domain: string): Promise<PriceInfo> {
     const cleanDomain = this.cleanDomain(domain);
@@ -70,12 +80,50 @@ export class PricingService {
     // Customer price is wholesale + service fee (in dollars)
     const retailPrice = wholesalePrice + (SERVICE_FEE_CENTS / 100);
 
+    // Resolve publisher name if we have attribution
+    let publisherName: string | undefined;
+    if (website.selectedPublisherId) {
+      try {
+        const publisher = await db.query.publishers.findFirst({
+          where: eq(publishers.id, website.selectedPublisherId),
+          columns: {
+            companyName: true
+          }
+        });
+        publisherName = publisher?.companyName || undefined;
+      } catch (error) {
+        console.error('Error fetching publisher name:', error);
+      }
+    }
+
+    // Determine attribution source
+    let attributionSource = 'unknown';
+    if (website.selectedOfferingId) {
+      if (website.customOfferingId === website.selectedOfferingId) {
+        attributionSource = 'custom_selection';
+      } else if (website.pricingStrategy === 'max_price') {
+        attributionSource = 'max_price_strategy';
+      } else if (website.pricingStrategy === 'min_price') {
+        attributionSource = 'min_price_strategy';
+      }
+    } else if (website.guestPostCost) {
+      attributionSource = 'legacy_pricing';
+    }
+
     return {
       retailPrice,
       wholesalePrice,
       domainRating: website.domainRating || undefined,
       traffic: website.totalTraffic || undefined,
       found: true,
+      // Publisher attribution
+      selectedOfferingId: website.selectedOfferingId || undefined,
+      selectedPublisherId: website.selectedPublisherId || undefined,
+      selectedPublisherName: publisherName,
+      pricingStrategy: website.pricingStrategy as 'min_price' | 'max_price' | 'custom' || 'min_price',
+      attributionSource,
+      attributionError: !website.selectedOfferingId && website.guestPostCost ? 
+        'No offering attribution found (legacy pricing)' : undefined
     };
   }
 
