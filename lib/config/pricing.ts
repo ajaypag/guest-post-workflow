@@ -6,7 +6,7 @@
 export const PRICING_CONFIG = {
   // Core service fees
   serviceFee: {
-    standard: 12500, // $125 - Content creation & management fee per link
+    standard: 7900, // $79 - Content creation & management fee per link
     rush: 15000,     // $150 - Rush delivery fee (optional)
     clientReview: 5000 // $50 - Client review service (optional)
   },

@@ -44,15 +44,69 @@ export default function PricingStrategyPage() {
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   
+  // Market Markup states
+  const [currentMarkup, setCurrentMarkup] = useState<number>(125);
+  const [editingMarkup, setEditingMarkup] = useState(false);
+  const [newMarkup, setNewMarkup] = useState<string>('125');
+  const [savingMarkup, setSavingMarkup] = useState(false);
+  
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStrategy, setFilterStrategy] = useState<'all' | 'min_price' | 'max_price' | 'custom'>('all');
   const [showMultipleOnly, setShowMultipleOnly] = useState(false);
 
-  // Load websites
+  // Load websites and markup
   useEffect(() => {
     loadWebsites();
+    loadCurrentMarkup();
   }, []);
+
+  const loadCurrentMarkup = async () => {
+    try {
+      const response = await fetch('/api/admin/pricing-strategy/markup');
+      if (response.ok) {
+        const data = await response.json();
+        setCurrentMarkup(data.markup);
+        setNewMarkup(data.markup.toString());
+      }
+    } catch (error) {
+      console.error('Error loading markup:', error);
+    }
+  };
+
+  const saveMarkup = async () => {
+    setSavingMarkup(true);
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    try {
+      const markupValue = parseFloat(newMarkup);
+      if (isNaN(markupValue) || markupValue < 0) {
+        setErrorMessage('Please enter a valid markup amount');
+        setSavingMarkup(false);
+        return;
+      }
+
+      const response = await fetch('/api/admin/pricing-strategy/markup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ markup: markupValue })
+      });
+
+      if (response.ok) {
+        setCurrentMarkup(markupValue);
+        setEditingMarkup(false);
+        setSuccessMessage(`Market markup updated to $${markupValue}`);
+      } else {
+        const error = await response.json();
+        setErrorMessage(error.error || 'Failed to update markup');
+      }
+    } catch (error) {
+      setErrorMessage('Error updating markup');
+    } finally {
+      setSavingMarkup(false);
+    }
+  };
 
   const loadWebsites = async () => {
     try {
@@ -171,6 +225,79 @@ export default function PricingStrategyPage() {
             <p className="mt-2 text-gray-600">
               Manage pricing strategies for websites with multiple publisher offerings
             </p>
+          </div>
+
+          {/* Market Markup Section */}
+          <div className="bg-white rounded-lg shadow mb-8 p-6">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2 mb-2">
+                  <DollarSign className="w-5 h-5 text-green-600" />
+                  Market Price Markup
+                </h2>
+                <p className="text-sm text-gray-600 mb-4">
+                  This markup is added to the publisher's wholesale price to calculate the customer's retail price.
+                </p>
+                <div className="flex items-center gap-4">
+                  {!editingMarkup ? (
+                    <>
+                      <div className="text-2xl font-bold text-gray-900">
+                        ${currentMarkup}
+                      </div>
+                      <button
+                        onClick={() => {
+                          setEditingMarkup(true);
+                          setNewMarkup(currentMarkup.toString());
+                        }}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
+                      >
+                        Edit Markup
+                      </button>
+                    </>
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                        <input
+                          type="number"
+                          value={newMarkup}
+                          onChange={(e) => setNewMarkup(e.target.value)}
+                          className="pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent w-32"
+                          placeholder="125"
+                          step="5"
+                          min="0"
+                        />
+                      </div>
+                      <button
+                        onClick={saveMarkup}
+                        disabled={savingMarkup}
+                        className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                      >
+                        {savingMarkup ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                        Save
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingMarkup(false);
+                          setNewMarkup(currentMarkup.toString());
+                        }}
+                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="ml-8 p-4 bg-blue-50 rounded-lg">
+                <h3 className="text-sm font-medium text-blue-900 mb-2">Pricing Formula</h3>
+                <div className="text-xs text-blue-700 space-y-1">
+                  <div>Publisher Price: $X</div>
+                  <div>+ Market Markup: ${currentMarkup}</div>
+                  <div className="border-t border-blue-200 pt-1 font-semibold">= Customer Price: $X + ${currentMarkup}</div>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Alert Messages */}

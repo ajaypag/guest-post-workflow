@@ -97,6 +97,16 @@ export default function AdminDashboard() {
       iconColor: 'text-gray-600'
     },
 
+    // Pricing & Financial Management
+    {
+      title: 'Pricing Strategy',
+      description: 'Manage publisher pricing strategies and market markup',
+      icon: DollarSign,
+      href: '/admin/pricing-strategy',
+      color: 'bg-green-50 border-green-200 text-green-700',
+      iconColor: 'text-green-600'
+    },
+
     // Database & Schema Management
     {
       title: 'Database Migration',

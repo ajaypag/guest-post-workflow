@@ -1,24 +1,19 @@
-import { NextResponse } from 'next/server';
-import { authenticateRequest } from '@/lib/auth/authenticateRequest';
+import { NextRequest, NextResponse } from 'next/server';
+import { AuthServiceServer } from '@/lib/auth-server';
 import DerivedPricingService from '@/lib/services/derivedPricingService';
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    // Check authentication - admin only
-    const authResult = await authenticateRequest(request);
-    if (!authResult.authenticated) {
-      return NextResponse.json(
-        { error: 'Unauthorized - No authentication token provided' },
-        { status: 401 }
-      );
+    // Check authentication
+    const session = await AuthServiceServer.getSession(request);
+    if (!session || session.userType !== 'internal') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    
-    // Check if user is internal/admin
-    if (authResult.userType !== 'internal') {
-      return NextResponse.json(
-        { error: 'Forbidden - Admin access required' },
-        { status: 403 }
-      );
+
+    // Check if user is admin
+    const isAdmin = session.role === 'admin' || (session as any).role === 'super_admin';
+    if (!isAdmin) {
+      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
     // Get URL search params for filtering
