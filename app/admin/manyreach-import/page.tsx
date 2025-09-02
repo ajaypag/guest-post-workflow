@@ -839,18 +839,26 @@ function DraftEditor({ draft, onUpdate, onReprocess }: {
       
       const result = await response.json();
       
-      if (result.success) {
+      console.log('API Response Status:', response.status);
+      console.log('API Response Data:', result);
+      
+      if (response.ok && result.success) {
         // Update the draft status to approved
         await onUpdate({ editedData, status: 'approved' });
         
         // Show enhanced success message
         let message = `✅ Successfully processed draft!\n\n`;
-        message += `Created: ${result.created.publisherId ? '1 publisher, ' : ''}${result.created.websiteIds.length} website(s), ${result.created.offeringIds.length} offering(s)\n`;
-        if (result.created.skippedDuplicates > 0) {
-          message += `Skipped: ${result.created.skippedDuplicates} duplicate offering(s)\n`;
+        const createdPublisher = result.created.publisherId ? 1 : 0;
+        const updatedPublisher = result.updated.publisherUpdated ? 1 : 0;
+        const totalPublishers = createdPublisher + updatedPublisher;
+        
+        message += `Publishers: ${createdPublisher ? `${createdPublisher} created` : ''}${createdPublisher && updatedPublisher ? ', ' : ''}${updatedPublisher ? `${updatedPublisher} updated` : ''}${!totalPublishers ? '0' : ''}\n`;
+        message += `Created: ${result.created.websiteIds.length} website(s), ${result.created.offeringIds.length} offering(s)\n`;
+        if (result.skipped.duplicateOfferings > 0) {
+          message += `Skipped: ${result.skipped.duplicateOfferings} duplicate offering(s)\n`;
         }
-        if (result.created.priceConflictIds.length > 0) {
-          message += `⚠️ Flagged: ${result.created.priceConflictIds.length} price conflict(s) for review\n`;
+        if (result.priceConflicts && result.priceConflicts.length > 0) {
+          message += `⚠️ Flagged: ${result.priceConflicts.length} price conflict(s) for review\n`;
         }
         
         alert(message);

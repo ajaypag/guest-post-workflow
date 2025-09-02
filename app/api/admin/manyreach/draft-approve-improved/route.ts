@@ -69,12 +69,9 @@ export async function POST(request: NextRequest) {
     
     const draft = draftResult.rows[0] as any;
     
-    // Check if already approved
-    if (draft.status === 'approved' && draft.publisher_id) {
-      return NextResponse.json({ 
-        error: 'Draft already approved',
-        publisherId: draft.publisher_id 
-      }, { status: 400 });
+    // Log status but allow re-processing for improved duplicate detection
+    if (draft.status === 'approved') {
+      console.log(`ℹ️ Re-processing already approved draft ${draftId} with improved system`);
     }
     
     // Merge edited data over parsed data
