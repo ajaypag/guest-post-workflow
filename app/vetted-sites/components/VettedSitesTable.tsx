@@ -145,6 +145,8 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
   const [expandedSections, setExpandedSections] = useState<Map<string, string>>(new Map());
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [showAddToOrderModal, setShowAddToOrderModal] = useState(false);
+  const [addToOrderError, setAddToOrderError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   
   // Use the selection hook
   const {
@@ -443,6 +445,26 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
 
   return (
     <div className="bg-white rounded-lg shadow-sm">
+      {/* Success Message Banner */}
+      {successMessage && (
+        <div className="px-4 py-3 bg-green-50 border-b border-green-200 flex items-center justify-between">
+          <div className="flex items-center">
+            <svg className="w-5 h-5 text-green-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            <span className="text-sm font-medium text-green-800">{successMessage}</span>
+          </div>
+          <button
+            onClick={() => setSuccessMessage(null)}
+            className="text-green-600 hover:text-green-800"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+      )}
+      
       {/* Table Header with Controls */}
       <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
         <div className="flex items-center space-x-4">
@@ -475,29 +497,6 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
       </div>
 
       {/* Selection Actions Bar */}
-      {selectedCount > 0 && (
-        <div className="px-4 py-2 bg-blue-50/50 backdrop-blur-sm border-b border-blue-100 flex items-center justify-between">
-          <div className="text-sm font-medium text-blue-900">
-            {selectedCount} domain{selectedCount !== 1 ? 's' : ''} selected • Total: ${totalPrice.toFixed(0)}
-          </div>
-          <div className="flex items-center space-x-2">
-            <button 
-              onClick={() => setShowAddToOrderModal(true)}
-              className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">
-              Add to Order
-            </button>
-            <button className="text-sm bg-white border border-gray-200 shadow-sm text-gray-700 px-3 py-1 rounded-lg hover:bg-gray-50 hover:shadow transition-all">
-              Export
-            </button>
-            <button 
-              onClick={() => clearSelection()}
-              className="text-sm text-gray-500 hover:text-gray-700"
-            >
-              Clear
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Table */}
       <div className="overflow-x-auto">
@@ -909,8 +908,19 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
         onClose={() => setShowOrderModal(false)}
         selectedDomains={getSelectedDomains()}
         totalPrice={totalPrice}
-        onOrderCreated={(orderId) => {
-          // Clear selection and navigate to order
+        onOrderCreatedAndContinue={(orderId) => {
+          // Clear selection, stay on page, show success message
+          const domainCount = getSelectedDomains().length;
+          const orderDisplayId = orderId.slice(-8);
+          clearSelection();
+          setShowOrderModal(false);
+          setSuccessMessage(`Successfully created Order ${orderDisplayId} with ${domainCount} domain${domainCount > 1 ? 's' : ''}`);
+          
+          // Auto-hide success message after 5 seconds
+          setTimeout(() => setSuccessMessage(null), 5000);
+        }}
+        onOrderCreatedAndReview={(orderId) => {
+          // Clear selection and navigate to order (original behavior)
           clearSelection();
           router.push(`/orders/${orderId}`);
         }}
@@ -919,10 +929,15 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
       {/* Add to Order Modal */}
       <AddToOrderModalV2
         isOpen={showAddToOrderModal}
-        onClose={() => setShowAddToOrderModal(false)}
+        onClose={() => {
+          setShowAddToOrderModal(false);
+          setAddToOrderError(null);
+        }}
         selectedDomains={getSelectedDomains()}
-        onOrderSelected={async (orderId, domainTargets) => {
+        error={addToOrderError}
+        onOrderSelectedAndContinue={async (orderId, domainTargets) => {
           try {
+            setAddToOrderError(null);
             const response = await fetch(`/api/orders/${orderId}/add-domains`, {
               method: 'POST',
               headers: {
@@ -937,20 +952,57 @@ export default function VettedSitesTable({ initialData, initialFilters, userType
             const data = await response.json();
 
             if (!response.ok) {
-              throw new Error(data.error || 'Failed to add domains to order');
+              throw new Error(data.error || data.details || 'Failed to add domains to order');
             }
 
-            // Success - clear selection and navigate to order edit page
+            // Success - clear selection, close modal, stay on page, show success message
+            const domainCount = getSelectedDomains().length;
+            const orderDisplayId = orderId.slice(-8);
             clearSelection();
             setShowAddToOrderModal(false);
+            setAddToOrderError(null);
+            setSuccessMessage(`Successfully added ${domainCount} domain${domainCount > 1 ? 's' : ''} to Order ${orderDisplayId}`);
+            
+            // Auto-hide success message after 5 seconds
+            setTimeout(() => setSuccessMessage(null), 5000);
+          } catch (error: any) {
+            console.error('Error adding to order:', error);
+            setAddToOrderError(error.message || 'Failed to add domains to order. Please try again.');
+          }
+        }}
+        onOrderSelectedAndReview={async (orderId, domainTargets) => {
+          try {
+            setAddToOrderError(null);
+            const response = await fetch(`/api/orders/${orderId}/add-domains`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                domainIds: getSelectedDomains().map(d => d.id),
+                domainTargets: domainTargets || [],
+              }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+              throw new Error(data.error || data.details || 'Failed to add domains to order');
+            }
+
+            // Success - clear selection and navigate to order edit page (original behavior)
+            clearSelection();
+            setShowAddToOrderModal(false);
+            setAddToOrderError(null);
             router.push(`/orders/${orderId}/edit`);
           } catch (error: any) {
             console.error('Error adding to order:', error);
-            // Error is handled by the modal component
+            setAddToOrderError(error.message || 'Failed to add domains to order. Please try again.');
           }
         }}
         onCreateNew={() => {
           setShowAddToOrderModal(false);
+          setAddToOrderError(null);
           setShowOrderModal(true);
         }}
       />

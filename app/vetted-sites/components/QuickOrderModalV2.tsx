@@ -1,14 +1,16 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { X, Package, AlertCircle, Loader2, ChevronDown, Target, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
+import { X, Package, AlertCircle, Loader2, ChevronDown, Target, CheckCircle, AlertTriangle, XCircle, ExternalLink } from 'lucide-react';
+import { SERVICE_FEE_CENTS } from '@/lib/config/pricing';
 
 interface QuickOrderModalProps {
   isOpen: boolean;
   onClose: () => void;
   selectedDomains: any[];
   totalPrice: number;
-  onOrderCreated: (orderId: string) => void;
+  onOrderCreatedAndContinue: (orderId: string) => void;
+  onOrderCreatedAndReview: (orderId: string) => void;
 }
 
 export default function QuickOrderModal({
@@ -16,7 +18,8 @@ export default function QuickOrderModal({
   onClose,
   selectedDomains,
   totalPrice,
-  onOrderCreated
+  onOrderCreatedAndContinue,
+  onOrderCreatedAndReview
 }: QuickOrderModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +61,12 @@ export default function QuickOrderModal({
   useEffect(() => {
     if (userType === 'internal' && accounts.length > 0 && clientInfo?.accountId) {
       // Use the accountId from the client info
-      console.log('Auto-populating account:', clientInfo.accountId);
+      console.log('Auto-populating account:', {
+        clientInfo,
+        accountId: clientInfo.accountId,
+        accountsAvailable: accounts.length,
+        matchingAccount: accounts.find(a => a.id === clientInfo.accountId)
+      });
       setSelectedAccountId(clientInfo.accountId);
     }
   }, [userType, accounts, clientInfo]);
@@ -112,10 +120,12 @@ export default function QuickOrderModal({
         
         // Get client info
         if (selectedDomains[0]?.clientId) {
+          console.log('Fetching client info for clientId:', selectedDomains[0].clientId);
           const clientRes = await fetch(`/api/clients/${selectedDomains[0].clientId}`);
           if (clientRes.ok) {
-            const client = await clientRes.json();
-            setClientInfo(client);
+            const data = await clientRes.json();
+            console.log('Client API response:', data);
+            setClientInfo(data.client); // API returns { client }, not the client directly
           }
         }
         
@@ -146,7 +156,7 @@ export default function QuickOrderModal({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isAccountDropdownOpen]);
 
-  const handleCreateOrder = async () => {
+  const handleCreateOrder = async (flowChoice: 'continue' | 'review') => {
     setLoading(true);
     setError(null);
 
@@ -186,7 +196,12 @@ export default function QuickOrderModal({
         throw new Error(data.error || 'Failed to create order');
       }
 
-      onOrderCreated(data.orderId);
+      // Choose flow based on user selection
+      if (flowChoice === 'continue') {
+        onOrderCreatedAndContinue(data.orderId);
+      } else {
+        onOrderCreatedAndReview(data.orderId);
+      }
       onClose();
     } catch (err: any) {
       setError(err.message || 'Failed to create order');
@@ -194,6 +209,9 @@ export default function QuickOrderModal({
       setLoading(false);
     }
   };
+
+  const handleCreateAndContinue = () => handleCreateOrder('continue');
+  const handleCreateAndReview = () => handleCreateOrder('review');
 
   if (!isOpen) return null;
 
@@ -288,7 +306,15 @@ export default function QuickOrderModal({
                           </div>
                         </div>
                         <div className="text-lg font-semibold text-gray-900">
-                          ${domain.price ? domain.price.toFixed(0) : '0'}
+                          {(() => {
+                            const wholesalePriceCents = domain.guestPostCost;
+                            if (!wholesalePriceCents) return '$0';
+                            
+                            // Convert cents to dollars and add service fee (same as vetted sites table)
+                            const wholesalePriceDollars = wholesalePriceCents / 100;
+                            const displayPrice = wholesalePriceDollars + (SERVICE_FEE_CENTS / 100);
+                            return `$${displayPrice.toFixed(0)}`;
+                          })()}
                         </div>
                       </div>
                     </div>
@@ -536,9 +562,9 @@ export default function QuickOrderModal({
               Cancel
             </button>
             <button
-              onClick={handleCreateOrder}
+              onClick={handleCreateAndContinue}
               disabled={loading || (userType === 'internal' && !selectedAccountId)}
-              className="flex-1 px-6 py-3 text-base text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="px-6 py-3 text-base text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>
@@ -548,7 +574,24 @@ export default function QuickOrderModal({
               ) : (
                 <>
                   <Package className="w-5 h-5" />
-                  Create Order
+                  Create & Continue Browsing
+                </>
+              )}
+            </button>
+            <button
+              onClick={handleCreateAndReview}
+              disabled={loading || (userType === 'internal' && !selectedAccountId)}
+              className="px-6 py-3 text-base text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <ExternalLink className="w-5 h-5" />
+                  Create & Review Order
                 </>
               )}
             </button>

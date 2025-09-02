@@ -29,74 +29,90 @@ export default function SelectionSummary({
 }: SelectionSummaryProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  if (selectedCount === 0) return null;
+  // Always show the selection summary to make functionality discoverable
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm shadow-[0_-8px_30px_rgb(0,0,0,0.12)] z-40">
       {/* Summary Bar */}
-      <div className="px-4 py-4 sm:px-6">
-        <div className="flex items-center justify-between">
-          {/* Left: Selection Info */}
-          <div className="flex items-center space-x-4">
-            <div className="bg-blue-50 px-4 py-2 rounded-lg">
-              <div className="text-sm font-medium text-blue-900">
-                {selectedCount} {selectedCount === 1 ? 'domain' : 'domains'} selected
+      <div className="px-3 py-3 sm:px-6 sm:py-4">
+        <div className="flex items-center justify-between gap-2">
+          {/* Top: Selection Info */}
+          <div className="flex items-center space-x-3 sm:space-x-4">
+            <div className="bg-blue-50 px-3 py-2 sm:px-4 sm:py-2 rounded-lg flex-1 sm:flex-initial">
+              <div className="text-xs sm:text-sm font-medium text-blue-900">
+                {selectedCount === 0 ? 'Select domains to create orders' : `${selectedCount} ${selectedCount === 1 ? 'domain' : 'domains'} selected`}
               </div>
-              <div className="text-lg font-semibold text-blue-600">
-                ${totalPrice.toFixed(0)}
-                {userType !== 'internal' && <span className="text-xs font-normal text-blue-500 ml-1">(retail)</span>}
+              <div className="text-base sm:text-lg font-semibold text-blue-600">
+                {selectedCount === 0 ? 'Start by selecting checkboxes' : `$${totalPrice.toFixed(0)}`}
+                {userType !== 'internal' && selectedCount > 0 && <span className="text-xs font-normal text-blue-500 ml-1">(retail)</span>}
               </div>
             </div>
             
-            {/* Expand/Collapse Button */}
-            <button
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all"
-              aria-label={isExpanded ? 'Collapse' : 'Expand'}
-            >
-              {isExpanded ? (
-                <ChevronDownIcon className="h-5 w-5" />
-              ) : (
-                <ChevronUpIcon className="h-5 w-5" />
-              )}
-            </button>
+            {/* Expand/Collapse Button - only show when domains are selected */}
+            {selectedCount > 0 && (
+              <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all"
+                aria-label={isExpanded ? 'Collapse' : 'Expand'}
+              >
+                {isExpanded ? (
+                  <ChevronDownIcon className="h-5 w-5" />
+                ) : (
+                  <ChevronUpIcon className="h-5 w-5" />
+                )}
+              </button>
+            )}
           </div>
 
-          {/* Right: Actions */}
-          <div className="flex items-center space-x-2">
-            {onExport && (
+          {/* Actions */}
+          <div className="flex items-center gap-1 sm:gap-2">
+            {/* Primary actions - always visible */}
+            {onCreateOrder && (
               <button
-                onClick={onExport}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                onClick={onCreateOrder}
+                disabled={selectedCount === 0}
+                className={`px-2 py-2 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                  selectedCount === 0 
+                    ? 'text-gray-400 bg-gray-200 cursor-not-allowed' 
+                    : 'text-white bg-blue-600 hover:bg-blue-700 hover:shadow-md focus:ring-blue-500'
+                }`}
               >
-                Export
+                Create
               </button>
             )}
             
             {onAddToOrder && (
               <button
                 onClick={onAddToOrder}
-                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 hover:shadow-md transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                disabled={selectedCount === 0}
+                className={`px-2 py-2 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                  selectedCount === 0 
+                    ? 'text-gray-400 bg-gray-200 cursor-not-allowed' 
+                    : 'text-white bg-green-600 hover:bg-green-700 hover:shadow-md focus:ring-green-500'
+                }`}
               >
-                Add to Order
+                Add
               </button>
             )}
             
-            {onCreateOrder && (
+            {/* Secondary actions - only when selected */}
+            {onExport && selectedCount > 0 && (
               <button
-                onClick={onCreateOrder}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 hover:shadow-md transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                onClick={onExport}
+                className="hidden sm:flex px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                Create Order
+                Export
               </button>
             )}
             
-            <button
-              onClick={onClearSelection}
-              className="px-3 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-all focus:outline-none"
-            >
-              Clear All
-            </button>
+            {selectedCount > 0 && (
+              <button
+                onClick={onClearSelection}
+                className="px-2 py-2 text-xs sm:text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-all focus:outline-none"
+              >
+                ×
+              </button>
+            )}
           </div>
         </div>
       </div>

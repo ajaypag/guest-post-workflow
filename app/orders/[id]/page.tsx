@@ -20,7 +20,8 @@ import {
   ArrowLeft, Loader2, CheckCircle, Clock, Search, Users, FileText, 
   RefreshCw, ExternalLink, Globe, LinkIcon, Eye, Edit, Package,
   Target, ChevronRight, AlertCircle, Activity, Building, User, DollarSign,
-  Download, Share2, XCircle, CreditCard, Trash2, ArrowRightLeft, MoreVertical
+  Download, Share2, XCircle, CreditCard, Trash2, ArrowRightLeft, MoreVertical,
+  ChevronDown, X, AlertTriangle
 } from 'lucide-react';
 import { SERVICE_FEE_CENTS } from '@/lib/config/pricing';
 
@@ -193,6 +194,8 @@ export default function OrderDetailPage() {
   const [comparisonData, setComparisonData] = useState<any>(null);
   const [showBenchmarkHistory, setShowBenchmarkHistory] = useState(false);
   const [showEditWarning, setShowEditWarning] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     loadUser();
@@ -1117,6 +1120,101 @@ export default function OrderDetailPage() {
 
             {/* Middle/Right Columns - Order Details Table */}
             <div className="lg:col-span-3 xl:col-span-4 2xl:col-span-5">
+              {/* Pending Confirmation Notification Card */}
+              {order.status === 'pending_confirmation' && user?.userType !== 'internal' && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-6">
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0">
+                      <Clock className="h-5 w-5 text-yellow-600" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-yellow-900">
+                        Order Awaiting Confirmation
+                      </h3>
+                      <p className="text-sm text-yellow-700 mt-1">
+                        Your order has been submitted successfully and is awaiting review from our team.
+                      </p>
+                      <p className="text-xs text-yellow-600 mt-2">
+                        We'll confirm your order and begin finding suitable sites within 24 hours.
+                      </p>
+                    </div>
+                    <Link
+                      href={`/orders/${order.id}/edit`}
+                      className="px-3 py-1.5 border border-yellow-300 text-yellow-700 hover:bg-yellow-100 text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
+                    >
+                      <Edit className="h-3.5 w-3.5" />
+                      Edit Order
+                    </Link>
+                  </div>
+                </div>
+              )}
+              
+              {/* Draft Order Action Card */}
+              {order.status === 'draft' && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
+                  <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-blue-900 flex items-center gap-2">
+                        <Package className="h-5 w-5" />
+                        Order Ready for Submission
+                      </h3>
+                      <p className="text-sm text-blue-700 mt-1">
+                        Your order has {lineItems.length} {lineItems.length === 1 ? 'item' : 'items'} totaling {formatCurrency((order as any).totalRetail || lineItems.reduce((sum, item) => sum + item.price, 0) || 0)}
+                      </p>
+                      <p className="text-xs text-blue-600 mt-2">
+                        Submit your order to begin processing, or continue adding more items.
+                      </p>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                      {/* Primary Action: Submit Order */}
+                      <button
+                        onClick={() => setShowConfirmModal(true)}
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+                      >
+                        <CheckCircle className="h-4 w-4" />
+                        Review & Submit Order
+                      </button>
+                      
+                      {/* Secondary Actions Dropdown */}
+                      <div className="relative group">
+                        <button className="px-4 py-2 border border-blue-300 text-blue-700 hover:bg-blue-100 text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2 w-full sm:w-auto">
+                          Continue Working
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                        <div className="absolute right-0 mt-1 w-64 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                          <div className="py-2">
+                            <Link
+                              href="/vetted-sites"
+                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                              <div className="flex items-start gap-3">
+                                <Search className="h-4 w-4 text-gray-400 mt-0.5" />
+                                <div>
+                                  <div className="font-medium">Add More Sites</div>
+                                  <div className="text-xs text-gray-500">Browse vetted sites to add to this order</div>
+                                </div>
+                              </div>
+                            </Link>
+                            <Link
+                              href={`/orders/${order.id}/edit`}
+                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                              <div className="flex items-start gap-3">
+                                <Edit className="h-4 w-4 text-gray-400 mt-0.5" />
+                                <div>
+                                  <div className="font-medium">Edit Order Details</div>
+                                  <div className="text-xs text-gray-500">Add target URLs and get new suggestions</div>
+                                </div>
+                              </div>
+                            </Link>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               {/* Site Review Summary Card */}
               {order.state === 'sites_ready' && siteSubmissions.length > 0 && (
                 <div className="bg-purple-50 border border-purple-200 rounded-lg p-6 mb-6">
@@ -1509,6 +1607,170 @@ export default function OrderDetailPage() {
           loadOrder(); // Reload the order to show new account
         }}
       />
+      
+      {/* Order Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[85vh] sm:max-h-[90vh] overflow-y-auto">
+            <div className="p-4 sm:p-6">
+              <div className="flex items-center justify-between mb-4 sm:mb-6">
+                <h2 className="text-lg sm:text-2xl font-bold text-gray-900">
+                  Confirm Your Order
+                </h2>
+                <button
+                  onClick={() => setShowConfirmModal(false)}
+                  className="text-gray-400 hover:text-gray-600 p-1"
+                >
+                  <X className="h-5 sm:h-6 w-5 sm:w-6" />
+                </button>
+              </div>
+              
+              {/* Order Summary */}
+              <div className="mb-6">
+                <h3 className="font-semibold text-gray-900 mb-3">Order Summary</h3>
+                <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Total Links:</span>
+                    <span className="font-medium">{lineItems.length}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Number of Clients:</span>
+                    <span className="font-medium">{Object.keys(groupedLineItems).length}</span>
+                  </div>
+                  <div className="pt-3 border-t border-gray-200">
+                    <div className="flex justify-between text-lg font-semibold">
+                      <span>Estimated Total:</span>
+                      <span>{formatCurrency((order as any).totalRetail || lineItems.reduce((sum, item) => sum + item.price, 0) || 0)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Client Details */}
+              <div className="mb-6">
+                <h3 className="font-semibold text-gray-900 mb-3">Order Details</h3>
+                <div className="space-y-3">
+                  {Object.entries(groupedLineItems).map(([clientId, group]) => (
+                    <div key={clientId} className="bg-gray-50 rounded-lg p-4">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <div className="font-medium text-gray-900">{group.clientName}</div>
+                          <div className="text-sm text-gray-600">{group.items.length} {group.items.length === 1 ? 'link' : 'links'} requested</div>
+                        </div>
+                        <span className="font-medium text-gray-900">{formatCurrency(group.totalPrice)}</span>
+                      </div>
+                      <div className="space-y-1 mt-3">
+                        {group.items.slice(0, 3).map((item, idx) => (
+                          <div key={idx} className="text-sm text-gray-600 flex items-start gap-2">
+                            <LinkIcon className="h-3 w-3 text-gray-400 mt-0.5 flex-shrink-0" />
+                            <span className="truncate flex-1">{item.targetPageUrl || 'No target page specified'}</span>
+                          </div>
+                        ))}
+                        {group.items.length > 3 && (
+                          <div className="text-sm text-gray-500 italic">
+                            ...and {group.items.length - 3} more
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              {/* What Happens Next */}
+              <div className="bg-blue-50 rounded-lg p-4 mb-6">
+                <h3 className="font-semibold text-blue-900 mb-2">What Happens Next?</h3>
+                <div className="space-y-3">
+                  <div className="space-y-2 text-sm text-gray-700">
+                    <div className="flex items-start gap-3">
+                      <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+                      <div>
+                        <div className="font-medium">Your order will be confirmed</div>
+                        <div className="text-xs text-gray-500">Order details locked and sent to our team</div>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <Clock className="h-4 w-4 text-blue-500 mt-0.5" />
+                      <div>
+                        <div className="font-medium">We'll find perfect sites (24-48 hours)</div>
+                        <div className="text-xs text-gray-500">Our team analyzes your requirements and identifies high-quality sites</div>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <Users className="h-4 w-4 text-purple-500 mt-0.5" />
+                      <div>
+                        <div className="font-medium">Review & approve recommended sites</div>
+                        <div className="text-xs text-gray-500">You'll receive an email when sites are ready for your review</div>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <CreditCard className="h-4 w-4 text-orange-500 mt-0.5" />
+                      <div>
+                        <div className="font-medium">Pay invoice to start content creation</div>
+                        <div className="text-xs text-gray-500">Final pricing based on approved sites</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Actions */}
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setShowConfirmModal(false)}
+                  disabled={isSubmitting}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                >
+                  Continue Editing
+                </button>
+                <button
+                  onClick={async () => {
+                    setIsSubmitting(true);
+                    try {
+                      const response = await fetch(`/api/orders/${order.id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({
+                          status: 'pending_confirmation'
+                        })
+                      });
+                      
+                      if (response.ok) {
+                        await loadOrder();
+                        setShowConfirmModal(false);
+                        // Order will show pending confirmation status card
+                      } else {
+                        const data = await response.json();
+                        alert(data.error || 'Failed to submit order');
+                      }
+                    } catch (error) {
+                      console.error('Error submitting order:', error);
+                      alert('Error submitting order');
+                    } finally {
+                      setIsSubmitting(false);
+                    }
+                  }}
+                  disabled={isSubmitting}
+                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Save & Submit Order
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Edit Warning Modal */}
       {showEditWarning && (
