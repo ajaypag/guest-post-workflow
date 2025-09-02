@@ -246,7 +246,16 @@ export class WorkflowGenerationService {
           orderId: order.id,
           targetPageUrl: lineItem.targetPageUrl,
           anchorText: lineItem.anchorText,
-          targetPageId: lineItem.targetPageId
+          targetPageId: lineItem.targetPageId,
+          // Publisher attribution integration
+          publisherId: lineItem.publisherId,
+          publisherOfferingId: lineItem.publisherOfferingId,
+          publisherPrice: lineItem.publisherPrice,
+          publisherInfo: lineItem.publisherId ? {
+            id: lineItem.publisherId,
+            offeringId: lineItem.publisherOfferingId,
+            price: lineItem.publisherPrice
+          } : undefined
         }
       };
 

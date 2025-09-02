@@ -685,6 +685,23 @@ export default function WorkflowListEnhanced() {
                         </div>
                       </div>
                       
+                      {/* Publisher Information - Show for order-based workflows with publisher attribution */}
+                      {workflow.metadata?.publisherId && (
+                        <div className="mb-3">
+                          <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Publisher</div>
+                          <div className="text-gray-900">
+                            <span className="font-medium">
+                              {workflow.metadata.publisherInfo?.id || 'Publisher assigned'}
+                            </span>
+                            {workflow.metadata.publisherPrice && (
+                              <span className="ml-2 text-sm text-gray-600">
+                                (Cost: ${(workflow.metadata.publisherPrice / 100).toFixed(2)})
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      
                       <div className="flex items-center gap-4 text-sm text-gray-500">
                         <div className="flex items-center">
                           <Calendar className="w-4 h-4 mr-1.5" />

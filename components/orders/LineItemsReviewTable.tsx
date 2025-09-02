@@ -126,6 +126,16 @@ export interface LineItem {
   workflowId?: string;
   metadata?: any;
   modifiedAt?: string | Date; // For tracking when line item was last modified for invoice regeneration
+  // Publisher attribution fields
+  publisherId?: string | null;
+  publisherOfferingId?: string | null;
+  publisherPrice?: number | null;
+  publisher?: {
+    id: string;
+    contactName?: string | null;
+    companyName?: string | null;
+    email: string;
+  } | null;
 }
 
 interface TablePermissions {
@@ -1143,6 +1153,7 @@ export default function LineItemsReviewTable({
                       <th className="pb-2 font-medium min-w-[250px] hidden xl:table-cell">Anchor Text</th>
                       <th className="pb-2 font-medium min-w-[180px] xl:hidden">Anchor</th>
                       {permissions.canViewPricing && <th className="pb-2 font-medium min-w-[80px]">Price</th>}
+                      {userType === 'internal' && <th className="pb-2 font-medium min-w-[120px]">Publisher</th>}
                       <th className="pb-2 font-medium min-w-[120px]">Action</th>
                     </tr>
                   </thead>
@@ -1295,6 +1306,44 @@ export default function LineItemsReviewTable({
                               })()}
                             </td>
                           )}
+                          {/* Publisher Column - Show for internal users */}
+                          {userType === 'internal' && (
+                            <td className="py-3 px-3 text-sm">
+                              {(() => {
+                                if (!item.publisherId) {
+                                  return <span className="text-gray-400 italic">Not assigned</span>;
+                                }
+                                
+                                if (item.publisher) {
+                                  const name = item.publisher.companyName || 
+                                               item.publisher.contactName || 
+                                               item.publisher.email.split('@')[0];
+                                  
+                                  // Check if it's an internal/shadow publisher
+                                  const isInternal = item.metadata?.attributionSource === 'shadow_publisher';
+                                  const displayName = isInternal ? `${name} (Internal)` : name;
+                                  
+                                  return (
+                                    <div className="space-y-1">
+                                      <span className="text-gray-900 font-medium">{displayName}</span>
+                                      {item.publisherPrice && item.publisherPrice > 0 && (
+                                        <div className="text-xs text-gray-500">
+                                          Cost: ${(item.publisherPrice / 100).toFixed(2)}
+                                        </div>
+                                      )}
+                                      {item.metadata?.pricingStrategy && (
+                                        <div className="text-xs text-gray-500">
+                                          {item.metadata.pricingStrategy.replace('_', ' ')}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                }
+                                
+                                return <span className="text-gray-600">Publisher assigned</span>;
+                              })()}
+                            </td>
+                          )}
                           {/* Combined Action Column - Now at the end */}
                           <td className="py-3 pr-4">
                             <div className="flex items-center gap-2">
@@ -1436,6 +1485,45 @@ export default function LineItemsReviewTable({
                           <span className="text-gray-500">Price:</span>
                           <span className="ml-1 font-bold">
                             {formatCurrency(item.estimatedPrice || 0)}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Publisher - Show for internal users */}
+                    {userType === 'internal' && (
+                      <div className="flex gap-4 text-sm">
+                        <div>
+                          <span className="text-gray-500">Publisher:</span>
+                          <span className="ml-1">
+                            {(() => {
+                              if (!item.publisherId) {
+                                return <span className="text-gray-400 italic">Not assigned</span>;
+                              }
+                              
+                              if (item.publisher) {
+                                const name = item.publisher.companyName || 
+                                             item.publisher.contactName || 
+                                             item.publisher.email.split('@')[0];
+                                
+                                // Check if it's an internal/shadow publisher
+                                const isInternal = item.metadata?.attributionSource === 'shadow_publisher';
+                                const displayName = isInternal ? `${name} (Internal)` : name;
+                                
+                                return (
+                                  <div className="inline-flex flex-col gap-1">
+                                    <span className="text-gray-900 font-medium">{displayName}</span>
+                                    {item.publisherPrice && item.publisherPrice > 0 && (
+                                      <span className="text-xs text-gray-500">
+                                        Cost: ${(item.publisherPrice / 100).toFixed(2)}
+                                      </span>
+                                    )}
+                                  </div>
+                                );
+                              }
+                              
+                              return <span className="text-gray-600">Publisher assigned</span>;
+                            })()}
                           </span>
                         </div>
                       </div>

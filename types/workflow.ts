@@ -60,6 +60,15 @@ export interface GuestPostWorkflow {
     targetPageUrl?: string;
     anchorText?: string;
     targetPageId?: string;
+    // Publisher attribution fields
+    publisherId?: string;
+    publisherOfferingId?: string;
+    publisherPrice?: number;
+    publisherInfo?: {
+      id: string;
+      offeringId?: string;
+      price?: number;
+    };
   };
 }
 

@@ -39,7 +39,7 @@ export class PublisherResolutionService {
           contactName: publishers.contactName,
           companyName: publishers.companyName,
           email: publishers.email,
-          isShadow: publishers.is_shadow,
+          accountStatus: publishers.accountStatus,
         })
         .from(publishers)
         .where(eq(publishers.id, publisherId))
@@ -48,15 +48,16 @@ export class PublisherResolutionService {
       if (result.length === 0) return null;
 
       const publisher = result[0];
+      const isShadow = publisher.accountStatus === 'shadow';
       return {
         id: publisher.id,
         name: publisher.contactName || publisher.companyName || 'Unknown Publisher',
         email: publisher.email,
-        isShadow: publisher.isShadow || false,
+        isShadow,
         displayName: this.formatPublisherName({
           name: publisher.contactName || publisher.companyName,
           email: publisher.email,
-          isShadow: publisher.isShadow
+          isShadow
         }),
       };
     } catch (error) {
@@ -80,21 +81,22 @@ export class PublisherResolutionService {
           contactName: publishers.contactName,
           companyName: publishers.companyName,
           email: publishers.email,
-          isShadow: publishers.is_shadow,
+          accountStatus: publishers.accountStatus,
         })
         .from(publishers)
         .where(inArray(publishers.id, publisherIds));
 
       for (const publisher of results) {
+        const isShadow = publisher.accountStatus === 'shadow';
         map.set(publisher.id, {
           id: publisher.id,
           name: publisher.contactName || publisher.companyName || 'Unknown Publisher',
           email: publisher.email,
-          isShadow: publisher.isShadow || false,
+          isShadow,
           displayName: this.formatPublisherName({
             name: publisher.contactName || publisher.companyName,
             email: publisher.email,
-            isShadow: publisher.isShadow
+            isShadow
           }),
         });
       }
