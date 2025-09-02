@@ -40,7 +40,7 @@ export default function ManyReachKeysPage() {
     try {
       // Parse the input - each line is workspace:apikey
       const lines = newKeys.trim().split('\n');
-      const keys = [];
+      const keys: Array<{workspace: string, apiKey: string}> = [];
       
       for (let i = 0; i < lines.length; i++) {
         const trimmed = lines[i].trim();
@@ -93,7 +93,7 @@ export default function ManyReachKeysPage() {
           }
           
           // Fallback to generic name
-          const workspaceNum = workspaces.length + keys.length + 1;
+          const workspaceNum: number = workspaces.length + keys.length + 1;
           keys.push({ 
             workspace: `workspace-${workspaceNum}`, 
             apiKey: trimmed 
