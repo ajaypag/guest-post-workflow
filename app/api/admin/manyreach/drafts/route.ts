@@ -10,8 +10,9 @@ export async function GET(request: NextRequest) {
     // Get query params
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status') || 'all';
-    const limit = parseInt(searchParams.get('limit') || '50');
+    const limit = parseInt(searchParams.get('limit') || '100'); // Increased default
     const offset = parseInt(searchParams.get('offset') || '0');
+    const search = searchParams.get('search') || '';
 
     // Build query
     let query = sql`
@@ -36,8 +37,23 @@ export async function GET(request: NextRequest) {
       INNER JOIN email_processing_logs e ON d.email_log_id = e.id
     `;
 
+    // Build WHERE conditions
+    const conditions = [];
     if (status !== 'all') {
-      query = sql`${query} WHERE d.status = ${status}`;
+      conditions.push(sql`d.status = ${status}`);
+    }
+    if (search) {
+      conditions.push(sql`(
+        e.email_from ILIKE ${'%' + search + '%'} OR 
+        e.email_subject ILIKE ${'%' + search + '%'} OR
+        e.campaign_name ILIKE ${'%' + search + '%'}
+      )`);
+    }
+
+    if (conditions.length > 0) {
+      query = sql`${query} WHERE ${conditions.reduce((acc, cond, i) => 
+        i === 0 ? cond : sql`${acc} AND ${cond}`
+      )}`;
     }
 
     query = sql`${query} ORDER BY d.created_at DESC LIMIT ${limit} OFFSET ${offset}`;

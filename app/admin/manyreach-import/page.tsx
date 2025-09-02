@@ -5,7 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Download, CheckCircle2, XCircle, AlertCircle, Eye, RefreshCw } from 'lucide-react';
+import { Loader2, Download, CheckCircle2, XCircle, AlertCircle, Eye, RefreshCw, Clock, Activity, ChevronLeft, Mail, Key, FileText, BarChart } from 'lucide-react';
+import { CampaignStatusView } from '@/components/manyreach/CampaignStatusView';
+import { DraftsListInfinite } from '@/components/manyreach/DraftsListInfinite';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 // Simple toast notification
 const useToast = () => ({
   toast: ({ title, description, variant }: any) => {
@@ -55,7 +59,7 @@ export default function ManyReachImportPage() {
   const [loading, setLoading] = useState(true);
   const [importing, setImporting] = useState<string | null>(null);
   const [clearing, setClearing] = useState(false);
-  const [activeTab, setActiveTab] = useState('campaigns');
+  const [activeTab, setActiveTab] = useState('status');
   
   // Workspace and email processing controls
   const [workspaces, setWorkspaces] = useState<{workspace_name: string; is_active: boolean}[]>([]);
@@ -276,12 +280,12 @@ export default function ManyReachImportPage() {
 
   return (
     <div className="container mx-auto py-8">
-      <div className="mb-8">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold">ManyReach Import V3</h1>
-            <p className="text-gray-600 mt-2">Import publisher replies and create draft records for review</p>
-          </div>
+        <div className="mb-8">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold">ManyReach Import V3</h1>
+              <p className="text-gray-600 mt-2">Import publisher replies and create draft records for review</p>
+            </div>
           <Button
             onClick={clearTestData}
             disabled={clearing}
@@ -443,11 +447,19 @@ export default function ManyReachImportPage() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
+          <TabsTrigger value="status">
+            <Activity className="mr-2 h-4 w-4" />
+            Status Overview
+          </TabsTrigger>
           <TabsTrigger value="campaigns">Campaigns</TabsTrigger>
           <TabsTrigger value="drafts">
             Drafts {Array.isArray(drafts) && drafts.length > 0 && <Badge className="ml-2">{drafts.length}</Badge>}
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="status">
+          <CampaignStatusView workspace={selectedWorkspace} />
+        </TabsContent>
 
         <TabsContent value="campaigns">
           <Card>
@@ -519,6 +531,37 @@ export default function ManyReachImportPage() {
         </TabsContent>
 
         <TabsContent value="drafts">
+          <div className="grid grid-cols-12 gap-4">
+            {/* Use new infinite scroll component */}
+            <div className="col-span-4">
+              <DraftsListInfinite 
+                onDraftSelect={setSelectedDraft}
+                onDraftUpdate={fetchDrafts}
+              />
+            </div>
+            
+            {/* Draft Editor - restored from original */}
+            <div className="col-span-8">
+              {selectedDraft ? (
+                <DraftEditor
+                  draft={selectedDraft}
+                  onUpdate={(updates) => updateDraft(selectedDraft.id, updates)}
+                  onReprocess={() => reprocessDraft(selectedDraft.id)}
+                />
+              ) : (
+                <Card>
+                  <CardContent className="py-16">
+                    <div className="text-center text-gray-500">
+                      Select a draft to review
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </div>
+          
+          {/* OLD CONTENT BELOW - HIDDEN */}
+          <div style={{ display: 'none' }}>
           {/* Draft Statistics */}
           <div className="grid grid-cols-4 gap-4 mb-4">
             <Card>
@@ -748,6 +791,7 @@ export default function ManyReachImportPage() {
               )}
             </div>
           </div>
+          </div> {/* Close hidden div */}
         </TabsContent>
       </Tabs>
     </div>
@@ -767,8 +811,39 @@ function DraftEditor({ draft, onUpdate, onReprocess }: {
     onUpdate({ editedData, status: 'reviewing' });
   };
 
-  const handleApprove = () => {
-    onUpdate({ editedData, status: 'approved' });
+  const handleApprove = async () => {
+    setApproving(true);
+    try {
+      // First, call the approve endpoint to create records
+      const response = await fetch('/api/admin/manyreach/draft-approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ draftId: draft.id })
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        // Update the draft status to approved
+        await onUpdate({ editedData, status: 'approved' });
+        
+        // Show success message with details
+        const message = `✅ Created: ${result.created.publisherId ? '1 publisher, ' : ''}${result.created.websiteIds.length} website(s), ${result.created.offeringIds.length} offering(s)`;
+        alert(message);
+        
+        // Trigger a refresh of the drafts list
+        if (onReprocess) {
+          onReprocess(); // This will refresh the parent component
+        }
+      } else {
+        alert(`❌ Approval failed: ${result.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Approval error:', error);
+      alert('Failed to approve and create records');
+    } finally {
+      setApproving(false);
+    }
   };
 
   const handleReject = () => {
@@ -778,6 +853,7 @@ function DraftEditor({ draft, onUpdate, onReprocess }: {
   const [showPreview, setShowPreview] = useState(false);
   const [previewData, setPreviewData] = useState<any>(null);
   const [loadingPreview, setLoadingPreview] = useState(false);
+  const [approving, setApproving] = useState(false);
   
   const handlePreview = async () => {
     setLoadingPreview(true);
@@ -1562,9 +1638,10 @@ function DraftEditor({ draft, onUpdate, onReprocess }: {
             </button>
             <button
               onClick={handleApprove}
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+              disabled={approving}
+              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
             >
-              ✅ Approve & Create Records
+              {approving ? '⏳ Creating Records...' : '✅ Approve & Create Records'}
             </button>
             <button
               onClick={handleReject}
