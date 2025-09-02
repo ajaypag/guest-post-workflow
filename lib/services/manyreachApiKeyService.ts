@@ -51,17 +51,19 @@ export class ManyReachApiKeyService {
   static async storeApiKey(
     workspaceName: string, 
     apiKey: string,
-    workspaceId?: string
+    workspaceId?: string,
+    displayName?: string
   ): Promise<void> {
     const encrypted = this.encrypt(apiKey);
     
     await db.execute(sql`
-      INSERT INTO manyreach_api_keys (workspace_name, workspace_id, api_key_encrypted)
-      VALUES (${workspaceName}, ${workspaceId || null}, ${encrypted})
+      INSERT INTO manyreach_api_keys (workspace_name, workspace_id, api_key_encrypted, display_name)
+      VALUES (${workspaceName}, ${workspaceId || null}, ${encrypted}, ${displayName || null})
       ON CONFLICT (workspace_name) 
       DO UPDATE SET 
         api_key_encrypted = ${encrypted},
         workspace_id = COALESCE(${workspaceId || null}, manyreach_api_keys.workspace_id),
+        display_name = COALESCE(${displayName || null}, manyreach_api_keys.display_name),
         updated_at = NOW()
     `);
   }
@@ -93,6 +95,7 @@ export class ManyReachApiKeyService {
   static async listWorkspaces(): Promise<Array<{
     workspace_name: string;
     workspace_id: string | null;
+    display_name: string | null;
     is_active: boolean;
     last_used_at: Date | null;
     usage_count: number;
@@ -101,6 +104,7 @@ export class ManyReachApiKeyService {
       SELECT 
         workspace_name,
         workspace_id,
+        display_name,
         is_active,
         last_used_at,
         usage_count
@@ -145,11 +149,57 @@ export class ManyReachApiKeyService {
   }
 
   /**
+   * Extract display name from ManyReach API
+   */
+  static async extractDisplayName(apiKey: string): Promise<string | null> {
+    try {
+      const response = await fetch(`https://app.manyreach.com/api/campaigns?apikey=${apiKey}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (!response.ok) {
+        return null;
+      }
+      
+      const data = await response.json();
+      
+      // Try to extract account/workspace name from response
+      if (data.account?.name) {
+        return data.account.name;
+      }
+      if (data.workspace?.name) {
+        return data.workspace.name;
+      }
+      if (data.user?.company) {
+        return data.user.company;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Failed to extract display name:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Store API key with extracted display name
+   */
+  static async storeApiKeyWithDisplayName(
+    workspaceName: string,
+    apiKey: string,
+    workspaceId?: string
+  ): Promise<void> {
+    const displayName = await this.extractDisplayName(apiKey);
+    await this.storeApiKey(workspaceName, apiKey, workspaceId, displayName || undefined);
+  }
+
+  /**
    * Bulk import API keys (useful for initial setup)
    */
   static async bulkImport(keys: Array<{ workspace: string; apiKey: string; workspaceId?: string }>) {
     for (const { workspace, apiKey, workspaceId } of keys) {
-      await this.storeApiKey(workspace, apiKey, workspaceId);
+      await this.storeApiKeyWithDisplayName(workspace, apiKey, workspaceId);
     }
   }
 }

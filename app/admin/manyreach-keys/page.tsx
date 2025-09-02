@@ -9,6 +9,7 @@ import { Shield, Key, Trash2, Plus, Eye, EyeOff, CheckCircle, AlertCircle } from
 interface Workspace {
   workspace_name: string;
   workspace_id: string | null;
+  display_name: string | null;
   is_active: boolean;
   last_used_at: string | null;
   usage_count: number;
@@ -235,9 +236,14 @@ Or just paste API keys:
                   <div className="flex items-center gap-3">
                     <Key className={`h-4 w-4 ${ws.is_active ? 'text-green-600' : 'text-gray-400'}`} />
                     <div>
-                      <span className="font-mono font-medium">{ws.workspace_name}</span>
+                      <div className="font-medium">
+                        {ws.display_name && (
+                          <span className="text-lg">{ws.display_name}</span>
+                        )}
+                        <span className="font-mono text-sm text-gray-500 ml-2">({ws.workspace_name})</span>
+                      </div>
                       {ws.last_used_at && (
-                        <span className="ml-3 text-sm text-gray-500">
+                        <span className="text-sm text-gray-500">
                           Used {ws.usage_count} times • Last: {new Date(ws.last_used_at).toLocaleDateString()}
                         </span>
                       )}

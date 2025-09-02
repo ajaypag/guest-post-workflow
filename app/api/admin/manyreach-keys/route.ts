@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     switch (action) {
       case 'store': {
         const { workspace, apiKey, workspaceId } = body;
-        await ManyReachApiKeyService.storeApiKey(workspace, apiKey, workspaceId);
+        await ManyReachApiKeyService.storeApiKeyWithDisplayName(workspace, apiKey, workspaceId);
         return NextResponse.json({ success: true });
       }
 
@@ -66,6 +66,17 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: true });
       }
 
+
+      case 'suggest-name': {
+        const { apiKey } = body;
+        
+        if (!apiKey) {
+          return NextResponse.json({ error: 'API key required' }, { status: 400 });
+        }
+
+        const displayName = await ManyReachApiKeyService.extractDisplayName(apiKey);
+        return NextResponse.json({ displayName });
+      }
 
       case 'test': {
         const { workspace } = body;
