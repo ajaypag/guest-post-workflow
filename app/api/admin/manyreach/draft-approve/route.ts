@@ -314,7 +314,7 @@ export async function POST(request: NextRequest) {
               id: crypto.randomUUID(),
               publisherId: publisherId!,
               offeringType: offering.offeringType,
-              basePrice: hasValidPrice ? offering.basePrice : null,
+              basePrice: hasValidPrice ? Math.round(offering.basePrice * 100) : null, // Convert dollars to cents
               currency: offering.currency || 'USD',
               turnaroundDays: offering.turnaroundDays || null,
               currentAvailability: availability,
