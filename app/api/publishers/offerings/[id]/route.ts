@@ -9,7 +9,7 @@ import { z } from 'zod';
 // PATCH /api/publishers/offerings/[id] - Update offering
 const updateOfferingSchema = z.object({
   offeringName: z.string().optional(),
-  basePrice: z.number().positive().optional(),
+  basePrice: z.number().min(0).nullable().optional(), // NULL = unknown, 0 = free, >0 = paid
   currency: z.string().optional(),
   priceType: z.enum(['fixed', 'starting_at', 'negotiable', 'contact']).optional(),
   turnaroundDays: z.number().positive().optional(),
@@ -21,7 +21,7 @@ const updateOfferingSchema = z.object({
   maxLinksPerPost: z.number().positive().optional(),
   attributes: z.record(z.any()).optional(),
   monthlyCapacity: z.number().positive().optional(),
-  currentAvailability: z.enum(['available', 'limited', 'booked', 'paused']).optional(),
+  currentAvailability: z.enum(['available', 'limited', 'paused', 'needs_info']).optional(),
   isActive: z.boolean().optional()
 });
 

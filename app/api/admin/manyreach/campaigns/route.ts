@@ -7,7 +7,19 @@ export async function GET(request: NextRequest) {
     // For now, allow access for testing
     
     const searchParams = request.nextUrl.searchParams;
-    const workspaceId = searchParams.get('workspace') || 'workspace-1';
+    const workspaceName = searchParams.get('workspace') || 'main';
+    
+    // For workspace names like "workspace-11", use them directly as IDs
+    // For named workspaces like "main", map them
+    let workspaceId = workspaceName;
+    
+    if (workspaceName === 'main') {
+      workspaceId = 'workspace-1';
+    } else if (!workspaceName.startsWith('workspace-')) {
+      // If it's a custom name, just use it as-is
+      // The WorkspaceManager will handle the API key lookup
+      workspaceId = workspaceName;
+    }
     
     // Create API client with selected workspace
     const apiClient = new ManyReachAPIClient(workspaceId);

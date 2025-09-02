@@ -2,6 +2,7 @@ import { db } from '@/lib/db/connection';
 import { emailProcessingLogs, EmailProcessingLog } from '@/lib/db/emailProcessingSchema';
 import { eq, and, sql, desc } from 'drizzle-orm';
 import { EmailParserV3Simplified } from './emailParserV3Simplified';
+import { ManyReachApiKeyService } from './manyreachApiKeyService';
 
 interface ManyReachProspect {
   email: string;
@@ -39,22 +40,31 @@ interface DraftCreationResult {
 }
 
 export class ManyReachImportV3 {
-  private apiKey: string;
+  private apiKey: string | null = null;
+  private workspaceName: string;
   private baseUrl = 'https://app.manyreach.com/api';
   private emailParser: EmailParserV3Simplified;
   
-  constructor(workspaceId?: string) {
-    // Get API key based on workspace
-    if (workspaceId === 'workspace-2') {
-      this.apiKey = '900b0cdf-5769-4df2-84d8-00714914d79f';
-    } else {
-      this.apiKey = process.env.MANYREACH_API_KEY || '2a88c29a-87c0-4420-b286-ab11f134c525';
-    }
-    
+  constructor(workspaceName: string = 'main') {
+    this.workspaceName = workspaceName;
     this.emailParser = new EmailParserV3Simplified();
-    
+  }
+  
+  /**
+   * Initialize API key from database
+   */
+  private async ensureApiKey(): Promise<void> {
     if (!this.apiKey) {
-      console.warn('⚠️ MANYREACH_API_KEY not set - import will fail');
+      this.apiKey = await ManyReachApiKeyService.getApiKey(this.workspaceName);
+      
+      if (!this.apiKey) {
+        // Fallback to env variable for backward compatibility
+        this.apiKey = process.env.MANYREACH_API_KEY || null;
+        
+        if (!this.apiKey) {
+          throw new Error(`No API key found for workspace '${this.workspaceName}'. Please configure it in /admin/manyreach-keys`);
+        }
+      }
     }
   }
 
@@ -63,6 +73,7 @@ export class ManyReachImportV3 {
    */
   async getCampaigns() {
     try {
+      await this.ensureApiKey();
       const response = await fetch(
         `${this.baseUrl}/campaigns?apikey=${this.apiKey}`,
         {
@@ -115,6 +126,7 @@ export class ManyReachImportV3 {
       }
 
       // Get all prospects in campaign
+      await this.ensureApiKey();
       const prospectsResponse = await fetch(
         `${this.baseUrl}/campaigns/${campaignId}/prospects?apikey=${this.apiKey}`,
         {
@@ -218,6 +230,7 @@ export class ManyReachImportV3 {
    * Get messages for a specific prospect
    */
   private async getProspectMessages(email: string): Promise<ManyReachMessage[]> {
+    await this.ensureApiKey();
     const response = await fetch(
       `${this.baseUrl}/prospects/messages/${encodeURIComponent(email)}?apikey=${this.apiKey}`,
       {

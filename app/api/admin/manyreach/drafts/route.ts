@@ -80,13 +80,13 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Draft ID required' }, { status: 400 });
     }
 
-    // Update draft
+    // Update draft - handle undefined values properly
     const updateQuery = sql`
       UPDATE publisher_drafts
       SET 
         edited_data = ${editedData ? JSON.stringify(editedData) : null}::jsonb,
-        status = COALESCE(${status}, status),
-        review_notes = COALESCE(${reviewNotes}, review_notes),
+        status = COALESCE(${status || null}, status),
+        review_notes = COALESCE(${reviewNotes || null}, review_notes),
         updated_at = NOW()
       WHERE id = ${draftId}
       RETURNING *
