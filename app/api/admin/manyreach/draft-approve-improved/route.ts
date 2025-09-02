@@ -227,7 +227,7 @@ export async function POST(request: NextRequest) {
               
               for (const suggestedNiche of suggestedNewNiches) {
                 // Check if this niche already exists in the niches table (case-insensitive)
-                const existingNicheRecord = await db.sql`
+                const existingNicheRecord = await sql`
                   SELECT name FROM niches 
                   WHERE LOWER(name) = LOWER(${suggestedNiche})
                   LIMIT 1
@@ -236,7 +236,7 @@ export async function POST(request: NextRequest) {
                 if (existingNicheRecord.length === 0) {
                   // Create the new niche
                   console.log(`🆕 Creating new niche: ${suggestedNiche}`);
-                  await db.sql`
+                  await sql`
                     INSERT INTO niches (name, source, created_at)
                     VALUES (${suggestedNiche}, 'manyreach_ai', NOW())
                     ON CONFLICT (LOWER(name)) DO NOTHING
@@ -282,7 +282,7 @@ export async function POST(request: NextRequest) {
               
               for (const suggestedNiche of suggestedNewNiches) {
                 // Check if this niche already exists in the niches table (case-insensitive)
-                const existingNicheRecord = await db.sql`
+                const existingNicheRecord = await sql`
                   SELECT name FROM niches 
                   WHERE LOWER(name) = LOWER(${suggestedNiche})
                   LIMIT 1
@@ -291,7 +291,7 @@ export async function POST(request: NextRequest) {
                 if (existingNicheRecord.length === 0) {
                   // Create the new niche
                   console.log(`🆕 Creating new niche: ${suggestedNiche}`);
-                  await db.sql`
+                  await sql`
                     INSERT INTO niches (name, source, created_at)
                     VALUES (${suggestedNiche}, 'manyreach_ai', NOW())
                     ON CONFLICT (LOWER(name)) DO NOTHING
