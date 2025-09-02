@@ -172,10 +172,25 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
     }
   }, [showMobilePricing]);
 
-  const loadClients = useCallback(async () => {
+  const loadClients = useCallback(async (forceAccountId?: string | null) => {
     try {
       setLoadingClients(true);
-      const url = isAccountUser ? '/api/account/clients' : '/api/clients?limit=1000';
+      
+      // Use the provided accountId or fall back to current selection
+      const targetAccountId = forceAccountId !== undefined ? forceAccountId : selectedAccountId;
+      
+      let url: string;
+      if (isAccountUser) {
+        // Account users always get their own clients
+        url = '/api/account/clients';
+      } else if (targetAccountId) {
+        // Internal users with selected account - filter by account
+        url = `/api/clients?accountId=${targetAccountId}&limit=1000`;
+      } else {
+        // Internal users with no account selected - get all clients
+        url = '/api/clients?limit=1000';
+      }
+      
       const response = await fetch(url);
       
       if (response.ok) {
@@ -191,7 +206,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
     } finally {
       setLoadingClients(false);
     }
-  }, [isAccountUser]);
+  }, [isAccountUser, selectedAccountId]);
 
   const handleClientCreated = (newClient: any) => {
     // Refresh the client list to include the new client
@@ -462,17 +477,18 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
       const { id } = await params;
       setDraftOrderId(id);
       
-      // Load clients first
-      setLoadingClients(true);
+      // Load clients first using the centralized function
+      await loadClients();
+      
+      // Get the updated clients for loading the draft order
+      // Note: We need to refetch clients since setClients is async
       const url = isAccountUser ? '/api/account/clients' : '/api/clients?limit=1000';
       const response = await fetch(url);
       
       if (response.ok) {
         const data = await response.json();
         const clientList = data.clients || data;
-        // Filter out archived clients
         const activeClients = clientList.filter((client: any) => !client.archivedAt);
-        setClients(activeClients);
         
         // Then load the draft order with the client list
         await loadDraftOrder(id, activeClients);
@@ -480,7 +496,6 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
         // Handle quickstart data if present
         await handleQuickstartData(id, activeClients);
       }
-      setLoadingClients(false);
     };
     
     loadOrderData();
@@ -551,6 +566,14 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
   useEffect(() => {
     updateAvailableTargets();
   }, [updateAvailableTargets]);
+
+  // Reload clients when selected account changes (for internal users)
+  useEffect(() => {
+    if (session && session.userType === 'internal' && !isNewOrder) {
+      console.log('[ACCOUNT_FILTER] Selected account changed, reloading clients for account:', selectedAccountId);
+      loadClients();
+    }
+  }, [selectedAccountId, session?.userType, loadClients, isNewOrder]);
   
   // Helper function to check if an ID is a real database ID (UUID) vs temporary ID
   const isRealDatabaseId = (id: string) => {
@@ -1212,6 +1235,56 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
     setShowConfirmModal(true);
   };
   
+  const handleSaveAsDraft = async () => {
+    try {
+      setIsSubmitting(true);
+      
+      // First save the current changes
+      await saveOrderDraft();
+      
+      // If this order was previously submitted (not in draft status), revert it back to draft
+      if (orderStatus !== 'draft' && !isNewOrder) {
+        console.log(`[SAVE_AS_DRAFT] Reverting order status from '${orderStatus}' back to 'draft'`);
+        
+        const response = await fetch(`/api/orders/${draftOrderId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            status: 'draft',
+            state: 'configuring', // Reset state to configuring
+            // Clear any submission-related fields
+            submittedAt: null,
+            confirmedAt: null
+          })
+        });
+        
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || 'Failed to revert order status');
+        }
+        
+        console.log('[SAVE_AS_DRAFT] Order status successfully reverted to draft');
+      }
+      
+      // Close modal and redirect back to order details  
+      setShowConfirmModal(false);
+      setIsSubmitting(false);
+      
+      // Show success message briefly then redirect
+      setSaveStatus('saved');
+      setTimeout(() => {
+        router.push(`/orders/${draftOrderId}`);
+      }, 1000);
+      
+    } catch (error: any) {
+      console.error('Error saving draft:', error);
+      setError(error.message || 'Failed to save draft');
+      setIsSubmitting(false);
+      setShowConfirmModal(false);
+    }
+  };
+
   const handleConfirmOrder = async () => {
     try {
       setIsSubmitting(true);
@@ -1591,7 +1664,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
         </div>
         
         {/* Main Content Area - Three Column Layout (Desktop) / Single Column (Mobile) */}
-        <div className="flex-1 flex flex-col md:flex-row gap-2 md:gap-4 p-2 sm:p-4 pt-0 overflow-hidden bg-gray-100 md:style-height" style={{height: 'auto'}}>
+        <div className="flex-1 flex flex-col md:flex-row gap-2 md:gap-4 p-2 sm:p-4 pt-0 pb-24 sm:pb-28 overflow-hidden bg-gray-100 md:style-height" style={{height: 'auto'}}>
           {error && (
             <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start shadow-lg">
               <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 mr-3" />
@@ -2289,7 +2362,7 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
         </div>
         
         {/* Fixed Bottom Bar */}
-        <div className="bg-white border-t border-gray-200 shadow-lg">
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
           <div className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
               {/* Mobile: Compact Stats */}
@@ -2595,18 +2668,40 @@ export default function EditOrderPage({ params }: { params: Promise<{ id: string
                 </div>
                 
                 {/* Actions */}
-                <div className="flex gap-4">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <button
                     onClick={() => setShowConfirmModal(false)}
                     disabled={isSubmitting}
-                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 flex-1 sm:flex-none"
                   >
                     Continue Editing
                   </button>
+                  
+                  {/* Show Save as Draft option for all editable orders */}
+                  {(orderStatus === 'draft' || isNewOrder || orderStatus === 'pending_confirmation' || orderStatus === 'confirmed') && (
+                    <button
+                      onClick={handleSaveAsDraft}
+                      disabled={isSubmitting}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center flex-1"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Package className="h-4 w-4 mr-2" />
+                          Save as Draft
+                        </>
+                      )}
+                    </button>
+                  )}
+                  
                   <button
                     onClick={handleConfirmOrder}
                     disabled={isSubmitting}
-                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center flex-1"
                   >
                     {isSubmitting ? (
                       <>

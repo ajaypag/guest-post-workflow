@@ -83,6 +83,15 @@ const getStatusMessage = (status: string, state?: string) => {
       userAction: "required",
       actionText: "Finish configuring your order"
     };
+  } else if (status === 'pending_confirmation') {
+    return {
+      title: "⏰ Order Awaiting Confirmation",
+      description: "Your order has been submitted successfully and is being reviewed by our team.",
+      timeline: "Review typically takes 24 hours",
+      nextStep: "We'll confirm your order and begin finding suitable sites",
+      userAction: "optional",
+      actionText: "You can still edit if needed"
+    };
   }
   
   // Fallback
@@ -1284,6 +1293,7 @@ export default function OrderDetailPage() {
                   orderStatus={order.status}
                   orderState={order.state}
                   userType={user?.userType || 'account'}
+                  orderId={order.id}
                 />
               ) : (order.state === 'sites_ready' || order.state === 'client_reviewing' || 
                 order.state === 'payment_pending' || order.state === 'payment_received' || 
@@ -1314,6 +1324,7 @@ export default function OrderDetailPage() {
                     orderStatus={order.status}
                     orderState={order.state}
                     userType={user?.userType || 'account'}
+                    orderId={order.id}
                   />
                 </>
               )}
