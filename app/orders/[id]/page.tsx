@@ -131,6 +131,16 @@ interface LineItem {
   bulkAnalysisId?: string;
   workflowId?: string;
   metadata?: any;
+  // Publisher attribution fields
+  publisherId?: string | null;
+  publisherOfferingId?: string | null;
+  publisherPrice?: number | null;
+  publisher?: {
+    id: string;
+    contactName?: string | null;
+    companyName?: string | null;
+    email: string;
+  } | null;
 }
 
 interface SiteSubmission {
@@ -321,7 +331,12 @@ export default function OrderDetailPage() {
           publishedUrl: dbItem.publishedUrl || '',
           bulkAnalysisId: dbItem.metadata?.bulkAnalysisId,
           workflowId: dbItem.workflowId || dbItem.metadata?.workflowId, // Check both locations
-          metadata: dbItem.metadata
+          metadata: dbItem.metadata,
+          // Publisher attribution fields
+          publisherId: dbItem.publisherId,
+          publisherOfferingId: dbItem.publisherOfferingId,
+          publisherPrice: dbItem.publisherPrice,
+          publisher: dbItem.publisher
         }));
         
         setLineItems(items);
