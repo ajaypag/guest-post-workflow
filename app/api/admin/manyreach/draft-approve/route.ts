@@ -3,7 +3,7 @@ import { db } from '@/lib/db/connection';
 import { publishers, publisherWebsites } from '@/lib/db/accountSchema';
 import { websites } from '@/lib/db/websiteSchema';
 import { publisherOfferings, publisherOfferingRelationships } from '@/lib/db/publisherSchemaActual';
-import { emailProcessingLogs } from '@/lib/db/schema';
+import { emailProcessingLogs } from '@/lib/db/emailProcessingSchema';
 import { eq, sql } from 'drizzle-orm';
 
 interface ApprovalResult {
