@@ -263,6 +263,21 @@ export function DraftsListInfinite({ onDraftSelect, onDraftUpdate }: DraftsListI
                             Has Offer
                           </Badge>
                         )}
+                        {data.offerings && data.offerings.some((o: any) => o.basePrice) && (
+                          <Badge variant="outline" className="text-xs text-green-600">
+                            Has Pricing
+                          </Badge>
+                        )}
+                        {data.websites && data.websites.length > 1 && (
+                          <Badge variant="outline" className="text-xs text-purple-600">
+                            {data.websites.length} Sites
+                          </Badge>
+                        )}
+                        {data.publisher?.email && data.publisher.email.includes('@') && (
+                          <Badge variant="outline" className="text-xs text-indigo-600">
+                            Publisher Email
+                          </Badge>
+                        )}
                       </div>
                       
                       {contactName && (
@@ -281,6 +296,25 @@ export function DraftsListInfinite({ onDraftSelect, onDraftUpdate }: DraftsListI
                         <span>{draft.campaign_name}</span>
                         <span>•</span>
                         <span>{new Date(draft.created_at).toLocaleDateString()}</span>
+                      </div>
+                      
+                      {/* Duplicate Risk Indicators */}
+                      <div className="flex items-center gap-2 mt-2">
+                        {data.publisher?.email && (
+                          <Badge variant="outline" className="text-xs text-amber-600 bg-amber-50">
+                            🔍 Check for Publisher Duplicate
+                          </Badge>
+                        )}
+                        {data.websites && data.websites.length > 0 && (
+                          <Badge variant="outline" className="text-xs text-cyan-600 bg-cyan-50">
+                            🌐 Check for Website Duplicates
+                          </Badge>
+                        )}
+                        {data.offerings && data.offerings.some((o: any) => o.basePrice) && (
+                          <Badge variant="outline" className="text-xs text-orange-600 bg-orange-50">
+                            💰 Check for Pricing Conflicts
+                          </Badge>
+                        )}
                       </div>
                     </div>
                   </div>
