@@ -1,447 +1,55 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { sql } from 'drizzle-orm';
-import { db } from '@/lib/db/connection';
-import { websites } from '@/lib/db/websiteSchema';
-import { 
-  Globe, 
-  TrendingUp, 
-  DollarSign, 
-  Search, 
-  CheckCircle,
-  Users,
-  Building2,
-  Zap,
-  ArrowRight,
-  Shield,
-  Target,
-  PenTool,
-  Send,
-  Star,
-  BarChart3,
-  Brain,
-  Eye,
-  AlertCircle,
-  Bot
-} from 'lucide-react';
-import Link from 'next/link';
-import InteractiveWorkflowDemo from '@/components/InteractiveWorkflowDemo';
-import LinkioHeader from '@/components/LinkioHeader';
-import MarketingCTA from '@/components/MarketingCTA';
-import MarketingFooter from '@/components/MarketingFooter';
 import RecaptchaProvider from '@/components/RecaptchaProvider';
-import VettedSitesLeadForm from '@/components/VettedSitesLeadForm';
-
-interface Stats {
-  totalSites: number;
-  totalNiches: number;
-}
+import LinkioHeader from '@/components/LinkioHeader';
+import HeroSection from '@/components/homepage/HeroSection';
+import ProblemSection from '@/components/homepage/ProblemSection';
+import MechanismSection from '@/components/homepage/MechanismSection';
+import ProofSection from '@/components/homepage/ProofSection';
+import HowItWorksSection from '@/components/homepage/HowItWorksSection';
+import WhyNowSection from '@/components/homepage/WhyNowSection';
+import PricingSection from '@/components/homepage/PricingSection';
+import DemoSection from '@/components/homepage/DemoSection';
+import FAQSection from '@/components/homepage/FAQSection';
+import FinalCTASection from '@/components/homepage/FinalCTASection';
+import MarketingFooter from '@/components/MarketingFooter';
 
 export default function MarketingHomepage() {
-  const [stats, setStats] = useState<Stats>({
-    totalSites: 13000,
-    totalNiches: 100
-  });
-
-  useEffect(() => {
-    // Fetch stats on client side
-    const fetchStats = async () => {
-      try {
-        const response = await fetch('/api/marketing/stats');
-        if (response.ok) {
-          const data = await response.json();
-          setStats(data);
-        }
-      } catch (error) {
-        console.warn('Could not fetch real-time stats:', error);
-        // Keep default values
-      }
-    };
-
-    fetchStats();
-  }, []);
-
   return (
     <div className="min-h-screen bg-white">
       <RecaptchaProvider />
       <LinkioHeader variant="default" />
-
-      {/* Hero Section */}
-      <section className="bg-gradient-to-br from-blue-900 via-blue-800 to-slate-900 py-12 md:py-16 lg:py-20 min-h-[85vh] flex items-center">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 xl:gap-16 items-center">
-            {/* Left: Value Proposition */}
-            <div className="lg:pr-4 xl:pr-8">
-              <div className="mb-12">
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-400/90 text-white rounded-full text-sm font-bold mb-8 shadow-lg border border-blue-300/30">
-                  <CheckCircle className="w-4 h-4" />
-                  KEYWORD-MATCHED SITES, NOT RANDOM HIGH-DR SPAM
-                </div>
-                
-                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-bold text-white mb-6 lg:mb-8 leading-tight">
-                  Get mentioned in <span className="text-blue-300">ChatGPT</span> and ranked in <span className="text-blue-300">Google</span> through strategic content placements.
-                </h1>
-                
-                <p className="text-lg md:text-xl text-slate-200 leading-relaxed mb-6 lg:mb-8">
-                  Instead of backlinks from random high DR sites, we find websites that already rank for <strong className="text-white">your exact keywords</strong>—getting you AI citations while building traditional SEO rankings.
-                </p>
-
-                <div className="flex flex-wrap items-center gap-4 lg:gap-8">
-                  <div className="text-center">
-                    <div className="text-2xl lg:text-3xl font-bold text-blue-300 flex items-center justify-center gap-1">
-                      <Bot className="w-6 h-6" />+<Users className="w-6 h-6" />
-                    </div>
-                    <div className="text-xs lg:text-sm text-slate-300">Curation</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl lg:text-3xl font-bold text-blue-300">Cost+</div>
-                    <div className="text-xs lg:text-sm text-slate-300">$79 admin fee</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl lg:text-3xl font-bold text-blue-300">Done</div>
-                    <div className="text-xs lg:text-sm text-slate-300">For You</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Right: Form */}
-            <div className="lg:pl-8">
-              <VettedSitesLeadForm />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* The Zero-Click Problem */}
-      <section className="py-20 bg-red-50 border-y border-red-100">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-6">
-              Everyone Gets Links. Only We Get You Cited.
-            </h2>
-            <p className="text-xl text-gray-600 max-w-4xl mx-auto">
-              Traditional link building still works—we do all of that. But we've cracked something extra: 
-              making those same links trigger AI citations. One campaign, double the impact.
-            </p>
-          </div>
-
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-6">
-              <div className="bg-white rounded-xl p-6 border border-red-200">
-                <h3 className="font-semibold text-red-900 mb-3 flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-red-600" />
-                  What Everyone's Facing
-                </h3>
-                <ul className="space-y-2 text-gray-700">
-                  <li>• Google traffic down 25-40% year over year</li>
-                  <li>• AI overviews capture clicks before your site loads</li>
-                  <li>• ChatGPT users never visit your website</li>
-                  <li>• Zero-click searches now exceed click-through results</li>
-                </ul>
-              </div>
-              
-              <div className="bg-white rounded-xl p-6 border border-red-200">
-                <h3 className="font-semibold text-red-900 mb-3 flex items-center gap-2">
-                  <AlertCircle className="w-5 h-5 text-red-600" />
-                  Traditional SEO's Fatal Flaw
-                </h3>
-                <p className="text-gray-700">
-                  Still optimizing for 2019? Rankings and traffic don't matter if AI systems 
-                  never cite your content as an authoritative source.
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              <div className="bg-blue-50 rounded-xl p-6 border border-blue-200">
-                <h3 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
-                  <Brain className="w-5 h-5 text-blue-600" />
-                  The Citation Economy
-                </h3>
-                <ul className="space-y-2 text-blue-700">
-                  <li>• Brand mentions in AI responses drive awareness</li>
-                  <li>• Citations establish industry authority</li>
-                  <li>• Topical relevance beats traffic metrics</li>
-                  <li>• Strategic placement creates lasting competitive advantage</li>
-                </ul>
-              </div>
-              
-              <div className="bg-purple-50 rounded-xl p-6 border border-purple-200">
-                <h3 className="font-semibold text-purple-900 mb-3 flex items-center gap-2">
-                  <Target className="w-5 h-5 text-purple-600" />
-                  Our Solution
-                </h3>
-                <p className="text-purple-700">
-                  We place your content on sites with proven topical authority in your industry. 
-                  When AI systems need expert sources, they find you.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* How We're Different */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Premium Link Building + AI Citation Engineering
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Every link we build works twice: driving traditional SEO value AND engineering AI citations. 
-              Same effort, double the results. Here's what you get that others can't deliver:
-            </p>
-          </div>
-
-          <div className="grid lg:grid-cols-2 gap-12">
-            {/* Traditional Approach */}
-            <div className="bg-gray-50 rounded-2xl p-8">
-              <h3 className="text-2xl font-semibold text-gray-900 mb-6 flex items-center gap-3">
-                <Building2 className="w-6 h-6" />
-                What Every Agency Does
-              </h3>
-              
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span className="text-gray-600 text-sm font-bold">−</span>
-                  </div>
-                  <div>
-                    <div className="font-medium text-gray-900">Vanity Metrics Focus</div>
-                    <div className="text-sm text-gray-600">Chase high DR without topical relevance analysis</div>
-                  </div>
-                </div>
-                
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span className="text-gray-600 text-sm font-bold">−</span>
-                  </div>
-                  <div>
-                    <div className="font-medium text-gray-900">Traffic-Dependent ROI</div>
-                    <div className="text-sm text-gray-600">Success tied to declining organic click-through rates</div>
-                  </div>
-                </div>
-                
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span className="text-gray-600 text-sm font-bold">−</span>
-                  </div>
-                  <div>
-                    <div className="font-medium text-gray-900">Hidden Markups</div>
-                    <div className="text-sm text-gray-600">Unclear pricing with variable fees</div>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span className="text-gray-600 text-sm font-bold">−</span>
-                  </div>
-                  <div>
-                    <div className="font-medium text-gray-900">Limited Scalability</div>
-                    <div className="text-sm text-gray-600">Manual processes that don't scale efficiently</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Our Approach */}
-            <div className="bg-blue-50 rounded-2xl p-8">
-              <h3 className="text-2xl font-semibold text-blue-900 mb-6 flex items-center gap-3">
-                <Brain className="w-6 h-6" />
-                What We Do (Everything + More)
-              </h3>
-              
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <CheckCircle className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <div className="font-medium text-blue-900">AI Citation Engineering</div>
-                    <div className="text-sm text-blue-700">Strategic placements on sites with actual topical authority—not vanity metrics</div>
-                  </div>
-                </div>
-                
-                <div className="flex items-start gap-3">
-                  <CheckCircle className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <div className="font-medium text-blue-900">LLM Citation Optimization</div>
-                    <div className="text-sm text-blue-700">Content designed to be referenced by AI systems, not just ranked</div>
-                  </div>
-                </div>
-                
-                <div className="flex items-start gap-3">
-                  <CheckCircle className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <div className="font-medium text-blue-900">O3-Powered Research</div>
-                    <div className="text-sm text-blue-700">Deep reasoning creates citation-worthy content depth and expertise</div>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <CheckCircle className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <div className="font-medium text-blue-900">Zero-Click Revenue</div>
-                    <div className="text-sm text-blue-700">Brand mentions and citations drive awareness when traffic can't</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Case Study Teaser */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl font-bold text-gray-900 mb-6">
-            While Others Chase Traffic, We Build Citations
-          </h2>
-          
-          <div className="bg-white rounded-2xl p-8 shadow-lg border mb-8">
-            <div className="mb-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium mb-4">
-                <Brain className="w-4 h-4" />
-                AI Citation Success
-              </div>
-            </div>
-            
-            <blockquote className="text-lg text-gray-700 italic mb-6">
-              "We hired them for link building. Two days later, ChatGPT was recommending our product. 
-              Our competitors are still waiting for their 'high DR' links to impact rankings."
-            </blockquote>
-            
-            <div className="grid md:grid-cols-3 gap-6 text-center">
-              <div>
-                <div className="text-2xl font-bold text-blue-600">Cited</div>
-                <div className="text-sm text-gray-600">In AI overviews</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-green-600">Authority</div>
-                <div className="text-sm text-gray-600">Topical match</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-purple-600">Zero</div>
-                <div className="text-sm text-gray-600">Click dependence</div>
-              </div>
-            </div>
-          </div>
-          
-          <p className="text-gray-600 mb-6">
-            <strong>The difference?</strong> While others focus on DR and traffic, we analyze topical authority overlap. 
-            When AI systems need expert sources, they find our strategically placed content.
-          </p>
-          
-          <Link
-            href="/case-studies"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors"
-          >
-            <Star className="w-5 h-5" />
-            View More Case Studies
-          </Link>
-        </div>
-      </section>
-
-      {/* Technology Behind the Process */}
-      <section className="py-20 bg-gray-900 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-6">
-              Link Building That Triggers AI Citations (Here's How)
-            </h2>
-            <p className="text-xl text-gray-300 max-w-4xl mx-auto">
-              We place the same high-quality guest posts as premium agencies. The difference? 
-              Our AI system identifies exactly which sites and topics trigger citations in ChatGPT, Claude, and Perplexity.
-            </p>
-          </div>
-
-          <div className="grid lg:grid-cols-3 gap-8">
-            <div className="bg-gray-800 rounded-xl p-8 border border-gray-700">
-              <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center mb-6">
-                <Brain className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold mb-4">O3 Deep Research</h3>
-              <p className="text-gray-300 mb-4">
-                OpenAI's most advanced reasoning model creates citation-worthy content depth. 
-                10-15 minutes of deep analysis per article.
-              </p>
-              <ul className="text-sm text-gray-400 space-y-1">
-                <li>• Comprehensive source analysis</li>
-                <li>• Multi-angle topic exploration</li>
-                <li>• Expert-level content depth</li>
-              </ul>
-            </div>
-
-            <div className="bg-gray-800 rounded-xl p-8 border border-gray-700">
-              <div className="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center mb-6">
-                <Target className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold mb-4">Topical Authority Analysis</h3>
-              <p className="text-gray-300 mb-4">
-                AI maps proven expertise overlap between your industry and potential host sites. 
-                DataForSEO + custom algorithms.
-              </p>
-              <ul className="text-sm text-gray-400 space-y-1">
-                <li>• Keyword ranking verification</li>
-                <li>• Authority cluster identification</li>
-                <li>• Strategic topic overlap scoring</li>
-              </ul>
-            </div>
-
-            <div className="bg-gray-800 rounded-xl p-8 border border-gray-700">
-              <div className="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center mb-6">
-                <BarChart3 className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold mb-4">Citation Optimization</h3>
-              <p className="text-gray-300 mb-4">
-                Section-by-section semantic SEO audit optimizes content for AI system discovery and reference.
-              </p>
-              <ul className="text-sm text-gray-400 space-y-1">
-                <li>• LLM-friendly content structure</li>
-                <li>• Narrative quality control</li>
-                <li>• Citation-worthy expertise signals</li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="mt-16 text-center">
-            <div className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg">
-              <Brain className="w-5 h-5" />
-              <span className="font-semibold">The Only Link Building Service Proven to Generate AI Citations</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Interactive Workflow Demo */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              See the Technology in Action
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              This isn't marketing fluff - click through our actual production system. 
-              Real AI prompts, database queries, and the technical architecture behind each step.
-            </p>
-          </div>
-
-          <InteractiveWorkflowDemo />
-        </div>
-      </section>
-
-      {/* Final CTA */}
-      <MarketingCTA 
-        title="Get Premium Links That Also Get You Cited by AI"
-        description="We find the beauty in any site with ranking potential. Real topical authority. Plus something no one else delivers: AI citations in 48 hours."
-        primaryButtonText="Start Citation Engineering"
-        primaryButtonHref="/signup"
-        secondaryButtonText="Explore Authority Database"
-        secondaryButtonHref="/guest-posting-sites"
-      />
-
-      {/* Footer */}
+      
+      {/* Section 1: Hero */}
+      <HeroSection />
+      
+      {/* Section 2: Problem Agitation */}
+      <ProblemSection />
+      
+      {/* Section 3: The Mechanism */}
+      <MechanismSection />
+      
+      {/* Section 4: Proof/Results */}
+      <ProofSection />
+      
+      {/* Section 5: How It Works */}
+      <HowItWorksSection />
+      
+      {/* Section 6: Why Now */}
+      <WhyNowSection />
+      
+      {/* Section 7: Pricing */}
+      <PricingSection />
+      
+      {/* Section 8: Interactive Demo */}
+      <DemoSection />
+      
+      {/* Section 9: FAQ */}
+      <FAQSection />
+      
+      {/* Section 10: Final CTA */}
+      <FinalCTASection />
+      
       <MarketingFooter />
     </div>
   );
