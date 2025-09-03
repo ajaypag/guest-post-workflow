@@ -337,7 +337,9 @@ export async function POST(request: NextRequest) {
                   importedAt: new Date(),
                   draftId,
                   importSource: 'manyreach_draft_approval'
-                })
+                }),
+                airtableCreatedAt: new Date(),
+                airtableUpdatedAt: new Date()
               })
               .returning();
             
