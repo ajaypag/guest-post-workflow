@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     for (const update of updates) {
       try {
         // Normalize domain
-        const normalizedDomain = normalizeDomain(update.domain);
+        const normalizedDomain = normalizeDomain(update.domain).domain;
         
         // Check if website exists
         const existing = await db
