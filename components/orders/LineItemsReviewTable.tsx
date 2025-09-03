@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { 
   Search, ChevronDown, ChevronRight, ChevronUp, Edit2, Edit, Trash2, 
   CheckCircle, XCircle, AlertCircle, Save, X, Plus, Filter,
-  Square, CheckSquare, MinusSquare, Loader2, Globe
+  Square, CheckSquare, MinusSquare, Loader2, Globe, UserPlus
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils/formatting';
 import DomainCell from './DomainCell';
@@ -16,6 +16,7 @@ import InlineAnchorEditor from './InlineAnchorEditor';
 import StatusToggle from './StatusToggle';
 import ActionColumnToggle from './ActionColumnToggle';
 import DomainTags from './DomainTags';
+import PublisherAssignmentModal from './PublisherAssignmentModal';
 
 // Simple hook to fetch workflow progress
 const useWorkflowProgress = (workflowId?: string) => {
@@ -527,6 +528,12 @@ export default function LineItemsReviewTable({
   const [sortBy, setSortBy] = useState<string>('none'); // Default to no sorting
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [publisherAssignmentModal, setPublisherAssignmentModal] = useState<{
+    isOpen: boolean;
+    lineItemId: string;
+    domain: string;
+    currentPublisherId?: string;
+  }>({ isOpen: false, lineItemId: '', domain: '' });
   const [showFilters, setShowFilters] = useState(false);
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
   const [showBulkConfirm, setShowBulkConfirm] = useState<{
@@ -1145,16 +1152,16 @@ export default function LineItemsReviewTable({
                           />
                         </th>
                       )}
-                      <th className="pb-2 font-medium sticky left-0 bg-white z-10 pr-4 min-w-[150px]">Domain</th>
+                      <th className="pb-2 font-medium sticky left-0 bg-white z-10 pr-4 w-[280px] min-w-[280px]">Domain</th>
                       {hasAnyWorkflows && (
-                        <th className="pb-2 font-medium min-w-[120px]">Workflow</th>
+                        <th className="pb-2 font-medium w-[120px] min-w-[120px]">Workflow</th>
                       )}
-                      <th className="pb-2 font-medium min-w-[200px] pr-4">Target Page</th>
-                      <th className="pb-2 font-medium min-w-[250px] hidden xl:table-cell">Anchor Text</th>
-                      <th className="pb-2 font-medium min-w-[180px] xl:hidden">Anchor</th>
-                      {permissions.canViewPricing && <th className="pb-2 font-medium min-w-[80px]">Price</th>}
-                      {userType === 'internal' && <th className="pb-2 font-medium min-w-[120px]">Publisher</th>}
-                      <th className="pb-2 font-medium min-w-[120px]">Action</th>
+                      <th className="pb-2 font-medium w-[250px] min-w-[250px] pr-4">Target Page</th>
+                      <th className="pb-2 font-medium w-[300px] min-w-[300px] hidden xl:table-cell">Anchor Text</th>
+                      <th className="pb-2 font-medium w-[200px] min-w-[200px] xl:hidden">Anchor</th>
+                      {permissions.canViewPricing && <th className="pb-2 font-medium w-[100px] min-w-[100px]">Price</th>}
+                      {userType === 'internal' && <th className="pb-2 font-medium w-[180px] min-w-[180px]">Publisher</th>}
+                      <th className="pb-2 font-medium w-[140px] min-w-[140px]">Action</th>
                     </tr>
                   </thead>
                 <tbody>
@@ -1176,8 +1183,8 @@ export default function LineItemsReviewTable({
                               />
                             </td>
                           )}
-                          <td className="py-3 cursor-pointer sticky left-0 bg-white pr-4" onClick={() => toggleRow(item.id)}>
-                            <div className="flex items-center gap-2 min-w-[150px]">
+                          <td className="py-3 cursor-pointer sticky left-0 bg-white pr-4 w-[280px] min-w-[280px]" onClick={() => toggleRow(item.id)}>
+                            <div className="flex items-center gap-2 w-full">
                               {expandedRows.has(item.id) ? (
                                 <ChevronUp className="h-4 w-4 text-gray-400 flex-shrink-0" />
                               ) : (
@@ -1226,7 +1233,7 @@ export default function LineItemsReviewTable({
                               <WorkflowStatusCell workflowId={item.workflowId} userType={userType} />
                             </td>
                           )}
-                          <td className="py-3 pl-2 pr-4 text-sm max-w-[250px]">
+                          <td className="py-3 pl-2 pr-4 text-sm w-[250px] min-w-[250px]">
                             <TableTargetDropdown
                               currentTarget={item.targetPageUrl}
                               clientId={item.clientId}
@@ -1240,8 +1247,8 @@ export default function LineItemsReviewTable({
                             />
                           </td>
                           {/* Full anchor text for very wide screens */}
-                          <td className="py-3 px-3 text-sm hidden xl:table-cell">
-                            <div className="max-w-[250px]">
+                          <td className="py-3 px-3 text-sm hidden xl:table-cell w-[300px] min-w-[300px]">
+                            <div className="w-full">
                               <InlineAnchorEditor
                                 value={item.anchorText || ''}
                                 onSave={(newValue) => handleAnchorTextUpdate(item.id, newValue)}
@@ -1252,8 +1259,8 @@ export default function LineItemsReviewTable({
                             </div>
                           </td>
                           {/* Shortened anchor text for medium screens */}
-                          <td className="py-3 px-3 text-sm xl:hidden">
-                            <div className="max-w-[180px]">
+                          <td className="py-3 px-3 text-sm xl:hidden w-[200px] min-w-[200px]">
+                            <div className="w-full">
                               <InlineAnchorEditor
                                 value={item.anchorText || ''}
                                 onSave={(newValue) => handleAnchorTextUpdate(item.id, newValue)}
@@ -1309,39 +1316,60 @@ export default function LineItemsReviewTable({
                           {/* Publisher Column - Show for internal users */}
                           {userType === 'internal' && (
                             <td className="py-3 px-3 text-sm">
-                              {(() => {
-                                if (!item.publisherId) {
-                                  return <span className="text-gray-400 italic">Not assigned</span>;
-                                }
-                                
-                                if (item.publisher) {
-                                  const name = item.publisher.companyName || 
-                                               item.publisher.contactName || 
-                                               item.publisher.email.split('@')[0];
-                                  
-                                  // Check if it's an internal/shadow publisher
-                                  const isInternal = item.metadata?.attributionSource === 'shadow_publisher';
-                                  const displayName = isInternal ? `${name} (Internal)` : name;
-                                  
-                                  return (
-                                    <div className="space-y-1">
-                                      <span className="text-gray-900 font-medium">{displayName}</span>
-                                      {item.publisherPrice && item.publisherPrice > 0 && (
-                                        <div className="text-xs text-gray-500">
-                                          Cost: ${(item.publisherPrice / 100).toFixed(2)}
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  {(() => {
+                                    if (!item.publisherId) {
+                                      return <span className="text-gray-400 italic">Not assigned</span>;
+                                    }
+                                    
+                                    if (item.publisher) {
+                                      const name = item.publisher.companyName || 
+                                                   item.publisher.contactName || 
+                                                   item.publisher.email.split('@')[0];
+                                      
+                                      // Check if it's an internal/shadow publisher
+                                      const isInternal = item.metadata?.attributionSource === 'shadow_publisher';
+                                      const displayName = isInternal ? `${name} (Internal)` : name;
+                                      
+                                      return (
+                                        <div className="space-y-1">
+                                          <span className="text-gray-900 font-medium">{displayName}</span>
+                                          {item.publisherPrice && item.publisherPrice > 0 && (
+                                            <div className="text-xs text-gray-500">
+                                              Cost: ${(item.publisherPrice / 100).toFixed(2)}
+                                            </div>
+                                          )}
+                                          {item.metadata?.pricingStrategy && (
+                                            <div className="text-xs text-gray-500">
+                                              {item.metadata.pricingStrategy.replace('_', ' ')}
+                                            </div>
+                                          )}
                                         </div>
-                                      )}
-                                      {item.metadata?.pricingStrategy && (
-                                        <div className="text-xs text-gray-500">
-                                          {item.metadata.pricingStrategy.replace('_', ' ')}
-                                        </div>
-                                      )}
-                                    </div>
-                                  );
-                                }
-                                
-                                return <span className="text-gray-600">Publisher assigned</span>;
-                              })()}
+                                      );
+                                    }
+                                    
+                                    return <span className="text-gray-600">Publisher assigned</span>;
+                                  })()}
+                                </div>
+                                {/* Manual Assignment Button */}
+                                {item.assignedDomain && (
+                                  <button
+                                    onClick={() => setPublisherAssignmentModal({
+                                      isOpen: true,
+                                      lineItemId: item.id,
+                                      domain: typeof item.assignedDomain === 'object' && item.assignedDomain.domain 
+                                        ? item.assignedDomain.domain 
+                                        : item.assignedDomain || '',
+                                      currentPublisherId: item.publisherId || undefined
+                                    })}
+                                    className="ml-2 p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                    title={item.publisherId ? "Change publisher" : "Assign publisher"}
+                                  >
+                                    <UserPlus className="h-4 w-4" />
+                                  </button>
+                                )}
+                              </div>
                             </td>
                           )}
                           {/* Combined Action Column - Now at the end */}
@@ -1611,6 +1639,32 @@ export default function LineItemsReviewTable({
         }}
         permissions={permissions}
         availableTargetPages={editModal.item?.clientId ? clientTargetPages[editModal.item.clientId] || [] : []}
+      />
+
+      {/* Publisher Assignment Modal */}
+      <PublisherAssignmentModal
+        isOpen={publisherAssignmentModal.isOpen}
+        orderId={orderId}
+        lineItemId={publisherAssignmentModal.lineItemId}
+        domain={publisherAssignmentModal.domain}
+        currentPublisherId={publisherAssignmentModal.currentPublisherId}
+        onClose={() => setPublisherAssignmentModal({ isOpen: false, lineItemId: '', domain: '' })}
+        onAssigned={async (publisherId, publisherOfferingId, publisherName) => {
+          // Handle publisher assignment
+          if (onEditItem) {
+            await onEditItem(publisherAssignmentModal.lineItemId, {
+              publisherId,
+              publisherOfferingId,
+              publisherName
+            });
+          }
+          // Refresh data if callback is available
+          if (onRefresh) {
+            await onRefresh();
+          }
+          // Close modal
+          setPublisherAssignmentModal({ isOpen: false, lineItemId: '', domain: '' });
+        }}
       />
 
       {/* Bulk Exclude Confirmation Dialog */}

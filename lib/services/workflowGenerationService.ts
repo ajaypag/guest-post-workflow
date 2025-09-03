@@ -298,10 +298,11 @@ export class WorkflowGenerationService {
         } : {},
         outputs: index === 0 ? {
           domain: domain.domain
-        } : index === 2 && lineItem.anchorText ? {
-          // Auto-populate Topic Generation (step 2) with anchor text
-          // Note: Target URL is now handled via workflow.metadata.targetPageId
-          desiredAnchorText: lineItem.anchorText || ''
+        } : index === 2 ? {
+          // Auto-populate Topic Generation (step 2) with anchor text and target URL
+          // Note: Target URL is resolved via workflow.metadata.targetPageId
+          desiredAnchorText: lineItem.anchorText || '',
+          clientTargetUrl: lineItem.targetPageUrl || ''
         } : {},
         completedAt: isFirstTwoSteps ? new Date() : undefined
       };

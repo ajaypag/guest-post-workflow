@@ -301,6 +301,19 @@ export async function POST(
         ? Math.round(((totalRetail - totalWholesale) / totalRetail) * 100)
         : 0;
       
+      // Update line items status from draft to pending
+      // This is crucial - without this, line items stay in draft status forever!
+      await tx
+        .update(orderLineItems)
+        .set({
+          status: 'pending',
+          modifiedAt: new Date()
+        })
+        .where(and(
+          eq(orderLineItems.orderId, orderId),
+          eq(orderLineItems.status, 'draft')
+        ));
+      
       // Update order status to confirmed with calculated totals
       const [updatedOrder] = await tx
         .update(orders)

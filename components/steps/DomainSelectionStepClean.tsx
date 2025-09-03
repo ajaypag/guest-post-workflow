@@ -17,15 +17,25 @@ export const DomainSelectionStepClean = ({ step, workflow, onChange }: DomainSel
   const [websites, setWebsites] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Extract values from step outputs
-  const websiteId = step.outputs.websiteId || '';
-  const domain = step.outputs.domain || '';
+  // Extract values from step outputs OR workflow metadata (for order-based workflows)
+  const websiteId = step.outputs.websiteId || workflow.websiteId || '';
+  const domain = step.outputs.domain || workflow.targetDomain || '';
   const notes = step.outputs.notes || '';
-  const websiteData = step.outputs.websiteData || null;
+  const websiteData = step.outputs.websiteData || workflow.website || null;
 
-  // Load websites on mount
+  // Load websites on mount and prepopulate if from order
   useEffect(() => {
     fetchWebsites();
+    
+    // If this workflow comes from an order and has websiteId but no outputs yet, prepopulate
+    if (workflow.websiteId && !step.outputs.websiteId) {
+      onChange({
+        ...step.outputs,
+        websiteId: workflow.websiteId,
+        domain: workflow.targetDomain || workflow.website?.domain || '',
+        websiteData: workflow.website || null
+      });
+    }
   }, []);
 
   const fetchWebsites = async () => {
