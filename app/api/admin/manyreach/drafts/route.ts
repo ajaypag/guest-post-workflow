@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
 import { sql } from 'drizzle-orm';
+import { requireInternalUser } from '@/lib/auth/middleware';
 
 export async function GET(request: NextRequest) {
   try {
-    // TODO: Add proper auth check
-    // For now, allow access for testing
+    const authCheck = await requireInternalUser(request);
+    if (authCheck instanceof NextResponse) {
+      return authCheck;
+    }
 
     // Get query params
     const { searchParams } = new URL(request.url);
@@ -13,6 +16,8 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '100'); // Increased default
     const offset = parseInt(searchParams.get('offset') || '0');
     const search = searchParams.get('search') || '';
+    const withOffers = searchParams.get('withOffers') === 'true';
+    const withPricing = searchParams.get('withPricing') === 'true';
 
     // Build query
     let query = sql`
@@ -50,6 +55,25 @@ export async function GET(request: NextRequest) {
       )`);
     }
 
+    // Filter for drafts with offers
+    if (withOffers) {
+      conditions.push(sql`(
+        COALESCE(d.edited_data->>'hasOffer', d.parsed_data->>'hasOffer')::boolean = true
+      )`);
+    }
+
+    // Filter for drafts with pricing
+    if (withPricing) {
+      conditions.push(sql`(
+        (COALESCE(d.edited_data->'offerings', d.parsed_data->'offerings') IS NOT NULL AND 
+         jsonb_array_length(COALESCE(d.edited_data->'offerings', d.parsed_data->'offerings')) > 0 AND
+         EXISTS (
+           SELECT 1 FROM jsonb_array_elements(COALESCE(d.edited_data->'offerings', d.parsed_data->'offerings')) AS offering
+           WHERE (offering->>'basePrice')::numeric > 0
+         ))
+      )`);
+    }
+
     if (conditions.length > 0) {
       query = sql`${query} WHERE ${conditions.reduce((acc, cond, i) => 
         i === 0 ? cond : sql`${acc} AND ${cond}`
@@ -61,13 +85,21 @@ export async function GET(request: NextRequest) {
     const draftsResult = await db.execute(query);
     const drafts = (draftsResult as any).rows || [];
 
-    // Get total count
-    const countQuery = status === 'all' 
-      ? sql`SELECT COUNT(*) as total FROM publisher_drafts`
-      : sql`SELECT COUNT(*) as total FROM publisher_drafts WHERE status = ${status}`;
+    // Get total count with same filtering
+    let countQuery = sql`
+      SELECT COUNT(*) as total 
+      FROM publisher_drafts d
+      INNER JOIN email_processing_logs e ON d.email_log_id = e.id
+    `;
+
+    if (conditions.length > 0) {
+      countQuery = sql`${countQuery} WHERE ${conditions.reduce((acc, cond, i) => 
+        i === 0 ? cond : sql`${acc} AND ${cond}`
+      )}`;
+    }
     
     const countResult = await db.execute(countQuery);
-    const total = (countResult as any)[0]?.total || 0;
+    const total = (countResult as any).rows?.[0]?.total || 0;
 
     return NextResponse.json({
       drafts,
@@ -87,8 +119,10 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    // TODO: Add proper auth check
-    // For now, allow access for testing
+    const authCheck = await requireInternalUser(request);
+    if (authCheck instanceof NextResponse) {
+      return authCheck;
+    }
 
     const { draftId, editedData, status, reviewNotes } = await request.json();
 

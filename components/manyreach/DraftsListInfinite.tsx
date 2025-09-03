@@ -13,7 +13,8 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  RefreshCw
+  RefreshCw,
+  Download
 } from 'lucide-react';
 
 interface Draft {
@@ -33,9 +34,20 @@ interface Draft {
 interface DraftsListInfiniteProps {
   onDraftSelect?: (draft: Draft) => void;
   onDraftUpdate?: () => void;
+  showOnlyWithOffers?: boolean;
+  showOnlyWithPricing?: boolean;
+  selectedDraftIds?: string[];
+  onSelectionChange?: (selectedIds: string[]) => void;
 }
 
-export function DraftsListInfinite({ onDraftSelect, onDraftUpdate }: DraftsListInfiniteProps) {
+export function DraftsListInfinite({ 
+  onDraftSelect, 
+  onDraftUpdate,
+  showOnlyWithOffers = false,
+  showOnlyWithPricing = false,
+  selectedDraftIds = [],
+  onSelectionChange
+}: DraftsListInfiniteProps) {
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -66,7 +78,9 @@ export function DraftsListInfinite({ onDraftSelect, onDraftUpdate }: DraftsListI
         limit: LIMIT.toString(),
         offset: currentOffset.toString(),
         ...(search && { search }),
-        ...(statusFilter !== 'all' && { status: statusFilter })
+        ...(statusFilter !== 'all' && { status: statusFilter }),
+        ...(showOnlyWithOffers && { withOffers: 'true' }),
+        ...(showOnlyWithPricing && { withPricing: 'true' })
       });
       
       const response = await fetch(`/api/admin/manyreach/drafts?${params}`);
@@ -91,12 +105,12 @@ export function DraftsListInfinite({ onDraftSelect, onDraftUpdate }: DraftsListI
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [drafts.length, hasMore, offset, search, statusFilter]);
+  }, [drafts.length, hasMore, offset, search, statusFilter, showOnlyWithOffers, showOnlyWithPricing]);
 
   // Initial load
   useEffect(() => {
     fetchDrafts(true);
-  }, [search, statusFilter]);
+  }, [search, statusFilter, showOnlyWithOffers, showOnlyWithPricing]);
 
   // Search debounce
   useEffect(() => {
@@ -167,6 +181,53 @@ export function DraftsListInfinite({ onDraftSelect, onDraftUpdate }: DraftsListI
     if (onDraftUpdate) onDraftUpdate();
   };
 
+  const exportToCSV = async () => {
+    try {
+      // Fetch all drafts for export
+      const response = await fetch(`/api/admin/manyreach/drafts?export=true&status=${statusFilter}&search=${search}`);
+      const data = await response.json();
+      const allDrafts = data.drafts || [];
+      
+      const csvData = allDrafts.map((draft: Draft) => {
+        const parsedData = draft.edited_data || draft.parsed_data;
+        return {
+          'Domain': parsedData.domain || '',
+          'Campaign': draft.campaign_name || '',
+          'Status': draft.status || 'pending',
+          'Has Offer': parsedData.hasOffer ? 'Yes' : 'No',
+          'Offerings': parsedData.offerings?.map((o: any) => o.name).join('; ') || '',
+          'Prices': parsedData.offerings?.map((o: any) => o.basePrice || 'N/A').join('; ') || '',
+          'Email From': draft.email_from || '',
+          'Created': new Date(draft.created_at).toLocaleDateString(),
+        };
+      });
+      
+      if (csvData.length === 0) {
+        alert('No data to export');
+        return;
+      }
+      
+      const csvHeader = Object.keys(csvData[0]).join(',');
+      const csvRows = csvData.map((row: any) => 
+        Object.values(row).map((val: any) => 
+          typeof val === 'string' && val.includes(',') ? `"${val}"` : val
+        ).join(',')
+      );
+      const csv = [csvHeader, ...csvRows].join('\n');
+      
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `manyreach-drafts-${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Failed to export data');
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -180,14 +241,25 @@ export function DraftsListInfinite({ onDraftSelect, onDraftUpdate }: DraftsListI
               </Badge>
             )}
           </CardTitle>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleRefresh}
-            disabled={loading}
-          >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={exportToCSV}
+              disabled={loading}
+            >
+              <Download className="h-4 w-4 mr-1" />
+              Export
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={loading}
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
         </div>
         
         {/* Search Bar */}
