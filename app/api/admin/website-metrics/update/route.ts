@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
 import { websites } from '@/lib/db/websiteSchema';
 import { eq, sql } from 'drizzle-orm';
-import { normalizeDomain } from '@/lib/utils/domainNormalizer';
+import { formatDomainForDisplay } from '@/lib/utils/domainNormalizer';
 
 interface MetricUpdate {
   domain: string;
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     for (const update of updates) {
       try {
         // Normalize domain
-        const normalizedDomain = normalizeDomain(update.domain).domain;
+        const normalizedDomain = formatDomainForDisplay(update.domain);
         
         // Check if website exists
         const existing = await db
