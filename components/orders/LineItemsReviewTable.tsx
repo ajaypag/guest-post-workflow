@@ -118,14 +118,14 @@ const PublishedUrlCell = ({ item, userType }: { item: LineItem; userType: 'inter
         <QADetailsTooltip qaResults={qaResults} manualOverride={hasManualOverrides}>
           <div className="text-xs text-amber-600 flex items-center gap-1">
             <AlertCircle className="h-3 w-3" />
-            {hasManualOverrides ? 'Force delivered (QA failed)' : 'QA Issues'}
+QA Issues
           </div>
         </QADetailsTooltip>
       ) : qaResults ? (
         <QADetailsTooltip qaResults={qaResults} manualOverride={hasManualOverrides}>
           <div className="text-xs text-green-600 flex items-center gap-1">
             <CheckCircle className="h-3 w-3" />
-            {hasManualOverrides ? 'QA Passed (Override)' : 'QA Passed'}
+✓ QA Passed
           </div>
         </QADetailsTooltip>
       ) : null}

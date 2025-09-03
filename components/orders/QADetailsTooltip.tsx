@@ -177,27 +177,6 @@ export const QADetailsTooltip: React.FC<QADetailsTooltipProps> = ({
             </div>
           </div>
 
-          {/* Manual Override Notice */}
-          {(manualOverride || (qaResults as any).hasManualOverrides) && (
-            <div className="mb-4 p-3 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-lg">
-              <div className="flex items-center text-amber-800">
-                <AlertCircle className="w-4 h-4 mr-2 text-amber-600" />
-                <span className="text-xs font-medium">
-                  {(qaResults as any).hasManualOverrides ? 'QA Checks Manually Overridden' : 'Manual Override Active'}
-                </span>
-              </div>
-              <p className="text-xs text-amber-700 mt-1 ml-6">
-                {(qaResults as any).hasManualOverrides 
-                  ? `${Object.keys((qaResults as any).manualOverrides || {}).length} check(s) manually approved - QA now passes`
-                  : 'Delivered despite QA issues - manual review completed'}
-              </p>
-              {(qaResults as any).hasManualOverrides && (qaResults as any).manualOverrides && (
-                <div className="mt-2 ml-6 text-xs text-amber-600">
-                  Overridden: {Object.keys((qaResults as any).manualOverrides).join(', ')}
-                </div>
-              )}
-            </div>
-          )}
 
           {/* Score Summary */}
           <div className="mb-4 p-3 bg-gray-50 rounded-lg">
