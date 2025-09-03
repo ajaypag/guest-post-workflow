@@ -45,12 +45,17 @@ interface QADetailsTooltipProps {
 
 const formatCheckName = (checkKey: string): string => {
   const names = {
+    // Critical checks (6 total)
     urlIsLive: 'URL is Live',
     clientLinkPresent: 'Client Link Present',
     anchorTextCorrect: 'Anchor Text Correct',
     linkIsDofollow: 'Link is Dofollow',
     correctDomain: 'Correct Domain',
-    clientMentionPresent: 'Client Mention Present'
+    clientMentionPresent: 'Client Mention Present',
+    // Additional checks (3 total)
+    googleIndexed: 'Google Indexed',
+    imagesPresent: 'Images Present',
+    urlMatchesSuggestion: 'URL Matches Suggestion'
   };
   return names[checkKey as keyof typeof names] || checkKey;
 };
@@ -114,10 +119,18 @@ export const QADetailsTooltip: React.FC<QADetailsTooltipProps> = ({
         x = viewportWidth - tooltipWidth / 2 - 10;
       }
       
-      // Adjust vertical position if tooltip would go off-screen
+      // Always prefer positioning below if there's enough space
       let below = false;
-      if (y - tooltipHeight < 10) {
-        // Not enough space above, position below the trigger
+      if (rect.bottom + tooltipHeight + 20 < viewportHeight) {
+        // Enough space below, position below (preferred)
+        y = rect.bottom + 10;
+        below = true;
+      } else if (y - tooltipHeight > 10) {
+        // Not enough space below, but enough space above
+        y = rect.top - 10;
+        below = false;
+      } else {
+        // Not enough space above or below, position below and let it scroll
         y = rect.bottom + 10;
         below = true;
       }
@@ -231,7 +244,7 @@ export const QADetailsTooltip: React.FC<QADetailsTooltipProps> = ({
                 {/* Passed Checks */}
                 {details?.passedChecks && details.passedChecks.length > 0 && (
                   <div className="space-y-1">
-                    {details.passedChecks.slice(0, 3).map(check => (
+                    {details.passedChecks.map(check => (
                       <div key={check} className="flex items-center justify-between py-1 px-2 bg-green-50 rounded text-xs">
                         <div className="flex items-center text-green-700">
                           <CheckCircle className="w-3 h-3 mr-2" />
@@ -240,9 +253,6 @@ export const QADetailsTooltip: React.FC<QADetailsTooltipProps> = ({
                         <span className="text-green-600 font-medium">PASSED</span>
                       </div>
                     ))}
-                    {details.passedChecks.length > 3 && (
-                      <div className="text-xs text-gray-500 pl-2">+ {details.passedChecks.length - 3} more passed</div>
-                    )}
                   </div>
                 )}
               </div>
@@ -316,61 +326,6 @@ export const QADetailsTooltip: React.FC<QADetailsTooltipProps> = ({
             )}
           </div>
 
-          {/* Client Link Details */}
-          {details?.clientLink && (
-            <div className="mb-4 p-3 bg-teal-50 border border-teal-200 rounded-lg">
-              <div className="flex items-center mb-3">
-                <div className={`w-5 h-5 rounded-full flex items-center justify-center mr-2 ${
-                  details.clientLink.present ? 'bg-green-100' : 'bg-red-100'
-                }`}>
-                  <Link className={`w-3 h-3 ${
-                    details.clientLink.present ? 'text-green-600' : 'text-red-600'
-                  }`} />
-                </div>
-                <span className="text-sm font-medium text-gray-900">Client Link Details</span>
-              </div>
-              
-              <div className="space-y-2">
-                <div className="flex items-center justify-between py-2 px-3 bg-white rounded border border-teal-200">
-                  <div className="flex items-center text-xs">
-                    {details.clientLink.present ? (
-                      <CheckCircle className="w-3 h-3 text-green-600 mr-2" />
-                    ) : (
-                      <XCircle className="w-3 h-3 text-red-600 mr-2" />
-                    )}
-                    Link Presence
-                  </div>
-                  <span className={`text-xs font-medium px-2 py-1 rounded ${
-                    details.clientLink.present 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-red-100 text-red-800'
-                  }`}>
-                    {details.clientLink.present ? 'FOUND' : 'NOT FOUND'}
-                  </span>
-                </div>
-                
-                {details.clientLink.present && (
-                  <div className="flex items-center justify-between py-2 px-3 bg-white rounded border border-teal-200">
-                    <div className="flex items-center text-xs">
-                      {details.clientLink.dofollow ? (
-                        <CheckCircle className="w-3 h-3 text-green-600 mr-2" />
-                      ) : (
-                        <XCircle className="w-3 h-3 text-red-600 mr-2" />
-                      )}
-                      Link Attribute
-                    </div>
-                    <span className={`text-xs font-medium px-2 py-1 rounded ${
-                      details.clientLink.dofollow 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {details.clientLink.dofollow ? 'DOFOLLOW' : 'NOFOLLOW'}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
 
           {/* Client Mention Details */}
           {details?.clientMention && details.clientMention.expectedPhrase && (

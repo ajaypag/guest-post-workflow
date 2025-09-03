@@ -132,12 +132,22 @@ export class WorkflowLineItemSyncService {
             status: verificationResult.metadata.googleIndexStatus,
             indexed: verificationResult.additional.googleIndexed
           },
-          failedChecks: Object.entries(effectiveCriticalChecks)
-            .filter(([key, value]) => value === false)
-            .map(([key]) => key),
-          passedChecks: Object.entries(effectiveCriticalChecks)
-            .filter(([key, value]) => value === true)
-            .map(([key]) => key)
+          failedChecks: [
+            ...Object.entries(effectiveCriticalChecks)
+              .filter(([key, value]) => value === false)
+              .map(([key]) => key),
+            ...Object.entries(verificationResult.additional)
+              .filter(([key, value]) => value === false)
+              .map(([key]) => key)
+          ],
+          passedChecks: [
+            ...Object.entries(effectiveCriticalChecks)
+              .filter(([key, value]) => value === true)
+              .map(([key]) => key),
+            ...Object.entries(verificationResult.additional)
+              .filter(([key, value]) => value === true)
+              .map(([key]) => key)
+          ]
         }
       };
       
