@@ -344,26 +344,20 @@ export async function POST(request: NextRequest) {
           const offeringId = newOffering[0].id;
           result.created.offeringIds.push(offeringId);
           
-          // Create or update offering relationship
+          // Check if this specific offering already exists
           const existingRelationship = await db
             .select()
             .from(publisherOfferingRelationships)
             .where(and(
               eq(publisherOfferingRelationships.publisherId, publisherId!),
-              eq(publisherOfferingRelationships.websiteId, websiteId)
+              eq(publisherOfferingRelationships.websiteId, websiteId),
+              eq(publisherOfferingRelationships.offeringId, offeringId)
             ))
             .limit(1);
           
-          if (existingRelationship.length > 0) {
-            // Update relationship with offering
-            await db.update(publisherOfferingRelationships)
-              .set({
-                offeringId: offeringId,
-                updatedAt: new Date()
-              })
-              .where(eq(publisherOfferingRelationships.id, existingRelationship[0].id));
-          } else {
-            // Create new relationship
+          if (existingRelationship.length === 0) {
+            // Create new relationship for this offering
+            // Each offering gets its own relationship record
             const newRelationship = await db.insert(publisherOfferingRelationships)
               .values({
                 id: crypto.randomUUID(),
@@ -379,6 +373,9 @@ export async function POST(request: NextRequest) {
               .returning();
             
             result.created.relationshipIds.push(newRelationship[0].id);
+            console.log(`✅ Created relationship for ${offering.offeringType} offering`);
+          } else {
+            console.log(`⚠️ Relationship already exists for ${offering.offeringType} offering`);
           }
         }
       }

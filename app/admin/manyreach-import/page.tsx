@@ -5,7 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Download, CheckCircle2, XCircle, AlertCircle, Eye, RefreshCw } from 'lucide-react';
+import { Loader2, Download, CheckCircle2, XCircle, AlertCircle, Eye, RefreshCw, Clock, Activity, ChevronLeft, Mail, Key, FileText, BarChart } from 'lucide-react';
+import { CampaignStatusView } from '@/components/manyreach/CampaignStatusView';
+import { DraftsListInfinite } from '@/components/manyreach/DraftsListInfinite';
+import { DuplicateDetectionPreview } from '@/components/manyreach/DuplicateDetectionPreview';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 // Simple toast notification
 const useToast = () => ({
   toast: ({ title, description, variant }: any) => {
@@ -35,17 +40,17 @@ interface Campaign {
 
 interface Draft {
   id: string;
-  email_log_id: string;
+  email_log_id?: string;
   parsed_data: any;
   edited_data?: any;
-  status: string;
+  status: 'pending' | 'approved' | 'rejected';
   review_notes?: string;
   created_at: string;
   email_from: string;
   email_subject: string;
   campaign_name: string;
-  raw_content: string;
-  html_content: string;
+  raw_content?: string;
+  html_content?: string;
 }
 
 export default function ManyReachImportPage() {
@@ -55,7 +60,7 @@ export default function ManyReachImportPage() {
   const [loading, setLoading] = useState(true);
   const [importing, setImporting] = useState<string | null>(null);
   const [clearing, setClearing] = useState(false);
-  const [activeTab, setActiveTab] = useState('campaigns');
+  const [activeTab, setActiveTab] = useState('status');
   
   // Workspace and email processing controls
   const [workspaces, setWorkspaces] = useState<{workspace_name: string; is_active: boolean}[]>([]);
@@ -130,9 +135,21 @@ export default function ManyReachImportPage() {
     }
   };
 
+  const [importProgress, setImportProgress] = useState<{
+    [key: string]: { processed: number; total: number; status: string; message?: string }
+  }>({});
+
   const importCampaign = async (campaignId: string) => {
     setImporting(campaignId);
+    
+    // Initialize progress
+    setImportProgress(prev => ({
+      ...prev,
+      [campaignId]: { processed: 0, total: 0, status: 'starting', message: 'Starting import...' }
+    }));
+
     try {
+      // Start the import
       const response = await fetch('/api/admin/manyreach/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -149,6 +166,17 @@ export default function ManyReachImportPage() {
       
       const data = await response.json();
       
+      // Update final progress
+      setImportProgress(prev => ({
+        ...prev,
+        [campaignId]: { 
+          processed: data.result.imported || 0, 
+          total: data.result.imported || 0, 
+          status: 'completed',
+          message: `Import complete: ${data.result.imported} replies imported, ${data.result.skipped} skipped`
+        }
+      }));
+      
       toast({
         title: 'Import Complete',
         description: `Imported ${data.result.imported} replies, skipped ${data.result.skipped}`,
@@ -158,8 +186,28 @@ export default function ManyReachImportPage() {
       await fetchCampaigns();
       await fetchDrafts();
       
+      // Clear progress after 3 seconds
+      setTimeout(() => {
+        setImportProgress(prev => {
+          const newProgress = { ...prev };
+          delete newProgress[campaignId];
+          return newProgress;
+        });
+      }, 3000);
+      
     } catch (error) {
       console.error('Import error:', error);
+      
+      setImportProgress(prev => ({
+        ...prev,
+        [campaignId]: { 
+          processed: 0, 
+          total: 0, 
+          status: 'error',
+          message: error instanceof Error ? error.message : 'Import failed'
+        }
+      }));
+      
       toast({
         title: 'Import Failed',
         description: error instanceof Error ? error.message : 'Unknown error',
@@ -172,10 +220,18 @@ export default function ManyReachImportPage() {
 
   const updateDraft = async (draftId: string, updates: any) => {
     try {
+      // Properly handle the updates object structure
+      const updatePayload = {
+        draftId,
+        editedData: updates.editedData,
+        status: updates.status,
+        reviewNotes: updates.reviewNotes
+      };
+      
       const response = await fetch('/api/admin/manyreach/drafts', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ draftId, ...updates })
+        body: JSON.stringify(updatePayload)
       });
       
       if (!response.ok) throw new Error('Update failed');
@@ -276,12 +332,12 @@ export default function ManyReachImportPage() {
 
   return (
     <div className="container mx-auto py-8">
-      <div className="mb-8">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold">ManyReach Import V3</h1>
-            <p className="text-gray-600 mt-2">Import publisher replies and create draft records for review</p>
-          </div>
+        <div className="mb-8">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold">ManyReach Import V3</h1>
+              <p className="text-gray-600 mt-2">Import publisher replies and create draft records for review</p>
+            </div>
           <Button
             onClick={clearTestData}
             disabled={clearing}
@@ -443,11 +499,19 @@ export default function ManyReachImportPage() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
+          <TabsTrigger value="status">
+            <Activity className="mr-2 h-4 w-4" />
+            Status Overview
+          </TabsTrigger>
           <TabsTrigger value="campaigns">Campaigns</TabsTrigger>
           <TabsTrigger value="drafts">
             Drafts {Array.isArray(drafts) && drafts.length > 0 && <Badge className="ml-2">{drafts.length}</Badge>}
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="status">
+          <CampaignStatusView workspace={selectedWorkspace} />
+        </TabsContent>
 
         <TabsContent value="campaigns">
           <Card>
@@ -497,6 +561,37 @@ export default function ManyReachImportPage() {
                           </Button>
                         </div>
                       </div>
+                      
+                      {/* Progress Bar */}
+                      {importProgress[campaign.id] && (
+                        <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                          <div className="flex justify-between text-sm mb-2">
+                            <span className="font-medium">
+                              {importProgress[campaign.id].status === 'completed' ? '✅ ' : 
+                               importProgress[campaign.id].status === 'error' ? '❌ ' : '⏳ '}
+                              {importProgress[campaign.id].message || 'Processing...'}
+                            </span>
+                            {importProgress[campaign.id].total > 0 && (
+                              <span className="text-gray-600">
+                                {importProgress[campaign.id].processed} / {importProgress[campaign.id].total}
+                              </span>
+                            )}
+                          </div>
+                          {importProgress[campaign.id].status === 'processing' && (
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div 
+                                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                                style={{ 
+                                  width: `${importProgress[campaign.id].total > 0 
+                                    ? (importProgress[campaign.id].processed / importProgress[campaign.id].total) * 100 
+                                    : 0}%` 
+                                }}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
                       {campaign.pendingCount > 0 && (
                         <div className="mt-2">
                           <Badge variant="outline" className="text-orange-600">
@@ -519,6 +614,37 @@ export default function ManyReachImportPage() {
         </TabsContent>
 
         <TabsContent value="drafts">
+          <div className="grid grid-cols-12 gap-4">
+            {/* Use new infinite scroll component */}
+            <div className="col-span-4">
+              <DraftsListInfinite 
+                onDraftSelect={setSelectedDraft}
+                onDraftUpdate={fetchDrafts}
+              />
+            </div>
+            
+            {/* Draft Editor - restored from original */}
+            <div className="col-span-8">
+              {selectedDraft ? (
+                <DraftEditor
+                  draft={selectedDraft}
+                  onUpdate={(updates) => updateDraft(selectedDraft.id, updates)}
+                  onReprocess={() => reprocessDraft(selectedDraft.id)}
+                />
+              ) : (
+                <Card>
+                  <CardContent className="py-16">
+                    <div className="text-center text-gray-500">
+                      Select a draft to review
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </div>
+          
+          {/* OLD CONTENT BELOW - HIDDEN */}
+          <div style={{ display: 'none' }}>
           {/* Draft Statistics */}
           <div className="grid grid-cols-4 gap-4 mb-4">
             <Card>
@@ -748,6 +874,7 @@ export default function ManyReachImportPage() {
               )}
             </div>
           </div>
+          </div> {/* Close hidden div */}
         </TabsContent>
       </Tabs>
     </div>
@@ -767,8 +894,70 @@ function DraftEditor({ draft, onUpdate, onReprocess }: {
     onUpdate({ editedData, status: 'reviewing' });
   };
 
-  const handleApprove = () => {
-    onUpdate({ editedData, status: 'approved' });
+  const handleApprove = async () => {
+    setApproving(true);
+    try {
+      // Check for price conflicts first
+      if (previewData && previewData.estimatedImpact.priceConflicts > 0) {
+        const confirmMessage = `⚠️ This draft has ${previewData.estimatedImpact.priceConflicts} price conflict(s) that require manual review.\n\nPrice conflicts detected:\n` +
+          previewData.proposedActions.offeringActions
+            .filter((action: any) => action.action === 'price_conflict')
+            .map((action: any) => `• ${action.type} on ${action.websiteDomain}: $${(action.priceConflict.existingPrice/100).toFixed(2)} → $${(action.priceConflict.newPrice/100).toFixed(2)} (${action.priceConflict.percentageChange > 0 ? '+' : ''}${action.priceConflict.percentageChange}%)`)
+            .join('\n') +
+          '\n\nDo you want to proceed anyway? This will flag the conflicts for later review.';
+        
+        if (!confirm(confirmMessage)) {
+          setApproving(false);
+          return;
+        }
+      }
+      
+      // Call the improved approve endpoint
+      const response = await fetch('/api/admin/manyreach/draft-approve-improved', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ draftId: draft.id })
+      });
+      
+      const result = await response.json();
+      
+      console.log('API Response Status:', response.status);
+      console.log('API Response Data:', result);
+      
+      if (response.ok && result.success) {
+        // Update the draft status to approved
+        await onUpdate({ editedData, status: 'approved' });
+        
+        // Show enhanced success message
+        let message = `✅ Successfully processed draft!\n\n`;
+        const createdPublisher = result.created.publisherId ? 1 : 0;
+        const updatedPublisher = result.updated.publisherUpdated ? 1 : 0;
+        const totalPublishers = createdPublisher + updatedPublisher;
+        
+        message += `Publishers: ${createdPublisher ? `${createdPublisher} created` : ''}${createdPublisher && updatedPublisher ? ', ' : ''}${updatedPublisher ? `${updatedPublisher} updated` : ''}${!totalPublishers ? '0' : ''}\n`;
+        message += `Created: ${result.created.websiteIds.length} website(s), ${result.created.offeringIds.length} offering(s)\n`;
+        if (result.skipped.duplicateOfferings > 0) {
+          message += `Skipped: ${result.skipped.duplicateOfferings} duplicate offering(s)\n`;
+        }
+        if (result.priceConflicts && result.priceConflicts.length > 0) {
+          message += `⚠️ Flagged: ${result.priceConflicts.length} price conflict(s) for review\n`;
+        }
+        
+        alert(message);
+        
+        // Trigger a refresh of the drafts list
+        if (onReprocess) {
+          onReprocess(); // This will refresh the parent component
+        }
+      } else {
+        alert(`❌ Approval failed: ${result.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Approval error:', error);
+      alert('Failed to approve and create records');
+    } finally {
+      setApproving(false);
+    }
   };
 
   const handleReject = () => {
@@ -778,11 +967,12 @@ function DraftEditor({ draft, onUpdate, onReprocess }: {
   const [showPreview, setShowPreview] = useState(false);
   const [previewData, setPreviewData] = useState<any>(null);
   const [loadingPreview, setLoadingPreview] = useState(false);
+  const [approving, setApproving] = useState(false);
   
   const handlePreview = async () => {
     setLoadingPreview(true);
     try {
-      const response = await fetch('/api/admin/manyreach/draft-preview', {
+      const response = await fetch('/api/admin/manyreach/draft-preview-improved', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ draftId: draft.id })
@@ -867,7 +1057,7 @@ function DraftEditor({ draft, onUpdate, onReprocess }: {
           <CardContent>
             <div 
               className="prose max-w-none"
-              dangerouslySetInnerHTML={{ __html: draft.html_content }}
+              dangerouslySetInnerHTML={{ __html: draft.html_content || '' }}
             />
           </CardContent>
         </Card>
@@ -1550,9 +1740,18 @@ function DraftEditor({ draft, onUpdate, onReprocess }: {
             <button
               onClick={handlePreview}
               disabled={loadingPreview}
-              className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50"
+              className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2"
             >
-              {loadingPreview ? 'Loading...' : '👁️ Preview Impact'}
+              {loadingPreview ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Analyzing...
+                </>
+              ) : (
+                <>
+                  🔍 Enhanced Duplicate Detection
+                </>
+              )}
             </button>
             <button
               onClick={handleSave}
@@ -1562,9 +1761,10 @@ function DraftEditor({ draft, onUpdate, onReprocess }: {
             </button>
             <button
               onClick={handleApprove}
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+              disabled={approving}
+              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
             >
-              ✅ Approve & Create Records
+              {approving ? '⏳ Creating Records...' : '✅ Approve & Create Records'}
             </button>
             <button
               onClick={handleReject}
@@ -1583,179 +1783,17 @@ function DraftEditor({ draft, onUpdate, onReprocess }: {
         </CardContent>
       </Card>
       
-      {/* Preview Modal */}
+      {/* Enhanced Preview Modal */}
       {showPreview && previewData && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-4xl max-h-[90vh] overflow-y-auto p-6 w-full">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold">📋 Draft Approval Preview</h2>
-              <button
-                onClick={() => setShowPreview(false)}
-                className="text-gray-500 hover:text-gray-700 text-2xl"
-              >
-                ×
-              </button>
-            </div>
-            
-            {/* Impact Summary */}
-            <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 mb-6">
-              <h3 className="font-semibold text-blue-900 mb-2">🎯 Estimated Impact</h3>
-              <div className="grid grid-cols-4 gap-4">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">
-                    {previewData.estimatedImpact.newPublishers}
-                  </div>
-                  <div className="text-sm text-gray-600">New Publishers</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">
-                    {previewData.estimatedImpact.newWebsites}
-                  </div>
-                  <div className="text-sm text-gray-600">New Websites</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-purple-600">
-                    {previewData.estimatedImpact.newOfferings}
-                  </div>
-                  <div className="text-sm text-gray-600">New Offerings</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-orange-600">
-                    {previewData.estimatedImpact.updatedRecords}
-                  </div>
-                  <div className="text-sm text-gray-600">Updates</div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Warnings */}
-            {previewData.warnings.length > 0 && (
-              <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-4 mb-6">
-                <h3 className="font-semibold text-yellow-900 mb-2">⚠️ Warnings</h3>
-                <ul className="list-disc list-inside space-y-1">
-                  {previewData.warnings.map((warning: string, i: number) => (
-                    <li key={i} className="text-sm text-yellow-800">{warning}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            
-            {/* Publisher Action */}
-            <div className="mb-6">
-              <h3 className="font-semibold mb-2">👤 Publisher Action</h3>
-              <div className="border rounded-lg p-4">
-                {previewData.proposedActions.publisherAction === 'create' ? (
-                  <div>
-                    <Badge className="bg-green-100 text-green-800 mb-2">New Publisher</Badge>
-                    <div className="space-y-1 text-sm">
-                      <div><strong>Email:</strong> {previewData.proposedActions.publisherDetails?.email}</div>
-                      <div><strong>Contact:</strong> {previewData.proposedActions.publisherDetails?.contactName}</div>
-                      <div><strong>Company:</strong> {previewData.proposedActions.publisherDetails?.companyName || 'N/A'}</div>
-                      <div><strong>Status:</strong> Shadow (unclaimed)</div>
-                    </div>
-                  </div>
-                ) : previewData.proposedActions.publisherAction === 'update' ? (
-                  <div>
-                    <Badge className="bg-blue-100 text-blue-800 mb-2">Update Existing</Badge>
-                    <div className="space-y-1 text-sm">
-                      <div><strong>Current:</strong> {previewData.currentState.publisher?.email}</div>
-                      <div><strong>Updates:</strong></div>
-                      <pre className="bg-gray-50 p-2 rounded text-xs">
-                        {JSON.stringify(previewData.proposedActions.publisherDetails?.updates, null, 2)}
-                      </pre>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-gray-500">No publisher will be created</div>
-                )}
-              </div>
-            </div>
-            
-            {/* Website Actions */}
-            <div className="mb-6">
-              <h3 className="font-semibold mb-2">🌐 Website Actions</h3>
-              <div className="space-y-2">
-                {previewData.proposedActions.websiteActions.map((action: any, i: number) => (
-                  <div key={i} className="border rounded-lg p-3">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <strong>{action.domain}</strong>
-                        {action.action === 'create' && (
-                          <Badge className="ml-2 bg-green-100 text-green-800">New</Badge>
-                        )}
-                        {action.action === 'exists' && (
-                          <Badge className="ml-2 bg-gray-100 text-gray-800">Exists</Badge>
-                        )}
-                        {action.action === 'update' && (
-                          <Badge className="ml-2 bg-blue-100 text-blue-800">Update</Badge>
-                        )}
-                      </div>
-                    </div>
-                    {action.details && (
-                      <div className="mt-2 text-sm text-gray-600">
-                        {action.details.categories && (
-                          <div>Categories: {action.details.categories.join(', ')}</div>
-                        )}
-                        {action.details.niche && (
-                          <div>Niches: {action.details.niche.join(', ')}</div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-            
-            {/* Offering Actions */}
-            {previewData.proposedActions.offeringActions.length > 0 && (
-              <div className="mb-6">
-                <h3 className="font-semibold mb-2">💰 Offering Actions</h3>
-                <div className="space-y-2">
-                  {previewData.proposedActions.offeringActions.map((offering: any, i: number) => (
-                    <div key={i} className="border rounded-lg p-3">
-                      <div className="flex justify-between">
-                        <div>
-                          <strong>{offering.type}</strong> for <strong>{offering.websiteDomain}</strong>
-                          {offering.action === 'create' && (
-                            <Badge className="ml-2 bg-green-100 text-green-800">New</Badge>
-                          )}
-                          {offering.action === 'skip' && (
-                            <Badge className="ml-2 bg-yellow-100 text-yellow-800">Skip</Badge>
-                          )}
-                        </div>
-                      </div>
-                      {offering.details && offering.details.basePrice !== undefined && (
-                        <div className="mt-2 text-sm text-gray-600">
-                          Price: ${offering.details.basePrice} {offering.details.currency}
-                          {offering.details.turnaroundDays && ` • ${offering.details.turnaroundDays} days`}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            
-            {/* Action Buttons */}
-            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
-              <button
-                onClick={() => setShowPreview(false)}
-                className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
-              >
-                Close Preview
-              </button>
-              <button
-                onClick={() => {
-                  setShowPreview(false);
-                  handleApprove();
-                }}
-                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-              >
-                ✅ Proceed with Approval
-              </button>
-            </div>
-          </div>
-        </div>
+        <DuplicateDetectionPreview
+          previewData={previewData}
+          onApprove={() => {
+            setShowPreview(false);
+            handleApprove();
+          }}
+          onCancel={() => setShowPreview(false)}
+          isApproving={approving}
+        />
       )}
     </div>
   );

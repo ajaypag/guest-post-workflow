@@ -276,6 +276,61 @@ export const webhookSecurityLogs = pgTable('webhook_security_logs', {
   ipIdx: index('idx_webhook_security_ip').on(table.ipAddress),
 }));
 
+/**
+ * ManyReach campaign import tracking
+ * Tracks import history and statistics for ManyReach campaigns
+ */
+export const manyreachCampaignImports = pgTable('manyreach_campaign_imports', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workspaceName: varchar('workspace_name', { length: 255 }).notNull(),
+  campaignId: varchar('campaign_id', { length: 255 }).notNull(),
+  campaignName: varchar('campaign_name', { length: 500 }),
+  
+  // Import statistics
+  lastImportAt: timestamp('last_import_at').notNull().defaultNow(),
+  totalProspects: integer('total_prospects').default(0),
+  totalReplied: integer('total_replied').default(0),
+  totalImported: integer('total_imported').default(0),
+  totalSkipped: integer('total_skipped').default(0),
+  
+  // Tracking new replies
+  lastCheckAt: timestamp('last_check_at'),
+  newRepliesSinceCheck: integer('new_replies_since_check').default(0),
+  
+  // Metadata
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+}, (table) => ({
+  workspaceIdx: index('idx_campaign_imports_workspace').on(table.workspaceName),
+  lastImportIdx: index('idx_campaign_imports_last_import').on(table.lastImportAt),
+  uniqueCombo: uniqueIndex('unique_workspace_campaign').on(table.workspaceName, table.campaignId),
+}));
+
+/**
+ * ManyReach ignored emails
+ * List of emails to ignore during ManyReach imports
+ */
+export const manyreachIgnoredEmails = pgTable('manyreach_ignored_emails', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  email: varchar('email', { length: 255 }).notNull(),
+  campaignId: varchar('campaign_id', { length: 255 }),
+  workspaceName: varchar('workspace_name', { length: 255 }),
+  
+  // Reason for ignoring
+  ignoreReason: varchar('ignore_reason', { length: 500 }),
+  ignoredBy: uuid('ignored_by').references(() => users.id),
+  
+  // Allow ignoring globally or per campaign
+  scope: varchar('scope', { length: 50 }).default('campaign'), // 'global' or 'campaign'
+  
+  // Timestamps
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => ({
+  emailIdx: index('idx_ignored_emails_email').on(table.email),
+  campaignIdx: index('idx_ignored_emails_campaign').on(table.campaignId),
+  uniqueCombo: uniqueIndex('unique_ignored_email_campaign').on(table.email, table.campaignId, table.workspaceName),
+}));
+
 // Type exports
 export type EmailProcessingLog = typeof emailProcessingLogs.$inferSelect;
 export type NewEmailProcessingLog = typeof emailProcessingLogs.$inferInsert;
@@ -291,6 +346,10 @@ export type EmailFollowUp = typeof emailFollowUps.$inferSelect;
 export type NewEmailFollowUp = typeof emailFollowUps.$inferInsert;
 export type WebhookSecurityLog = typeof webhookSecurityLogs.$inferSelect;
 export type NewWebhookSecurityLog = typeof webhookSecurityLogs.$inferInsert;
+export type ManyreachCampaignImport = typeof manyreachCampaignImports.$inferSelect;
+export type NewManyreachCampaignImport = typeof manyreachCampaignImports.$inferInsert;
+export type ManyreachIgnoredEmail = typeof manyreachIgnoredEmails.$inferSelect;
+export type NewManyreachIgnoredEmail = typeof manyreachIgnoredEmails.$inferInsert;
 
 // Relations
 export const emailProcessingLogsRelations = relations(emailProcessingLogs, ({ one, many }) => ({
