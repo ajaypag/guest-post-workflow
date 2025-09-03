@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
 import { publishers, publisherWebsites } from '@/lib/db/accountSchema';
 import { websites } from '@/lib/db/websiteSchema';
+import { niches } from '@/lib/db/nichesSchema';
 import { publisherOfferings, publisherOfferingRelationships } from '@/lib/db/publisherSchemaActual';
 import { emailProcessingLogs } from '@/lib/db/emailProcessingSchema';
 import { eq, and, sql } from 'drizzle-orm';
@@ -227,9 +228,31 @@ export async function POST(request: NextRequest) {
               
               for (const suggestedNiche of suggestedNewNiches) {
                 // Check if this niche already exists in the niches table (case-insensitive)
-                // For now, just add the suggested niche directly without checking
-                // TODO: Add proper niche table lookup when schema is available
-                processedNewNiches.push(suggestedNiche);
+                const existingNicheRecord = await db
+                  .select()
+                  .from(niches)
+                  .where(sql`LOWER(${niches.name}) = LOWER(${suggestedNiche})`)
+                  .limit(1);
+                
+                if (existingNicheRecord.length === 0) {
+                  // Create the new niche
+                  console.log(`🆕 Creating new niche: ${suggestedNiche}`);
+                  try {
+                    await db.insert(niches)
+                      .values({
+                        name: suggestedNiche,
+                        source: 'manyreach_ai'
+                      })
+                      .onConflictDoNothing();
+                    processedNewNiches.push(suggestedNiche);
+                  } catch (error) {
+                    console.log(`⚠️ Niche might already exist (race condition): ${suggestedNiche}`);
+                    processedNewNiches.push(suggestedNiche);
+                  }
+                } else {
+                  // Use the existing niche name (maintains case from database)
+                  processedNewNiches.push(existingNicheRecord[0].name);
+                }
               }
             }
             
@@ -266,9 +289,31 @@ export async function POST(request: NextRequest) {
               
               for (const suggestedNiche of suggestedNewNiches) {
                 // Check if this niche already exists in the niches table (case-insensitive)
-                // For now, just add the suggested niche directly without checking
-                // TODO: Add proper niche table lookup when schema is available
-                processedNewNiches.push(suggestedNiche);
+                const existingNicheRecord = await db
+                  .select()
+                  .from(niches)
+                  .where(sql`LOWER(${niches.name}) = LOWER(${suggestedNiche})`)
+                  .limit(1);
+                
+                if (existingNicheRecord.length === 0) {
+                  // Create the new niche
+                  console.log(`🆕 Creating new niche: ${suggestedNiche}`);
+                  try {
+                    await db.insert(niches)
+                      .values({
+                        name: suggestedNiche,
+                        source: 'manyreach_ai'
+                      })
+                      .onConflictDoNothing();
+                    processedNewNiches.push(suggestedNiche);
+                  } catch (error) {
+                    console.log(`⚠️ Niche might already exist (race condition): ${suggestedNiche}`);
+                    processedNewNiches.push(suggestedNiche);
+                  }
+                } else {
+                  // Use the existing niche name (maintains case from database)
+                  processedNewNiches.push(existingNicheRecord[0].name);
+                }
               }
             }
             
@@ -288,7 +333,11 @@ export async function POST(request: NextRequest) {
                 internalNotes: websiteData.internalNotes,
                 status: 'active',
                 source: 'manyreach',
-                importedAt: new Date()
+                sourceMetadata: JSON.stringify({
+                  importedAt: new Date(),
+                  draftId,
+                  importSource: 'manyreach_draft_approval'
+                })
               })
               .returning();
             
