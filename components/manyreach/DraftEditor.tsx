@@ -45,9 +45,10 @@ interface DraftEditorProps {
   draft: Draft;
   onUpdate: (updates: any) => void;
   onReprocess: () => void;
+  onDelete?: () => void;
 }
 
-export function DraftEditor({ draft, onUpdate, onReprocess }: DraftEditorProps) {
+export function DraftEditor({ draft, onUpdate, onReprocess, onDelete }: DraftEditorProps) {
   const [editedData, setEditedData] = useState<any>(null);
   const [reviewNotes, setReviewNotes] = useState(draft.review_notes || '');
   const [showJsonEditor, setShowJsonEditor] = useState(false);
@@ -93,6 +94,30 @@ export function DraftEditor({ draft, onUpdate, onReprocess }: DraftEditorProps) 
       status: 'rejected',
       reviewNotes: reviewNotes
     });
+  };
+
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to permanently delete this draft? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/admin/manyreach/drafts?draftId=${draft.id}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete draft');
+      }
+
+      // Call the onDelete callback to update the UI
+      if (onDelete) {
+        onDelete();
+      }
+    } catch (error) {
+      console.error('Error deleting draft:', error);
+      alert('Failed to delete draft. Please try again.');
+    }
   };
 
   const openJsonEditor = () => {
@@ -452,6 +477,16 @@ export function DraftEditor({ draft, onUpdate, onReprocess }: DraftEditorProps) 
             </Button>
           </div>
           <div className="flex gap-2">
+            {onDelete && (
+              <Button
+                onClick={handleDelete}
+                variant="destructive"
+                className="mr-auto"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete Draft
+              </Button>
+            )}
             <Button
               onClick={handleReject}
               variant="outline"

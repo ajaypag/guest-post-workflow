@@ -158,3 +158,45 @@ export async function PUT(request: NextRequest) {
     );
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const authCheck = await requireInternalUser(request);
+    if (authCheck instanceof NextResponse) {
+      return authCheck;
+    }
+
+    const { searchParams } = new URL(request.url);
+    const draftId = searchParams.get('draftId');
+
+    if (!draftId) {
+      return NextResponse.json({ error: 'Draft ID required' }, { status: 400 });
+    }
+
+    // Delete draft
+    const deleteQuery = sql`
+      DELETE FROM publisher_drafts
+      WHERE id = ${draftId}
+      RETURNING id
+    `;
+
+    const deleteResult = await db.execute(deleteQuery);
+    const deleted = (deleteResult as any).rows?.[0];
+
+    if (!deleted) {
+      return NextResponse.json({ error: 'Draft not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({ 
+      success: true,
+      message: 'Draft deleted successfully' 
+    });
+
+  } catch (error) {
+    console.error('Error deleting draft:', error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Delete failed' },
+      { status: 500 }
+    );
+  }
+}
