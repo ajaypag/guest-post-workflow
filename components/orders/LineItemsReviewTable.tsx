@@ -70,7 +70,32 @@ const PublishedUrlCell = ({ item, userType }: { item: LineItem; userType: 'inter
   // Check if QA passed based on metadata
   const qaStatus = item.metadata?.qaResults?.qaStatus;
   const requiresFixes = item.metadata?.qaResults?.requiresFixes;
+  const hasManualOverride = item.metadata?.manualOverride;
   
+  // For external users, hide internal QA issues
+  if (userType === 'account') {
+    return (
+      <div className="space-y-1">
+        <a 
+          href={item.publishedUrl} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="text-blue-600 hover:text-blue-800 text-xs font-medium inline-flex items-center gap-1"
+        >
+          <Globe className="h-3 w-3" />
+          View Article
+        </a>
+        {/* Only show positive status for external users */}
+        {item.deliveredAt && (
+          <div className="text-xs text-green-600">
+            ✓ Delivered
+          </div>
+        )}
+      </div>
+    );
+  }
+  
+  // For internal users, show full QA status
   return (
     <div className="space-y-1">
       <a 
@@ -82,13 +107,14 @@ const PublishedUrlCell = ({ item, userType }: { item: LineItem; userType: 'inter
         <Globe className="h-3 w-3" />
         View Article
       </a>
+      {/* Show QA issues and manual override status for internal users */}
       {requiresFixes && (
         <div className="text-xs text-amber-600 flex items-center gap-1">
           <AlertCircle className="h-3 w-3" />
-          QA Issues
+          {hasManualOverride ? 'Force delivered (QA failed)' : 'QA Issues'}
         </div>
       )}
-      {item.deliveredAt && (
+      {item.deliveredAt && !requiresFixes && (
         <div className="text-xs text-green-600">
           ✓ Delivered
         </div>
