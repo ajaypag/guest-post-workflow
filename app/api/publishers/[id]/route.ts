@@ -31,7 +31,7 @@ export async function GET(
       contactName: publisher.contactName,
       companyName: publisher.companyName,
       email: publisher.email,
-      paymentTerms: publisher.paymentTerms || 'Net 30'
+      paymentTerms: 'Net 30' // Default payment terms since not in schema
     });
 
   } catch (error) {

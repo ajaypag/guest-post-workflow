@@ -32,10 +32,10 @@ export async function POST(
 
     // Verify the line item exists and belongs to this order
     const lineItem = await db.query.orderLineItems.findFirst({
-      where: eq(orderLineItems.id, params.lineItemId)
+      where: eq(orderLineItems.id, lineItemId)
     });
 
-    if (!lineItem || lineItem.orderId !== params.id) {
+    if (!lineItem || lineItem.orderId !== orderId) {
       return NextResponse.json(
         { error: 'Line item not found' },
         { status: 404 }
@@ -63,19 +63,34 @@ export async function POST(
         publisherStatus: 'pending',
         metadata: {
           ...lineItem.metadata,
-          manualAssignment: true,
-          assignedBy: session.userId,
-          assignedAt: new Date().toISOString(),
-          assignmentReason: 'Manual override by internal team'
+          changeHistory: [
+            ...(lineItem.metadata?.changeHistory || []),
+            {
+              timestamp: new Date().toISOString(),
+              changeType: 'manual_publisher_assignment',
+              previousValue: {
+                publisherId: lineItem.publisherId,
+                publisherOfferingId: lineItem.publisherOfferingId,
+                publisherPrice: lineItem.publisherPrice
+              },
+              newValue: {
+                publisherId: publisherId,
+                publisherOfferingId: offeringId,
+                publisherPrice: price || offering.basePrice
+              },
+              changedBy: session.userId,
+              reason: 'Manual override by internal team'
+            }
+          ]
         },
         modifiedAt: new Date(),
         modifiedBy: session.userId
       })
-      .where(eq(orderLineItems.id, params.lineItemId));
+      .where(eq(orderLineItems.id, lineItemId));
 
     // Get updated line item with publisher info
     const updatedLineItem = await db.query.orderLineItems.findFirst({
-      where: eq(orderLineItems.id, params.lineItemId),
+      where: eq(orderLineItems.id, lineItemId),
       with: {
         order: true
       }
@@ -114,7 +129,7 @@ export async function POST(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string; lineItemId: string } }
+  { params }: { params: Promise<{ id: string; lineItemId: string }> }
 ) {
   try {
     // Check authentication
@@ -126,12 +141,14 @@ export async function GET(
       );
     }
 
+    const { id: orderId, lineItemId } = await params;
+
     // Get the line item
     const lineItem = await db.query.orderLineItems.findFirst({
-      where: eq(orderLineItems.id, params.lineItemId)
+      where: eq(orderLineItems.id, lineItemId)
     });
 
-    if (!lineItem || lineItem.orderId !== params.id) {
+    if (!lineItem || lineItem.orderId !== orderId) {
       return NextResponse.json(
         { error: 'Line item not found' },
         { status: 404 }
@@ -139,7 +156,20 @@ export async function GET(
     }
 
     // Get all available publishers and their offerings for this domain
-    let availableOfferings = [];
+    let availableOfferings: Array<{
+      id: string;
+      publisherId: string;
+      publisherName: string;
+      publisherEmail?: string;
+      offeringName: string;
+      basePrice: number;
+      turnaroundDays: number;
+      expressAvailable: boolean;
+      expressPrice?: number;
+      currentAvailability: string;
+      isPrimary?: boolean;
+      isPreferred?: boolean;
+    }> = [];
     
     if (lineItem.assignedDomain) {
       // First, get the website ID for this domain
@@ -176,14 +206,14 @@ export async function GET(
           publisherId: row.offering.publisherId,
           publisherName: row.publisher?.contactName || row.publisher?.companyName || 'Unknown Publisher',
           publisherEmail: row.publisher?.email,
-          offeringName: row.offering.offeringName,
-          basePrice: row.offering.basePrice,
-          turnaroundDays: row.offering.turnaroundDays,
-          expressAvailable: row.offering.expressAvailable,
-          expressPrice: row.offering.expressPrice,
-          currentAvailability: row.offering.currentAvailability,
-          isPrimary: row.relationship.isPrimary,
-          isPreferred: row.relationship.isPreferred
+          offeringName: row.offering.offeringName || 'Unnamed Offering',
+          basePrice: row.offering.basePrice || 0,
+          turnaroundDays: row.offering.turnaroundDays || 0,
+          expressAvailable: row.offering.expressAvailable || false,
+          expressPrice: row.offering.expressPrice || undefined,
+          currentAvailability: row.offering.currentAvailability || 'Unknown',
+          isPrimary: row.relationship.isPrimary || undefined,
+          isPreferred: row.relationship.isPreferred || undefined
         }));
       }
     }
