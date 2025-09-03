@@ -2041,9 +2041,9 @@ export default function InternalOrderManagementPage() {
             </div>
           )}
 
-          {/* Three Column Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-            {/* Left Column - Progress Steps */}
+          {/* Two Column Layout with narrower sidebar */}
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 sm:gap-6">
+            {/* Left Column - Progress Steps (narrower) */}
             <div className="lg:col-span-1">
               <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 sm:p-6">
                 <h2 className="text-base sm:text-lg font-semibold mb-4">Order Progress</h2>
@@ -2894,8 +2894,8 @@ export default function InternalOrderManagementPage() {
               </div>
             </div>
 
-            {/* Middle/Right Columns - Order Details Table */}
-            <div className="lg:col-span-2">
+            {/* Middle/Right Columns - Order Details Table (wider) */}
+            <div className="lg:col-span-4">
               {/* Site Review Summary Card */}
               {(order.state === 'sites_ready' || order.state === 'client_reviewing') && Object.keys(siteSubmissions).length > 0 && (
                 <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">

@@ -52,6 +52,31 @@ export const TopicGenerationStepClean = ({ step, workflow, onChange, onWorkflowC
     loadClient();
   }, [clientId]);
 
+  // Prepopulate from workflow metadata (for order-based workflows)
+  useEffect(() => {
+    // Only prepopulate if step outputs are empty and we have metadata
+    if (!step.outputs.desiredAnchorText && !step.outputs.clientTargetUrl && workflow.metadata) {
+      const updates: any = {};
+      let hasUpdates = false;
+
+      // Prepopulate anchor text from metadata
+      if (workflow.metadata.anchorText && !step.outputs.desiredAnchorText) {
+        updates.desiredAnchorText = workflow.metadata.anchorText;
+        hasUpdates = true;
+      }
+
+      // Prepopulate target URL from metadata
+      if (workflow.metadata.targetPageUrl && !step.outputs.clientTargetUrl) {
+        updates.clientTargetUrl = workflow.metadata.targetPageUrl;
+        hasUpdates = true;
+      }
+
+      if (hasUpdates) {
+        onChange({ ...step.outputs, ...updates });
+      }
+    }
+  }, [workflow.metadata, step.outputs.desiredAnchorText, step.outputs.clientTargetUrl]);
+
   // Get effective keyword preferences: workflow overrides > client defaults > none
   const getEffectiveKeywordPreferences = () => {
     const workflowPrefs = getWorkflowKeywordPreferences(workflow);

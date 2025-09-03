@@ -16,6 +16,8 @@ export const PublisherPreApprovalStep = ({ step, workflow, onChange }: Publisher
   const [copied, setCopied] = useState(false);
   const [guestPostCost, setGuestPostCost] = useState<string | null>(null);
   const [isLoadingCost, setIsLoadingCost] = useState(false);
+  const [publisherData, setPublisherData] = useState<any>(null);
+  const [isLoadingPublisher, setIsLoadingPublisher] = useState(false);
 
   // Gather data from previous steps
   const domainSelectionStep = workflow.steps.find(s => s.id === 'domain-selection');
@@ -32,7 +34,7 @@ export const PublisherPreApprovalStep = ({ step, workflow, onChange }: Publisher
   const articleSummary = topicGenerationStep?.outputs?.postSummary || '[Article Summary]';
   const keywordTarget = topicGenerationStep?.outputs?.keyword || '[Target Keyword]';
 
-  // Fetch guest post cost from database
+  // Fetch guest post cost from database and publisher data from workflow metadata
   useEffect(() => {
     const fetchGuestPostCost = async () => {
       if (!guestPostSite || guestPostSite === '[Guest Post Site]') return;
@@ -58,7 +60,44 @@ export const PublisherPreApprovalStep = ({ step, workflow, onChange }: Publisher
     };
 
     fetchGuestPostCost();
+    
+    // Check if workflow has publisher info from order (line item)
+    if (workflow.metadata?.publisherId && !step.outputs.publisherEmail) {
+      fetchPublisherData();
+    }
   }, [guestPostSite]);
+  
+  // Fetch publisher data from metadata
+  const fetchPublisherData = async () => {
+    if (!workflow.metadata?.publisherId) return;
+    
+    setIsLoadingPublisher(true);
+    try {
+      // Fetch publisher details from database
+      const response = await fetch(`/api/publishers/${workflow.metadata.publisherId}`);
+      if (response.ok) {
+        const publisher = await response.json();
+        setPublisherData(publisher);
+        
+        // Prepopulate publisher fields if not already set
+        if (!step.outputs.publisherEmail && publisher.email) {
+          onChange({
+            ...step.outputs,
+            publisherEmail: publisher.email,
+            publisherName: publisher.contactName || publisher.companyName || '',
+            agreedPrice: workflow.metadata?.publisherPrice ? 
+              `$${(workflow.metadata.publisherPrice / 100).toFixed(2)}` : 
+              step.outputs.agreedPrice,
+            paymentTerms: publisher.paymentTerms || step.outputs.paymentTerms || 'Net 30'
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching publisher data:', error);
+    } finally {
+      setIsLoadingPublisher(false);
+    }
+  };
 
   // Pre-approval email template
   const subject = `Guest Post Topic Approval: "${articleTitle}"`;
@@ -296,6 +335,27 @@ Best regards`;
           <h3 className="font-medium text-gray-900">Publisher Details</h3>
         </div>
         <div className="p-6 space-y-4">
+          {/* Show publisher info from order if available */}
+          {workflow.metadata?.publisherId && publisherData && (
+            <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-start">
+                <Info className="w-5 h-5 text-blue-600 mt-0.5 mr-2 flex-shrink-0" />
+                <div className="text-sm">
+                  <p className="font-medium text-blue-900 mb-1">Publisher Assigned from Order:</p>
+                  <p className="text-blue-800">
+                    {publisherData.contactName || publisherData.companyName} 
+                    {publisherData.email && ` (${publisherData.email})`}
+                  </p>
+                  {workflow.metadata?.publisherPrice && (
+                    <p className="text-blue-800 mt-1">
+                      Agreed Price: ${(workflow.metadata.publisherPrice / 100).toFixed(2)}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+          
           <SavedField
             label="Publisher Email"
             value={step.outputs.publisherEmail || ''}
