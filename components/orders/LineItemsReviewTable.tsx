@@ -72,7 +72,11 @@ const PublishedUrlCell = ({ item, userType }: { item: LineItem; userType: 'inter
   const qaResults = item.metadata?.qaResults;
   const qaStatus = qaResults?.qaStatus;
   const requiresFixes = qaResults?.requiresFixes;
-  const hasManualOverride = item.metadata?.manualOverride;
+  const hasManualOverrides = qaResults?.hasManualOverrides || item.metadata?.manualOverride;
+  
+  // Determine effective QA status considering manual overrides
+  const effectiveQAStatus = qaResults?.qaStatus;
+  const effectiveRequiresFixes = qaResults?.requiresFixes;
   
   // For external users, hide internal QA issues
   if (userType === 'account') {
@@ -109,22 +113,23 @@ const PublishedUrlCell = ({ item, userType }: { item: LineItem; userType: 'inter
         <Globe className="h-3 w-3" />
         View Article
       </a>
-      {/* Show QA issues and manual override status for internal users with tooltip */}
-      {requiresFixes && qaResults ? (
-        <QADetailsTooltip qaResults={qaResults} manualOverride={hasManualOverride}>
+      {/* Show QA status considering manual overrides */}
+      {effectiveRequiresFixes && qaResults ? (
+        <QADetailsTooltip qaResults={qaResults} manualOverride={hasManualOverrides}>
           <div className="text-xs text-amber-600 flex items-center gap-1">
             <AlertCircle className="h-3 w-3" />
-            {hasManualOverride ? 'Force delivered (QA failed)' : 'QA Issues'}
+            {hasManualOverrides ? 'Force delivered (QA failed)' : 'QA Issues'}
           </div>
         </QADetailsTooltip>
       ) : qaResults ? (
-        <QADetailsTooltip qaResults={qaResults} manualOverride={hasManualOverride}>
-          <div className="text-xs text-green-600">
-            ✓ QA Passed
+        <QADetailsTooltip qaResults={qaResults} manualOverride={hasManualOverrides}>
+          <div className="text-xs text-green-600 flex items-center gap-1">
+            <CheckCircle className="h-3 w-3" />
+            {hasManualOverrides ? 'QA Passed (Override)' : 'QA Passed'}
           </div>
         </QADetailsTooltip>
       ) : null}
-      {item.deliveredAt && !requiresFixes && !qaResults && (
+      {item.deliveredAt && !effectiveRequiresFixes && !qaResults && (
         <div className="text-xs text-green-600">
           ✓ Delivered
         </div>

@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { CheckCircle, XCircle, AlertCircle, Info, Search, Link, Globe, MessageSquare } from 'lucide-react';
 
 interface QADetailsTooltipProps {
@@ -13,6 +14,8 @@ interface QADetailsTooltipProps {
     };
     qaStatus: 'passed' | 'failed_needs_fixes';
     googleIndexStatus?: 'indexed' | 'not_indexed' | 'pending' | 'error';
+    hasManualOverrides?: boolean;
+    manualOverrides?: Record<string, boolean>;
     details?: {
       anchorText?: {
         expected?: string;
@@ -78,6 +81,8 @@ export const QADetailsTooltip: React.FC<QADetailsTooltipProps> = ({
   manualOverride
 }) => {
   const [isVisible, setIsVisible] = useState(false);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const triggerRef = useRef<HTMLDivElement>(null);
 
   // Safety check
   if (!qaResults || !qaResults.score) {
@@ -86,18 +91,62 @@ export const QADetailsTooltip: React.FC<QADetailsTooltipProps> = ({
 
   const { score, qaStatus, details, errors } = qaResults;
 
-  return (
-    <div className="relative inline-block">
-      <div
-        onMouseEnter={() => setIsVisible(true)}
-        onMouseLeave={() => setIsVisible(false)}
-        className="cursor-help"
-      >
-        {children}
-      </div>
+  const handleMouseEnter = () => {
+    setIsVisible(true);
+    if (triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      const tooltipWidth = 384; // w-96 = 384px
+      const tooltipHeight = 400; // Estimated height
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const scrollX = window.scrollX;
+      const scrollY = window.scrollY;
       
-      {isVisible && (
-        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 z-50 w-96 bg-white border border-gray-200 rounded-lg shadow-2xl p-5">
+      let x = rect.left + rect.width / 2;
+      let y = rect.top - 10;
+      
+      // Adjust horizontal position if tooltip would go off-screen
+      if (x - tooltipWidth / 2 < 10) {
+        // Too far left, position at left edge with margin
+        x = tooltipWidth / 2 + 10;
+      } else if (x + tooltipWidth / 2 > viewportWidth - 10) {
+        // Too far right, position at right edge with margin
+        x = viewportWidth - tooltipWidth / 2 - 10;
+      }
+      
+      // Adjust vertical position if tooltip would go off-screen
+      let below = false;
+      if (y - tooltipHeight < 10) {
+        // Not enough space above, position below the trigger
+        y = rect.bottom + 10;
+        below = true;
+      }
+      
+      setPositionBelow(below);
+      setPosition({
+        x: x + scrollX,
+        y: y + scrollY
+      });
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setIsVisible(false);
+  };
+
+  const [positionBelow, setPositionBelow] = useState(false);
+
+  const tooltipContent = (
+    <div 
+      className={`fixed z-[9999] w-96 bg-white border border-gray-200 rounded-lg shadow-2xl p-5 max-h-[80vh] overflow-y-auto transform -translate-x-1/2 ${
+        positionBelow ? '' : '-translate-y-full'
+      }`}
+      style={{ 
+        left: position.x, 
+        top: position.y,
+        pointerEvents: 'none'
+      }}
+    >
           {/* Header */}
           <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
             <div className="flex items-center">
@@ -116,13 +165,24 @@ export const QADetailsTooltip: React.FC<QADetailsTooltipProps> = ({
           </div>
 
           {/* Manual Override Notice */}
-          {manualOverride && (
+          {(manualOverride || (qaResults as any).hasManualOverrides) && (
             <div className="mb-4 p-3 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-lg">
               <div className="flex items-center text-amber-800">
                 <AlertCircle className="w-4 h-4 mr-2 text-amber-600" />
-                <span className="text-xs font-medium">Manual Override Active</span>
+                <span className="text-xs font-medium">
+                  {(qaResults as any).hasManualOverrides ? 'QA Checks Manually Overridden' : 'Manual Override Active'}
+                </span>
               </div>
-              <p className="text-xs text-amber-700 mt-1 ml-6">Delivered despite QA issues - manual review completed</p>
+              <p className="text-xs text-amber-700 mt-1 ml-6">
+                {(qaResults as any).hasManualOverrides 
+                  ? `${Object.keys((qaResults as any).manualOverrides || {}).length} check(s) manually approved - QA now passes`
+                  : 'Delivered despite QA issues - manual review completed'}
+              </p>
+              {(qaResults as any).hasManualOverrides && (qaResults as any).manualOverrides && (
+                <div className="mt-2 ml-6 text-xs text-amber-600">
+                  Overridden: {Object.keys((qaResults as any).manualOverrides).join(', ')}
+                </div>
+              )}
             </div>
           )}
 
@@ -392,7 +452,23 @@ export const QADetailsTooltip: React.FC<QADetailsTooltipProps> = ({
               </div>
             </div>
           )}
-        </div>
+    </div>
+  );
+
+  return (
+    <div className="relative inline-block">
+      <div
+        ref={triggerRef}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        className="cursor-help"
+      >
+        {children}
+      </div>
+      
+      {isVisible && typeof window !== 'undefined' && createPortal(
+        tooltipContent,
+        document.body
       )}
     </div>
   );
