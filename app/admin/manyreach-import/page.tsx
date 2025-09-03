@@ -5,11 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Download, CheckCircle2, XCircle, AlertCircle, Eye, RefreshCw, Clock, Activity, ChevronLeft, Mail, Key, FileText, BarChart } from 'lucide-react';
+import { Loader2, Download, CheckCircle2, XCircle, AlertCircle, Eye, RefreshCw, Clock, Activity, ChevronLeft, Mail, Key, FileText, BarChart, History } from 'lucide-react';
 import { CampaignStatusView } from '@/components/manyreach/CampaignStatusView';
 import { DraftsListInfinite } from '@/components/manyreach/DraftsListInfinite';
 import { DuplicateDetectionPreview } from '@/components/manyreach/DuplicateDetectionPreview';
 import { DraftEditor } from '@/components/manyreach/DraftEditor';
+import ValidationRunHistory from '@/components/admin/ValidationRunHistory';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 // Simple toast notification
@@ -97,6 +98,18 @@ export default function ManyReachImportPage() {
     duplicateCampaigns: number;
     campaigns: any[];
   } | null>(null);
+  const [streamingProgress, setStreamingProgress] = useState<{
+    currentWorkspace?: string;
+    currentWorkspaceIndex?: number;
+    totalWorkspaces?: number;
+    currentCampaign?: string;
+    currentCampaignIndex?: number;
+    totalCampaigns?: number;
+    currentMessage?: string;
+    prospectsChecked?: number;
+    totalProspects?: number;
+    repliesFound?: number;
+  } | null>(null);
   const [importingAllNew, setImportingAllNew] = useState(false);
   
   const { toast } = useToast();
@@ -169,27 +182,117 @@ export default function ManyReachImportPage() {
     });
   };
 
-  // Check for new emails across all workspaces
+  // Check for new emails across all workspaces with streaming
   const checkForNewEmails = async () => {
     setCheckingNewEmails(true);
+    setStreamingProgress(null);
+    setNewEmailsData(null);
+    
     try {
-      const response = await fetch('/api/admin/manyreach/check-new-emails');
-      if (!response.ok) throw new Error('Failed to check for new emails');
+      const response = await fetch('/api/admin/manyreach/check-new-emails?stream=true');
+      if (!response.ok) throw new Error('Failed to start checking for new emails');
       
-      const data = await response.json();
-      setNewEmailsData(data);
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
       
-      if (data.totalNewEmails === 0) {
-        toast({
-          title: 'No New Emails',
-          description: 'All campaigns are up to date. No new replies found.',
-        });
-      } else {
-        toast({
-          title: 'New Emails Found!',
-          description: `Found ${data.totalNewEmails} new emails across ${data.uniqueCampaigns} unique campaigns (${data.duplicateCampaigns} duplicates detected)`,
-        });
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n');
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                console.log('Stream event:', data);
+                
+                switch (data.type) {
+                  case 'status':
+                    setStreamingProgress(prev => ({
+                      ...prev,
+                      currentMessage: data.message,
+                      totalWorkspaces: data.totalWorkspaces || prev?.totalWorkspaces
+                    }));
+                    break;
+                    
+                  case 'workspace':
+                    setStreamingProgress(prev => ({
+                      ...prev,
+                      currentWorkspace: data.workspace,
+                      currentWorkspaceIndex: data.index,
+                      totalWorkspaces: data.total,
+                      currentMessage: data.message,
+                      currentCampaign: undefined, // Reset campaign progress
+                      currentCampaignIndex: undefined,
+                      totalCampaigns: data.campaignCount
+                    }));
+                    break;
+                    
+                  case 'campaign':
+                    setStreamingProgress(prev => ({
+                      ...prev,
+                      currentCampaign: data.campaign,
+                      currentCampaignIndex: data.campaignIndex,
+                      totalCampaigns: data.totalCampaigns,
+                      currentMessage: data.message,
+                      prospectsChecked: undefined, // Reset prospect progress
+                      totalProspects: data.prospectCount,
+                      repliesFound: 0
+                    }));
+                    break;
+                    
+                  case 'prospect':
+                    setStreamingProgress(prev => ({
+                      ...prev,
+                      prospectsChecked: data.checked,
+                      totalProspects: data.total,
+                      repliesFound: data.found,
+                      currentMessage: data.message
+                    }));
+                    break;
+                    
+                  case 'result':
+                    // Campaign finished with results
+                    console.log(`Found ${data.campaign.estimatedNewEmails} new replies in ${data.campaign.campaignName}`);
+                    break;
+                    
+                  case 'error':
+                    console.error('Stream error:', data.error);
+                    toast({
+                      title: 'Partial Error',
+                      description: `Error in ${data.workspace}: ${data.error}`,
+                      variant: 'destructive'
+                    });
+                    break;
+                    
+                  case 'complete':
+                    setNewEmailsData(data);
+                    setStreamingProgress(null);
+                    
+                    if (data.totalNewEmails === 0) {
+                      toast({
+                        title: 'No New Replies',
+                        description: 'All campaigns are up to date. No new replies found.',
+                      });
+                    } else {
+                      toast({
+                        title: 'New Replies Found!',
+                        description: `Found ${data.totalNewEmails} new replies across ${data.uniqueCampaigns} unique campaigns (${data.duplicateCampaigns} duplicates detected)`,
+                      });
+                    }
+                    break;
+                }
+              } catch (parseError) {
+                console.error('Failed to parse streaming data:', parseError);
+              }
+            }
+          }
+        }
       }
+      
     } catch (error) {
       console.error('Error checking for new emails:', error);
       toast({
@@ -197,6 +300,7 @@ export default function ManyReachImportPage() {
         description: error instanceof Error ? error.message : 'Failed to check for new emails',
         variant: 'destructive'
       });
+      setStreamingProgress(null);
     } finally {
       setCheckingNewEmails(false);
     }
@@ -797,14 +901,14 @@ export default function ManyReachImportPage() {
         </div>
       </div>
 
-      {/* New Emails Check Card */}
+      {/* New Replies Check Card */}
       <Card className="mb-6 border-blue-200 bg-gradient-to-r from-blue-50 to-purple-50">
         <CardHeader>
           <div className="flex justify-between items-center">
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Mail className="h-5 w-5 text-blue-600" />
-                Check All Workspaces for New Emails
+                Check All Workspaces for New Replies
               </CardTitle>
               <CardDescription>
                 Automatically detect and import new replies across all unique campaigns
@@ -825,15 +929,88 @@ export default function ManyReachImportPage() {
                 {checkingNewEmails ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Checking all workspaces for new emails...
+                    {streamingProgress?.currentMessage || 'Checking all workspaces for new emails...'}
                   </>
                 ) : (
                   <>
                     <RefreshCw className="mr-2 h-4 w-4" />
-                    Check for New Emails Across All Workspaces
+                    Check for New Replies Across All Workspaces
                   </>
                 )}
               </Button>
+            )}
+            
+            {/* Streaming Progress Display */}
+            {checkingNewEmails && streamingProgress && (
+              <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                <div className="space-y-3">
+                  <div className="text-sm font-medium text-blue-800">
+                    {streamingProgress.currentMessage}
+                  </div>
+                  
+                  {/* Workspace Progress */}
+                  {streamingProgress.totalWorkspaces && (
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-xs text-blue-600">
+                        <span>Workspace Progress</span>
+                        <span>{streamingProgress.currentWorkspaceIndex || 0}/{streamingProgress.totalWorkspaces}</span>
+                      </div>
+                      <div className="w-full bg-blue-200 rounded-full h-2">
+                        <div 
+                          className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                          style={{ 
+                            width: `${((streamingProgress.currentWorkspaceIndex || 0) / streamingProgress.totalWorkspaces) * 100}%` 
+                          }}
+                        ></div>
+                      </div>
+                      {streamingProgress.currentWorkspace && (
+                        <div className="text-xs text-blue-600">
+                          Current: {streamingProgress.currentWorkspace}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Campaign Progress */}
+                  {streamingProgress.totalCampaigns && streamingProgress.currentCampaign && (
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-xs text-green-600">
+                        <span>Campaign Progress</span>
+                        <span>{streamingProgress.currentCampaignIndex || 0}/{streamingProgress.totalCampaigns}</span>
+                      </div>
+                      <div className="w-full bg-green-200 rounded-full h-2">
+                        <div 
+                          className="bg-green-600 h-2 rounded-full transition-all duration-300" 
+                          style={{ 
+                            width: `${((streamingProgress.currentCampaignIndex || 0) / streamingProgress.totalCampaigns) * 100}%` 
+                          }}
+                        ></div>
+                      </div>
+                      <div className="text-xs text-green-600">
+                        Current: {streamingProgress.currentCampaign}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Prospect Progress */}
+                  {streamingProgress.totalProspects && streamingProgress.prospectsChecked && (
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-xs text-orange-600">
+                        <span>Prospect Validation</span>
+                        <span>{streamingProgress.prospectsChecked}/{streamingProgress.totalProspects} ({streamingProgress.repliesFound || 0} real replies)</span>
+                      </div>
+                      <div className="w-full bg-orange-200 rounded-full h-2">
+                        <div 
+                          className="bg-orange-600 h-2 rounded-full transition-all duration-300" 
+                          style={{ 
+                            width: `${(streamingProgress.prospectsChecked / streamingProgress.totalProspects) * 100}%` 
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             )}
             
             {/* Results Display */}
@@ -844,7 +1021,7 @@ export default function ManyReachImportPage() {
                     <div className="text-2xl font-bold text-blue-600">
                       {newEmailsData.totalNewEmails}
                     </div>
-                    <div className="text-sm text-gray-600">New Emails</div>
+                    <div className="text-sm text-gray-600">New Replies</div>
                   </div>
                   <div className="bg-white rounded-lg p-4 border">
                     <div className="text-2xl font-bold text-green-600">
@@ -882,7 +1059,7 @@ export default function ManyReachImportPage() {
                       ) : (
                         <>
                           <Download className="mr-2 h-4 w-4" />
-                          Import All {newEmailsData.totalNewEmails} New Emails
+                          Import All {newEmailsData.totalNewEmails} New Replies
                         </>
                       )}
                     </Button>
@@ -1080,7 +1257,7 @@ export default function ManyReachImportPage() {
       </Card>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3 h-auto">
+        <TabsList className="grid w-full grid-cols-4 h-auto">
           <TabsTrigger value="status" className="flex flex-col sm:flex-row items-center justify-center text-xs sm:text-sm py-2 px-1 sm:px-3">
             <Activity className="mr-0 sm:mr-2 h-4 w-4 mb-1 sm:mb-0" />
             <span className="hidden sm:inline">Status Overview</span>
@@ -1090,6 +1267,11 @@ export default function ManyReachImportPage() {
           <TabsTrigger value="drafts" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
             <span>Drafts</span>
             {Array.isArray(drafts) && drafts.length > 0 && <Badge className="ml-1 sm:ml-2 text-xs">{drafts.length}</Badge>}
+          </TabsTrigger>
+          <TabsTrigger value="history" className="flex flex-col sm:flex-row items-center justify-center text-xs sm:text-sm py-2 px-1 sm:px-3">
+            <History className="mr-0 sm:mr-2 h-4 w-4 mb-1 sm:mb-0" />
+            <span className="hidden sm:inline">Run History</span>
+            <span className="sm:hidden">History</span>
           </TabsTrigger>
         </TabsList>
 
@@ -1639,6 +1821,10 @@ export default function ManyReachImportPage() {
             </div>
           </div>
           </div> {/* Close hidden div */}
+        </TabsContent>
+
+        <TabsContent value="history">
+          <ValidationRunHistory />
         </TabsContent>
       </Tabs>
     </div>
