@@ -52,6 +52,51 @@ const useWorkflowProgress = (workflowId?: string) => {
   return progress;
 };
 
+// Published URL Cell Component
+const PublishedUrlCell = ({ item, userType }: { item: LineItem; userType: 'internal' | 'account' }) => {
+  const showUrl = ['in_progress', 'delivered', 'completed', 'published'].includes(item.status);
+  
+  if (!showUrl || !item.publishedUrl) {
+    // Show different messages based on status
+    if (item.status === 'in_progress') {
+      return <span className="text-xs text-gray-400">In progress...</span>;
+    }
+    if (['draft', 'pending_selection', 'selected', 'approved'].includes(item.status)) {
+      return <span className="text-xs text-gray-300">—</span>;
+    }
+    return <span className="text-xs text-gray-400">Not published</span>;
+  }
+
+  // Check if QA passed based on metadata
+  const qaStatus = item.metadata?.qaResults?.qaStatus;
+  const requiresFixes = item.metadata?.qaResults?.requiresFixes;
+  
+  return (
+    <div className="space-y-1">
+      <a 
+        href={item.publishedUrl} 
+        target="_blank" 
+        rel="noopener noreferrer"
+        className="text-blue-600 hover:text-blue-800 text-xs font-medium inline-flex items-center gap-1"
+      >
+        <Globe className="h-3 w-3" />
+        View Article
+      </a>
+      {requiresFixes && (
+        <div className="text-xs text-amber-600 flex items-center gap-1">
+          <AlertCircle className="h-3 w-3" />
+          QA Issues
+        </div>
+      )}
+      {item.deliveredAt && (
+        <div className="text-xs text-green-600">
+          ✓ Delivered
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Workflow Status Cell Component
 const WorkflowStatusCell = ({ workflowId, userType }: { workflowId?: string; userType: 'internal' | 'account' }) => {
   const progress = useWorkflowProgress(workflowId);
@@ -125,6 +170,8 @@ export interface LineItem {
   estimatedPrice?: number;
   wholesalePrice?: number;
   workflowId?: string;
+  publishedUrl?: string;
+  deliveredAt?: string | Date;
   metadata?: any;
   modifiedAt?: string | Date; // For tracking when line item was last modified for invoice regeneration
   // Publisher attribution fields
@@ -1156,6 +1203,8 @@ export default function LineItemsReviewTable({
                       {hasAnyWorkflows && (
                         <th className="pb-2 font-medium w-[120px] min-w-[120px]">Workflow</th>
                       )}
+                      {/* Show Published URL column for items that are in_progress, delivered, or completed */}
+                      <th className="pb-2 font-medium w-[150px] min-w-[150px]">Published URL</th>
                       <th className="pb-2 font-medium w-[250px] min-w-[250px] pr-4">Target Page</th>
                       <th className="pb-2 font-medium w-[300px] min-w-[300px] hidden xl:table-cell">Anchor Text</th>
                       <th className="pb-2 font-medium w-[200px] min-w-[200px] xl:hidden">Anchor</th>
@@ -1233,6 +1282,10 @@ export default function LineItemsReviewTable({
                               <WorkflowStatusCell workflowId={item.workflowId} userType={userType} />
                             </td>
                           )}
+                          {/* Published URL Column */}
+                          <td className="py-3 px-3">
+                            <PublishedUrlCell item={item} userType={userType} />
+                          </td>
                           <td className="py-3 pl-2 pr-4 text-sm w-[250px] min-w-[250px]">
                             <TableTargetDropdown
                               currentTarget={item.targetPageUrl}
@@ -1554,6 +1607,24 @@ export default function LineItemsReviewTable({
                             })()}
                           </span>
                         </div>
+                      </div>
+                    )}
+                    
+                    {/* Workflow & Published URL */}
+                    {(hasAnyWorkflows || item.publishedUrl) && (
+                      <div className="flex gap-4 pb-2 border-b">
+                        {hasAnyWorkflows && item.workflowId && (
+                          <div className="flex-1">
+                            <div className="text-xs text-gray-500 mb-1">Workflow</div>
+                            <WorkflowStatusCell workflowId={item.workflowId} userType={userType} />
+                          </div>
+                        )}
+                        {['in_progress', 'delivered', 'completed', 'published'].includes(item.status) && (
+                          <div className="flex-1">
+                            <div className="text-xs text-gray-500 mb-1">Published Article</div>
+                            <PublishedUrlCell item={item} userType={userType} />
+                          </div>
+                        )}
                       </div>
                     )}
                     

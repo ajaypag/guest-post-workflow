@@ -6,7 +6,6 @@ import { SavedField } from '../SavedField';
 import { CheckCircle, AlertCircle, ExternalLink, Shield, TrendingUp, DollarSign, FileCheck, RefreshCw, Play } from 'lucide-react';
 import { CheckRow } from '../ui/CheckRow';
 import { MissingFieldsModal } from '../modals/MissingFieldsModal';
-import { toast } from 'sonner';
 
 interface PublicationVerificationStepProps {
   step: WorkflowStep;
@@ -16,7 +15,6 @@ interface PublicationVerificationStepProps {
 
 export const PublicationVerificationStep = ({ step, workflow, onChange }: PublicationVerificationStepProps) => {
   const [isVerifying, setIsVerifying] = useState(false);
-  const [isSaving, setSaving] = useState(false);
   const [showMissingFields, setShowMissingFields] = useState(false);
   const [missingFields, setMissingFields] = useState<string[]>([]);
   const [rateLimitMessage, setRateLimitMessage] = useState('');
@@ -121,70 +119,10 @@ export const PublicationVerificationStep = ({ step, workflow, onChange }: Public
     });
   };
 
-  const handleForceDeliver = async () => {
-    if (!confirm('⚠️ WARNING: QA checks have failed but you are forcing delivery.\n\nThis will:\n• Mark the workflow as complete despite failing checks\n• Apply a manual override flag\n• Deliver the order line item with QA failures noted\n\nAre you sure you want to proceed?')) {
-      return;
-    }
-
-    try {
-      setSaving(true);
-      const sessionResponse = await fetch('/api/auth/session');
-      const session = await sessionResponse.json();
-      const userId = session?.user?.id;
-
-      // Update workflow with manual override flag
-      const updatedOutputs = {
-        ...step.outputs,
-        manualOverride: {
-          applied: true,
-          reason: 'User forced delivery despite QA failures',
-          appliedBy: userId,
-          appliedAt: new Date().toISOString()
-        },
-        paymentAuthorized: true, // Auto-authorize payment on force deliver
-        paymentAuthorizedAt: new Date().toISOString(),
-        paymentAuthorizedBy: userId,
-        workflowCompleted: true,
-        completedAt: new Date().toISOString()
-      };
-
-      // Update local state
-      onChange(updatedOutputs);
-
-      // Trigger workflow-to-line-item sync with override flag
-      if (workflow.id) {
-        const syncResponse = await fetch(`/api/workflows/${workflow.id}/sync-to-line-item`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            stepOutputs: updatedOutputs, 
-            userId,
-            forceDeliver: true 
-          })
-        });
-
-        if (!syncResponse.ok) {
-          throw new Error('Failed to sync to line item');
-        }
-      }
-
-      toast.success('Workflow force-delivered with manual override');
-    } catch (error) {
-      console.error('Force deliver failed:', error);
-      toast.error('Failed to force deliver workflow');
-    } finally {
-      setSaving(false);
-    }
-  };
-
   // Check if all verification requirements are met
   const criticalChecksPassed = autoVerification?.score?.overallPassed || false;
   const manualChecksPassed = manualChecks.contentIntegrity && manualChecks.editorialQuality;
   const allVerificationComplete = criticalChecksPassed && manualChecksPassed;
-  
-  // Check for manual override
-  const hasManualOverride = step.outputs.manualOverride?.applied || false;
-  const canForceDeliver = autoVerification && !criticalChecksPassed && publishedUrl;
 
   // Convert verification status to CheckRow format
   const getCheckStatus = (value: boolean | null) => {
@@ -219,10 +157,10 @@ export const PublicationVerificationStep = ({ step, workflow, onChange }: Public
               </div>
               
               <SavedField
-                label="Published Article URL"
-                value={publishedUrl}
-                placeholder="Enter the live article URL..."
-                onChange={(value) => onChange({ ...step.outputs, publishedUrl: value })}
+                label="Actual Published URL (if different)"
+                value={step.outputs.verifiedUrl || publishedUrl}
+                placeholder="Confirm or update the live URL..."
+                onChange={(value) => onChange({ ...step.outputs, verifiedUrl: value })}
               />
             </div>
           ) : (
@@ -238,187 +176,122 @@ export const PublicationVerificationStep = ({ step, workflow, onChange }: Public
         </div>
       </div>
 
-      {/* Auto-Verification */}
+      {/* QA Checklist */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
           <div className="flex items-center justify-between">
-            <h3 className="font-medium text-gray-900">Automated Verification</h3>
-            {publishedUrl && (
-              <button
-                onClick={runAutoVerification}
-                disabled={isVerifying || !publishedUrl}
-                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
-              >
-                {isVerifying ? (
-                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <Play className="w-4 h-4 mr-2" />
-                )}
-                {isVerifying ? 'Verifying...' : autoVerification ? 'Re-verify' : 'Start Verification'}
-              </button>
+            <h3 className="font-medium text-gray-900">Quality Assurance Checklist</h3>
+            {allChecksPassed && (
+              <span className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 text-sm rounded-full">
+                <CheckCircle className="w-4 h-4 mr-1" />
+                All Checks Passed
+              </span>
             )}
           </div>
         </div>
         <div className="p-6">
-          {rateLimitMessage && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
-              <p className="text-sm text-yellow-800">{rateLimitMessage}</p>
-            </div>
-          )}
+          <div className="space-y-4">
+            {/* Content Verification */}
+            <div className="border-b border-gray-100 pb-4">
+              <h4 className="text-sm font-medium text-gray-700 mb-3">Content Verification</h4>
+              <div className="space-y-2">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={qaChecks.urlVerified}
+                    onChange={(e) => handleQACheck('urlVerified', e.target.checked)}
+                    className="mr-3"
+                  />
+                  <span className="text-sm">URL matches suggested or is appropriate</span>
+                </label>
+                
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={qaChecks.contentIntact}
+                    onChange={(e) => handleQACheck('contentIntact', e.target.checked)}
+                    className="mr-3"
+                  />
+                  <span className="text-sm">Article content published without major changes</span>
+                </label>
 
-          {!autoVerification && !isVerifying && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
-              <p className="text-blue-800 text-sm mb-2">Ready to verify your published article</p>
-              <p className="text-blue-600 text-xs">This will check all critical requirements automatically</p>
-            </div>
-          )}
-
-          {autoVerification && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <p className="text-sm text-gray-600">Verification Score</p>
-                  <p className={`font-semibold ${
-                    autoVerification.score.overallPassed ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {autoVerification.score.criticalPassed}/{autoVerification.score.criticalTotal} Critical Checks
-                    {autoVerification.score.overallPassed ? ' ✓ PASSED' : ' ✗ FAILED'}
-                  </p>
-                </div>
-                {lastVerifiedAt && (
-                  <p className="text-xs text-gray-500">
-                    Last verified: {new Date(lastVerifiedAt).toLocaleString()}
-                  </p>
-                )}
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={qaChecks.authorAttribution}
+                    onChange={(e) => handleQACheck('authorAttribution', e.target.checked)}
+                    className="mr-3"
+                  />
+                  <span className="text-sm">Author attribution/bio included (if applicable)</span>
+                </label>
               </div>
-
-              {/* Critical Checks */}
-              <div>
-                <h4 className="text-sm font-semibold text-gray-700 mb-3">Critical Requirements</h4>
-                <div className="space-y-2">
-                  <CheckRow 
-                    label="URL is Live" 
-                    status={getCheckStatus(autoVerification.critical.urlIsLive)}
-                    isCritical={true}
-                  />
-                  <CheckRow 
-                    label="Client Link Present" 
-                    status={getCheckStatus(autoVerification.critical.clientLinkPresent)}
-                    isCritical={true}
-                  />
-                  <CheckRow 
-                    label="Anchor Text Correct" 
-                    status={getCheckStatus(autoVerification.critical.anchorTextCorrect)}
-                    isCritical={true}
-                  />
-                  <CheckRow 
-                    label="Link is Dofollow" 
-                    status={getCheckStatus(autoVerification.critical.linkIsDofollow)}
-                    isCritical={true}
-                  />
-                  <CheckRow 
-                    label="Correct Domain" 
-                    status={getCheckStatus(autoVerification.critical.correctDomain)}
-                    isCritical={true}
-                  />
-                  <CheckRow 
-                    label="Client Mention Present" 
-                    status={getCheckStatus(autoVerification.critical.clientMentionPresent)}
-                    isCritical={true}
-                  />
-                </div>
-              </div>
-
-              {/* Additional Checks */}
-              <div>
-                <h4 className="text-sm font-semibold text-gray-700 mb-3">Additional Quality Checks</h4>
-                <div className="space-y-2">
-                  <CheckRow 
-                    label="Google Indexed" 
-                    status={getCheckStatus(autoVerification.additional.googleIndexed)}
-                    details={autoVerification.metadata.googleIndexStatus ? 
-                      `Status: ${autoVerification.metadata.googleIndexStatus}` : undefined}
-                  />
-                  <CheckRow 
-                    label="Images Present" 
-                    status={getCheckStatus(autoVerification.additional.imagesPresent)}
-                  />
-                  <CheckRow 
-                    label="URL Matches Suggestion" 
-                    status={getCheckStatus(autoVerification.additional.urlMatchesSuggestion)}
-                  />
-                </div>
-              </div>
-
-              {autoVerification.metadata.errors?.length > 0 && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                  <h5 className="text-sm font-medium text-red-800 mb-2">Verification Errors</h5>
-                  <ul className="space-y-1">
-                    {autoVerification.metadata.errors.map((error: string, index: number) => (
-                      <li key={index} className="text-xs text-red-700">• {error}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
             </div>
-          )}
+
+            {/* Technical Verification */}
+            <div className="border-b border-gray-100 pb-4">
+              <h4 className="text-sm font-medium text-gray-700 mb-3">Technical Verification</h4>
+              <div className="space-y-2">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={qaChecks.linksActive}
+                    onChange={(e) => handleQACheck('linksActive', e.target.checked)}
+                    className="mr-3"
+                  />
+                  <span className="text-sm">All internal and external links are active</span>
+                </label>
+
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={qaChecks.imagesDisplayed}
+                    onChange={(e) => handleQACheck('imagesDisplayed', e.target.checked)}
+                    className="mr-3"
+                  />
+                  <span className="text-sm">Images properly displayed (if applicable)</span>
+                </label>
+
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={qaChecks.metaDataCorrect}
+                    onChange={(e) => handleQACheck('metaDataCorrect', e.target.checked)}
+                    className="mr-3"
+                  />
+                  <span className="text-sm">Meta title and description implemented</span>
+                </label>
+              </div>
+            </div>
+
+            {/* SEO Verification */}
+            <div className="pb-4">
+              <h4 className="text-sm font-medium text-gray-700 mb-3">SEO & Visibility</h4>
+              <div className="space-y-2">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={qaChecks.indexable}
+                    onChange={(e) => handleQACheck('indexable', e.target.checked)}
+                    className="mr-3"
+                  />
+                  <span className="text-sm">Page is indexable (not noindex/nofollow)</span>
+                </label>
+
+              </div>
+            </div>
+          </div>
+
+          {/* QA Notes */}
+          <SavedField
+            label="QA Notes"
+            value={step.outputs.qaNotes || ''}
+            placeholder="Document any issues found or corrections needed..."
+            onChange={(value) => onChange({ ...step.outputs, qaNotes: value })}
+            isTextarea={true}
+            height="h-24"
+          />
         </div>
       </div>
-
-      {/* Manual Quality Checks */}
-      {autoVerification && (
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
-            <h3 className="font-medium text-gray-900">Manual Quality Checks</h3>
-          </div>
-          <div className="p-6 space-y-4">
-            <p className="text-sm text-gray-600 mb-4">
-              Complete these final manual checks to approve the workflow:
-            </p>
-            
-            <div className="space-y-3">
-              <label className="flex items-start space-x-3">
-                <input
-                  type="checkbox"
-                  checked={manualChecks.contentIntegrity}
-                  onChange={(e) => handleManualCheck('contentIntegrity', e.target.checked)}
-                  className="mt-0.5 flex-shrink-0"
-                />
-                <div>
-                  <span className="text-sm font-medium">Content Integrity Verified</span>
-                  <p className="text-xs text-gray-600 mt-1">
-                    Article content matches what was submitted, no unauthorized changes
-                  </p>
-                </div>
-              </label>
-              
-              <label className="flex items-start space-x-3">
-                <input
-                  type="checkbox"
-                  checked={manualChecks.editorialQuality}
-                  onChange={(e) => handleManualCheck('editorialQuality', e.target.checked)}
-                  className="mt-0.5 flex-shrink-0"
-                />
-                <div>
-                  <span className="text-sm font-medium">Editorial Quality Approved</span>
-                  <p className="text-xs text-gray-600 mt-1">
-                    Professional formatting, readability, and overall presentation quality
-                  </p>
-                </div>
-              </label>
-            </div>
-
-            <SavedField
-              label="Quality Notes"
-              value={step.outputs.qualityNotes || ''}
-              placeholder="Document any quality observations or issues..."
-              onChange={(value) => onChange({ ...step.outputs, qualityNotes: value })}
-              isTextarea={true}
-              height="h-20"
-            />
-          </div>
-        </div>
-      )}
 
       {/* Performance Metrics */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
@@ -526,9 +399,9 @@ export const PublicationVerificationStep = ({ step, workflow, onChange }: Public
               </p>
               <button
                 onClick={handleWorkflowCompletion}
-                disabled={!allVerificationComplete || !step.outputs.paymentAuthorized}
+                disabled={!allChecksPassed || !step.outputs.paymentAuthorized}
                 className={`w-full py-3 rounded-lg font-medium transition-colors ${
-                  allVerificationComplete && step.outputs.paymentAuthorized
+                  allChecksPassed && step.outputs.paymentAuthorized
                     ? 'bg-green-600 text-white hover:bg-green-700'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
@@ -537,52 +410,14 @@ export const PublicationVerificationStep = ({ step, workflow, onChange }: Public
                 Mark Workflow Complete
               </button>
               
-              {(!allVerificationComplete || !step.outputs.paymentAuthorized) && (
+              {(!allChecksPassed || !step.outputs.paymentAuthorized) && (
                 <div className="mt-3 space-y-1">
-                  {!criticalChecksPassed && (
-                    <p className="text-sm text-yellow-600">• Complete automated verification (all critical checks must pass)</p>
-                  )}
-                  {!manualChecksPassed && (
-                    <p className="text-sm text-yellow-600">• Complete manual quality checks</p>
+                  {!allChecksPassed && (
+                    <p className="text-sm text-yellow-600">• Complete all QA checks</p>
                   )}
                   {!step.outputs.paymentAuthorized && (
                     <p className="text-sm text-yellow-600">• Authorize payment to publisher</p>
                   )}
-                </div>
-              )}
-
-              {/* Force Deliver Option - Only shows when QA failed but article is published */}
-              {canForceDeliver && !hasManualOverride && (
-                <div className="mt-6 border-t pt-4">
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                    <h4 className="font-medium text-red-900 mb-2">⚠️ QA Checks Failed</h4>
-                    <p className="text-sm text-red-700 mb-3">
-                      The article has been published but failed {6 - (autoVerification?.score?.criticalPassed || 0)} critical QA checks.
-                      You can force delivery if the client accepts the article despite these issues.
-                    </p>
-                    <button
-                      onClick={handleForceDeliver}
-                      className="w-full py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
-                    >
-                      <Shield className="w-4 h-4 inline mr-2" />
-                      Force Deliver (Override QA)
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Show if manual override was applied */}
-              {hasManualOverride && (
-                <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-3">
-                  <p className="text-sm text-amber-800 font-medium">
-                    ⚠️ Manual Override Applied
-                  </p>
-                  <p className="text-xs text-amber-600 mt-1">
-                    This workflow was delivered despite QA failures.
-                    {step.outputs.manualOverride?.appliedAt && (
-                      <span> Applied on {new Date(step.outputs.manualOverride.appliedAt).toLocaleString()}</span>
-                    )}
-                  </p>
                 </div>
               )}
             </div>
@@ -597,7 +432,7 @@ export const PublicationVerificationStep = ({ step, workflow, onChange }: Public
               </p>
               <div className="mt-3 space-y-1 text-sm text-green-700">
                 <p>✓ Article published and verified</p>
-                <p>✓ All verification and quality checks passed</p>
+                <p>✓ All quality checks passed</p>
                 <p>✓ Payment authorized to publisher</p>
                 <p>✓ Workflow successfully completed</p>
               </div>
@@ -635,9 +470,9 @@ export const PublicationVerificationStep = ({ step, workflow, onChange }: Public
               <p className="font-medium text-blue-900">Authorized - {agreedPrice}</p>
             </div>
             <div>
-              <p className="text-blue-700">Verification Score:</p>
+              <p className="text-blue-700">Quality Score:</p>
               <p className="font-medium text-blue-900">
-                {autoVerification?.score.criticalPassed || 0}/{autoVerification?.score.criticalTotal || 6} critical checks + manual approval
+                {Object.values(qaChecks).filter(v => v).length}/{Object.keys(qaChecks).length} checks passed
               </p>
             </div>
             <div>

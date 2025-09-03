@@ -271,6 +271,16 @@ ${fullArticle || 'Complete previous steps to get article content'}`;
             <option value="no">No suitable placement found</option>
           </select>
         </div>
+
+        <div>
+          <SavedField
+            label="Expected Client Mention Phrase"
+            value={step.outputs.expectedPhrase || ''}
+            placeholder="e.g., 'Acme Corp digital marketing solutions' - exact phrase to verify in published article"
+            onChange={(value) => onChange({ ...step.outputs, expectedPhrase: value })}
+            helpText="This exact phrase will be automatically verified when the article is published. Include both the brand name and relevant keywords that should appear together."
+          />
+        </div>
       </div>
     </div>
   );

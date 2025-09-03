@@ -9,6 +9,7 @@ interface SavedFieldProps {
   onChange: (value: string) => void;
   isTextarea?: boolean;
   height?: string;
+  helpText?: string;
 }
 
 export const SavedField = ({ 
@@ -17,7 +18,8 @@ export const SavedField = ({
   placeholder, 
   onChange, 
   isTextarea = false, 
-  height = "h-32" 
+  height = "h-32",
+  helpText
 }: SavedFieldProps) => {
   const [currentValue, setCurrentValue] = useState(value || '');
   const [saveStatus, setSaveStatus] = useState<'saved' | 'typing' | 'saving'>('saved');
@@ -98,6 +100,9 @@ export const SavedField = ({
           }`}
           placeholder={placeholder}
         />
+      )}
+      {helpText && (
+        <p className="mt-1 text-xs text-gray-600">{helpText}</p>
       )}
     </div>
   );
