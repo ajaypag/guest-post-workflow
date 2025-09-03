@@ -978,7 +978,7 @@ Target URL: ${clientTargetUrl}`;
                       <EnhancedTargetPageSelector
                         value={{
                           targetPageUrl: step.outputs.clientTargetUrl || '',
-                          anchorText: step.outputs.desiredAnchorText || '',
+                          anchorText: '', // Don't pass anchor text to target page selector
                           targetPageId: workflow.metadata?.targetPageId
                         }}
                       onChange={(selection) => {
@@ -1002,16 +1002,16 @@ Target URL: ${clientTargetUrl}`;
                         console.log('🔄 [TOPIC GENERATION] Also setting LEGACY clientTargetUrl for backward compatibility');
                         const updatedOutputs: any = { 
                           ...step.outputs, 
-                          clientTargetUrl: selection.targetPageUrl,
-                          desiredAnchorText: selection.anchorText
+                          clientTargetUrl: selection.targetPageUrl
+                          // Don't overwrite desiredAnchorText from target page selector
                         };
                         
                         // Re-generate enhanced prompt if raw prompt exists
                         if (step.outputs.rawOutlinePrompt) {
                           const tempOutputs = { 
                             ...step.outputs, 
-                            clientTargetUrl: selection.targetPageUrl,
-                            desiredAnchorText: selection.anchorText
+                            clientTargetUrl: selection.targetPageUrl
+                            // Keep existing desiredAnchorText
                           };
                           const enhanced = buildEnhancedResearchPromptWithOutputs(step.outputs.rawOutlinePrompt, tempOutputs);
                           updatedOutputs.outlinePrompt = enhanced;
@@ -1042,22 +1042,21 @@ Target URL: ${clientTargetUrl}`;
                     />
                   )}
 
-                  {!clientId && (
-                    <SavedField
-                      label="Desired Anchor Text (Optional)"
-                      value={step.outputs.desiredAnchorText || ''}
-                      placeholder="Preferred anchor text, or leave blank for AI suggestions"
-                      onChange={(value) => {
-                        const updatedOutputs: any = { ...step.outputs, desiredAnchorText: value };
-                        if (step.outputs.rawOutlinePrompt) {
-                          const tempOutputs = { ...step.outputs, desiredAnchorText: value };
-                          const enhanced = buildEnhancedResearchPromptWithOutputs(step.outputs.rawOutlinePrompt, tempOutputs);
-                          updatedOutputs.outlinePrompt = enhanced;
-                        }
-                        onChange(updatedOutputs);
-                      }}
-                    />
-                  )}
+                  {/* Always show anchor text field - it comes from order line items, not target pages */}
+                  <SavedField
+                    label={clientId ? "Desired Anchor Text (from order)" : "Desired Anchor Text (Optional)"}
+                    value={step.outputs.desiredAnchorText || workflow.metadata?.anchorText || workflow.steps?.[0]?.inputs?.anchorText || ''}
+                    placeholder={clientId ? "Anchor text from order line item" : "Preferred anchor text, or leave blank for AI suggestions"}
+                    onChange={(value) => {
+                      const updatedOutputs: any = { ...step.outputs, desiredAnchorText: value };
+                      if (step.outputs.rawOutlinePrompt) {
+                        const tempOutputs = { ...step.outputs, desiredAnchorText: value };
+                        const enhanced = buildEnhancedResearchPromptWithOutputs(step.outputs.rawOutlinePrompt, tempOutputs);
+                        updatedOutputs.outlinePrompt = enhanced;
+                      }
+                      onChange(updatedOutputs);
+                    }}
+                  />
                   
                   {step.outputs.clientTargetUrl && (
                     <div className="bg-blue-50 border border-blue-200 rounded p-3">
