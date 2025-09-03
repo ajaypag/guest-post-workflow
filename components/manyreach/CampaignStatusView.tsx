@@ -51,9 +51,10 @@ export function CampaignStatusView({ workspace = 'main' }: CampaignStatusViewPro
   const [importProgress, setImportProgress] = useState<ImportProgress | null>(null);
   const [notifications, setNotifications] = useState<string[]>([]);
   const pollingInterval = useRef<NodeJS.Timeout | null>(null);
+  const refreshInterval = useRef<NodeJS.Timeout | null>(null);
 
-  const fetchCampaignStatus = async () => {
-    setLoading(true);
+  const fetchCampaignStatus = async (showLoading = true) => {
+    if (showLoading) setLoading(true);
     try {
       const response = await fetch(`/api/admin/manyreach/campaign-status?workspace=${workspace}`);
       const data = await response.json();
@@ -65,12 +66,26 @@ export function CampaignStatusView({ workspace = 'main' }: CampaignStatusViewPro
     } catch (error) {
       console.error('Error fetching campaign status:', error);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchCampaignStatus();
+    
+    // Set up auto-refresh every 30 seconds
+    refreshInterval.current = setInterval(() => {
+      // Only refresh if not currently importing
+      if (!importing && !importProgress) {
+        fetchCampaignStatus(false); // Don't show loading indicator for auto-refresh
+      }
+    }, 30000); // Refresh every 30 seconds
+    
+    return () => {
+      if (refreshInterval.current) {
+        clearInterval(refreshInterval.current);
+      }
+    };
   }, [workspace]);
 
   useEffect(() => {
@@ -78,6 +93,9 @@ export function CampaignStatusView({ workspace = 'main' }: CampaignStatusViewPro
     return () => {
       if (pollingInterval.current) {
         clearInterval(pollingInterval.current);
+      }
+      if (refreshInterval.current) {
+        clearInterval(refreshInterval.current);
       }
     };
   }, []);
@@ -323,14 +341,17 @@ export function CampaignStatusView({ workspace = 'main' }: CampaignStatusViewPro
         <CardHeader>
           <div className="flex justify-between items-center">
             <CardTitle>Campaigns</CardTitle>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={fetchCampaignStatus}
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
-            </Button>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-gray-500">Auto-refreshing every 30s</span>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => fetchCampaignStatus()}
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh Now
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
