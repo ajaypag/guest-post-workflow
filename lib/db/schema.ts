@@ -1,6 +1,7 @@
 import { pgTable, uuid, varchar, text, timestamp, boolean, integer, real, jsonb, decimal } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { websites } from './websiteSchema';
+import { niches } from './nichesSchema';
 
 // Users table - INTERNAL STAFF ONLY
 // Note: accounts and publishers have separate tables with their own authentication
@@ -505,6 +506,9 @@ export {
   workflowWebsitesRelations,
   websiteSyncLogsRelations
 } from './websiteSchema';
+
+// Re-export niches schema
+export { niches } from './nichesSchema';
 
 // Re-export bulk analysis schema tables
 export { 
