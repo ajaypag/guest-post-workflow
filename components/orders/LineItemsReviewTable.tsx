@@ -17,7 +17,7 @@ import StatusToggle from './StatusToggle';
 import ActionColumnToggle from './ActionColumnToggle';
 import DomainTags from './DomainTags';
 import PublisherAssignmentModal from './PublisherAssignmentModal';
-import { QADetailsTooltip } from './QADetailsTooltip';
+// import { QADetailsTooltip } from './QADetailsTooltip';
 
 // Simple hook to fetch workflow progress
 const useWorkflowProgress = (workflowId?: string) => {
@@ -109,20 +109,16 @@ const PublishedUrlCell = ({ item, userType }: { item: LineItem; userType: 'inter
         <Globe className="h-3 w-3" />
         View Article
       </a>
-      {/* Show QA issues and manual override status for internal users with tooltip */}
+      {/* Show QA issues and manual override status for internal users */}
       {requiresFixes && qaResults ? (
-        <QADetailsTooltip qaResults={qaResults} manualOverride={hasManualOverride}>
-          <div className="text-xs text-amber-600 flex items-center gap-1">
-            <AlertCircle className="h-3 w-3" />
-            {hasManualOverride ? 'Force delivered (QA failed)' : 'QA Issues'}
-          </div>
-        </QADetailsTooltip>
+        <div className="text-xs text-amber-600 flex items-center gap-1">
+          <AlertCircle className="h-3 w-3" />
+          {hasManualOverride ? 'Force delivered (QA failed)' : 'QA Issues'}
+        </div>
       ) : qaResults ? (
-        <QADetailsTooltip qaResults={qaResults} manualOverride={hasManualOverride}>
-          <div className="text-xs text-green-600">
-            ✓ QA Passed
-          </div>
-        </QADetailsTooltip>
+        <div className="text-xs text-green-600">
+          ✓ QA Passed
+        </div>
       ) : null}
       {item.deliveredAt && !requiresFixes && !qaResults && (
         <div className="text-xs text-green-600">

@@ -378,22 +378,20 @@ export const PublicationVerificationStep = ({ step, workflow, onChange }: Public
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  {/* Sync button for when there are overrides or score changes */}
-                  {Object.keys(overrides).length > 0 && (
-                    <button
-                      onClick={handleSyncToOrder}
-                      disabled={isSaving}
-                      className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
-                      title="Update order line item with current verification status"
-                    >
-                      {isSaving ? (
-                        <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
-                      ) : (
-                        <RefreshCw className="w-3 h-3 mr-1" />
-                      )}
-                      Sync Order
-                    </button>
-                  )}
+                  {/* Sync button to update order line item with current verification status */}
+                  <button
+                    onClick={handleSyncToOrder}
+                    disabled={isSaving}
+                    className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
+                    title="Update order line item with current verification status"
+                  >
+                    {isSaving ? (
+                      <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
+                    ) : (
+                      <RefreshCw className="w-3 h-3 mr-1" />
+                    )}
+                    Sync Order
+                  </button>
                   {lastVerifiedAt && (
                     <p className="text-xs text-gray-500">
                       Last verified: {new Date(lastVerifiedAt).toLocaleString()}
