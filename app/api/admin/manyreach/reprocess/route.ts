@@ -3,9 +3,14 @@ import { db } from '@/lib/db/connection';
 import { emailProcessingLogs, EmailProcessingLog } from '@/lib/db/emailProcessingSchema';
 import { eq, sql } from 'drizzle-orm';
 import { EmailParserV3Simplified } from '@/lib/services/emailParserV3Simplified';
+import { requireInternalUser } from '@/lib/auth/middleware';
 
 export async function POST(request: NextRequest) {
   try {
+    const authCheck = await requireInternalUser(request);
+    if (authCheck instanceof NextResponse) {
+      return authCheck;
+    }
     const { draftId } = await request.json();
     
     if (!draftId) {

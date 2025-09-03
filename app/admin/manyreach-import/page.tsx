@@ -71,11 +71,196 @@ export default function ManyReachImportPage() {
   const [previewMode, setPreviewMode] = useState<boolean>(false);
   const [selectedCampaigns, setSelectedCampaigns] = useState<string[]>([]);
   
-  // Draft filtering
+  // Enhanced Draft filtering
   const [showOnlyWithOffers, setShowOnlyWithOffers] = useState<boolean>(false);
   const [showOnlyWithPricing, setShowOnlyWithPricing] = useState<boolean>(false);
+  const [offerTypeFilter, setOfferTypeFilter] = useState<string>('all'); // 'all', 'guest_post', 'link_insertion', 'link_exchange'
+  const [priceRangeFilter, setPriceRangeFilter] = useState<string>('all'); // 'all', '0-100', '100-500', '500-1000', '1000+'
+  const [minPriceFilter, setMinPriceFilter] = useState<number>(0);
+  const [maxPriceFilter, setMaxPriceFilter] = useState<number>(10000);
+  
+  // Bulk operations
+  const [bulkImporting, setBulkImporting] = useState(false);
+  const [selectedDraftIds, setSelectedDraftIds] = useState<string[]>([]);
+  const [bulkProcessing, setBulkProcessing] = useState(false);
+  
+  // Smart bulk campaign processing
+  const [smartBulkProcessing, setSmartBulkProcessing] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState<{current: number; total: number; campaign?: string}>({current: 0, total: 0});
   
   const { toast } = useToast();
+
+  // Enhanced draft filtering function
+  const filterDrafts = (draftsList: Draft[]) => {
+    return draftsList.filter(draft => {
+      const data = draft.edited_data || draft.parsed_data;
+      
+      // Basic offer filter
+      if (showOnlyWithOffers && !data.hasOffer) return false;
+      
+      // Pricing filter
+      if (showOnlyWithPricing) {
+        const hasPrice = data.offerings?.some((o: any) => 
+          o.basePrice !== null && o.basePrice !== undefined && o.basePrice > 0
+        );
+        if (!hasPrice) return false;
+      }
+      
+      // Offer type filter (guest posts, link insertion, etc.)
+      if (offerTypeFilter !== 'all') {
+        const hasMatchingOfferType = data.offerings?.some((o: any) => 
+          o.offeringType === offerTypeFilter
+        );
+        if (!hasMatchingOfferType) return false;
+      }
+      
+      // Price range filter
+      if (priceRangeFilter !== 'all' && data.offerings) {
+        const prices = data.offerings
+          .filter((o: any) => o.basePrice !== null && o.basePrice !== undefined)
+          .map((o: any) => o.basePrice);
+          
+        if (prices.length === 0) return false;
+        
+        const minPrice = Math.min(...prices);
+        
+        switch (priceRangeFilter) {
+          case '0-100':
+            if (minPrice > 100) return false;
+            break;
+          case '100-500':
+            if (minPrice < 100 || minPrice > 500) return false;
+            break;
+          case '500-1000':
+            if (minPrice < 500 || minPrice > 1000) return false;
+            break;
+          case '1000+':
+            if (minPrice < 1000) return false;
+            break;
+        }
+      }
+      
+      // Custom price range filter
+      if (data.offerings && (minPriceFilter > 0 || maxPriceFilter < 10000)) {
+        const prices = data.offerings
+          .filter((o: any) => o.basePrice !== null && o.basePrice !== undefined)
+          .map((o: any) => o.basePrice);
+          
+        if (prices.length === 0) return false;
+        
+        const minPrice = Math.min(...prices);
+        const maxPrice = Math.max(...prices);
+        
+        if (minPrice < minPriceFilter || maxPrice > maxPriceFilter) return false;
+      }
+      
+      return true;
+    });
+  };
+
+  // Smart bulk processing - systematically processes all campaigns with intelligent logic
+  const smartBulkProcessAllCampaigns = async () => {
+    if (campaigns.length === 0) {
+      toast({
+        title: 'No campaigns available',
+        description: 'Load campaigns first before running bulk processing',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    const confirmed = confirm(
+      `🤖 Smart Bulk Processing\n\n` +
+      `This will intelligently process ${campaigns.length} campaigns:\n` +
+      `• Prioritize campaigns with replies\n` +
+      `• Skip campaigns already processed recently\n` +
+      `• Process in batches to avoid API rate limits\n` +
+      `• Apply email limit of ${emailLimit} per campaign\n\n` +
+      `Continue?`
+    );
+
+    if (!confirmed) return;
+
+    setSmartBulkProcessing(true);
+    setBulkProgress({current: 0, total: campaigns.length});
+
+    try {
+      // Sort campaigns by priority (more replies = higher priority)
+      const sortedCampaigns = [...campaigns].sort((a, b) => {
+        return (b.repliedCount || 0) - (a.repliedCount || 0);
+      });
+
+      for (let i = 0; i < sortedCampaigns.length; i++) {
+        const campaign = sortedCampaigns[i];
+        
+        setBulkProgress({
+          current: i + 1, 
+          total: campaigns.length,
+          campaign: campaign.name
+        });
+
+        // Skip campaigns with no replies if onlyReplied is enabled
+        if (onlyReplied && (campaign.repliedCount || 0) === 0) {
+          console.log(`Skipping ${campaign.name} - no replies`);
+          continue;
+        }
+
+        // Skip campaigns already processed (have high imported count)
+        if ((campaign.importedCount || 0) >= (campaign.repliedCount || 0) * 0.8) {
+          console.log(`Skipping ${campaign.name} - already mostly processed`);
+          continue;
+        }
+
+        try {
+          // Call existing importCampaign function
+          const response = await fetch('/api/admin/manyreach/import', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              campaignId: campaign.id,
+              workspaceName: selectedWorkspace,
+              limit: unlimitedEmails ? null : emailLimit,
+              onlyReplied,
+              previewMode
+            })
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            console.log(`✅ Processed ${campaign.name}: ${data.result?.imported || 0} imported`);
+          }
+          
+          // Small delay between campaigns to be API-friendly
+          if (i < sortedCampaigns.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          }
+        } catch (error) {
+          console.error(`Failed to process campaign ${campaign.name}:`, error);
+          // Continue with next campaign instead of failing entirely
+        }
+      }
+
+      toast({
+        title: 'Smart Bulk Processing Complete! 🎉',
+        description: `Processed ${campaigns.length} campaigns intelligently`,
+      });
+
+      // Refresh data
+      await fetchCampaigns();
+      await fetchDrafts();
+
+    } catch (error) {
+      console.error('Smart bulk processing failed:', error);
+      toast({
+        title: 'Smart Bulk Processing Failed',
+        description: error instanceof Error ? error.message : 'Processing failed',
+        variant: 'destructive'
+      });
+    } finally {
+      setSmartBulkProcessing(false);
+      setBulkProgress({current: 0, total: 0});
+    }
+  };
 
   useEffect(() => {
     fetchWorkspaces();
@@ -122,6 +307,43 @@ export default function ManyReachImportPage() {
     }
   };
 
+  const exportDraftsToCSV = () => {
+    const csvData = drafts.map(draft => {
+      const data = draft.edited_data || draft.parsed_data;
+      return {
+        'Domain': data.domain || '',
+        'Campaign': draft.campaign_name || '',
+        'Status': draft.status || 'pending',
+        'Has Offer': data.hasOffer ? 'Yes' : 'No',
+        'Offerings': data.offerings?.map((o: any) => o.name).join('; ') || '',
+        'Prices': data.offerings?.map((o: any) => o.basePrice || 'N/A').join('; ') || '',
+        'Email From': draft.email_from || '',
+        'Created': new Date(draft.created_at).toLocaleDateString(),
+      };
+    });
+    
+    const csvHeader = Object.keys(csvData[0] || {}).join(',');
+    const csvRows = csvData.map(row => 
+      Object.values(row).map(val => 
+        typeof val === 'string' && val.includes(',') ? `"${val}"` : val
+      ).join(',')
+    );
+    const csv = [csvHeader, ...csvRows].join('\n');
+    
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `manyreach-drafts-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: 'Export Complete',
+      description: `Exported ${drafts.length} drafts to CSV`,
+    });
+  };
+
   const fetchDrafts = async () => {
     try {
       const response = await fetch('/api/admin/manyreach/drafts');
@@ -138,6 +360,43 @@ export default function ManyReachImportPage() {
   const [importProgress, setImportProgress] = useState<{
     [key: string]: { processed: number; total: number; status: string; message?: string }
   }>({});
+
+  const bulkImportCampaigns = async () => {
+    if (selectedCampaigns.length === 0) {
+      toast({
+        title: 'No campaigns selected',
+        description: 'Please select at least one campaign to import',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setBulkImporting(true);
+    
+    try {
+      // Import each campaign sequentially
+      for (const campaignId of selectedCampaigns) {
+        await importCampaign(campaignId);
+      }
+      
+      toast({
+        title: 'Bulk import complete',
+        description: `Successfully imported ${selectedCampaigns.length} campaigns`,
+      });
+      
+      // Clear selection
+      setSelectedCampaigns([]);
+    } catch (error) {
+      console.error('Bulk import failed:', error);
+      toast({
+        title: 'Bulk import failed',
+        description: error instanceof Error ? error.message : 'Failed to import campaigns',
+        variant: 'destructive'
+      });
+    } finally {
+      setBulkImporting(false);
+    }
+  };
 
   const importCampaign = async (campaignId: string) => {
     setImporting(campaignId);
@@ -285,6 +544,94 @@ export default function ManyReachImportPage() {
     }
   };
 
+  const bulkApproveDrafts = async () => {
+    if (selectedDraftIds.length === 0) {
+      toast({
+        title: 'No drafts selected',
+        description: 'Please select at least one draft to approve',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setBulkProcessing(true);
+    try {
+      const response = await fetch('/api/admin/manyreach/drafts/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          draftIds: selectedDraftIds,
+          action: 'approve'
+        })
+      });
+
+      if (!response.ok) throw new Error('Bulk approval failed');
+
+      const result = await response.json();
+      
+      toast({
+        title: 'Bulk Approval Complete',
+        description: `Successfully approved ${result.processed} drafts`,
+      });
+
+      // Refresh and clear selection
+      await fetchDrafts();
+      setSelectedDraftIds([]);
+    } catch (error) {
+      toast({
+        title: 'Bulk Approval Failed',
+        description: error instanceof Error ? error.message : 'Failed to approve drafts',
+        variant: 'destructive'
+      });
+    } finally {
+      setBulkProcessing(false);
+    }
+  };
+
+  const bulkRejectDrafts = async () => {
+    if (selectedDraftIds.length === 0) {
+      toast({
+        title: 'No drafts selected',
+        description: 'Please select at least one draft to reject',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setBulkProcessing(true);
+    try {
+      const response = await fetch('/api/admin/manyreach/drafts/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          draftIds: selectedDraftIds,
+          action: 'reject'
+        })
+      });
+
+      if (!response.ok) throw new Error('Bulk rejection failed');
+
+      const result = await response.json();
+      
+      toast({
+        title: 'Bulk Rejection Complete',
+        description: `Successfully rejected ${result.processed} drafts`,
+      });
+
+      // Refresh and clear selection
+      await fetchDrafts();
+      setSelectedDraftIds([]);
+    } catch (error) {
+      toast({
+        title: 'Bulk Rejection Failed',
+        description: error instanceof Error ? error.message : 'Failed to reject drafts',
+        variant: 'destructive'
+      });
+    } finally {
+      setBulkProcessing(false);
+    }
+  };
+
   const reprocessDraft = async (draftId: string) => {
     try {
       const response = await fetch('/api/admin/manyreach/reprocess', {
@@ -331,18 +678,18 @@ export default function ManyReachImportPage() {
   };
 
   return (
-    <div className="container mx-auto py-8">
+    <div className="container mx-auto py-4 px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h1 className="text-3xl font-bold">ManyReach Import V3</h1>
-              <p className="text-gray-600 mt-2">Import publisher replies and create draft records for review</p>
+              <h1 className="text-2xl sm:text-3xl font-bold">ManyReach Import V3</h1>
+              <p className="text-gray-600 mt-2 text-sm sm:text-base">Import publisher replies and create draft records for review</p>
             </div>
           <Button
             onClick={clearTestData}
+            className="w-full sm:w-auto text-red-600 hover:text-red-700 hover:bg-red-50"
             disabled={clearing}
             variant="outline"
-            className="text-red-600 hover:text-red-700 hover:bg-red-50"
           >
             {clearing ? (
               <>
@@ -366,7 +713,7 @@ export default function ManyReachImportPage() {
           <CardDescription>Configure workspace and email processing options</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Workspace Selector */}
             <div>
               <label className="block text-sm font-medium mb-2">Workspace</label>
@@ -498,14 +845,16 @@ export default function ManyReachImportPage() {
       </Card>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="status">
-            <Activity className="mr-2 h-4 w-4" />
-            Status Overview
+        <TabsList className="grid w-full grid-cols-3 h-auto">
+          <TabsTrigger value="status" className="flex flex-col sm:flex-row items-center justify-center text-xs sm:text-sm py-2 px-1 sm:px-3">
+            <Activity className="mr-0 sm:mr-2 h-4 w-4 mb-1 sm:mb-0" />
+            <span className="hidden sm:inline">Status Overview</span>
+            <span className="sm:hidden">Status</span>
           </TabsTrigger>
-          <TabsTrigger value="campaigns">Campaigns</TabsTrigger>
-          <TabsTrigger value="drafts">
-            Drafts {Array.isArray(drafts) && drafts.length > 0 && <Badge className="ml-2">{drafts.length}</Badge>}
+          <TabsTrigger value="campaigns" className="text-xs sm:text-sm py-2 px-1 sm:px-3">Campaigns</TabsTrigger>
+          <TabsTrigger value="drafts" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
+            <span>Drafts</span>
+            {Array.isArray(drafts) && drafts.length > 0 && <Badge className="ml-1 sm:ml-2 text-xs">{drafts.length}</Badge>}
           </TabsTrigger>
         </TabsList>
 
@@ -516,8 +865,82 @@ export default function ManyReachImportPage() {
         <TabsContent value="campaigns">
           <Card>
             <CardHeader>
-              <CardTitle>ManyReach Campaigns</CardTitle>
-              <CardDescription>Import replies from your email campaigns</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>ManyReach Campaigns</CardTitle>
+                  <CardDescription>Import replies from your email campaigns with smart bulk processing</CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  {/* Smart Bulk Processing */}
+                  <Button
+                    onClick={smartBulkProcessAllCampaigns}
+                    disabled={smartBulkProcessing || campaigns.length === 0}
+                    variant="secondary"
+                    className="bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700"
+                  >
+                    {smartBulkProcessing ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        🤖 Smart Processing... ({bulkProgress.current}/{bulkProgress.total})
+                      </>
+                    ) : (
+                      <>🤖 Smart Bulk Process All ({campaigns.length} campaigns)</>
+                    )}
+                  </Button>
+                  
+                  {selectedCampaigns.length > 0 && (
+                    <>
+                      <Button
+                        onClick={bulkImportCampaigns}
+                        disabled={bulkImporting || smartBulkProcessing}
+                        variant="default"
+                      >
+                        {bulkImporting ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Importing {selectedCampaigns.length} campaigns...
+                          </>
+                        ) : (
+                          <>Import {selectedCampaigns.length} Selected</>
+                        )}
+                      </Button>
+                      <Button
+                        onClick={() => setSelectedCampaigns([])}
+                        variant="outline"
+                        disabled={smartBulkProcessing}
+                      >
+                        Clear Selection
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+              
+              {/* Smart Processing Progress */}
+              {smartBulkProcessing && (
+                <div className="mt-4 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="font-medium text-purple-900">🤖 Smart Bulk Processing Active</div>
+                    <div className="text-sm text-purple-700">
+                      {bulkProgress.current} of {bulkProgress.total} campaigns
+                    </div>
+                  </div>
+                  {bulkProgress.campaign && (
+                    <div className="text-sm text-purple-700 mb-2">
+                      Currently processing: <span className="font-medium">{bulkProgress.campaign}</span>
+                    </div>
+                  )}
+                  <div className="w-full bg-purple-200 rounded-full h-2">
+                    <div 
+                      className="bg-gradient-to-r from-purple-600 to-blue-600 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${(bulkProgress.current / bulkProgress.total) * 100}%` }}
+                    ></div>
+                  </div>
+                  <div className="text-xs text-purple-600 mt-2">
+                    ✨ Intelligently prioritizing campaigns with replies and skipping already processed ones
+                  </div>
+                </div>
+              )}
             </CardHeader>
             <CardContent>
               {loading ? (
@@ -526,16 +949,47 @@ export default function ManyReachImportPage() {
                 </div>
               ) : (
                 <div className="space-y-4">
+                  {/* Select All checkbox */}
+                  <div className="flex items-center gap-2 pb-2 border-b">
+                    <input
+                      type="checkbox"
+                      checked={campaigns.length > 0 && selectedCampaigns.length === campaigns.length}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedCampaigns(campaigns.map(c => c.id));
+                        } else {
+                          setSelectedCampaigns([]);
+                        }
+                      }}
+                      className="rounded"
+                    />
+                    <span className="text-sm font-medium">Select All</span>
+                  </div>
+                  
                   {campaigns.map((campaign) => (
                     <div key={campaign.id} className="border rounded-lg p-4">
                       <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="font-semibold">{campaign.name}</h3>
-                          <div className="flex gap-4 text-sm text-gray-600 mt-1">
-                            <span>Sent: {campaign.sentCount}</span>
-                            <span>Replied: {campaign.repliedCount}</span>
-                            <span>Imported: {campaign.importedCount}</span>
-                            <span>Drafts: {campaign.draftCount}</span>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="checkbox"
+                            checked={selectedCampaigns.includes(campaign.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedCampaigns([...selectedCampaigns, campaign.id]);
+                              } else {
+                                setSelectedCampaigns(selectedCampaigns.filter(id => id !== campaign.id));
+                              }
+                            }}
+                            className="rounded"
+                          />
+                          <div>
+                            <h3 className="font-semibold">{campaign.name}</h3>
+                            <div className="flex gap-4 text-sm text-gray-600 mt-1">
+                              <span>Sent: {campaign.sentCount}</span>
+                              <span>Replied: {campaign.repliedCount}</span>
+                              <span>Imported: {campaign.importedCount}</span>
+                              <span>Drafts: {campaign.draftCount}</span>
+                            </div>
                           </div>
                         </div>
                         <div className="flex gap-2">
@@ -544,7 +998,7 @@ export default function ManyReachImportPage() {
                           </Badge>
                           <Button
                             onClick={() => importCampaign(campaign.id)}
-                            disabled={importing === campaign.id}
+                            disabled={importing === campaign.id || bulkImporting}
                             size="sm"
                           >
                             {importing === campaign.id ? (
@@ -614,17 +1068,95 @@ export default function ManyReachImportPage() {
         </TabsContent>
 
         <TabsContent value="drafts">
-          <div className="grid grid-cols-12 gap-4">
+          {/* Draft Filters and Bulk Actions - moved from hidden section */}
+          <Card className="mb-4">
+            <CardHeader>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                  <CardTitle>Draft Management</CardTitle>
+                  <CardDescription>Filter and manage draft publishers</CardDescription>
+                </div>
+                {selectedDraftIds.length > 0 && (
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={bulkApproveDrafts}
+                      disabled={bulkProcessing}
+                      variant="default"
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      {bulkProcessing ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="mr-2 h-4 w-4" />
+                          Approve {selectedDraftIds.length}
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      onClick={bulkRejectDrafts}
+                      disabled={bulkProcessing}
+                      variant="outline"
+                      size="sm"
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <XCircle className="mr-2 h-4 w-4" />
+                      Reject {selectedDraftIds.length}
+                    </Button>
+                    <Button
+                      onClick={() => setSelectedDraftIds([])}
+                      variant="ghost"
+                      size="sm"
+                    >
+                      Clear Selection
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-4">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    className="mr-2"
+                    checked={showOnlyWithOffers}
+                    onChange={(e) => setShowOnlyWithOffers(e.target.checked)}
+                  />
+                  <span className="text-sm">Only drafts with offers</span>
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    className="mr-2"
+                    checked={showOnlyWithPricing}
+                    onChange={(e) => setShowOnlyWithPricing(e.target.checked)}
+                  />
+                  <span className="text-sm">Only drafts with pricing</span>
+                </label>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
             {/* Use new infinite scroll component */}
-            <div className="col-span-4">
+            <div className="lg:col-span-4">
               <DraftsListInfinite 
                 onDraftSelect={setSelectedDraft}
                 onDraftUpdate={fetchDrafts}
+                showOnlyWithOffers={showOnlyWithOffers}
+                showOnlyWithPricing={showOnlyWithPricing}
+                selectedDraftIds={selectedDraftIds}
+                onSelectionChange={setSelectedDraftIds}
               />
             </div>
             
             {/* Draft Editor - restored from original */}
-            <div className="col-span-8">
+            <div className="lg:col-span-8">
               {selectedDraft ? (
                 <DraftEditor
                   draft={selectedDraft}
@@ -646,7 +1178,7 @@ export default function ManyReachImportPage() {
           {/* OLD CONTENT BELOW - HIDDEN */}
           <div style={{ display: 'none' }}>
           {/* Draft Statistics */}
-          <div className="grid grid-cols-4 gap-4 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
             <Card>
               <CardContent className="p-4">
                 <div className="text-2xl font-bold">{drafts.length}</div>
@@ -733,7 +1265,7 @@ export default function ManyReachImportPage() {
             </CardContent>
           </Card>
           
-          <div className="grid grid-cols-12 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
             {/* Draft List */}
             <div className="col-span-4">
               <Card>
@@ -743,18 +1275,7 @@ export default function ManyReachImportPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    {Array.isArray(drafts) && drafts.filter((draft) => {
-                      const data = draft.edited_data || draft.parsed_data;
-                      // Apply filters
-                      if (showOnlyWithOffers && !data.hasOffer) return false;
-                      if (showOnlyWithPricing) {
-                        const hasPrice = data.offerings?.some((o: any) => 
-                          o.basePrice !== null && o.basePrice !== undefined
-                        );
-                        if (!hasPrice) return false;
-                      }
-                      return true;
-                    }).map((draft) => {
+                    {Array.isArray(drafts) && filterDrafts(drafts).map((draft) => {
                       const data = draft.edited_data || draft.parsed_data;
                       return (
                         <div
@@ -1135,7 +1656,7 @@ function DraftEditor({ draft, onUpdate, onReprocess }: {
             {/* Publisher Info */}
             <div>
               <h3 className="font-semibold mb-2">Publisher</h3>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium">Company Name</label>
                   <input
@@ -1235,7 +1756,7 @@ function DraftEditor({ draft, onUpdate, onReprocess }: {
                 <h3 className="font-semibold mb-2">Websites (Table 2)</h3>
                 {editedData.websites.map((website: any, index: number) => (
                   <div key={index} className="p-3 border rounded mb-2">
-                    <div className="grid grid-cols-3 gap-4 mb-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-3">
                       <div>
                         <label className="text-sm font-medium">Domain</label>
                         <input
@@ -1263,7 +1784,7 @@ function DraftEditor({ draft, onUpdate, onReprocess }: {
                         />
                       </div>
                     </div>
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                       <div>
                         <label className="text-sm font-medium">Categories</label>
                         <input
@@ -1390,7 +1911,7 @@ function DraftEditor({ draft, onUpdate, onReprocess }: {
                       </button>
                     </div>
                     
-                    <div className="grid grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                       <div>
                         <label className="text-sm font-medium">Base Price</label>
                         <div className="flex gap-1">
@@ -1491,7 +2012,7 @@ function DraftEditor({ draft, onUpdate, onReprocess }: {
                         <div className="font-medium text-sm">Requirements</div>
                         
                         {/* Basic Requirements */}
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <div>
                             <label className="text-xs font-medium">DoFollow Links</label>
                             <select

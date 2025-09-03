@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
 import { sql } from 'drizzle-orm';
+import { requireInternalUser } from '@/lib/auth/middleware';
 
 export async function POST(request: NextRequest) {
   try {
+    const authCheck = await requireInternalUser(request);
+    if (authCheck instanceof NextResponse) {
+      return authCheck;
+    }
     console.log('🗑️ Clearing all drafts and email logs...');
     
     // Clear drafts

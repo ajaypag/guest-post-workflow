@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ManyReachImportV3Enhanced } from '@/lib/services/manyReachImportV3Enhanced';
+import { requireInternalUser } from '@/lib/auth/middleware';
 
 export async function GET(request: NextRequest) {
   try {
-    // TODO: Add proper auth check
-    // For now, allow access for testing
+    const authCheck = await requireInternalUser(request);
+    if (authCheck instanceof NextResponse) {
+      return authCheck;
+    }
 
     const { searchParams } = new URL(request.url);
     const workspace = searchParams.get('workspace') || 'main';
@@ -63,7 +66,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    // TODO: Add proper auth check
+    const authCheck = await requireInternalUser(request);
+    if (authCheck instanceof NextResponse) {
+      return authCheck;
+    }
     
     const body = await request.json();
     const { action, workspace = 'main' } = body;

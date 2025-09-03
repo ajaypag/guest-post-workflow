@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ManyReachPollingService } from '@/lib/services/manyReachPollingService';
+import { requireInternalUser } from '@/lib/auth/middleware';
 
 export async function POST(request: NextRequest) {
   try {
+    const authCheck = await requireInternalUser(request);
+    if (authCheck instanceof NextResponse) {
+      return authCheck;
+    }
     const { searchParams } = new URL(request.url);
     const campaignId = searchParams.get('campaignId');
     
