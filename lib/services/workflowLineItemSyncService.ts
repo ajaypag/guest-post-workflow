@@ -87,7 +87,30 @@ export class WorkflowLineItemSyncService {
         requiresFixes: !verificationResult.score.overallPassed,
         publishedButNeedsWork: !verificationResult.score.overallPassed && publishedUrl,
         googleIndexStatus: verificationResult.metadata.googleIndexStatus,
-        errors: verificationResult.metadata.errors
+        errors: verificationResult.metadata.errors,
+        // Enhanced details for richer display
+        details: {
+          anchorText: {
+            expected: verificationResult.metadata.anchorTextExpected,
+            actual: verificationResult.metadata.anchorTextActual,
+            correct: verificationResult.critical.anchorTextCorrect
+          },
+          clientLink: {
+            html: verificationResult.metadata.clientLinkHtml,
+            present: verificationResult.critical.clientLinkPresent,
+            dofollow: verificationResult.critical.linkIsDofollow
+          },
+          googleIndex: {
+            status: verificationResult.metadata.googleIndexStatus,
+            indexed: verificationResult.additional.googleIndexed
+          },
+          failedChecks: Object.entries(verificationResult.critical)
+            .filter(([key, value]) => value === false)
+            .map(([key]) => key),
+          passedChecks: Object.entries(verificationResult.critical)
+            .filter(([key, value]) => value === true)
+            .map(([key]) => key)
+        }
       };
       
       const updatedMetadata = {

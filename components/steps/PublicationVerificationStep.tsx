@@ -175,8 +175,38 @@ export const PublicationVerificationStep = ({ step, workflow, onChange }: Public
     }
   };
 
-  // Check if all verification requirements are met
-  const criticalChecksPassed = autoVerification?.score?.overallPassed || false;
+  // Calculate effective score with manual overrides
+  const calculateEffectiveScore = () => {
+    if (!autoVerification) return { passed: 0, total: 6, overallPassed: false };
+    
+    const criticalChecks = [
+      'urlIsLive',
+      'clientLinkPresent', 
+      'anchorTextCorrect',
+      'linkIsDofollow',
+      'correctDomain',
+      'clientMentionPresent'
+    ];
+    
+    let effectivePassed = 0;
+    criticalChecks.forEach(checkKey => {
+      // Check passed if original verification passed OR manually overridden
+      if (autoVerification.critical[checkKey] === true || overrides[checkKey] === true) {
+        effectivePassed++;
+      }
+    });
+    
+    return {
+      passed: effectivePassed,
+      total: 6,
+      overallPassed: effectivePassed === 6
+    };
+  };
+  
+  const effectiveScore = calculateEffectiveScore();
+  
+  // Check if all verification requirements are met (including overrides)
+  const criticalChecksPassed = effectiveScore.overallPassed;
   const allVerificationComplete = criticalChecksPassed;
   
   // Check for manual override
@@ -278,10 +308,15 @@ export const PublicationVerificationStep = ({ step, workflow, onChange }: Public
                 <div>
                   <p className="text-sm text-gray-600">Verification Score</p>
                   <p className={`font-semibold ${
-                    autoVerification.score.overallPassed ? 'text-green-600' : 'text-red-600'
+                    effectiveScore.overallPassed ? 'text-green-600' : 'text-red-600'
                   }`}>
-                    {autoVerification.score.criticalPassed}/{autoVerification.score.criticalTotal} Critical Checks
-                    {autoVerification.score.overallPassed ? ' ✓ PASSED' : ' ✗ FAILED'}
+                    {effectiveScore.passed}/{effectiveScore.total} Critical Checks
+                    {effectiveScore.overallPassed ? ' ✓ PASSED' : ' ✗ FAILED'}
+                    {Object.keys(overrides).length > 0 && (
+                      <span className="text-xs text-blue-600 ml-2">
+                        ({Object.keys(overrides).length} overridden)
+                      </span>
+                    )}
                   </p>
                 </div>
                 {lastVerifiedAt && (
@@ -484,13 +519,27 @@ export const PublicationVerificationStep = ({ step, workflow, onChange }: Public
                 </div>
               )}
 
+              {/* Success message when overrides make QA pass */}
+              {criticalChecksPassed && Object.keys(overrides).length > 0 && (
+                <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center mb-2">
+                    <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
+                    <h4 className="font-medium text-green-900">✅ All QA Checks Now Pass</h4>
+                  </div>
+                  <p className="text-sm text-green-700">
+                    Thanks to your {Object.keys(overrides).length} manual override{Object.keys(overrides).length > 1 ? 's' : ''}, 
+                    all critical checks are now passing. You can proceed with payment authorization and workflow completion.
+                  </p>
+                </div>
+              )}
+
               {/* Force Deliver Option - Only shows when QA failed but article is published */}
               {canForceDeliver && !hasManualOverride && (
                 <div className="mt-6 border-t pt-4">
                   <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                     <h4 className="font-medium text-red-900 mb-2">⚠️ QA Checks Failed</h4>
                     <p className="text-sm text-red-700 mb-3">
-                      The article has been published but failed {6 - (autoVerification?.score?.criticalPassed || 0)} critical QA checks.
+                      The article has been published but failed {effectiveScore.total - effectiveScore.passed} critical QA checks.
                       You can force delivery if the client accepts the article despite these issues.
                     </p>
                     <button
@@ -570,7 +619,7 @@ export const PublicationVerificationStep = ({ step, workflow, onChange }: Public
             <div>
               <p className="text-blue-700">Verification Score:</p>
               <p className="font-medium text-blue-900">
-                {autoVerification?.score.criticalPassed || 0}/{autoVerification?.score.criticalTotal || 6} critical checks passed
+                {effectiveScore.passed}/{effectiveScore.total} critical checks passed
               </p>
             </div>
             <div>
