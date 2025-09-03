@@ -89,6 +89,16 @@ export default function ManyReachImportPage() {
   const [smartBulkProcessing, setSmartBulkProcessing] = useState(false);
   const [bulkProgress, setBulkProgress] = useState<{current: number; total: number; campaign?: string}>({current: 0, total: 0});
   
+  // Aggregate new email checking
+  const [checkingNewEmails, setCheckingNewEmails] = useState(false);
+  const [newEmailsData, setNewEmailsData] = useState<{
+    totalNewEmails: number;
+    uniqueCampaigns: number;
+    duplicateCampaigns: number;
+    campaigns: any[];
+  } | null>(null);
+  const [importingAllNew, setImportingAllNew] = useState(false);
+  
   const { toast } = useToast();
 
   // Enhanced draft filtering function
@@ -157,6 +167,86 @@ export default function ManyReachImportPage() {
       
       return true;
     });
+  };
+
+  // Check for new emails across all workspaces
+  const checkForNewEmails = async () => {
+    setCheckingNewEmails(true);
+    try {
+      const response = await fetch('/api/admin/manyreach/check-new-emails');
+      if (!response.ok) throw new Error('Failed to check for new emails');
+      
+      const data = await response.json();
+      setNewEmailsData(data);
+      
+      if (data.totalNewEmails === 0) {
+        toast({
+          title: 'No New Emails',
+          description: 'All campaigns are up to date. No new replies found.',
+        });
+      } else {
+        toast({
+          title: 'New Emails Found!',
+          description: `Found ${data.totalNewEmails} new emails across ${data.uniqueCampaigns} unique campaigns (${data.duplicateCampaigns} duplicates detected)`,
+        });
+      }
+    } catch (error) {
+      console.error('Error checking for new emails:', error);
+      toast({
+        title: 'Check Failed',
+        description: error instanceof Error ? error.message : 'Failed to check for new emails',
+        variant: 'destructive'
+      });
+    } finally {
+      setCheckingNewEmails(false);
+    }
+  };
+
+  // Import all new emails from unique campaigns
+  const importAllNewEmails = async () => {
+    if (!newEmailsData || newEmailsData.totalNewEmails === 0) return;
+    
+    const confirmed = confirm(
+      `Import ${newEmailsData.totalNewEmails} new emails from ${newEmailsData.uniqueCampaigns} unique campaigns?\n\n` +
+      `This will skip ${newEmailsData.duplicateCampaigns} duplicate campaigns.`
+    );
+    
+    if (!confirmed) return;
+    
+    setImportingAllNew(true);
+    try {
+      const response = await fetch('/api/admin/manyreach/check-new-emails', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ onlyUnique: true })
+      });
+      
+      if (!response.ok) throw new Error('Import failed');
+      
+      const result = await response.json();
+      
+      toast({
+        title: 'Import Complete!',
+        description: result.message,
+      });
+      
+      // Refresh data
+      await fetchCampaigns();
+      await fetchDrafts();
+      
+      // Clear the new emails data
+      setNewEmailsData(null);
+      
+    } catch (error) {
+      console.error('Error importing new emails:', error);
+      toast({
+        title: 'Import Failed',
+        description: error instanceof Error ? error.message : 'Failed to import new emails',
+        variant: 'destructive'
+      });
+    } finally {
+      setImportingAllNew(false);
+    }
   };
 
   // Smart bulk processing - systematically processes all campaigns with intelligent logic
@@ -706,6 +796,150 @@ export default function ManyReachImportPage() {
           </Button>
         </div>
       </div>
+
+      {/* New Emails Check Card */}
+      <Card className="mb-6 border-blue-200 bg-gradient-to-r from-blue-50 to-purple-50">
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Mail className="h-5 w-5 text-blue-600" />
+                Check All Workspaces for New Emails
+              </CardTitle>
+              <CardDescription>
+                Automatically detect and import new replies across all unique campaigns
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {/* Check Button */}
+            {!newEmailsData && (
+              <Button
+                onClick={checkForNewEmails}
+                disabled={checkingNewEmails}
+                variant="outline"
+                className="w-full border-blue-300 hover:bg-blue-100"
+              >
+                {checkingNewEmails ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Checking all workspaces for new emails...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Check for New Emails Across All Workspaces
+                  </>
+                )}
+              </Button>
+            )}
+            
+            {/* Results Display */}
+            {newEmailsData && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="bg-white rounded-lg p-4 border">
+                    <div className="text-2xl font-bold text-blue-600">
+                      {newEmailsData.totalNewEmails}
+                    </div>
+                    <div className="text-sm text-gray-600">New Emails</div>
+                  </div>
+                  <div className="bg-white rounded-lg p-4 border">
+                    <div className="text-2xl font-bold text-green-600">
+                      {newEmailsData.uniqueCampaigns}
+                    </div>
+                    <div className="text-sm text-gray-600">Unique Campaigns</div>
+                  </div>
+                  <div className="bg-white rounded-lg p-4 border">
+                    <div className="text-2xl font-bold text-orange-600">
+                      {newEmailsData.duplicateCampaigns}
+                    </div>
+                    <div className="text-sm text-gray-600">Duplicate Campaigns</div>
+                  </div>
+                  <div className="bg-white rounded-lg p-4 border">
+                    <div className="text-2xl font-bold text-purple-600">
+                      {newEmailsData.campaigns?.filter((c: any) => !c.isDuplicate && c.estimatedNewEmails > 0).length || 0}
+                    </div>
+                    <div className="text-sm text-gray-600">To Import</div>
+                  </div>
+                </div>
+                
+                {/* Import Button */}
+                {newEmailsData.totalNewEmails > 0 && (
+                  <div className="flex gap-4">
+                    <Button
+                      onClick={importAllNewEmails}
+                      disabled={importingAllNew}
+                      className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+                    >
+                      {importingAllNew ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Importing {newEmailsData.totalNewEmails} new emails...
+                        </>
+                      ) : (
+                        <>
+                          <Download className="mr-2 h-4 w-4" />
+                          Import All {newEmailsData.totalNewEmails} New Emails
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      onClick={() => setNewEmailsData(null)}
+                      variant="outline"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                )}
+                
+                {/* Campaign Details */}
+                {newEmailsData.campaigns && newEmailsData.campaigns.length > 0 && (
+                  <div className="mt-4">
+                    <details className="cursor-pointer">
+                      <summary className="text-sm font-medium text-gray-700">
+                        View Campaign Details ({newEmailsData.campaigns.length} campaigns)
+                      </summary>
+                      <div className="mt-2 max-h-64 overflow-y-auto space-y-2 text-sm">
+                        {newEmailsData.campaigns.map((campaign: any, idx: number) => (
+                          <div 
+                            key={idx} 
+                            className={`p-2 rounded ${campaign.isDuplicate ? 'bg-gray-100 opacity-60' : 'bg-white'} border`}
+                          >
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <span className="font-medium">{campaign.campaignName}</span>
+                                <span className="text-xs text-gray-500 ml-2">
+                                  ({campaign.workspaceName})
+                                </span>
+                                {campaign.isDuplicate && (
+                                  <Badge variant="outline" className="ml-2 text-xs">
+                                    Duplicate of {campaign.duplicateOf}
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-green-600 font-medium">
+                                  +{campaign.estimatedNewEmails} new
+                                </span>
+                                <span className="text-gray-500">
+                                  ({campaign.currentImportedCount} imported)
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </details>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Workspace and Processing Controls */}
       <Card className="mb-6">
