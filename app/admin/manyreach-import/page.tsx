@@ -177,10 +177,18 @@ export default function ManyReachImportPage() {
 
   const updateDraft = async (draftId: string, updates: any) => {
     try {
+      // Properly handle the updates object structure
+      const updatePayload = {
+        draftId,
+        editedData: updates.editedData,
+        status: updates.status,
+        reviewNotes: updates.reviewNotes
+      };
+      
       const response = await fetch('/api/admin/manyreach/drafts', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ draftId, ...updates })
+        body: JSON.stringify(updatePayload)
       });
       
       if (!response.ok) throw new Error('Update failed');
