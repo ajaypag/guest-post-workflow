@@ -310,6 +310,11 @@ export const PublicationVerificationStep = ({ step, workflow, onChange }: Public
                     label="Anchor Text Correct" 
                     status={getCheckStatus(autoVerification.critical.anchorTextCorrect)}
                     isCritical={true}
+                    details={
+                      autoVerification.critical.anchorTextCorrect === false 
+                        ? `Expected: "${autoVerification.metadata?.anchorTextExpected || 'N/A'}" | Found: "${autoVerification.metadata?.anchorTextActual || 'Not found'}"` 
+                        : undefined
+                    }
                   />
                   <CheckRow 
                     label="Link is Dofollow" 

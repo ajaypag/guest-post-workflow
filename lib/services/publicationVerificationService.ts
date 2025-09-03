@@ -26,6 +26,8 @@ export interface VerificationMetadata {
   verifiedAt: Date;
   scrapedContent?: string;
   clientLinkHtml?: string;
+  anchorTextExpected?: string; // What anchor text was expected
+  anchorTextActual?: string;   // What anchor text was actually found
   googleIndexStatus?: 'indexed' | 'not_indexed' | 'pending' | 'error';
   errors: string[];
   verifiedBy?: string;
@@ -142,12 +144,14 @@ export class PublicationVerificationService {
     anchorTextCorrect: boolean;
     isDofollow: boolean;
     linkHtml?: string;
+    actualAnchorText?: string;
   } {
     if (!html || !targetUrl) {
       return {
         linkFound: false,
         anchorTextCorrect: false,
-        isDofollow: false
+        isDofollow: false,
+        actualAnchorText: undefined
       };
     }
     
@@ -161,7 +165,8 @@ export class PublicationVerificationService {
       return {
         linkFound: false,
         anchorTextCorrect: false,
-        isDofollow: false
+        isDofollow: false,
+        actualAnchorText: undefined
       };
     }
     
@@ -190,7 +195,8 @@ export class PublicationVerificationService {
           linkFound: true,
           anchorTextCorrect: linkText.trim() === anchorText.trim(),
           isDofollow: !linkHtml.includes('rel="nofollow"') && !linkHtml.includes("rel='nofollow'"),
-          linkHtml
+          linkHtml,
+          actualAnchorText: linkText.trim()
         };
       }
       
@@ -199,7 +205,8 @@ export class PublicationVerificationService {
         linkFound: true,
         anchorTextCorrect: false,
         isDofollow: true, // Assume dofollow if we can't check
-        linkHtml: undefined
+        linkHtml: undefined,
+        actualAnchorText: undefined
       };
     }
     
@@ -211,7 +218,8 @@ export class PublicationVerificationService {
       linkFound: true,
       anchorTextCorrect: linkText.trim() === anchorText.trim(),
       isDofollow: !linkHtml.includes('rel="nofollow"') && !linkHtml.includes("rel='nofollow'"),
-      linkHtml
+      linkHtml,
+      actualAnchorText: linkText.trim()
     };
   }
 
@@ -329,6 +337,10 @@ export class PublicationVerificationService {
         result.critical.clientLinkPresent = linkDetection.linkFound;
         result.critical.anchorTextCorrect = linkDetection.anchorTextCorrect;
         result.critical.linkIsDofollow = linkDetection.isDofollow;
+        
+        // Store debugging information for anchor text verification
+        result.metadata.anchorTextExpected = anchorText;
+        result.metadata.anchorTextActual = linkDetection.actualAnchorText || '';
         
         if (linkDetection.linkHtml) {
           result.metadata.clientLinkHtml = linkDetection.linkHtml;
