@@ -5,6 +5,7 @@ import { websites } from '@/lib/db/websiteSchema';
 import { publisherOfferings, publisherOfferingRelationships } from '@/lib/db/publisherSchemaActual';
 import { emailProcessingLogs } from '@/lib/db/emailProcessingSchema';
 import { eq, and, sql } from 'drizzle-orm';
+import { requireInternalUser } from '@/lib/auth/middleware';
 
 interface ApprovalResult {
   success: boolean;
@@ -20,6 +21,11 @@ interface ApprovalResult {
 
 export async function POST(request: NextRequest) {
   try {
+    const authCheck = await requireInternalUser(request);
+    if (authCheck instanceof NextResponse) {
+      return authCheck;
+    }
+    
     const { draftId } = await request.json();
     
     if (!draftId) {

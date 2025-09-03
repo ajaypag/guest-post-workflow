@@ -9,6 +9,7 @@ import { Loader2, Download, CheckCircle2, XCircle, AlertCircle, Eye, RefreshCw, 
 import { CampaignStatusView } from '@/components/manyreach/CampaignStatusView';
 import { DraftsListInfinite } from '@/components/manyreach/DraftsListInfinite';
 import { DuplicateDetectionPreview } from '@/components/manyreach/DuplicateDetectionPreview';
+import { DraftEditor } from '@/components/manyreach/DraftEditor';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 // Simple toast notification
@@ -71,11 +72,196 @@ export default function ManyReachImportPage() {
   const [previewMode, setPreviewMode] = useState<boolean>(false);
   const [selectedCampaigns, setSelectedCampaigns] = useState<string[]>([]);
   
-  // Draft filtering
+  // Enhanced Draft filtering
   const [showOnlyWithOffers, setShowOnlyWithOffers] = useState<boolean>(false);
   const [showOnlyWithPricing, setShowOnlyWithPricing] = useState<boolean>(false);
+  const [offerTypeFilter, setOfferTypeFilter] = useState<string>('all'); // 'all', 'guest_post', 'link_insertion', 'link_exchange'
+  const [priceRangeFilter, setPriceRangeFilter] = useState<string>('all'); // 'all', '0-100', '100-500', '500-1000', '1000+'
+  const [minPriceFilter, setMinPriceFilter] = useState<number>(0);
+  const [maxPriceFilter, setMaxPriceFilter] = useState<number>(10000);
+  
+  // Bulk operations
+  const [bulkImporting, setBulkImporting] = useState(false);
+  const [selectedDraftIds, setSelectedDraftIds] = useState<string[]>([]);
+  const [bulkProcessing, setBulkProcessing] = useState(false);
+  
+  // Smart bulk campaign processing
+  const [smartBulkProcessing, setSmartBulkProcessing] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState<{current: number; total: number; campaign?: string}>({current: 0, total: 0});
   
   const { toast } = useToast();
+
+  // Enhanced draft filtering function
+  const filterDrafts = (draftsList: Draft[]) => {
+    return draftsList.filter(draft => {
+      const data = draft.edited_data || draft.parsed_data;
+      
+      // Basic offer filter
+      if (showOnlyWithOffers && !data.hasOffer) return false;
+      
+      // Pricing filter
+      if (showOnlyWithPricing) {
+        const hasPrice = data.offerings?.some((o: any) => 
+          o.basePrice !== null && o.basePrice !== undefined && o.basePrice > 0
+        );
+        if (!hasPrice) return false;
+      }
+      
+      // Offer type filter (guest posts, link insertion, etc.)
+      if (offerTypeFilter !== 'all') {
+        const hasMatchingOfferType = data.offerings?.some((o: any) => 
+          o.offeringType === offerTypeFilter
+        );
+        if (!hasMatchingOfferType) return false;
+      }
+      
+      // Price range filter
+      if (priceRangeFilter !== 'all' && data.offerings) {
+        const prices = data.offerings
+          .filter((o: any) => o.basePrice !== null && o.basePrice !== undefined)
+          .map((o: any) => o.basePrice);
+          
+        if (prices.length === 0) return false;
+        
+        const minPrice = Math.min(...prices);
+        
+        switch (priceRangeFilter) {
+          case '0-100':
+            if (minPrice > 100) return false;
+            break;
+          case '100-500':
+            if (minPrice < 100 || minPrice > 500) return false;
+            break;
+          case '500-1000':
+            if (minPrice < 500 || minPrice > 1000) return false;
+            break;
+          case '1000+':
+            if (minPrice < 1000) return false;
+            break;
+        }
+      }
+      
+      // Custom price range filter
+      if (data.offerings && (minPriceFilter > 0 || maxPriceFilter < 10000)) {
+        const prices = data.offerings
+          .filter((o: any) => o.basePrice !== null && o.basePrice !== undefined)
+          .map((o: any) => o.basePrice);
+          
+        if (prices.length === 0) return false;
+        
+        const minPrice = Math.min(...prices);
+        const maxPrice = Math.max(...prices);
+        
+        if (minPrice < minPriceFilter || maxPrice > maxPriceFilter) return false;
+      }
+      
+      return true;
+    });
+  };
+
+  // Smart bulk processing - systematically processes all campaigns with intelligent logic
+  const smartBulkProcessAllCampaigns = async () => {
+    if (campaigns.length === 0) {
+      toast({
+        title: 'No campaigns available',
+        description: 'Load campaigns first before running bulk processing',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    const confirmed = confirm(
+      `🤖 Smart Bulk Processing\n\n` +
+      `This will intelligently process ${campaigns.length} campaigns:\n` +
+      `• Prioritize campaigns with replies\n` +
+      `• Skip campaigns already processed recently\n` +
+      `• Process in batches to avoid API rate limits\n` +
+      `• Apply email limit of ${emailLimit} per campaign\n\n` +
+      `Continue?`
+    );
+
+    if (!confirmed) return;
+
+    setSmartBulkProcessing(true);
+    setBulkProgress({current: 0, total: campaigns.length});
+
+    try {
+      // Sort campaigns by priority (more replies = higher priority)
+      const sortedCampaigns = [...campaigns].sort((a, b) => {
+        return (b.repliedCount || 0) - (a.repliedCount || 0);
+      });
+
+      for (let i = 0; i < sortedCampaigns.length; i++) {
+        const campaign = sortedCampaigns[i];
+        
+        setBulkProgress({
+          current: i + 1, 
+          total: campaigns.length,
+          campaign: campaign.name
+        });
+
+        // Skip campaigns with no replies if onlyReplied is enabled
+        if (onlyReplied && (campaign.repliedCount || 0) === 0) {
+          console.log(`Skipping ${campaign.name} - no replies`);
+          continue;
+        }
+
+        // Skip campaigns already processed (have high imported count)
+        if ((campaign.importedCount || 0) >= (campaign.repliedCount || 0) * 0.8) {
+          console.log(`Skipping ${campaign.name} - already mostly processed`);
+          continue;
+        }
+
+        try {
+          // Call existing importCampaign function
+          const response = await fetch('/api/admin/manyreach/import', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              campaignId: campaign.id,
+              workspaceName: selectedWorkspace,
+              limit: unlimitedEmails ? null : emailLimit,
+              onlyReplied,
+              previewMode
+            })
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            console.log(`✅ Processed ${campaign.name}: ${data.result?.imported || 0} imported`);
+          }
+          
+          // Small delay between campaigns to be API-friendly
+          if (i < sortedCampaigns.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          }
+        } catch (error) {
+          console.error(`Failed to process campaign ${campaign.name}:`, error);
+          // Continue with next campaign instead of failing entirely
+        }
+      }
+
+      toast({
+        title: 'Smart Bulk Processing Complete! 🎉',
+        description: `Processed ${campaigns.length} campaigns intelligently`,
+      });
+
+      // Refresh data
+      await fetchCampaigns();
+      await fetchDrafts();
+
+    } catch (error) {
+      console.error('Smart bulk processing failed:', error);
+      toast({
+        title: 'Smart Bulk Processing Failed',
+        description: error instanceof Error ? error.message : 'Processing failed',
+        variant: 'destructive'
+      });
+    } finally {
+      setSmartBulkProcessing(false);
+      setBulkProgress({current: 0, total: 0});
+    }
+  };
 
   useEffect(() => {
     fetchWorkspaces();
@@ -122,6 +308,43 @@ export default function ManyReachImportPage() {
     }
   };
 
+  const exportDraftsToCSV = () => {
+    const csvData = drafts.map(draft => {
+      const data = draft.edited_data || draft.parsed_data;
+      return {
+        'Domain': data.domain || '',
+        'Campaign': draft.campaign_name || '',
+        'Status': draft.status || 'pending',
+        'Has Offer': data.hasOffer ? 'Yes' : 'No',
+        'Offerings': data.offerings?.map((o: any) => o.name).join('; ') || '',
+        'Prices': data.offerings?.map((o: any) => o.basePrice || 'N/A').join('; ') || '',
+        'Email From': draft.email_from || '',
+        'Created': new Date(draft.created_at).toLocaleDateString(),
+      };
+    });
+    
+    const csvHeader = Object.keys(csvData[0] || {}).join(',');
+    const csvRows = csvData.map(row => 
+      Object.values(row).map(val => 
+        typeof val === 'string' && val.includes(',') ? `"${val}"` : val
+      ).join(',')
+    );
+    const csv = [csvHeader, ...csvRows].join('\n');
+    
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `manyreach-drafts-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: 'Export Complete',
+      description: `Exported ${drafts.length} drafts to CSV`,
+    });
+  };
+
   const fetchDrafts = async () => {
     try {
       const response = await fetch('/api/admin/manyreach/drafts');
@@ -138,6 +361,43 @@ export default function ManyReachImportPage() {
   const [importProgress, setImportProgress] = useState<{
     [key: string]: { processed: number; total: number; status: string; message?: string }
   }>({});
+
+  const bulkImportCampaigns = async () => {
+    if (selectedCampaigns.length === 0) {
+      toast({
+        title: 'No campaigns selected',
+        description: 'Please select at least one campaign to import',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setBulkImporting(true);
+    
+    try {
+      // Import each campaign sequentially
+      for (const campaignId of selectedCampaigns) {
+        await importCampaign(campaignId);
+      }
+      
+      toast({
+        title: 'Bulk import complete',
+        description: `Successfully imported ${selectedCampaigns.length} campaigns`,
+      });
+      
+      // Clear selection
+      setSelectedCampaigns([]);
+    } catch (error) {
+      console.error('Bulk import failed:', error);
+      toast({
+        title: 'Bulk import failed',
+        description: error instanceof Error ? error.message : 'Failed to import campaigns',
+        variant: 'destructive'
+      });
+    } finally {
+      setBulkImporting(false);
+    }
+  };
 
   const importCampaign = async (campaignId: string) => {
     setImporting(campaignId);
@@ -285,6 +545,94 @@ export default function ManyReachImportPage() {
     }
   };
 
+  const bulkApproveDrafts = async () => {
+    if (selectedDraftIds.length === 0) {
+      toast({
+        title: 'No drafts selected',
+        description: 'Please select at least one draft to approve',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setBulkProcessing(true);
+    try {
+      const response = await fetch('/api/admin/manyreach/drafts/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          draftIds: selectedDraftIds,
+          action: 'approve'
+        })
+      });
+
+      if (!response.ok) throw new Error('Bulk approval failed');
+
+      const result = await response.json();
+      
+      toast({
+        title: 'Bulk Approval Complete',
+        description: `Successfully approved ${result.processed} drafts`,
+      });
+
+      // Refresh and clear selection
+      await fetchDrafts();
+      setSelectedDraftIds([]);
+    } catch (error) {
+      toast({
+        title: 'Bulk Approval Failed',
+        description: error instanceof Error ? error.message : 'Failed to approve drafts',
+        variant: 'destructive'
+      });
+    } finally {
+      setBulkProcessing(false);
+    }
+  };
+
+  const bulkRejectDrafts = async () => {
+    if (selectedDraftIds.length === 0) {
+      toast({
+        title: 'No drafts selected',
+        description: 'Please select at least one draft to reject',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setBulkProcessing(true);
+    try {
+      const response = await fetch('/api/admin/manyreach/drafts/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          draftIds: selectedDraftIds,
+          action: 'reject'
+        })
+      });
+
+      if (!response.ok) throw new Error('Bulk rejection failed');
+
+      const result = await response.json();
+      
+      toast({
+        title: 'Bulk Rejection Complete',
+        description: `Successfully rejected ${result.processed} drafts`,
+      });
+
+      // Refresh and clear selection
+      await fetchDrafts();
+      setSelectedDraftIds([]);
+    } catch (error) {
+      toast({
+        title: 'Bulk Rejection Failed',
+        description: error instanceof Error ? error.message : 'Failed to reject drafts',
+        variant: 'destructive'
+      });
+    } finally {
+      setBulkProcessing(false);
+    }
+  };
+
   const reprocessDraft = async (draftId: string) => {
     try {
       const response = await fetch('/api/admin/manyreach/reprocess', {
@@ -331,18 +679,18 @@ export default function ManyReachImportPage() {
   };
 
   return (
-    <div className="container mx-auto py-8">
+    <div className="container mx-auto py-4 px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h1 className="text-3xl font-bold">ManyReach Import V3</h1>
-              <p className="text-gray-600 mt-2">Import publisher replies and create draft records for review</p>
+              <h1 className="text-2xl sm:text-3xl font-bold">ManyReach Import V3</h1>
+              <p className="text-gray-600 mt-2 text-sm sm:text-base">Import publisher replies and create draft records for review</p>
             </div>
           <Button
             onClick={clearTestData}
+            className="w-full sm:w-auto text-red-600 hover:text-red-700 hover:bg-red-50"
             disabled={clearing}
             variant="outline"
-            className="text-red-600 hover:text-red-700 hover:bg-red-50"
           >
             {clearing ? (
               <>
@@ -366,7 +714,7 @@ export default function ManyReachImportPage() {
           <CardDescription>Configure workspace and email processing options</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Workspace Selector */}
             <div>
               <label className="block text-sm font-medium mb-2">Workspace</label>
@@ -498,14 +846,16 @@ export default function ManyReachImportPage() {
       </Card>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="status">
-            <Activity className="mr-2 h-4 w-4" />
-            Status Overview
+        <TabsList className="grid w-full grid-cols-3 h-auto">
+          <TabsTrigger value="status" className="flex flex-col sm:flex-row items-center justify-center text-xs sm:text-sm py-2 px-1 sm:px-3">
+            <Activity className="mr-0 sm:mr-2 h-4 w-4 mb-1 sm:mb-0" />
+            <span className="hidden sm:inline">Status Overview</span>
+            <span className="sm:hidden">Status</span>
           </TabsTrigger>
-          <TabsTrigger value="campaigns">Campaigns</TabsTrigger>
-          <TabsTrigger value="drafts">
-            Drafts {Array.isArray(drafts) && drafts.length > 0 && <Badge className="ml-2">{drafts.length}</Badge>}
+          <TabsTrigger value="campaigns" className="text-xs sm:text-sm py-2 px-1 sm:px-3">Campaigns</TabsTrigger>
+          <TabsTrigger value="drafts" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
+            <span>Drafts</span>
+            {Array.isArray(drafts) && drafts.length > 0 && <Badge className="ml-1 sm:ml-2 text-xs">{drafts.length}</Badge>}
           </TabsTrigger>
         </TabsList>
 
@@ -516,8 +866,82 @@ export default function ManyReachImportPage() {
         <TabsContent value="campaigns">
           <Card>
             <CardHeader>
-              <CardTitle>ManyReach Campaigns</CardTitle>
-              <CardDescription>Import replies from your email campaigns</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>ManyReach Campaigns</CardTitle>
+                  <CardDescription>Import replies from your email campaigns with smart bulk processing</CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  {/* Smart Bulk Processing */}
+                  <Button
+                    onClick={smartBulkProcessAllCampaigns}
+                    disabled={smartBulkProcessing || campaigns.length === 0}
+                    variant="secondary"
+                    className="bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700"
+                  >
+                    {smartBulkProcessing ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        🤖 Smart Processing... ({bulkProgress.current}/{bulkProgress.total})
+                      </>
+                    ) : (
+                      <>🤖 Smart Bulk Process All ({campaigns.length} campaigns)</>
+                    )}
+                  </Button>
+                  
+                  {selectedCampaigns.length > 0 && (
+                    <>
+                      <Button
+                        onClick={bulkImportCampaigns}
+                        disabled={bulkImporting || smartBulkProcessing}
+                        variant="default"
+                      >
+                        {bulkImporting ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Importing {selectedCampaigns.length} campaigns...
+                          </>
+                        ) : (
+                          <>Import {selectedCampaigns.length} Selected</>
+                        )}
+                      </Button>
+                      <Button
+                        onClick={() => setSelectedCampaigns([])}
+                        variant="outline"
+                        disabled={smartBulkProcessing}
+                      >
+                        Clear Selection
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+              
+              {/* Smart Processing Progress */}
+              {smartBulkProcessing && (
+                <div className="mt-4 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="font-medium text-purple-900">🤖 Smart Bulk Processing Active</div>
+                    <div className="text-sm text-purple-700">
+                      {bulkProgress.current} of {bulkProgress.total} campaigns
+                    </div>
+                  </div>
+                  {bulkProgress.campaign && (
+                    <div className="text-sm text-purple-700 mb-2">
+                      Currently processing: <span className="font-medium">{bulkProgress.campaign}</span>
+                    </div>
+                  )}
+                  <div className="w-full bg-purple-200 rounded-full h-2">
+                    <div 
+                      className="bg-gradient-to-r from-purple-600 to-blue-600 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${(bulkProgress.current / bulkProgress.total) * 100}%` }}
+                    ></div>
+                  </div>
+                  <div className="text-xs text-purple-600 mt-2">
+                    ✨ Intelligently prioritizing campaigns with replies and skipping already processed ones
+                  </div>
+                </div>
+              )}
             </CardHeader>
             <CardContent>
               {loading ? (
@@ -526,16 +950,47 @@ export default function ManyReachImportPage() {
                 </div>
               ) : (
                 <div className="space-y-4">
+                  {/* Select All checkbox */}
+                  <div className="flex items-center gap-2 pb-2 border-b">
+                    <input
+                      type="checkbox"
+                      checked={campaigns.length > 0 && selectedCampaigns.length === campaigns.length}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedCampaigns(campaigns.map(c => c.id));
+                        } else {
+                          setSelectedCampaigns([]);
+                        }
+                      }}
+                      className="rounded"
+                    />
+                    <span className="text-sm font-medium">Select All</span>
+                  </div>
+                  
                   {campaigns.map((campaign) => (
                     <div key={campaign.id} className="border rounded-lg p-4">
                       <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="font-semibold">{campaign.name}</h3>
-                          <div className="flex gap-4 text-sm text-gray-600 mt-1">
-                            <span>Sent: {campaign.sentCount}</span>
-                            <span>Replied: {campaign.repliedCount}</span>
-                            <span>Imported: {campaign.importedCount}</span>
-                            <span>Drafts: {campaign.draftCount}</span>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="checkbox"
+                            checked={selectedCampaigns.includes(campaign.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedCampaigns([...selectedCampaigns, campaign.id]);
+                              } else {
+                                setSelectedCampaigns(selectedCampaigns.filter(id => id !== campaign.id));
+                              }
+                            }}
+                            className="rounded"
+                          />
+                          <div>
+                            <h3 className="font-semibold">{campaign.name}</h3>
+                            <div className="flex gap-4 text-sm text-gray-600 mt-1">
+                              <span>Sent: {campaign.sentCount}</span>
+                              <span>Replied: {campaign.repliedCount}</span>
+                              <span>Imported: {campaign.importedCount}</span>
+                              <span>Drafts: {campaign.draftCount}</span>
+                            </div>
                           </div>
                         </div>
                         <div className="flex gap-2">
@@ -544,7 +999,7 @@ export default function ManyReachImportPage() {
                           </Badge>
                           <Button
                             onClick={() => importCampaign(campaign.id)}
-                            disabled={importing === campaign.id}
+                            disabled={importing === campaign.id || bulkImporting}
                             size="sm"
                           >
                             {importing === campaign.id ? (
@@ -614,22 +1069,104 @@ export default function ManyReachImportPage() {
         </TabsContent>
 
         <TabsContent value="drafts">
-          <div className="grid grid-cols-12 gap-4">
+          {/* Draft Filters and Bulk Actions - moved from hidden section */}
+          <Card className="mb-4">
+            <CardHeader>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                  <CardTitle>Draft Management</CardTitle>
+                  <CardDescription>Filter and manage draft publishers</CardDescription>
+                </div>
+                {selectedDraftIds.length > 0 && (
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={bulkApproveDrafts}
+                      disabled={bulkProcessing}
+                      variant="default"
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      {bulkProcessing ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="mr-2 h-4 w-4" />
+                          Approve {selectedDraftIds.length}
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      onClick={bulkRejectDrafts}
+                      disabled={bulkProcessing}
+                      variant="outline"
+                      size="sm"
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <XCircle className="mr-2 h-4 w-4" />
+                      Reject {selectedDraftIds.length}
+                    </Button>
+                    <Button
+                      onClick={() => setSelectedDraftIds([])}
+                      variant="ghost"
+                      size="sm"
+                    >
+                      Clear Selection
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-4">
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    className="mr-2"
+                    checked={showOnlyWithOffers}
+                    onChange={(e) => setShowOnlyWithOffers(e.target.checked)}
+                  />
+                  <span className="text-sm">Only drafts with offers</span>
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    className="mr-2"
+                    checked={showOnlyWithPricing}
+                    onChange={(e) => setShowOnlyWithPricing(e.target.checked)}
+                  />
+                  <span className="text-sm">Only drafts with pricing</span>
+                </label>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
             {/* Use new infinite scroll component */}
-            <div className="col-span-4">
+            <div className="lg:col-span-4">
               <DraftsListInfinite 
                 onDraftSelect={setSelectedDraft}
                 onDraftUpdate={fetchDrafts}
+                showOnlyWithOffers={showOnlyWithOffers}
+                showOnlyWithPricing={showOnlyWithPricing}
+                selectedDraftIds={selectedDraftIds}
+                onSelectionChange={setSelectedDraftIds}
               />
             </div>
             
             {/* Draft Editor - restored from original */}
-            <div className="col-span-8">
+            <div className="lg:col-span-8">
               {selectedDraft ? (
                 <DraftEditor
                   draft={selectedDraft}
                   onUpdate={(updates) => updateDraft(selectedDraft.id, updates)}
                   onReprocess={() => reprocessDraft(selectedDraft.id)}
+                  onDelete={() => {
+                    setSelectedDraft(null);
+                    fetchDrafts(); // Refresh the draft list
+                  }}
                 />
               ) : (
                 <Card>
@@ -646,7 +1183,7 @@ export default function ManyReachImportPage() {
           {/* OLD CONTENT BELOW - HIDDEN */}
           <div style={{ display: 'none' }}>
           {/* Draft Statistics */}
-          <div className="grid grid-cols-4 gap-4 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
             <Card>
               <CardContent className="p-4">
                 <div className="text-2xl font-bold">{drafts.length}</div>
@@ -733,7 +1270,7 @@ export default function ManyReachImportPage() {
             </CardContent>
           </Card>
           
-          <div className="grid grid-cols-12 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
             {/* Draft List */}
             <div className="col-span-4">
               <Card>
@@ -743,18 +1280,7 @@ export default function ManyReachImportPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    {Array.isArray(drafts) && drafts.filter((draft) => {
-                      const data = draft.edited_data || draft.parsed_data;
-                      // Apply filters
-                      if (showOnlyWithOffers && !data.hasOffer) return false;
-                      if (showOnlyWithPricing) {
-                        const hasPrice = data.offerings?.some((o: any) => 
-                          o.basePrice !== null && o.basePrice !== undefined
-                        );
-                        if (!hasPrice) return false;
-                      }
-                      return true;
-                    }).map((draft) => {
+                    {Array.isArray(drafts) && filterDrafts(drafts).map((draft) => {
                       const data = draft.edited_data || draft.parsed_data;
                       return (
                         <div
@@ -862,6 +1388,10 @@ export default function ManyReachImportPage() {
                   draft={selectedDraft}
                   onUpdate={(updates) => updateDraft(selectedDraft.id, updates)}
                   onReprocess={() => reprocessDraft(selectedDraft.id)}
+                  onDelete={() => {
+                    setSelectedDraft(null);
+                    fetchDrafts(); // Refresh the draft list
+                  }}
                 />
               ) : (
                 <Card>
@@ -877,924 +1407,6 @@ export default function ManyReachImportPage() {
           </div> {/* Close hidden div */}
         </TabsContent>
       </Tabs>
-    </div>
-  );
-}
-
-function DraftEditor({ draft, onUpdate, onReprocess }: { 
-  draft: Draft; 
-  onUpdate: (updates: any) => void;
-  onReprocess: () => void;
-}) {
-  const [editedData, setEditedData] = useState(draft.edited_data || draft.parsed_data);
-  const [showEmail, setShowEmail] = useState(false);
-  const [reprocessing, setReprocessing] = useState(false);
-
-  const handleSave = () => {
-    onUpdate({ editedData, status: 'reviewing' });
-  };
-
-  const handleApprove = async () => {
-    setApproving(true);
-    try {
-      // Check for price conflicts first
-      if (previewData && previewData.estimatedImpact.priceConflicts > 0) {
-        const confirmMessage = `⚠️ This draft has ${previewData.estimatedImpact.priceConflicts} price conflict(s) that require manual review.\n\nPrice conflicts detected:\n` +
-          previewData.proposedActions.offeringActions
-            .filter((action: any) => action.action === 'price_conflict')
-            .map((action: any) => `• ${action.type} on ${action.websiteDomain}: $${(action.priceConflict.existingPrice/100).toFixed(2)} → $${(action.priceConflict.newPrice/100).toFixed(2)} (${action.priceConflict.percentageChange > 0 ? '+' : ''}${action.priceConflict.percentageChange}%)`)
-            .join('\n') +
-          '\n\nDo you want to proceed anyway? This will flag the conflicts for later review.';
-        
-        if (!confirm(confirmMessage)) {
-          setApproving(false);
-          return;
-        }
-      }
-      
-      // Call the improved approve endpoint
-      const response = await fetch('/api/admin/manyreach/draft-approve-improved', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ draftId: draft.id })
-      });
-      
-      const result = await response.json();
-      
-      console.log('API Response Status:', response.status);
-      console.log('API Response Data:', result);
-      
-      if (response.ok && result.success) {
-        // Update the draft status to approved
-        await onUpdate({ editedData, status: 'approved' });
-        
-        // Show enhanced success message
-        let message = `✅ Successfully processed draft!\n\n`;
-        const createdPublisher = result.created.publisherId ? 1 : 0;
-        const updatedPublisher = result.updated.publisherUpdated ? 1 : 0;
-        const totalPublishers = createdPublisher + updatedPublisher;
-        
-        message += `Publishers: ${createdPublisher ? `${createdPublisher} created` : ''}${createdPublisher && updatedPublisher ? ', ' : ''}${updatedPublisher ? `${updatedPublisher} updated` : ''}${!totalPublishers ? '0' : ''}\n`;
-        message += `Created: ${result.created.websiteIds.length} website(s), ${result.created.offeringIds.length} offering(s)\n`;
-        if (result.skipped.duplicateOfferings > 0) {
-          message += `Skipped: ${result.skipped.duplicateOfferings} duplicate offering(s)\n`;
-        }
-        if (result.priceConflicts && result.priceConflicts.length > 0) {
-          message += `⚠️ Flagged: ${result.priceConflicts.length} price conflict(s) for review\n`;
-        }
-        
-        alert(message);
-        
-        // Trigger a refresh of the drafts list
-        if (onReprocess) {
-          onReprocess(); // This will refresh the parent component
-        }
-      } else {
-        alert(`❌ Approval failed: ${result.error || 'Unknown error'}`);
-      }
-    } catch (error) {
-      console.error('Approval error:', error);
-      alert('Failed to approve and create records');
-    } finally {
-      setApproving(false);
-    }
-  };
-
-  const handleReject = () => {
-    onUpdate({ status: 'rejected' });
-  };
-  
-  const [showPreview, setShowPreview] = useState(false);
-  const [previewData, setPreviewData] = useState<any>(null);
-  const [loadingPreview, setLoadingPreview] = useState(false);
-  const [approving, setApproving] = useState(false);
-  
-  const handlePreview = async () => {
-    setLoadingPreview(true);
-    try {
-      const response = await fetch('/api/admin/manyreach/draft-preview-improved', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ draftId: draft.id })
-      });
-      
-      const result = await response.json();
-      if (result.success) {
-        setPreviewData(result.preview);
-        setShowPreview(true);
-      } else {
-        alert(`Preview failed: ${result.error}`);
-      }
-    } catch (error) {
-      console.error('Preview error:', error);
-      alert('Failed to generate preview');
-    } finally {
-      setLoadingPreview(false);
-    }
-  };
-
-  const handleReprocess = async () => {
-    setReprocessing(true);
-    await onReprocess();
-    setReprocessing(false);
-    // Reset edited data to the new parsed data
-    setEditedData(draft.parsed_data);
-  };
-
-  // Update editedData when draft changes (after reprocessing)
-  React.useEffect(() => {
-    setEditedData(draft.edited_data || draft.parsed_data);
-  }, [draft.id, draft.parsed_data]);
-
-  return (
-    <div className="space-y-4">
-      {/* Email Preview Toggle */}
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle>Review Draft</CardTitle>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleReprocess}
-                disabled={reprocessing}
-              >
-                {reprocessing ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Re-processing...
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    Re-process with Updated AI
-                  </>
-                )}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowEmail(!showEmail)}
-              >
-                <Eye className="mr-2 h-4 w-4" />
-                {showEmail ? 'Hide' : 'Show'} Original Email
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-      </Card>
-
-      {/* Original Email */}
-      {showEmail && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Original Email</CardTitle>
-            <CardDescription>
-              From: {draft.email_from} | {new Date(draft.created_at).toLocaleDateString()}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div 
-              className="prose max-w-none"
-              dangerouslySetInnerHTML={{ __html: draft.html_content || '' }}
-            />
-          </CardContent>
-        </Card>
-      )}
-
-      {/* No Offer Warning */}
-      {!editedData?.hasOffer && (
-        <Card className="border-yellow-400 bg-yellow-50">
-          <CardHeader>
-            <CardTitle className="text-yellow-800">⚠️ No Concrete Offer Detected</CardTitle>
-            <CardDescription className="text-yellow-700">
-              This email was marked as having no offer. Common reasons:
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ul className="list-disc list-inside space-y-1 text-sm text-yellow-700">
-              <li>Auto-reply or out-of-office message</li>
-              <li>Internal forward without an actual offer</li>
-              <li>Link exchange request instead of paid service</li>
-              <li>Simple acknowledgment without pricing details</li>
-              <li>Rejection of our outreach</li>
-            </ul>
-            {editedData?.extractionMetadata?.extractionNotes && (
-              <div className="mt-3 p-3 bg-white rounded border border-yellow-300">
-                <span className="font-medium">AI Analysis: </span>
-                {editedData.extractionMetadata.extractionNotes}
-              </div>
-            )}
-            {editedData?.extractionMetadata?.keyQuotes && editedData.extractionMetadata.keyQuotes.length > 0 && (
-              <div className="mt-3">
-                <span className="font-medium">Key Quotes from Email:</span>
-                <ul className="mt-1 space-y-1">
-                  {editedData.extractionMetadata.keyQuotes.map((quote: string, i: number) => (
-                    <li key={i} className="text-sm italic">"{quote}"</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Extracted Data Editor */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Extracted Information</CardTitle>
-          <CardDescription>Edit the parsed data before approving</CardDescription>
-        </CardHeader>
-        <CardContent>
-        {editedData && (
-          <div className="space-y-4">
-            {/* Has Offer Toggle */}
-            <div>
-              <h3 className="font-semibold mb-2">Offer Status</h3>
-              <div className="flex items-center gap-3">
-                <label className="flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="mr-2"
-                    checked={editedData.hasOffer}
-                    onChange={(e) => setEditedData({ ...editedData, hasOffer: e.target.checked })}
-                  />
-                  <span className={editedData.hasOffer ? 'text-green-700 font-medium' : 'text-gray-500'}>
-                    {editedData.hasOffer ? '✅ Has Concrete Offer' : '❌ No Concrete Offer'}
-                  </span>
-                </label>
-                {!editedData.hasOffer && (
-                  <span className="text-sm text-gray-500">
-                    (Toggle this if the AI incorrectly marked as no offer)
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Publisher Info */}
-            <div>
-              <h3 className="font-semibold mb-2">Publisher</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium">Company Name</label>
-                  <input
-                    type="text"
-                    className="w-full p-2 border rounded"
-                    value={editedData.publisher?.companyName || ''}
-                    onChange={(e) => setEditedData({
-                      ...editedData,
-                      publisher: { ...editedData.publisher, companyName: e.target.value }
-                    })}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Contact Name</label>
-                  <input
-                    type="text"
-                    className="w-full p-2 border rounded"
-                    value={editedData.publisher?.contactName || ''}
-                    onChange={(e) => setEditedData({
-                      ...editedData,
-                      publisher: { ...editedData.publisher, contactName: e.target.value }
-                    })}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Email</label>
-                  <input
-                    type="email"
-                    className="w-full p-2 border rounded"
-                    value={editedData.publisher?.email || ''}
-                    onChange={(e) => setEditedData({
-                      ...editedData,
-                      publisher: { ...editedData.publisher, email: e.target.value }
-                    })}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Payment Email</label>
-                  <input
-                    type="email"
-                    className="w-full p-2 border rounded"
-                    placeholder="Only if different from main email"
-                    value={editedData.publisher?.paymentEmail || ''}
-                    onChange={(e) => setEditedData({
-                      ...editedData,
-                      publisher: { ...editedData.publisher, paymentEmail: e.target.value }
-                    })}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Payment Methods</label>
-                  <input
-                    type="text"
-                    className="w-full p-2 border rounded"
-                    placeholder="e.g. paypal, wise, bank_transfer"
-                    value={editedData.publisher?.paymentMethods?.join(', ') || ''}
-                    onChange={(e) => setEditedData({
-                      ...editedData,
-                      publisher: { 
-                        ...editedData.publisher, 
-                        paymentMethods: e.target.value.split(',').map(m => m.trim()).filter(m => m)
-                      }
-                    })}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Payment Terms</label>
-                  <input
-                    type="text"
-                    className="w-full p-2 border rounded"
-                    placeholder="e.g. 7 days post-completion, payment on delivery"
-                    value={editedData.publisher?.paymentTerms || ''}
-                    onChange={(e) => setEditedData({
-                      ...editedData,
-                      publisher: { ...editedData.publisher, paymentTerms: e.target.value }
-                    })}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Primary Website</label>
-                  <input
-                    type="text"
-                    className="w-full p-2 border rounded"
-                    value={editedData.websites?.[0]?.domain || ''}
-                    onChange={(e) => setEditedData({
-                      ...editedData,
-                      websites: [{ ...editedData.websites?.[0], domain: e.target.value }]
-                    })}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Websites */}
-            {editedData.websites && editedData.websites.length > 0 && (
-              <div>
-                <h3 className="font-semibold mb-2">Websites (Table 2)</h3>
-                {editedData.websites.map((website: any, index: number) => (
-                  <div key={index} className="p-3 border rounded mb-2">
-                    <div className="grid grid-cols-3 gap-4 mb-3">
-                      <div>
-                        <label className="text-sm font-medium">Domain</label>
-                        <input
-                          type="text"
-                          className="w-full p-2 border rounded"
-                          value={website.domain || ''}
-                          onChange={(e) => {
-                            const newWebsites = [...editedData.websites];
-                            newWebsites[index] = { ...website, domain: e.target.value };
-                            setEditedData({ ...editedData, websites: newWebsites });
-                          }}
-                        />
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium">Domain Rating</label>
-                        <input
-                          type="number"
-                          className="w-full p-2 border rounded"
-                          value={website.domainRating || ''}
-                          onChange={(e) => {
-                            const newWebsites = [...editedData.websites];
-                            newWebsites[index] = { ...website, domainRating: parseInt(e.target.value) || null };
-                            setEditedData({ ...editedData, websites: newWebsites });
-                          }}
-                        />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div>
-                        <label className="text-sm font-medium">Categories</label>
-                        <input
-                          type="text"
-                          className="w-full p-2 border rounded"
-                          value={website.categories?.join(', ') || ''}
-                          placeholder="Technology, Business, Marketing..."
-                          onChange={(e) => {
-                            const newWebsites = [...editedData.websites];
-                            newWebsites[index] = { 
-                              ...website, 
-                              categories: e.target.value.split(',').map(n => n.trim()).filter(n => n) 
-                            };
-                            setEditedData({ ...editedData, websites: newWebsites });
-                          }}
-                        />
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium">Niche</label>
-                        <input
-                          type="text"
-                          className="w-full p-2 border rounded"
-                          value={website.niche?.join(', ') || ''}
-                          placeholder="SaaS, B2B, eCommerce..."
-                          onChange={(e) => {
-                            const newWebsites = [...editedData.websites];
-                            newWebsites[index] = { 
-                              ...website, 
-                              niche: e.target.value.split(',').map(n => n.trim()).filter(n => n) 
-                            };
-                            setEditedData({ ...editedData, websites: newWebsites });
-                          }}
-                        />
-                      </div>
-                      {website.suggestedNewNiches && website.suggestedNewNiches.length > 0 && (
-                        <div>
-                          <label className="text-sm font-medium text-purple-600">Suggested New Niches</label>
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="text"
-                              className="w-full p-2 border border-purple-300 rounded bg-purple-50"
-                              value={website.suggestedNewNiches?.join(', ') || ''}
-                              placeholder="New niches to add to database..."
-                              onChange={(e) => {
-                                const newWebsites = [...editedData.websites];
-                                newWebsites[index] = { 
-                                  ...website, 
-                                  suggestedNewNiches: e.target.value.split(',').map(n => n.trim()).filter(n => n) 
-                                };
-                                setEditedData({ ...editedData, websites: newWebsites });
-                              }}
-                            />
-                            <span className="text-xs text-purple-600">💡 New!</span>
-                          </div>
-                        </div>
-                      )}
-                      <div>
-                        <label className="text-sm font-medium">Website Type</label>
-                        <input
-                          type="text"
-                          className="w-full p-2 border rounded"
-                          value={website.websiteType?.join(', ') || ''}
-                          placeholder="Blog, News, Magazine..."
-                          onChange={(e) => {
-                            const newWebsites = [...editedData.websites];
-                            newWebsites[index] = { 
-                              ...website, 
-                              websiteType: e.target.value.split(',').map(t => t.trim()).filter(t => t)
-                            };
-                            setEditedData({ ...editedData, websites: newWebsites });
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Offerings (Table 3) */}
-            {editedData.offerings && editedData.offerings.length > 0 && (
-              <div>
-                <h3 className="font-semibold mb-2">Offerings (Table 3) - Services & Pricing</h3>
-                {editedData.offerings.map((offering: any, index: number) => (
-                  <div key={index} className="p-3 border rounded mb-2 bg-blue-50">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex gap-3 items-center">
-                        <select
-                          className="font-medium text-blue-900 bg-transparent border border-blue-300 rounded px-2 py-1"
-                          value={offering.offeringType}
-                          onChange={(e) => {
-                            const newOfferings = [...editedData.offerings];
-                            newOfferings[index] = { ...offering, offeringType: e.target.value };
-                            setEditedData({ ...editedData, offerings: newOfferings });
-                          }}
-                        >
-                          <option value="guest_post">📝 Guest Post</option>
-                          <option value="link_insertion">🔗 Link Insertion</option>
-                          <option value="link_exchange">🔄 Link Exchange</option>
-                        </select>
-                        <div>
-                          <label className="text-xs text-gray-600">Website</label>
-                          <input
-                            type="text"
-                            className="block w-40 text-sm p-1 border rounded"
-                            value={offering.websiteDomain || ''}
-                            placeholder="domain.com"
-                            onChange={(e) => {
-                              const newOfferings = [...editedData.offerings];
-                              newOfferings[index] = { ...offering, websiteDomain: e.target.value };
-                              setEditedData({ ...editedData, offerings: newOfferings });
-                            }}
-                          />
-                        </div>
-                      </div>
-                      <button 
-                        onClick={() => {
-                          const newOfferings = editedData.offerings.filter((_: any, i: number) => i !== index);
-                          setEditedData({ ...editedData, offerings: newOfferings });
-                        }}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                    
-                    <div className="grid grid-cols-4 gap-4">
-                      <div>
-                        <label className="text-sm font-medium">Base Price</label>
-                        <div className="flex gap-1">
-                          <input
-                            type="number"
-                            className="w-24 p-2 border rounded"
-                            value={offering.basePrice || ''}
-                            placeholder="150"
-                            onChange={(e) => {
-                              const newOfferings = [...editedData.offerings];
-                              newOfferings[index] = { ...offering, basePrice: parseFloat(e.target.value) || null };
-                              setEditedData({ ...editedData, offerings: newOfferings });
-                            }}
-                          />
-                          <select
-                            className="p-2 border rounded text-sm"
-                            value={offering.currency || 'USD'}
-                            onChange={(e) => {
-                              const newOfferings = [...editedData.offerings];
-                              newOfferings[index] = { ...offering, currency: e.target.value };
-                              setEditedData({ ...editedData, offerings: newOfferings });
-                            }}
-                          >
-                            <option value="USD">USD</option>
-                            <option value="EUR">EUR</option>
-                            <option value="GBP">GBP</option>
-                          </select>
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <label className="text-sm font-medium">Availability Status</label>
-                        <select
-                          className="w-full p-2 border rounded"
-                          value={offering.currentAvailability || 'available'}
-                          onChange={(e) => {
-                            const newOfferings = [...editedData.offerings];
-                            newOfferings[index] = { ...offering, currentAvailability: e.target.value };
-                            setEditedData({ ...editedData, offerings: newOfferings });
-                          }}
-                        >
-                          <option value="available">✅ Available</option>
-                          <option value="needs_info">❓ Needs Info</option>
-                          <option value="limited">⚠️ Limited</option>
-                          <option value="paused">⏸️ Paused</option>
-                        </select>
-                      </div>
-                      
-                      <div>
-                        <label className="text-sm font-medium">Turnaround (days)</label>
-                        <input
-                          type="number"
-                          className="w-full p-2 border rounded"
-                          value={offering.turnaroundDays || ''}
-                          placeholder="7"
-                          onChange={(e) => {
-                            const newOfferings = [...editedData.offerings];
-                            newOfferings[index] = { ...offering, turnaroundDays: parseInt(e.target.value) || null };
-                            setEditedData({ ...editedData, offerings: newOfferings });
-                          }}
-                        />
-                      </div>
-                      
-                      {offering.offeringType === 'guest_post' && (
-                        <div>
-                          <label className="text-sm font-medium">Word Count</label>
-                          <div className="flex gap-2">
-                            <input
-                              type="number"
-                              className="w-full p-2 border rounded"
-                              value={offering.minWordCount || ''}
-                              placeholder="Min"
-                              onChange={(e) => {
-                                const newOfferings = [...editedData.offerings];
-                                newOfferings[index] = { ...offering, minWordCount: parseInt(e.target.value) || null };
-                                setEditedData({ ...editedData, offerings: newOfferings });
-                              }}
-                            />
-                            <input
-                              type="number"
-                              className="w-full p-2 border rounded"
-                              value={offering.maxWordCount || ''}
-                              placeholder="Max"
-                              onChange={(e) => {
-                                const newOfferings = [...editedData.offerings];
-                                newOfferings[index] = { ...offering, maxWordCount: parseInt(e.target.value) || null };
-                                setEditedData({ ...editedData, offerings: newOfferings });
-                              }}
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* Requirements */}
-                    {offering.requirements && (
-                      <div className="mt-3 space-y-3">
-                        <div className="font-medium text-sm">Requirements</div>
-                        
-                        {/* Basic Requirements */}
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <label className="text-xs font-medium">DoFollow Links</label>
-                            <select
-                              className="w-full p-2 border rounded text-sm"
-                              value={offering.requirements?.acceptsDoFollow === null ? 'unknown' : offering.requirements?.acceptsDoFollow ? 'true' : 'false'}
-                              onChange={(e) => {
-                                const newOfferings = [...editedData.offerings];
-                                const value = e.target.value === 'unknown' ? null : e.target.value === 'true';
-                                newOfferings[index] = { 
-                                  ...offering, 
-                                  requirements: { ...offering.requirements, acceptsDoFollow: value }
-                                };
-                                setEditedData({ ...editedData, offerings: newOfferings });
-                              }}
-                            >
-                              <option value="unknown">❓ Not Specified</option>
-                              <option value="true">✅ Yes</option>
-                              <option value="false">❌ No</option>
-                            </select>
-                          </div>
-                          
-                          <div>
-                            <label className="text-xs font-medium">Author Bio Required</label>
-                            <select
-                              className="w-full p-2 border rounded text-sm"
-                              value={offering.requirements?.requiresAuthorBio === null ? 'unknown' : offering.requirements?.requiresAuthorBio ? 'true' : 'false'}
-                              onChange={(e) => {
-                                const newOfferings = [...editedData.offerings];
-                                const value = e.target.value === 'unknown' ? null : e.target.value === 'true';
-                                newOfferings[index] = { 
-                                  ...offering, 
-                                  requirements: { ...offering.requirements, requiresAuthorBio: value }
-                                };
-                                setEditedData({ ...editedData, offerings: newOfferings });
-                              }}
-                            >
-                              <option value="unknown">❓ Not Specified</option>
-                              <option value="true">✅ Required</option>
-                              <option value="false">❌ Not Required</option>
-                            </select>
-                          </div>
-                          
-                          <div>
-                            <label className="text-xs font-medium">Max Links Per Post</label>
-                            <input
-                              type="number"
-                              className="w-full p-2 border rounded text-sm"
-                              value={offering.requirements?.maxLinksPerPost || ''}
-                              placeholder="2"
-                              onChange={(e) => {
-                                const newOfferings = [...editedData.offerings];
-                                newOfferings[index] = { 
-                                  ...offering, 
-                                  requirements: { ...offering.requirements, maxLinksPerPost: parseInt(e.target.value) || null }
-                                };
-                                setEditedData({ ...editedData, offerings: newOfferings });
-                              }}
-                            />
-                          </div>
-                          
-                          <div>
-                            <label className="text-xs font-medium">Images Required</label>
-                            <select
-                              className="w-full p-2 border rounded text-sm"
-                              value={offering.requirements?.imagesRequired === null ? 'unknown' : offering.requirements?.imagesRequired ? 'true' : 'false'}
-                              onChange={(e) => {
-                                const newOfferings = [...editedData.offerings];
-                                const value = e.target.value === 'unknown' ? null : e.target.value === 'true';
-                                newOfferings[index] = { 
-                                  ...offering, 
-                                  requirements: { ...offering.requirements, imagesRequired: value }
-                                };
-                                setEditedData({ ...editedData, offerings: newOfferings });
-                              }}
-                            >
-                              <option value="unknown">❓ Not Specified</option>
-                              <option value="false">❌ No</option>
-                              <option value="true">✅ Yes</option>
-                            </select>
-                          </div>
-                          
-                          {offering.requirements?.imagesRequired && (
-                            <div>
-                              <label className="text-xs font-medium">Min Images</label>
-                              <input
-                                type="number"
-                                className="w-full p-2 border rounded text-sm"
-                                value={offering.requirements?.minImages || ''}
-                                placeholder="1"
-                                onChange={(e) => {
-                                  const newOfferings = [...editedData.offerings];
-                                  newOfferings[index] = { 
-                                    ...offering, 
-                                    requirements: { ...offering.requirements, minImages: parseInt(e.target.value) || null }
-                                  };
-                                  setEditedData({ ...editedData, offerings: newOfferings });
-                                }}
-                              />
-                            </div>
-                          )}
-                        </div>
-                        
-                        {/* Content Requirements */}
-                        <div>
-                          <label className="text-xs font-medium">Content Requirements</label>
-                          <textarea
-                            className="w-full p-2 border rounded text-sm mt-1"
-                            rows={2}
-                            value={offering.requirements?.contentRequirements || ''}
-                            placeholder="E.g., Original content only, well-researched, AP style guide..."
-                            onChange={(e) => {
-                              const newOfferings = [...editedData.offerings];
-                              newOfferings[index] = { 
-                                ...offering, 
-                                requirements: { ...offering.requirements, contentRequirements: e.target.value }
-                              };
-                              setEditedData({ ...editedData, offerings: newOfferings });
-                            }}
-                          />
-                        </div>
-                        
-                        {/* Author Bio Requirements */}
-                        <div>
-                          <label className="text-xs font-medium">Author Bio Requirements</label>
-                          <input
-                            type="text"
-                            className="w-full p-2 border rounded text-sm mt-1"
-                            value={offering.requirements?.authorBioRequirements || ''}
-                            placeholder="E.g., Max 100 words, include social links..."
-                            onChange={(e) => {
-                              const newOfferings = [...editedData.offerings];
-                              newOfferings[index] = { 
-                                ...offering, 
-                                requirements: { ...offering.requirements, authorBioRequirements: e.target.value }
-                              };
-                              setEditedData({ ...editedData, offerings: newOfferings });
-                            }}
-                          />
-                        </div>
-                        
-                        {/* Link Requirements */}
-                        <div>
-                          <label className="text-xs font-medium">Link Requirements</label>
-                          <input
-                            type="text"
-                            className="w-full p-2 border rounded text-sm mt-1"
-                            value={offering.requirements?.linkRequirements || ''}
-                            placeholder="E.g., Contextual links only, no affiliates, natural anchor text..."
-                            onChange={(e) => {
-                              const newOfferings = [...editedData.offerings];
-                              newOfferings[index] = { 
-                                ...offering, 
-                                requirements: { ...offering.requirements, linkRequirements: e.target.value }
-                              };
-                              setEditedData({ ...editedData, offerings: newOfferings });
-                            }}
-                          />
-                        </div>
-                        
-                        {/* Sample Post URL */}
-                        <div>
-                          <label className="text-xs font-medium">Sample Post URL</label>
-                          <input
-                            type="text"
-                            className="w-full p-2 border rounded text-sm mt-1"
-                            value={offering.requirements?.samplePostUrl || ''}
-                            placeholder="https://example.com/sample-post"
-                            onChange={(e) => {
-                              const newOfferings = [...editedData.offerings];
-                              newOfferings[index] = { 
-                                ...offering, 
-                                requirements: { ...offering.requirements, samplePostUrl: e.target.value }
-                              };
-                              setEditedData({ ...editedData, offerings: newOfferings });
-                            }}
-                          />
-                        </div>
-                        
-                        {/* Prohibited Topics */}
-                        <div>
-                          <label className="text-xs font-medium">Prohibited Topics</label>
-                          <input
-                            type="text"
-                            className="w-full p-2 border rounded text-sm mt-1"
-                            value={offering.requirements?.prohibitedTopics || ''}
-                            placeholder="E.g., CBD, Gambling, Adult Content..."
-                            onChange={(e) => {
-                              const newOfferings = [...editedData.offerings];
-                              newOfferings[index] = { 
-                                ...offering, 
-                                requirements: { ...offering.requirements, prohibitedTopics: e.target.value }
-                              };
-                              setEditedData({ ...editedData, offerings: newOfferings });
-                            }}
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Extraction Metadata */}
-            {editedData.extractionMetadata && (
-              <div>
-                <h3 className="font-semibold mb-2">Extraction Metadata</h3>
-                <div className="p-3 border rounded bg-gray-50">
-                  {editedData.extractionMetadata.confidence !== undefined && (
-                    <div className="mb-2">
-                      <span className="font-medium">Confidence: </span>
-                      <span className={`px-2 py-1 rounded text-sm ${
-                        editedData.extractionMetadata.confidence >= 0.8 ? 'bg-green-100 text-green-800' :
-                        editedData.extractionMetadata.confidence >= 0.5 ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-red-100 text-red-800'
-                      }`}>
-                        {(editedData.extractionMetadata.confidence * 100).toFixed(0)}%
-                      </span>
-                    </div>
-                  )}
-                  {editedData.extractionMetadata.extractionNotes && (
-                    <div className="mb-2">
-                      <span className="font-medium">Notes: </span>
-                      {editedData.extractionMetadata.extractionNotes}
-                    </div>
-                  )}
-                  {editedData.extractionMetadata.keyQuotes && editedData.extractionMetadata.keyQuotes.length > 0 && (
-                    <div>
-                      <span className="font-medium">Key Quotes:</span>
-                      <ul className="mt-1 space-y-1">
-                        {editedData.extractionMetadata.keyQuotes.map((quote: string, i: number) => (
-                          <li key={i} className="text-sm italic text-gray-600">"{quote}"</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Action Buttons */}
-        {editedData && (
-          <div className="flex gap-3 mt-6">
-            <button
-              onClick={handlePreview}
-              disabled={loadingPreview}
-              className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50 flex items-center gap-2"
-            >
-              {loadingPreview ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Analyzing...
-                </>
-              ) : (
-                <>
-                  🔍 Enhanced Duplicate Detection
-                </>
-              )}
-            </button>
-            <button
-              onClick={handleSave}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-            >
-              Save as Draft
-            </button>
-            <button
-              onClick={handleApprove}
-              disabled={approving}
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
-            >
-              {approving ? '⏳ Creating Records...' : '✅ Approve & Create Records'}
-            </button>
-            <button
-              onClick={handleReject}
-              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-            >
-              ❌ Reject
-            </button>
-            <button
-              onClick={() => setEditedData(null)}
-              className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
-            >
-              Cancel
-            </button>
-          </div>
-        )}
-        </CardContent>
-      </Card>
-      
-      {/* Enhanced Preview Modal */}
-      {showPreview && previewData && (
-        <DuplicateDetectionPreview
-          previewData={previewData}
-          onApprove={() => {
-            setShowPreview(false);
-            handleApprove();
-          }}
-          onCancel={() => setShowPreview(false)}
-          isApproving={approving}
-        />
-      )}
     </div>
   );
 }

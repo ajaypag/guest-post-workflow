@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ManyReachAPIClient } from '@/lib/services/manyreach/apiClient';
+import { requireInternalUser } from '@/lib/auth/middleware';
 
 export async function GET(request: NextRequest) {
   try {
-    // TODO: Add proper auth check
-    // For now, allow access for testing
+    // Check authentication - internal users only
+    const authCheck = await requireInternalUser(request);
+    if (authCheck instanceof NextResponse) {
+      return authCheck;
+    }
     
     const searchParams = request.nextUrl.searchParams;
     const workspaceName = searchParams.get('workspace') || 'main';
