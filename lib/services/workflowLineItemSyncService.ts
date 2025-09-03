@@ -82,10 +82,10 @@ export class WorkflowLineItemSyncService {
       };
       
       // Compute effective checks that include manual overrides
-      const effectiveCriticalChecks = { ...verificationResult.critical };
+      const effectiveCriticalChecks: any = { ...verificationResult.critical };
       if (manualOverrides) {
         Object.entries(manualOverrides).forEach(([checkKey, overrideValue]) => {
-          if (effectiveCriticalChecks.hasOwnProperty(checkKey)) {
+          if (checkKey in effectiveCriticalChecks) {
             effectiveCriticalChecks[checkKey] = overrideValue;
           }
         });
