@@ -28,6 +28,8 @@ export interface VerificationMetadata {
   clientLinkHtml?: string;
   anchorTextExpected?: string; // What anchor text was expected
   anchorTextActual?: string;   // What anchor text was actually found
+  clientMentionExpected?: string; // What client mention phrase was expected
+  clientMentionProximity?: 'same-sentence' | 'same-paragraph' | 'not-found';
   googleIndexStatus?: 'indexed' | 'not_indexed' | 'pending' | 'error';
   errors: string[];
   verifiedBy?: string;
@@ -355,6 +357,9 @@ export class PublicationVerificationService {
         const clientMentionStep = workflow.steps?.find(s => s.id === 'client-mention');
         const expectedPhrase = clientMentionStep?.outputs?.expectedPhrase || '';
         
+        // Store expected phrase in metadata
+        result.metadata.clientMentionExpected = expectedPhrase;
+        
         if (expectedPhrase) {
           // Parse the phrase to extract brand and keyword
           // Expected format: "BrandName keyword phrase" or just "BrandName"
@@ -364,13 +369,17 @@ export class PublicationVerificationService {
           
           const mentionCheck = this.detectClientMention(text, brandName, keyword);
           result.critical.clientMentionPresent = mentionCheck.found;
+          result.metadata.clientMentionProximity = mentionCheck.proximity;
         } else {
           // No expected phrase defined, check for client name at least
           const clientName = workflow.clientName || '';
           if (clientName) {
-            result.critical.clientMentionPresent = text.toLowerCase().includes(clientName.toLowerCase());
+            const found = text.toLowerCase().includes(clientName.toLowerCase());
+            result.critical.clientMentionPresent = found;
+            result.metadata.clientMentionProximity = found ? 'same-paragraph' : 'not-found';
           } else {
             result.critical.clientMentionPresent = null; // Can't check
+            result.metadata.clientMentionProximity = 'not-found';
           }
         }
         

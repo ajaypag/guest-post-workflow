@@ -100,6 +100,11 @@ export class WorkflowLineItemSyncService {
             present: verificationResult.critical.clientLinkPresent,
             dofollow: verificationResult.critical.linkIsDofollow
           },
+          clientMention: {
+            expectedPhrase: verificationResult.metadata.clientMentionExpected,
+            present: verificationResult.critical.clientMentionPresent,
+            proximity: verificationResult.metadata.clientMentionProximity
+          },
           googleIndex: {
             status: verificationResult.metadata.googleIndexStatus,
             indexed: verificationResult.additional.googleIndexed
