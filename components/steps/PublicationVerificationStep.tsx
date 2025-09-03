@@ -175,6 +175,64 @@ export const PublicationVerificationStep = ({ step, workflow, onChange }: Public
     }
   };
 
+  const handleSyncToOrder = async () => {
+    if (!autoVerification || !workflow.id) return;
+
+    try {
+      setSaving(true);
+      
+      // Get current user session
+      const sessionResponse = await fetch('/api/auth/session');
+      const session = await sessionResponse.json();
+      const userId = session?.user?.id;
+
+      // Create updated verification result that includes overrides
+      const updatedVerificationResult = {
+        ...autoVerification,
+        score: {
+          ...autoVerification.score,
+          criticalPassed: effectiveScore.passed,
+          overallPassed: effectiveScore.overallPassed
+        },
+        // Add override information to metadata
+        metadata: {
+          ...autoVerification.metadata,
+          manualOverrides: overrides,
+          overrideCount: Object.keys(overrides).length,
+          syncedAt: new Date().toISOString()
+        }
+      };
+
+      // Sync to line item with updated results
+      const syncResponse = await fetch(`/api/workflows/${workflow.id}/sync-to-line-item`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          stepOutputs: {
+            ...step.outputs,
+            autoVerification: updatedVerificationResult,
+            effectiveScore,
+            manualOverrides: overrides
+          },
+          userId,
+          forceDeliver: false // This is a regular sync, not force deliver
+        })
+      });
+
+      if (!syncResponse.ok) {
+        throw new Error('Failed to sync to order line item');
+      }
+
+      toast.success('Order status updated successfully!');
+      
+    } catch (error) {
+      console.error('Sync to order failed:', error);
+      toast.error('Failed to update order status');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // Calculate effective score with manual overrides
   const calculateEffectiveScore = () => {
     if (!autoVerification) return { passed: 0, total: 6, overallPassed: false };
@@ -319,11 +377,29 @@ export const PublicationVerificationStep = ({ step, workflow, onChange }: Public
                     )}
                   </p>
                 </div>
-                {lastVerifiedAt && (
-                  <p className="text-xs text-gray-500">
-                    Last verified: {new Date(lastVerifiedAt).toLocaleString()}
-                  </p>
-                )}
+                <div className="flex items-center gap-3">
+                  {/* Sync button for when there are overrides or score changes */}
+                  {Object.keys(overrides).length > 0 && (
+                    <button
+                      onClick={handleSyncToOrder}
+                      disabled={isSaving}
+                      className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
+                      title="Update order line item with current verification status"
+                    >
+                      {isSaving ? (
+                        <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
+                      ) : (
+                        <RefreshCw className="w-3 h-3 mr-1" />
+                      )}
+                      Sync Order
+                    </button>
+                  )}
+                  {lastVerifiedAt && (
+                    <p className="text-xs text-gray-500">
+                      Last verified: {new Date(lastVerifiedAt).toLocaleString()}
+                    </p>
+                  )}
+                </div>
               </div>
 
               {/* Critical Checks */}
@@ -526,10 +602,22 @@ export const PublicationVerificationStep = ({ step, workflow, onChange }: Public
                     <CheckCircle className="w-5 h-5 text-green-600 mr-2" />
                     <h4 className="font-medium text-green-900">✅ All QA Checks Now Pass</h4>
                   </div>
-                  <p className="text-sm text-green-700">
+                  <p className="text-sm text-green-700 mb-3">
                     Thanks to your {Object.keys(overrides).length} manual override{Object.keys(overrides).length > 1 ? 's' : ''}, 
                     all critical checks are now passing. You can proceed with payment authorization and workflow completion.
                   </p>
+                  <button
+                    onClick={handleSyncToOrder}
+                    disabled={isSaving}
+                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
+                  >
+                    {isSaving ? (
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                    )}
+                    {isSaving ? 'Syncing...' : 'Update Order Status'}
+                  </button>
                 </div>
               )}
 
