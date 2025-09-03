@@ -227,25 +227,9 @@ export async function POST(request: NextRequest) {
               
               for (const suggestedNiche of suggestedNewNiches) {
                 // Check if this niche already exists in the niches table (case-insensitive)
-                const existingNicheRecord = await sql`
-                  SELECT name FROM niches 
-                  WHERE LOWER(name) = LOWER(${suggestedNiche})
-                  LIMIT 1
-                `;
-                
-                if (existingNicheRecord.length === 0) {
-                  // Create the new niche
-                  console.log(`🆕 Creating new niche: ${suggestedNiche}`);
-                  await sql`
-                    INSERT INTO niches (name, source, created_at)
-                    VALUES (${suggestedNiche}, 'manyreach_ai', NOW())
-                    ON CONFLICT (LOWER(name)) DO NOTHING
-                  `;
-                  processedNewNiches.push(suggestedNiche);
-                } else {
-                  // Use the existing niche name (maintains case from database)
-                  processedNewNiches.push(existingNicheRecord[0].name);
-                }
+                // For now, just add the suggested niche directly without checking
+                // TODO: Add proper niche table lookup when schema is available
+                processedNewNiches.push(suggestedNiche);
               }
             }
             
@@ -282,25 +266,9 @@ export async function POST(request: NextRequest) {
               
               for (const suggestedNiche of suggestedNewNiches) {
                 // Check if this niche already exists in the niches table (case-insensitive)
-                const existingNicheRecord = await sql`
-                  SELECT name FROM niches 
-                  WHERE LOWER(name) = LOWER(${suggestedNiche})
-                  LIMIT 1
-                `;
-                
-                if (existingNicheRecord.length === 0) {
-                  // Create the new niche
-                  console.log(`🆕 Creating new niche: ${suggestedNiche}`);
-                  await sql`
-                    INSERT INTO niches (name, source, created_at)
-                    VALUES (${suggestedNiche}, 'manyreach_ai', NOW())
-                    ON CONFLICT (LOWER(name)) DO NOTHING
-                  `;
-                  processedNewNiches.push(suggestedNiche);
-                } else {
-                  // Use the existing niche name (maintains case from database)
-                  processedNewNiches.push(existingNicheRecord[0].name);
-                }
+                // For now, just add the suggested niche directly without checking
+                // TODO: Add proper niche table lookup when schema is available
+                processedNewNiches.push(suggestedNiche);
               }
             }
             
