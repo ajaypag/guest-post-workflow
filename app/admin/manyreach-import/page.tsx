@@ -135,9 +135,21 @@ export default function ManyReachImportPage() {
     }
   };
 
+  const [importProgress, setImportProgress] = useState<{
+    [key: string]: { processed: number; total: number; status: string; message?: string }
+  }>({});
+
   const importCampaign = async (campaignId: string) => {
     setImporting(campaignId);
+    
+    // Initialize progress
+    setImportProgress(prev => ({
+      ...prev,
+      [campaignId]: { processed: 0, total: 0, status: 'starting', message: 'Starting import...' }
+    }));
+
     try {
+      // Start the import
       const response = await fetch('/api/admin/manyreach/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -154,6 +166,17 @@ export default function ManyReachImportPage() {
       
       const data = await response.json();
       
+      // Update final progress
+      setImportProgress(prev => ({
+        ...prev,
+        [campaignId]: { 
+          processed: data.result.imported || 0, 
+          total: data.result.imported || 0, 
+          status: 'completed',
+          message: `Import complete: ${data.result.imported} replies imported, ${data.result.skipped} skipped`
+        }
+      }));
+      
       toast({
         title: 'Import Complete',
         description: `Imported ${data.result.imported} replies, skipped ${data.result.skipped}`,
@@ -163,8 +186,28 @@ export default function ManyReachImportPage() {
       await fetchCampaigns();
       await fetchDrafts();
       
+      // Clear progress after 3 seconds
+      setTimeout(() => {
+        setImportProgress(prev => {
+          const newProgress = { ...prev };
+          delete newProgress[campaignId];
+          return newProgress;
+        });
+      }, 3000);
+      
     } catch (error) {
       console.error('Import error:', error);
+      
+      setImportProgress(prev => ({
+        ...prev,
+        [campaignId]: { 
+          processed: 0, 
+          total: 0, 
+          status: 'error',
+          message: error instanceof Error ? error.message : 'Import failed'
+        }
+      }));
+      
       toast({
         title: 'Import Failed',
         description: error instanceof Error ? error.message : 'Unknown error',
@@ -518,6 +561,37 @@ export default function ManyReachImportPage() {
                           </Button>
                         </div>
                       </div>
+                      
+                      {/* Progress Bar */}
+                      {importProgress[campaign.id] && (
+                        <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                          <div className="flex justify-between text-sm mb-2">
+                            <span className="font-medium">
+                              {importProgress[campaign.id].status === 'completed' ? '✅ ' : 
+                               importProgress[campaign.id].status === 'error' ? '❌ ' : '⏳ '}
+                              {importProgress[campaign.id].message || 'Processing...'}
+                            </span>
+                            {importProgress[campaign.id].total > 0 && (
+                              <span className="text-gray-600">
+                                {importProgress[campaign.id].processed} / {importProgress[campaign.id].total}
+                              </span>
+                            )}
+                          </div>
+                          {importProgress[campaign.id].status === 'processing' && (
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div 
+                                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                                style={{ 
+                                  width: `${importProgress[campaign.id].total > 0 
+                                    ? (importProgress[campaign.id].processed / importProgress[campaign.id].total) * 100 
+                                    : 0}%` 
+                                }}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
                       {campaign.pendingCount > 0 && (
                         <div className="mt-2">
                           <Badge variant="outline" className="text-orange-600">
