@@ -165,28 +165,28 @@ const workflowSteps: WorkflowStep[] = [
 
 const bulkAnalysisSteps = [
   {
-    name: 'Client Target URLs & Keywords',
-    description: 'Load your pages that need links and their target keywords',
+    name: 'Your Target Pages',
+    description: 'Tell us which pages need backlinks',
     icon: <Building2 className="w-5 h-5" />,
-    process: 'Pull in your client\'s target pages (the ones that need backlinks) and their associated keywords. This becomes the foundation for finding topically relevant guest post opportunities in our extensive site database.'
+    process: 'You provide the pages you want to rank higher. We look at their keywords and content to understand what types of sites would be perfect matches for guest posts that link back to these pages.'
   },
   {
-    name: 'Site Keyword Discovery',
-    description: 'Find what keywords each guest post site actually ranks for',
+    name: 'Check Our Database',
+    description: 'We search our growing collection of sites',
     icon: <Search className="w-5 h-5" />,
-    process: 'DataForSEO shows us what keywords each potential guest post site ranks for. We\'re looking for sites that rank for keywords related to your client\'s niche - this means your content will naturally fit and have a better chance of ranking.'
+    process: 'We have a database of sites that\'s constantly growing. We check which ones rank for keywords related to your business - meaning your content would naturally fit on their site.'
   },
   {
-    name: 'Smart Topical Analysis (O3)',
-    description: 'AI reasoning model evaluates if sites are genuinely good matches',
+    name: 'Smart Matching',
+    description: 'AI figures out which sites are actually good fits',
     icon: <Target className="w-5 h-5" />,
-    process: 'OpenAI O3 reasoning model thinks through each match: Does this site have topical authority in your client\'s niche? Will your content feel natural here? It\'s not just matching keywords - it\'s understanding context and relevance.'
+    process: 'Our AI looks at each site and thinks: Would your content make sense here? Does this site have authority in your space? It\'s not just keyword matching - it\'s understanding if it\'s a natural fit.'
   },
   {
-    name: 'Opportunity Ranking & Selection',
-    description: 'Surface the best guest post opportunities from our extensive database',
+    name: 'Present Options',
+    description: 'Show you the best opportunities we found',
     icon: <TrendingUp className="w-5 h-5" />,
-    process: 'Sites are scored and ranked by how well they match your client\'s needs. High-quality matches become guest post opportunities. Click to convert them into full workflows - no manual searching through thousands of sites.'
+    process: 'We rank the sites by how good a match they are and present them to you. You choose which opportunities look promising - no more manually searching through thousands of sites.'
   }
 ];
 
@@ -244,7 +244,7 @@ export default function InteractiveWorkflowDemo() {
               : 'border-transparent text-gray-500 hover:text-gray-700'
           }`}
         >
-          Bulk Analysis System
+          Site Vetting Process
         </button>
         <button
           onClick={() => setActiveTab('workflow')}
@@ -254,7 +254,7 @@ export default function InteractiveWorkflowDemo() {
               : 'border-transparent text-gray-500 hover:text-gray-700'
           }`}
         >
-          Guest Post Workflow (8 Steps)
+          Content Creation
         </button>
       </div>
 
@@ -387,8 +387,8 @@ export default function InteractiveWorkflowDemo() {
         /* Bulk Analysis Tab */
         <div className="p-6">
           <div className="text-center mb-8">
-            <h4 className="text-xl font-semibold text-gray-900 mb-2">Bulk Analysis System</h4>
-            <p className="text-gray-600">Analyze dozens of competitors and find hundreds of strategic opportunities</p>
+            <h4 className="text-xl font-semibold text-gray-900 mb-2">How We Vet Sites For You</h4>
+            <p className="text-gray-600">We maintain a growing database of sites and find the perfect matches for your content</p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -421,15 +421,15 @@ export default function InteractiveWorkflowDemo() {
               </div>
               <div className="bg-white rounded-lg p-4">
                 <div className="text-2xl font-bold text-purple-600 mb-1">89</div>
-                <div className="text-sm text-gray-600">Quality sites found from database</div>
+                <div className="text-sm text-gray-600">Quality sites matched from our database</div>
               </div>
             </div>
             <div className="bg-white rounded-lg p-4 text-left">
               <h6 className="font-medium text-gray-800 mb-2">What This Means:</h6>
               <div className="text-sm text-gray-700 space-y-1">
-                <div>✅ <strong>techcrunch.com</strong> - Perfect match: They rank for your exact keywords</div>
-                <div>✅ <strong>industryweek.com</strong> - Good fit: Strong in your broader industry</div>
-                <div>⚠️ <strong>bizjournal.com</strong> - Maybe: Some overlap but needs manual review</div>
+                <div>✅ <strong>businesstools.com</strong> - Perfect match: They rank for your exact keywords</div>
+                <div>✅ <strong>startupmagazine.co.uk</strong> - Good fit: Strong in your broader industry</div>
+                <div>⚠️ <strong>smallbiztrends.com</strong> - Maybe: Some overlap but needs manual review</div>
                 <div className="text-xs text-gray-500 mt-2">No more guessing which sites will accept your content - we show you where it naturally fits</div>
               </div>
             </div>
