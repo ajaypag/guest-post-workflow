@@ -87,6 +87,7 @@ export const QADetailsTooltip: React.FC<QADetailsTooltipProps> = ({
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [positionBelow, setPositionBelow] = useState(false);
   const triggerRef = useRef<HTMLDivElement>(null);
 
   // Safety check
@@ -146,8 +147,6 @@ export const QADetailsTooltip: React.FC<QADetailsTooltipProps> = ({
   const handleMouseLeave = () => {
     setIsVisible(false);
   };
-
-  const [positionBelow, setPositionBelow] = useState(false);
 
   const tooltipContent = (
     <div 
