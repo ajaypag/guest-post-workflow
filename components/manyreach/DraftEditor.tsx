@@ -385,19 +385,21 @@ export function DraftEditor({ draft, onUpdate, onReprocess }: DraftEditorProps) 
             </div>
             
             {data.websites?.map((website: any, index: number) => (
-              <div key={index} className="flex items-center gap-2">
+              <div key={index} className="flex items-center gap-2 p-2 border rounded-lg">
                 <Input
                   value={website.domain || ''}
                   onChange={(e) => updateDomain(index, e.target.value)}
                   placeholder="example.com"
+                  className="flex-1"
                 />
                 <Button
                   onClick={() => removeDomain(index)}
                   size="sm"
-                  variant="ghost"
-                  className="text-red-600"
+                  variant="destructive"
+                  title="Remove this domain"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Remove
                 </Button>
               </div>
             ))}
