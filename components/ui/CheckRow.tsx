@@ -8,9 +8,11 @@ interface CheckRowProps {
   status: 'passed' | 'failed' | 'pending' | 'error' | null;
   details?: string;
   isCritical?: boolean;
+  onOverride?: () => void; // Function to call when override button is clicked
+  isOverridden?: boolean; // Whether this check was manually overridden
 }
 
-export const CheckRow = ({ label, status, details, isCritical = false }: CheckRowProps) => {
+export const CheckRow = ({ label, status, details, isCritical = false, onOverride, isOverridden = false }: CheckRowProps) => {
   const getIcon = () => {
     switch (status) {
       case 'passed':
@@ -88,10 +90,26 @@ export const CheckRow = ({ label, status, details, isCritical = false }: CheckRo
                 Critical
               </span>
             )}
+            {isOverridden && (
+              <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full">
+                Overridden
+              </span>
+            )}
           </p>
-          <span className={`text-xs font-medium ${getTextStyle()}`}>
-            {getStatusText()}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className={`text-xs font-medium ${getTextStyle()}`}>
+              {getStatusText()}
+            </span>
+            {onOverride && status === 'failed' && isCritical && (
+              <button
+                onClick={onOverride}
+                className="px-2 py-1 text-xs bg-orange-600 text-white rounded hover:bg-orange-700 transition-colors"
+                title="Override this check to mark it as passed"
+              >
+                Override
+              </button>
+            )}
+          </div>
         </div>
         
         {details && (

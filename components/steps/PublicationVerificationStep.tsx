@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { WorkflowStep, GuestPostWorkflow } from '@/types/workflow';
 import { SavedField } from '../SavedField';
-import { CheckCircle, AlertCircle, ExternalLink, Shield, TrendingUp, DollarSign, FileCheck, RefreshCw, Play } from 'lucide-react';
+import { CheckCircle, AlertCircle, ExternalLink, Shield, DollarSign, FileCheck, RefreshCw, Play } from 'lucide-react';
 import { CheckRow } from '../ui/CheckRow';
 import { MissingFieldsModal } from '../modals/MissingFieldsModal';
 import { toast } from 'sonner';
@@ -37,11 +37,20 @@ export const PublicationVerificationStep = ({ step, workflow, onChange }: Public
 
   // Get verification results
   const autoVerification = step.outputs.autoVerification;
-  const lastVerifiedAt = step.outputs.lastVerifiedAt;
-  const manualChecks = step.outputs.manualChecks || {
-    contentIntegrity: false,
-    editorialQuality: false
+  
+  // Track manual overrides
+  const overrides = step.outputs.manualOverrides || {};
+  
+  // Override handlers
+  const createOverrideHandler = (checkKey: string) => () => {
+    const newOverrides = { ...overrides, [checkKey]: true };
+    onChange({ 
+      ...step.outputs, 
+      manualOverrides: newOverrides,
+      [`${checkKey}Overridden`]: true
+    });
   };
+  const lastVerifiedAt = step.outputs.lastVerifiedAt;
 
   const runAutoVerification = async () => {
     if (!publishedUrl.trim()) {
@@ -93,17 +102,6 @@ export const PublicationVerificationStep = ({ step, workflow, onChange }: Public
     }
   };
 
-  const handleManualCheck = (checkName: string, value: boolean) => {
-    const updatedManualChecks = {
-      ...manualChecks,
-      [checkName]: value
-    };
-    
-    onChange({ 
-      ...step.outputs, 
-      manualChecks: updatedManualChecks
-    });
-  };
 
   const handlePaymentAuthorization = () => {
     onChange({ 
@@ -179,15 +177,16 @@ export const PublicationVerificationStep = ({ step, workflow, onChange }: Public
 
   // Check if all verification requirements are met
   const criticalChecksPassed = autoVerification?.score?.overallPassed || false;
-  const manualChecksPassed = manualChecks.contentIntegrity && manualChecks.editorialQuality;
-  const allVerificationComplete = criticalChecksPassed && manualChecksPassed;
+  const allVerificationComplete = criticalChecksPassed;
   
   // Check for manual override
   const hasManualOverride = step.outputs.manualOverride?.applied || false;
   const canForceDeliver = autoVerification && !criticalChecksPassed && publishedUrl;
 
   // Convert verification status to CheckRow format
-  const getCheckStatus = (value: boolean | null) => {
+  const getCheckStatus = (value: boolean | null, checkKey?: string) => {
+    // Check if this specific check was manually overridden
+    if (checkKey && overrides[checkKey]) return 'passed';
     if (value === null) return 'pending';
     return value ? 'passed' : 'failed';
   };
@@ -298,18 +297,24 @@ export const PublicationVerificationStep = ({ step, workflow, onChange }: Public
                 <div className="space-y-2">
                   <CheckRow 
                     label="URL is Live" 
-                    status={getCheckStatus(autoVerification.critical.urlIsLive)}
+                    status={getCheckStatus(autoVerification.critical.urlIsLive, 'urlIsLive')}
                     isCritical={true}
+                    onOverride={createOverrideHandler('urlIsLive')}
+                    isOverridden={overrides.urlIsLive}
                   />
                   <CheckRow 
                     label="Client Link Present" 
-                    status={getCheckStatus(autoVerification.critical.clientLinkPresent)}
+                    status={getCheckStatus(autoVerification.critical.clientLinkPresent, 'clientLinkPresent')}
                     isCritical={true}
+                    onOverride={createOverrideHandler('clientLinkPresent')}
+                    isOverridden={overrides.clientLinkPresent}
                   />
                   <CheckRow 
                     label="Anchor Text Correct" 
-                    status={getCheckStatus(autoVerification.critical.anchorTextCorrect)}
+                    status={getCheckStatus(autoVerification.critical.anchorTextCorrect, 'anchorTextCorrect')}
                     isCritical={true}
+                    onOverride={createOverrideHandler('anchorTextCorrect')}
+                    isOverridden={overrides.anchorTextCorrect}
                     details={
                       autoVerification.critical.anchorTextCorrect === false 
                         ? `Expected: "${autoVerification.metadata?.anchorTextExpected || 'N/A'}" | Found: "${autoVerification.metadata?.anchorTextActual || 'Not found'}"` 
@@ -318,18 +323,24 @@ export const PublicationVerificationStep = ({ step, workflow, onChange }: Public
                   />
                   <CheckRow 
                     label="Link is Dofollow" 
-                    status={getCheckStatus(autoVerification.critical.linkIsDofollow)}
+                    status={getCheckStatus(autoVerification.critical.linkIsDofollow, 'linkIsDofollow')}
                     isCritical={true}
+                    onOverride={createOverrideHandler('linkIsDofollow')}
+                    isOverridden={overrides.linkIsDofollow}
                   />
                   <CheckRow 
                     label="Correct Domain" 
-                    status={getCheckStatus(autoVerification.critical.correctDomain)}
+                    status={getCheckStatus(autoVerification.critical.correctDomain, 'correctDomain')}
                     isCritical={true}
+                    onOverride={createOverrideHandler('correctDomain')}
+                    isOverridden={overrides.correctDomain}
                   />
                   <CheckRow 
                     label="Client Mention Present" 
-                    status={getCheckStatus(autoVerification.critical.clientMentionPresent)}
+                    status={getCheckStatus(autoVerification.critical.clientMentionPresent, 'clientMentionPresent')}
                     isCritical={true}
+                    onOverride={createOverrideHandler('clientMentionPresent')}
+                    isOverridden={overrides.clientMentionPresent}
                   />
                 </div>
               </div>
@@ -370,87 +381,7 @@ export const PublicationVerificationStep = ({ step, workflow, onChange }: Public
         </div>
       </div>
 
-      {/* Manual Quality Checks */}
-      {autoVerification && (
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
-            <h3 className="font-medium text-gray-900">Manual Quality Checks</h3>
-          </div>
-          <div className="p-6 space-y-4">
-            <p className="text-sm text-gray-600 mb-4">
-              Complete these final manual checks to approve the workflow:
-            </p>
-            
-            <div className="space-y-3">
-              <label className="flex items-start space-x-3">
-                <input
-                  type="checkbox"
-                  checked={manualChecks.contentIntegrity}
-                  onChange={(e) => handleManualCheck('contentIntegrity', e.target.checked)}
-                  className="mt-0.5 flex-shrink-0"
-                />
-                <div>
-                  <span className="text-sm font-medium">Content Integrity Verified</span>
-                  <p className="text-xs text-gray-600 mt-1">
-                    Article content matches what was submitted, no unauthorized changes
-                  </p>
-                </div>
-              </label>
-              
-              <label className="flex items-start space-x-3">
-                <input
-                  type="checkbox"
-                  checked={manualChecks.editorialQuality}
-                  onChange={(e) => handleManualCheck('editorialQuality', e.target.checked)}
-                  className="mt-0.5 flex-shrink-0"
-                />
-                <div>
-                  <span className="text-sm font-medium">Editorial Quality Approved</span>
-                  <p className="text-xs text-gray-600 mt-1">
-                    Professional formatting, readability, and overall presentation quality
-                  </p>
-                </div>
-              </label>
-            </div>
 
-            <SavedField
-              label="Quality Notes"
-              value={step.outputs.qualityNotes || ''}
-              placeholder="Document any quality observations or issues..."
-              onChange={(value) => onChange({ ...step.outputs, qualityNotes: value })}
-              isTextarea={true}
-              height="h-20"
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Performance Metrics */}
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100 bg-gray-50">
-          <div className="flex items-center">
-            <TrendingUp className="w-5 h-5 text-gray-600 mr-2" />
-            <h3 className="font-medium text-gray-900">Performance Tracking</h3>
-          </div>
-        </div>
-        <div className="p-6 space-y-4">
-          <SavedField
-            label="Link Type"
-            value={step.outputs.linkType || ''}
-            placeholder="dofollow/nofollow"
-            onChange={(value) => onChange({ ...step.outputs, linkType: value })}
-          />
-
-          <SavedField
-            label="Performance Notes"
-            value={step.outputs.performanceNotes || ''}
-            placeholder="Initial traffic, engagement metrics, etc..."
-            onChange={(value) => onChange({ ...step.outputs, performanceNotes: value })}
-            isTextarea={true}
-            height="h-20"
-          />
-        </div>
-      </div>
 
       {/* Payment Authorization */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
@@ -472,9 +403,9 @@ export const PublicationVerificationStep = ({ step, workflow, onChange }: Public
                 {!step.outputs.paymentAuthorized ? (
                   <button
                     onClick={handlePaymentAuthorization}
-                    disabled={!allVerificationComplete}
+                    disabled={!criticalChecksPassed}
                     className={`px-4 py-2 rounded-lg transition-colors ${
-                      allVerificationComplete
+                      criticalChecksPassed
                         ? 'bg-green-600 text-white hover:bg-green-700'
                         : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     }`}
@@ -490,9 +421,9 @@ export const PublicationVerificationStep = ({ step, workflow, onChange }: Public
                 )}
               </div>
               
-              {!allVerificationComplete && (
+              {!criticalChecksPassed && (
                 <p className="text-sm text-yellow-600 mt-2">
-                  ⚠️ Complete automated verification and manual quality checks before authorizing payment
+                  ⚠️ Complete automated verification (all critical checks must pass) before authorizing payment
                 </p>
               )}
               
@@ -531,9 +462,9 @@ export const PublicationVerificationStep = ({ step, workflow, onChange }: Public
               </p>
               <button
                 onClick={handleWorkflowCompletion}
-                disabled={!allVerificationComplete || !step.outputs.paymentAuthorized}
+                disabled={!criticalChecksPassed || !step.outputs.paymentAuthorized}
                 className={`w-full py-3 rounded-lg font-medium transition-colors ${
-                  allVerificationComplete && step.outputs.paymentAuthorized
+                  criticalChecksPassed && step.outputs.paymentAuthorized
                     ? 'bg-green-600 text-white hover:bg-green-700'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
@@ -542,13 +473,10 @@ export const PublicationVerificationStep = ({ step, workflow, onChange }: Public
                 Mark Workflow Complete
               </button>
               
-              {(!allVerificationComplete || !step.outputs.paymentAuthorized) && (
+              {(!criticalChecksPassed || !step.outputs.paymentAuthorized) && (
                 <div className="mt-3 space-y-1">
                   {!criticalChecksPassed && (
                     <p className="text-sm text-yellow-600">• Complete automated verification (all critical checks must pass)</p>
-                  )}
-                  {!manualChecksPassed && (
-                    <p className="text-sm text-yellow-600">• Complete manual quality checks</p>
                   )}
                   {!step.outputs.paymentAuthorized && (
                     <p className="text-sm text-yellow-600">• Authorize payment to publisher</p>
@@ -602,7 +530,7 @@ export const PublicationVerificationStep = ({ step, workflow, onChange }: Public
               </p>
               <div className="mt-3 space-y-1 text-sm text-green-700">
                 <p>✓ Article published and verified</p>
-                <p>✓ All verification and quality checks passed</p>
+                <p>✓ All critical verification checks passed</p>
                 <p>✓ Payment authorized to publisher</p>
                 <p>✓ Workflow successfully completed</p>
               </div>
@@ -642,7 +570,7 @@ export const PublicationVerificationStep = ({ step, workflow, onChange }: Public
             <div>
               <p className="text-blue-700">Verification Score:</p>
               <p className="font-medium text-blue-900">
-                {autoVerification?.score.criticalPassed || 0}/{autoVerification?.score.criticalTotal || 6} critical checks + manual approval
+                {autoVerification?.score.criticalPassed || 0}/{autoVerification?.score.criticalTotal || 6} critical checks passed
               </p>
             </div>
             <div>
