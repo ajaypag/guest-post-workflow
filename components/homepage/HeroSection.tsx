@@ -14,7 +14,7 @@ export default function HeroSection() {
   const serviceFee = SERVICE_FEE_CENTS / 100;
   
   return (
-    <section className="bg-gradient-to-br from-blue-900 via-blue-800 to-slate-900 py-12 md:py-16 lg:py-20 min-h-[85vh] flex items-center">
+    <section id="hero-form" className="bg-gradient-to-br from-blue-900 via-blue-800 to-slate-900 py-12 md:py-16 lg:py-20 min-h-[85vh] flex items-center">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 xl:gap-16 items-center">
           {/* Left: Value Proposition */}

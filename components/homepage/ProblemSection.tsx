@@ -3,8 +3,6 @@
 import { 
   TrendingDown,
   Search,
-  FileText,
-  DollarSign,
   AlertTriangle,
   XCircle,
   Brain,
@@ -18,16 +16,15 @@ export default function ProblemSection() {
         {/* Section Header */}
         <div className="text-center mb-12">
           <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
-            The Content Marketing Playbook Has Been Turned Upside Down
+            Top-of-Funnel SEO Is Dead. The Opportunity Has Shifted.
           </h2>
           <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-            The data doesn't lie. While everyone chases the same tired strategies, 
-            the rules of the game have completely changed.
+            AI and zero-click searches killed informational content. The only SEO worth doing now? Bottom-funnel placements where buyers actually convert.
           </p>
         </div>
 
         {/* Problem Grid */}
-        <div className="grid md:grid-cols-2 gap-6 mb-12">
+        <div className="grid md:grid-cols-3 gap-6 mb-12">
           {/* Problem 1: Zero Click Searches */}
           <div className="bg-white rounded-xl p-6 border border-red-100 hover:border-red-200 transition-colors">
             <div className="flex items-start gap-4">
@@ -39,34 +36,32 @@ export default function ProblemSection() {
                   60% of Searches End Without Clicks
                 </h3>
                 <p className="text-gray-600">
-                  Informational content gets extracted by AI, not visited. 
-                  88% of AI Overview queries are informational with a 77% zero-click rate.
+                  AI extracts your content for instant answers. 77% zero-click rate on informational queries.
                 </p>
                 <div className="flex items-center gap-2 text-sm text-red-600 font-medium">
                   <TrendingDown className="w-4 h-4" />
-                  <span>Projected 70%+ zero-click by 2025</span>
+                  <span>Projected 70%+ by 2025</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Problem 2: AI Scrapes Without Attribution */}
+          {/* Problem 2: AI Takes Without Giving */}
           <div className="bg-white rounded-xl p-6 border border-red-100 hover:border-red-200 transition-colors">
             <div className="flex items-start gap-4">
               <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <FileText className="w-5 h-5 text-red-600" />
+                <Brain className="w-5 h-5 text-red-600" />
               </div>
               <div className="space-y-2">
                 <h3 className="font-semibold text-gray-900 text-lg">
-                  AI Scrapes Content 179x More Than It Sends Traffic
+                  AI Scrapes 179x More Than It Sends Back
                 </h3>
                 <p className="text-gray-600">
-                  OpenAI scrapes 179 pages for every 1 visitor it sends back. 
-                  Your content powers AI answers while you get nothing in return.
+                  Your content powers AI answers with zero attribution. B2B SaaS gets only 0.2%-1% AI traffic.
                 </p>
                 <div className="flex items-center gap-2 text-sm text-red-600 font-medium">
                   <XCircle className="w-4 h-4" />
-                  <span>RAG scraping grew 49% in Q4 2024</span>
+                  <span>All take, no give</span>
                 </div>
               </div>
             </div>
@@ -83,34 +78,11 @@ export default function ProblemSection() {
                   Bottom-Funnel Converts 47% Better
                 </h3>
                 <p className="text-gray-600">
-                  Yet everyone still chases top-funnel keywords. 
-                  Bottom-funnel CPM is 35% higher because buyers pay more for purchase-ready audiences.
+                  Yet everyone chases top-funnel keywords while comparisons and alternatives drive real results.
                 </p>
                 <div className="flex items-center gap-2 text-sm text-red-600 font-medium">
                   <AlertTriangle className="w-4 h-4" />
-                  <span>Wasting budget on wrong funnel stage</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Problem 4: AI Traffic Hype */}
-          <div className="bg-white rounded-xl p-6 border border-red-100 hover:border-red-200 transition-colors">
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <Brain className="w-5 h-5 text-red-600" />
-              </div>
-              <div className="space-y-2">
-                <h3 className="font-semibold text-gray-900 text-lg">
-                  Only 1% of B2B SaaS Traffic Comes From AI
-                </h3>
-                <p className="text-gray-600">
-                  Despite all the hype about AI changing everything, B2B SaaS sites get just 0.2%-1.02% traffic from AI platforms. 
-                  Product pages get less than 0.5%.
-                </p>
-                <div className="flex items-center gap-2 text-sm text-red-600 font-medium">
-                  <DollarSign className="w-4 h-4" />
-                  <span>Chasing overhyped opportunity</span>
+                  <span>Wrong funnel targeting</span>
                 </div>
               </div>
             </div>
@@ -126,18 +98,17 @@ export default function ProblemSection() {
             </div>
             
             <h3 className="text-2xl font-bold text-gray-900">
-              While You Chase Traffic, Buyers Moved to Comparison Research
+              The Only SEO Worth Doing Has Changed
             </h3>
             
             <p className="text-lg text-gray-700">
-              The data is clear: informational content is on life support, AI extracts without attribution, 
-              bottom-funnel converts better, yet everyone optimizes for the wrong metrics.
+              While AI kills top-funnel traffic, bottom-funnel content still drives real visitors. Alternative comparisons and category reviews are the new goldmine.
             </p>
 
             <div className="pt-4">
               <p className="text-gray-600 font-medium">
-                There are probably just 10 prompt variations that actually matter for your business.<br/>
-                <span className="text-xl text-red-600 font-bold">Are you showing up in any of them?</span>
+                Smart brands are shifting focus to where traffic still converts.<br/>
+                <span className="text-xl text-red-600 font-bold">Is your SEO stuck in the past?</span>
               </p>
             </div>
           </div>

@@ -59,7 +59,7 @@ export default function ProofSection() {
               {/* The Results */}
               <div className="bg-gray-50 rounded-xl p-6 mb-6">
                 <h4 className="text-sm font-semibold text-gray-700 mb-4 uppercase tracking-wide">
-                  Results in 15 Months
+                  Cumulative Results
                 </h4>
                 
                 <div className="grid grid-cols-2 gap-4 mb-4">

@@ -21,57 +21,33 @@ interface FAQItem {
 
 const faqs: FAQItem[] = [
   {
-    id: 'simple-explanation',
-    question: 'Explain this to me in simple terms - how does this actually work?',
-    answer: "This is link building, but smarter. We focus on bottom-funnel keywords (the searches buyers actually use). We find websites that already rank in your niche, come up with commercial topics that will rank, create super deep research articles, and get them published. The goal is delivering so many high-quality links that you improve your own rankings while getting mentioned everywhere in your niche.",
-    icon: <Target className="w-5 h-5 text-blue-600" />
-  },
-  {
-    id: 'payment',
-    question: 'How do I pay?',
-    answer: "You can pay with Stripe. We accept all major credit cards and handle billing automatically.",
-    icon: <CreditCard className="w-5 h-5 text-green-600" />
+    id: 'content-submission',
+    question: 'Can I submit my own content?',
+    answer: "No, we create all content. Our AI research and writing process is designed to create articles that rank and get you mentioned in comparisons.",
+    icon: <FileText className="w-5 h-5 text-orange-600" />
   },
   {
     id: 'site-suggestions',
     question: 'Can I see site suggestions before I pay?',
-    answer: "Yes, we provide site suggestions by default. You'll see the sites we recommend, their metrics, and pricing before you commit to anything. You approve every placement.",
+    answer: "Yes. You'll see recommended sites, metrics, and pricing before committing. You approve every placement.",
     icon: <Eye className="w-5 h-5 text-purple-600" />
   },
   {
-    id: 'content-submission',
-    question: 'Can I submit my own content?',
-    answer: "No, we create all the content using our system. We do it this way because that's our secret sauce for creating really good articles. Our AI research and writing process is specifically designed to create content that ranks and converts.",
-    icon: <FileText className="w-5 h-5 text-orange-600" />
-  },
-  {
     id: 'refunds',
-    question: 'Are there any refunds?',
-    answer: "If we can't get your order live within 60 days, you can get a full refund or we can publish the article somewhere else. We stand behind our ability to deliver.",
+    question: "What if you can't deliver?",
+    answer: "If we can't get your order live within 60 days, you get a full refund or we publish elsewhere.",
     icon: <Shield className="w-5 h-5 text-red-600" />
-  },
-  {
-    id: 'difference',
-    question: 'How is this different from regular guest posting?',
-    answer: "Regular guest posting focuses on any high DR site. We specifically target sites that rank for buyer-intent keywords in your niche. Plus, our AI system creates content designed to get you mentioned in comparisons and 'best of' lists - not just generic backlinks.",
-    icon: <Target className="w-5 h-5 text-indigo-600" />
-  },
-  {
-    id: 'timeline',
-    question: 'How long does this take?',
-    answer: "Most placements are published within 2-4 weeks. Content creation is usually done quickly - delays typically happen when publishers are slow to respond, but we keep following up until it's live.",
-    icon: <HelpCircle className="w-5 h-5 text-gray-600" />
   },
   {
     id: 'minimum',
     question: 'Is there a minimum order?',
-    answer: "No minimums, no contracts. You can start with a single placement to test our process, then scale up when you see results.",
+    answer: "No minimums, no contracts. Start with one placement to test, then scale when you see results.",
     icon: <Shield className="w-5 h-5 text-green-600" />
   },
   {
     id: 'niche',
-    question: 'Do you work with my industry/niche?',
-    answer: "We work with B2B SaaS, services, e-commerce, local businesses, and SEO agencies. The service is flexible - if there are sites in your industry that publish comparison content, we can likely help. We'll let you know during research if your niche has good opportunities.",
+    question: 'Do you work with my industry?',
+    answer: "We work with B2B SaaS, services, e-commerce, local businesses, and SEO agencies. If sites in your industry publish comparison content, we can help.",
     icon: <HelpCircle className="w-5 h-5 text-purple-600" />
   }
 ];
@@ -98,8 +74,7 @@ export default function FAQSection() {
           </h2>
           
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Common questions about our bottom-funnel link building process, 
-            pricing, and what to expect.
+            Quick answers to common questions about logistics and guarantees.
           </p>
         </div>
 
@@ -156,8 +131,10 @@ export default function FAQSection() {
               </a>
               <button
                 onClick={() => {
-                  const heroSection = document.querySelector('section');
-                  heroSection?.scrollIntoView({ behavior: 'smooth' });
+                  const heroForm = document.getElementById('hero-form');
+                  if (heroForm) {
+                    heroForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }
                 }}
                 className="inline-flex items-center justify-center px-6 py-3 bg-white text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors font-medium"
               >
