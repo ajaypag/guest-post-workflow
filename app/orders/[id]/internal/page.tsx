@@ -459,7 +459,9 @@ export default function InternalOrderManagementPage() {
             console.error(`Failed to load target page ${lineItem.targetPageId}:`, error);
           }
         } else if (lineItem.targetPageUrl) {
-          // If no pageId but has URL, still track it (may need to create target page)
+          // This should not happen anymore since we're fixing the data integrity
+          // But keep as fallback for any edge cases
+          console.warn(`Line item ${lineItem.id} has URL but no target page ID - this should be fixed`);
           statuses.push({
             id: `temp-${lineItem.id}`,
             url: lineItem.targetPageUrl,

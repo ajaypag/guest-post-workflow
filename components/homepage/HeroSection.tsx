@@ -3,11 +3,16 @@
 import { 
   CheckCircle,
   Bot,
-  Users
+  Users,
+  TrendingUp,
+  Target
 } from 'lucide-react';
 import VettedSitesLeadForm from '@/components/VettedSitesLeadForm';
+import { SERVICE_FEE_CENTS } from '@/lib/config/pricing';
 
 export default function HeroSection() {
+  const serviceFee = SERVICE_FEE_CENTS / 100;
+  
   return (
     <section className="bg-gradient-to-br from-blue-900 via-blue-800 to-slate-900 py-12 md:py-16 lg:py-20 min-h-[85vh] flex items-center">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
@@ -15,36 +20,29 @@ export default function HeroSection() {
           {/* Left: Value Proposition */}
           <div className="lg:pr-4 xl:pr-8">
             <div className="mb-12">
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-400/90 text-white rounded-full text-sm font-bold mb-8 shadow-lg border border-blue-300/30">
-                <CheckCircle className="w-4 h-4" />
-                KEYWORD-MATCHED SITES, NOT RANDOM HIGH-DR SPAM
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-500/90 text-white rounded-full text-sm font-bold mb-8 shadow-lg border border-green-400/30">
+                <Target className="w-4 h-4" />
+                BUILT FOR THE ZERO-CLICK ERA
               </div>
               
               <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-5xl xl:text-6xl font-bold text-white mb-6 lg:mb-8 leading-tight">
-                Own Every Best Of Search<br />
-                <span className="text-blue-300">in Your Category</span>
+                Future-Looking Link Building<br />
+                <span className="text-blue-300">on Topic-Relevant Sites</span>
               </h1>
               
-              <p className="text-lg md:text-xl text-slate-200 leading-relaxed mb-6 lg:mb-8">
-                Instead of backlinks from random high DR sites, we find websites that already rank for <strong className="text-white">your exact keywords</strong>—getting you AI citations while building traditional SEO rankings.
+              <p className="text-lg md:text-xl text-slate-200 leading-relaxed mb-6">
+                We create 2–3K-word, bottom-funnel content on publishers with real topical relevance—editorially justifiable and built to rank. <strong className="text-white">You approve each site. We secure the links.</strong>
               </p>
 
-              <div className="flex flex-wrap items-center gap-4 lg:gap-8">
-                <div className="text-center">
-                  <div className="text-2xl lg:text-3xl font-bold text-blue-300 flex items-center justify-center gap-1">
-                    <Bot className="w-6 h-6" />+<Users className="w-6 h-6" />
-                  </div>
-                  <div className="text-xs lg:text-sm text-slate-300">Curation</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl lg:text-3xl font-bold text-blue-300">Cost+</div>
-                  <div className="text-xs lg:text-sm text-slate-300">$79 admin fee</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl lg:text-3xl font-bold text-blue-300">Done</div>
-                  <div className="text-xs lg:text-sm text-slate-300">For You</div>
-                </div>
+              <div className="bg-blue-800/30 border border-blue-400/20 rounded-lg p-4 mb-6">
+                <p className="text-sm text-blue-100 mb-2">
+                  <strong>How it works:</strong> Find sites with topical overlap → Create bottom-funnel content → Secure strategic placements.
+                </p>
+                <p className="text-xs text-blue-200">
+                  We handle everything: Publisher cost + ${serviceFee} per placement. You approve each opportunity.
+                </p>
               </div>
+
             </div>
           </div>
 

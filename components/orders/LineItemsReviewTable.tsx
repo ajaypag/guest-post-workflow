@@ -1241,17 +1241,21 @@ export default function LineItemsReviewTable({
                         </th>
                       )}
                       <th className="pb-2 font-medium sticky left-0 bg-white z-10 pr-4 w-[280px] min-w-[280px]">Domain</th>
-                      {hasAnyWorkflows && (
+                      {hasAnyWorkflows && workflowStage !== 'client_review' && (
                         <th className="pb-2 font-medium w-[120px] min-w-[120px]">Workflow</th>
                       )}
-                      {/* Show Published URL column for items that are in_progress, delivered, or completed */}
-                      <th className="pb-2 font-medium w-[150px] min-w-[150px]">Published URL</th>
+                      {/* Show Published URL column only for active orders, not claim preview */}
+                      {workflowStage !== 'client_review' && (
+                        <th className="pb-2 font-medium w-[150px] min-w-[150px]">Published URL</th>
+                      )}
                       <th className="pb-2 font-medium w-[250px] min-w-[250px] pr-4">Target Page</th>
                       <th className="pb-2 font-medium w-[300px] min-w-[300px] hidden xl:table-cell">Anchor Text</th>
                       <th className="pb-2 font-medium w-[200px] min-w-[200px] xl:hidden">Anchor</th>
                       {permissions.canViewPricing && <th className="pb-2 font-medium w-[100px] min-w-[100px]">Price</th>}
-                      {userType === 'internal' && <th className="pb-2 font-medium w-[180px] min-w-[180px]">Publisher</th>}
-                      <th className="pb-2 font-medium w-[140px] min-w-[140px]">Action</th>
+                      {userType === 'internal' && workflowStage !== 'client_review' && <th className="pb-2 font-medium w-[180px] min-w-[180px]">Publisher</th>}
+                      {workflowStage !== 'client_review' && (
+                        <th className="pb-2 font-medium w-[140px] min-w-[140px]">Action</th>
+                      )}
                     </tr>
                   </thead>
                 <tbody>
@@ -1318,50 +1322,127 @@ export default function LineItemsReviewTable({
                             </div>
                           </td>
                           {/* Workflow Progress Column - Show when workflows exist */}
-                          {hasAnyWorkflows && (
+                          {hasAnyWorkflows && workflowStage !== 'client_review' && (
                             <td className="py-3 px-3">
                               <WorkflowStatusCell workflowId={item.workflowId} userType={userType} />
                             </td>
                           )}
-                          {/* Published URL Column */}
-                          <td className="py-3 px-3">
-                            <PublishedUrlCell item={item} userType={userType} />
-                          </td>
+                          {/* Published URL Column - Hide for claim preview */}
+                          {workflowStage !== 'client_review' && (
+                            <td className="py-3 px-3">
+                              <PublishedUrlCell item={item} userType={userType} />
+                            </td>
+                          )}
                           <td className="py-3 pl-2 pr-4 text-sm w-[250px] min-w-[250px]">
-                            <TableTargetDropdown
-                              currentTarget={item.targetPageUrl}
-                              clientId={item.clientId}
-                              onSelect={(targetUrl) => handleTargetUrlUpdate(item.id, targetUrl)}
-                              matchData={(item.metadata as any)?.targetMatchData}
-                              disabled={!permissions.canAssignTargetPages}
-                              className="w-full"
-                              isOpen={isDropdownOpen(item.id)}
-                              onToggle={() => handleDropdownOpen(item.id)}
-                              onClose={handleDropdownClose}
-                            />
+                            {workflowStage === 'client_review' ? (
+                              // Read-only view with target match summary for claim page
+                              <div className="space-y-1">
+                                {/* Current target URL */}
+                                <div className="text-xs text-gray-900 break-words" title={item.targetPageUrl}>
+                                  {item.targetPageUrl ? (() => {
+                                    const pathname = new URL(item.targetPageUrl).pathname;
+                                    // Show full URL when pathname is just "/" (homepage/root)
+                                    return pathname === '/' ? item.targetPageUrl : pathname;
+                                  })() : 'No target selected'}
+                                </div>
+                                
+                                {/* Target match quality indicator if we have the data */}
+                                {item.assignedDomain?.targetMatchData?.target_analysis && (
+                                  (() => {
+                                    const targetAnalyses = item.assignedDomain.targetMatchData.target_analysis;
+                                    const suggestedUrl = item.assignedDomain.suggestedTargetUrl;
+                                    
+                                    // Find the analysis for the current target or suggested target
+                                    const currentAnalysis = targetAnalyses.find((a: any) => 
+                                      a.target_url === item.targetPageUrl
+                                    );
+                                    const suggestedAnalysis = suggestedUrl ? targetAnalyses.find((a: any) => 
+                                      a.target_url === suggestedUrl
+                                    ) : null;
+                                    
+                                    // Use current if it exists, otherwise use suggested
+                                    const analysis = currentAnalysis || suggestedAnalysis || targetAnalyses[0];
+                                    
+                                    if (!analysis) return null;
+                                    
+                                    const quality = analysis.match_quality || 'unknown';
+                                    const directCount = analysis.evidence?.direct_count || 0;
+                                    const relatedCount = analysis.evidence?.related_count || 0;
+                                    const totalMatches = directCount + relatedCount;
+                                    
+                                    const qualityColors = {
+                                      'excellent': 'text-green-600',
+                                      'good': 'text-blue-600',
+                                      'fair': 'text-yellow-600',
+                                      'moderate': 'text-yellow-600',
+                                      'weak': 'text-gray-400',
+                                      'poor': 'text-gray-400'
+                                    } as const;
+                                    const qualityColor = qualityColors[quality as keyof typeof qualityColors] || 'text-gray-400';
+                                    
+                                    return (
+                                      <div className="flex items-center gap-2 text-xs">
+                                        <span className={qualityColor}>● {quality}</span>
+                                        {totalMatches > 0 && (
+                                          <span className="text-gray-500">{totalMatches} matches</span>
+                                        )}
+                                        {targetAnalyses.length > 1 && (
+                                          <span className="text-gray-400">({targetAnalyses.length} targets analyzed)</span>
+                                        )}
+                                      </div>
+                                    );
+                                  })()
+                                )}
+                              </div>
+                            ) : (
+                              // Interactive dropdown for internal users
+                              <TableTargetDropdown
+                                currentTarget={item.targetPageUrl}
+                                clientId={item.clientId}
+                                onSelect={(targetUrl) => handleTargetUrlUpdate(item.id, targetUrl)}
+                                matchData={(item.metadata as any)?.targetMatchData}
+                                disabled={!permissions.canAssignTargetPages}
+                                className="w-full"
+                                isOpen={isDropdownOpen(item.id)}
+                                onToggle={() => handleDropdownOpen(item.id)}
+                                onClose={handleDropdownClose}
+                              />
+                            )}
                           </td>
                           {/* Full anchor text for very wide screens */}
                           <td className="py-3 px-3 text-sm hidden xl:table-cell w-[300px] min-w-[300px]">
                             <div className="w-full">
-                              <InlineAnchorEditor
-                                value={item.anchorText || ''}
-                                onSave={(newValue) => handleAnchorTextUpdate(item.id, newValue)}
-                                disabled={!permissions.canAssignTargetPages && !permissions.canEditDomainAssignments}
-                                placeholder="Enter anchor text..."
-                                className="w-full"
-                              />
+                              {workflowStage === 'client_review' ? (
+                                <span className="text-gray-500">
+                                  {item.anchorText || 'Not set'}
+                                </span>
+                              ) : (
+                                <InlineAnchorEditor
+                                  value={item.anchorText || ''}
+                                  onSave={(newValue) => handleAnchorTextUpdate(item.id, newValue)}
+                                  disabled={!permissions.canAssignTargetPages && !permissions.canEditDomainAssignments}
+                                  placeholder="Enter anchor text..."
+                                  className="w-full"
+                                />
+                              )}
                             </div>
                           </td>
                           {/* Shortened anchor text for medium screens */}
                           <td className="py-3 px-3 text-sm xl:hidden w-[200px] min-w-[200px]">
                             <div className="w-full">
-                              <InlineAnchorEditor
-                                value={item.anchorText || ''}
-                                onSave={(newValue) => handleAnchorTextUpdate(item.id, newValue)}
-                                disabled={!permissions.canAssignTargetPages && !permissions.canEditDomainAssignments}
-                                placeholder="Anchor text..."
-                                className="w-full"
-                              />
+                              {workflowStage === 'client_review' ? (
+                                <span className="text-gray-500 truncate block">
+                                  {item.anchorText || 'Not set'}
+                                </span>
+                              ) : (
+                                <InlineAnchorEditor
+                                  value={item.anchorText || ''}
+                                  onSave={(newValue) => handleAnchorTextUpdate(item.id, newValue)}
+                                  disabled={!permissions.canAssignTargetPages && !permissions.canEditDomainAssignments}
+                                  placeholder="Anchor text..."
+                                  className="w-full"
+                                />
+                              )}
                             </div>
                           </td>
                           {permissions.canViewPricing && (
@@ -1407,8 +1488,8 @@ export default function LineItemsReviewTable({
                               })()}
                             </td>
                           )}
-                          {/* Publisher Column - Show for internal users */}
-                          {userType === 'internal' && (
+                          {/* Publisher Column - Show for internal users, hide for claim preview */}
+                          {userType === 'internal' && workflowStage !== 'client_review' && (
                             <td className="py-3 px-3 text-sm">
                               <div className="flex items-start justify-between">
                                 <div className="flex-1">
@@ -1466,27 +1547,29 @@ export default function LineItemsReviewTable({
                               </div>
                             </td>
                           )}
-                          {/* Combined Action Column - Now at the end */}
-                          <td className="py-3 pr-4">
-                            <div className="flex items-center gap-2">
-                              <ActionColumnToggle
-                                included={itemStatus === 'included'}
-                                onToggle={(included) => handleInclusionToggle(item.id, included)}
-                                status={item.status}
-                                canChangeStatus={permissions.canChangeStatus}
-                                disabled={false}
-                                className="flex-1 max-w-[120px]"
-                              />
-                              <Link
-                                href={`/orders/${orderId}/edit`}
-                                className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-600 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors"
-                                title="Edit order setup (targets & anchor text)"
-                              >
-                                <Edit className="w-3 h-3" />
-                                <span className="hidden lg:inline">Setup</span>
-                              </Link>
-                            </div>
-                          </td>
+                          {/* Combined Action Column - Hide for claim preview */}
+                          {workflowStage !== 'client_review' && (
+                            <td className="py-3 pr-4">
+                              <div className="flex items-center gap-2">
+                                <ActionColumnToggle
+                                  included={itemStatus === 'included'}
+                                  onToggle={(included) => handleInclusionToggle(item.id, included)}
+                                  status={item.status}
+                                  canChangeStatus={permissions.canChangeStatus}
+                                  disabled={false}
+                                  className="flex-1 max-w-[120px]"
+                                />
+                                <Link
+                                  href={`/orders/${orderId}/edit`}
+                                  className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-600 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors"
+                                  title="Edit order setup (targets & anchor text)"
+                                >
+                                  <Edit className="w-3 h-3" />
+                                  <span className="hidden lg:inline">Setup</span>
+                                </Link>
+                              </div>
+                            </td>
+                          )}
                         </tr>
                         {/* Expanded Details Row */}
                         {expandedRows.has(item.id) && item.assignedDomain && (
@@ -1494,22 +1577,24 @@ export default function LineItemsReviewTable({
                             <td colSpan={permissions.canChangeStatus ? 10 : 9} className="p-4 bg-gray-50">
                               <ExpandedDomainDetails submission={{
                                 domain: {
-                                  qualificationStatus: (item.metadata as any)?.domainQualificationStatus,
-                                  aiQualificationReasoning: (item.metadata as any)?.aiQualificationReasoning,
-                                  overlapStatus: (item.metadata as any)?.overlapStatus,
-                                  authorityDirect: (item.metadata as any)?.authorityDirect,
-                                  authorityRelated: (item.metadata as any)?.authorityRelated,
-                                  topicScope: (item.metadata as any)?.topicScope,
-                                  keywordCount: (item.metadata as any)?.keywordCount,
+                                  // Use actual assignedDomain data if available
+                                  qualificationStatus: item.assignedDomain?.qualificationStatus || (item.metadata as any)?.domainQualificationStatus,
+                                  aiQualificationReasoning: item.assignedDomain?.aiQualificationReasoning || (item.metadata as any)?.aiQualificationReasoning,
+                                  overlapStatus: item.assignedDomain?.overlapStatus || (item.metadata as any)?.overlapStatus,
+                                  authorityDirect: item.assignedDomain?.authorityDirect || (item.metadata as any)?.authorityDirect,
+                                  authorityRelated: item.assignedDomain?.authorityRelated || (item.metadata as any)?.authorityRelated,
+                                  topicScope: item.assignedDomain?.topicScope || (item.metadata as any)?.topicScope,
+                                  keywordCount: item.assignedDomain?.keywordCount || (item.metadata as any)?.keywordCount,
                                   dataForSeoResultsCount: (item.metadata as any)?.dataForSeoResultsCount,
-                                  evidence: (item.metadata as any)?.evidence,
-                                  notes: (item.metadata as any)?.notes
+                                  evidence: item.assignedDomain?.evidence || (item.metadata as any)?.evidence,
+                                  topicReasoning: item.assignedDomain?.topicReasoning,
+                                  notes: item.assignedDomain?.notes || (item.metadata as any)?.notes
                                 },
                                 metadata: {
                                   ...item.metadata,
-                                  // Ensure target match data is passed through
-                                  suggestedTargetUrl: (item.metadata as any)?.suggestedTargetUrl,
-                                  targetMatchData: (item.metadata as any)?.targetMatchData,
+                                  // Pass target match data from assignedDomain
+                                  suggestedTargetUrl: item.assignedDomain?.suggestedTargetUrl || (item.metadata as any)?.suggestedTargetUrl,
+                                  targetMatchData: item.assignedDomain?.targetMatchData || (item.metadata as any)?.targetMatchData,
                                   targetPageUrl: item.targetPageUrl
                                 },
                                 clientReviewNotes: (item as any).clientReviewNotes,
@@ -1579,17 +1664,18 @@ export default function LineItemsReviewTable({
                           <span className="text-gray-400">No domain assigned</span>
                         )}
                       </div>
-                      {/* Combined Action for Mobile */}
-                      <div className="flex items-center gap-2">
-                        <ActionColumnToggle
-                          included={itemStatus === 'included'}
-                          onToggle={(included) => handleInclusionToggle(item.id, included)}
-                          status={item.status}
-                          canChangeStatus={permissions.canChangeStatus}
-                          disabled={false}
-                          className="max-w-[120px]"
-                        />
-                        <Link
+                      {/* Combined Action for Mobile - Hide for claim preview */}
+                      {workflowStage !== 'client_review' && (
+                        <div className="flex items-center gap-2">
+                          <ActionColumnToggle
+                            included={itemStatus === 'included'}
+                            onToggle={(included) => handleInclusionToggle(item.id, included)}
+                            status={item.status}
+                            canChangeStatus={permissions.canChangeStatus}
+                            disabled={false}
+                            className="max-w-[120px]"
+                          />
+                          <Link
                           href={`/orders/${orderId}/edit`}
                           className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-600 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors"
                           title="Edit order setup"
@@ -1598,6 +1684,7 @@ export default function LineItemsReviewTable({
                           Setup
                         </Link>
                       </div>
+                      )}
                     </div>
                     
                     {/* Pricing */}
@@ -1651,8 +1738,8 @@ export default function LineItemsReviewTable({
                       </div>
                     )}
                     
-                    {/* Workflow & Published URL */}
-                    {(hasAnyWorkflows || item.publishedUrl) && (
+                    {/* Workflow & Published URL - Hide for claim preview */}
+                    {workflowStage !== 'client_review' && (hasAnyWorkflows || item.publishedUrl) && (
                       <div className="flex gap-4 pb-2 border-b">
                         {hasAnyWorkflows && item.workflowId && (
                           <div className="flex-1">
@@ -1674,29 +1761,74 @@ export default function LineItemsReviewTable({
                       <div className="flex items-center">
                         <span className="text-gray-500 mr-2">Target:</span>
                         <div className="flex-1">
-                          <TableTargetDropdown
-                            currentTarget={item.targetPageUrl}
-                            clientId={item.clientId}
-                            onSelect={(targetUrl) => handleTargetUrlUpdate(item.id, targetUrl)}
-                            matchData={(item.metadata as any)?.targetMatchData}
-                            disabled={!permissions.canAssignTargetPages}
-                            className="w-full"
-                            isOpen={isDropdownOpen(item.id)}
-                            onToggle={() => handleDropdownOpen(item.id)}
-                            onClose={handleDropdownClose}
-                          />
+                          {workflowStage === 'client_review' ? (
+                            // Read-only view with target match summary for claim page
+                            <div className="space-y-1">
+                              <div className="text-xs text-gray-900 break-words">
+                                {item.targetPageUrl || 'No target selected'}
+                              </div>
+                              {/* Target match indicator for mobile */}
+                              {item.assignedDomain?.targetMatchData?.target_analysis && (
+                                (() => {
+                                  const analysis = item.assignedDomain.targetMatchData.target_analysis[0];
+                                  if (!analysis) return null;
+                                  
+                                  const quality = analysis.match_quality || 'unknown';
+                                  const totalMatches = (analysis.evidence?.direct_count || 0) + (analysis.evidence?.related_count || 0);
+                                  
+                                  const qualityColors = {
+                                    'excellent': 'text-green-600',
+                                    'good': 'text-blue-600',
+                                    'fair': 'text-yellow-600',
+                                    'moderate': 'text-yellow-600',
+                                    'weak': 'text-gray-400',
+                                    'poor': 'text-gray-400'
+                                  } as const;
+                                  const qualityColor = qualityColors[quality as keyof typeof qualityColors] || 'text-gray-400';
+                                  
+                                  return (
+                                    <div className="flex items-center gap-2 text-xs mt-1">
+                                      <span className={qualityColor}>● {quality}</span>
+                                      {totalMatches > 0 && (
+                                        <span className="text-gray-500">{totalMatches} matches</span>
+                                      )}
+                                    </div>
+                                  );
+                                })()
+                              )}
+                            </div>
+                          ) : (
+                            // Interactive dropdown for internal users
+                            <TableTargetDropdown
+                              currentTarget={item.targetPageUrl}
+                              clientId={item.clientId}
+                              onSelect={(targetUrl) => handleTargetUrlUpdate(item.id, targetUrl)}
+                              matchData={(item.metadata as any)?.targetMatchData}
+                              disabled={!permissions.canAssignTargetPages}
+                              className="w-full"
+                              isOpen={isDropdownOpen(item.id)}
+                              onToggle={() => handleDropdownOpen(item.id)}
+                              onClose={handleDropdownClose}
+                            />
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center">
                         <span className="text-gray-500 mr-2">Anchor:</span>
                         <div className="flex-1">
-                          <InlineAnchorEditor
-                            value={item.anchorText || ''}
-                            onSave={(newValue) => handleAnchorTextUpdate(item.id, newValue)}
-                            disabled={!permissions.canAssignTargetPages && !permissions.canEditDomainAssignments}
-                            placeholder="Enter anchor text..."
-                            className="w-full"
-                          />
+                          {workflowStage === 'client_review' ? (
+                            <span className="text-gray-500">
+                              {item.anchorText || 'Not set'}
+                            </span>
+                          ) : (
+                            <InlineAnchorEditor
+                              value={item.anchorText || ''}
+                              onSave={(newValue) => handleAnchorTextUpdate(item.id, newValue)}
+                              disabled={!permissions.canAssignTargetPages && !permissions.canEditDomainAssignments}
+                              placeholder="Enter anchor text..."
+                              className="w-full"
+                            />
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1706,11 +1838,25 @@ export default function LineItemsReviewTable({
                       <div className="mt-4 pt-4 border-t border-gray-200">
                         <ExpandedDomainDetails submission={{
                           domain: {
-                            qualificationStatus: (item.metadata as any)?.domainQualificationStatus,
-                            aiQualificationReasoning: (item.metadata as any)?.domainQualificationReasons,
+                            // Use actual assignedDomain data if available
+                            qualificationStatus: item.assignedDomain?.qualificationStatus || (item.metadata as any)?.domainQualificationStatus,
+                            aiQualificationReasoning: item.assignedDomain?.aiQualificationReasoning || (item.metadata as any)?.domainQualificationReasons,
+                            overlapStatus: item.assignedDomain?.overlapStatus || (item.metadata as any)?.overlapStatus,
+                            authorityDirect: item.assignedDomain?.authorityDirect || (item.metadata as any)?.authorityDirect,
+                            authorityRelated: item.assignedDomain?.authorityRelated || (item.metadata as any)?.authorityRelated,
+                            topicScope: item.assignedDomain?.topicScope || (item.metadata as any)?.topicScope,
                             dataForSeoResultsCount: (item.metadata as any)?.dataForSeoResultsCount,
+                            evidence: item.assignedDomain?.evidence || (item.metadata as any)?.evidence,
+                            topicReasoning: item.assignedDomain?.topicReasoning,
+                            notes: item.assignedDomain?.notes,
                           },
-                          metadata: item.metadata as any,
+                          metadata: {
+                            ...(item.metadata as any),
+                            // Pass target match data from assignedDomain
+                            suggestedTargetUrl: item.assignedDomain?.suggestedTargetUrl,
+                            targetMatchData: item.assignedDomain?.targetMatchData,
+                            targetPageUrl: item.targetPageUrl
+                          },
                         }} />
                       </div>
                     )}

@@ -2,9 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/connection';
 import { orderLineItems, lineItemChanges } from '@/lib/db/orderLineItemSchema';
 import { orders } from '@/lib/db/orderSchema';
+import { targetPages } from '@/lib/db/schema';
 import { eq, and, or, desc } from 'drizzle-orm';
 import { AuthServiceServer } from '@/lib/auth-server';
 import { SERVICE_FEE_CENTS } from '@/lib/config/pricing';
+import { normalizeDomain } from '@/lib/utils/domainNormalizer';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * GET /api/orders/[id]/line-items
@@ -225,11 +228,77 @@ export async function POST(
           inclusionStatus: item.metadata?.inclusionStatus || 'included'
         };
         
+        // Handle target page relationship with proper normalization
+        let finalTargetPageId = item.targetPageId;
+        
+        // If we have a URL but no page ID, try to find or create the target page
+        if (!finalTargetPageId && item.targetPageUrl && item.clientId) {
+          // Normalize the URL for consistent comparison
+          const urlWithProtocol = item.targetPageUrl.startsWith('http') 
+            ? item.targetPageUrl 
+            : `https://${item.targetPageUrl}`;
+          
+          // Extract and normalize domain
+          let normalizedDomainInfo;
+          try {
+            normalizedDomainInfo = normalizeDomain(urlWithProtocol);
+          } catch (error) {
+            console.error('Failed to normalize domain:', error);
+            // Fall back to basic normalization if the utility fails
+            normalizedDomainInfo = {
+              domain: new URL(urlWithProtocol).hostname.replace(/^www\./, '').toLowerCase()
+            };
+          }
+          
+          // First, try to find an existing target page for this client and URL
+          const existingPage = await tx.query.targetPages.findFirst({
+            where: and(
+              eq(targetPages.clientId, item.clientId),
+              eq(targetPages.url, item.targetPageUrl)
+            )
+          });
+          
+          if (existingPage) {
+            finalTargetPageId = existingPage.id;
+          } else {
+            // Create a new target page with comprehensive field population
+            // matching the vetted sites pattern
+            const normalizedUrl = item.targetPageUrl
+              .toLowerCase()
+              .replace(/^https?:\/\//, '')
+              .replace(/\/$/, '');
+            
+            const [newPage] = await tx.insert(targetPages)
+              .values({
+                id: uuidv4(),
+                clientId: item.clientId,
+                url: item.targetPageUrl,
+                normalizedUrl: normalizedUrl,
+                domain: normalizedDomainInfo.domain,
+                status: 'pending',
+                addedAt: new Date(),
+                // Add comprehensive fields as per vetted sites pattern
+                keywords: null // Will be generated later
+              })
+              .returning();
+            
+            finalTargetPageId = newPage.id;
+            
+            console.log('Created new target page:', {
+              id: newPage.id,
+              clientId: item.clientId,
+              url: item.targetPageUrl,
+              normalizedUrl: normalizedUrl,
+              domain: normalizedDomainInfo.domain
+            });
+          }
+        }
+        
         const [lineItem] = await tx.insert(orderLineItems)
           .values({
             orderId,
             clientId: item.clientId,
-            targetPageId: item.targetPageId,
+            targetPageId: finalTargetPageId,
             targetPageUrl: item.targetPageUrl,
             anchorText: item.anchorText,
             status: item.status || 'draft',

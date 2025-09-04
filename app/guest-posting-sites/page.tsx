@@ -91,7 +91,7 @@ async function getWebsites() {
         domain: site.domain,
         domainRating: site.domainRating,
         totalTraffic: site.totalTraffic,
-        guestPostCost: site.guestPostCost ? parseFloat(site.guestPostCost.toString()) / 100 : null,
+        guestPostCost: site.guestPostCost,
         categories: site.categories || [],
         niche: site.niche,
         overallQuality: site.overallQuality,

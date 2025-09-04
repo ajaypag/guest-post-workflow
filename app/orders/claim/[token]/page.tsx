@@ -42,7 +42,6 @@ export default function ClaimOrderPage() {
   const [error, setError] = useState('');
   const [claiming, setClaiming] = useState(false);
   const [showSignupForm, setShowSignupForm] = useState(false);
-  const [siteSubmissions, setSiteSubmissions] = useState<any>({});
   
   // Signup form fields (simplified to match main signup)
   const [email, setEmail] = useState('');
@@ -85,91 +84,36 @@ export default function ClaimOrderPage() {
         setContactName(data.order.account.contactName);
       }
       
-      // Store siteSubmissions for later use
-      if (data.siteSubmissions) {
-        setSiteSubmissions(data.siteSubmissions);
-        
-        // Transform data to LineItem format for the table with full domain details
-        const transformedLineItems: LineItem[] = [];
-        const allDomains = Object.values(data.siteSubmissions).flat() as any[];
-        
-        // Create line items ONLY from assigned domains (skip unassigned/marginal quality)
-        allDomains.forEach((domain: any) => {
-          // Find if this domain is assigned to a line item
-          const assignedLineItem = data.order?.lineItems?.find((li: any) => 
-            li.assignedDomainId === domain.id || domain.assignedToLineItemId === li.id
-          );
-          
-          // Skip unassigned domains - they were not selected for this order
-          if (!assignedLineItem) {
-            return; // Skip this domain
-          }
-          
-          // Create the enriched assigned domain object with all the data
-          const enrichedDomain = {
-            id: domain.id || domain.domainId,
-            domain: domain.domain || domain.url?.replace('https://', ''),
-            url: domain.url,
-            domainRating: domain.domainRating,
-            traffic: domain.traffic,
-            categories: domain.categories || [],
-            
-            // AI qualification data for the tags
-            qualificationStatus: domain.qualificationStatus,
-            overlapStatus: domain.overlapStatus,
-            authorityDirect: domain.authorityDirect,
-            authorityRelated: domain.authorityRelated,
-            topicScope: domain.topicScope,
-            keywordCount: domain.keywordCount,
-            
-            // Rich analysis data
-            aiQualificationReasoning: domain.aiQualificationReasoning || domain.qualificationReasoning,
-            topicReasoning: domain.topicReasoning,
-            evidence: domain.evidence,
-            notes: domain.notes,
-            
-            // Pricing
-            price: domain.price || domain.retailPrice,
-            wholesalePrice: domain.wholesalePrice,
-            
-            // For expanded details
-            hasDataForSeoResults: domain.hasDataForSeoResults,
-            qualityScore: domain.qualityScore || domain.domainRating,
-            topicScopeAnalysis: domain.topicScopeAnalysis || domain.qualificationStatus
-          };
-          
-          // This is an assigned domain - use the line item data
-          transformedLineItems.push({
-            id: assignedLineItem.id,
-            orderId: data.order.id,
-            clientId: assignedLineItem.clientId,
-            client: assignedLineItem.client,
-            targetPageUrl: assignedLineItem.targetPageUrl || domain.targetPageUrl || '',
-            targetPageId: assignedLineItem.targetPageId,
-            anchorText: assignedLineItem.anchorText || domain.anchorText || '',
-            status: assignedLineItem.status || 'pending',
-            assignedDomainId: domain.id,
-            assignedDomain: enrichedDomain,
-            estimatedPrice: assignedLineItem.estimatedPrice || domain.price || 0,
-            wholesalePrice: assignedLineItem.wholesalePrice || domain.wholesalePrice || 0,
-            workflowId: assignedLineItem.workflowId,
-            metadata: {
-              ...assignedLineItem.metadata,
-              inclusionStatus: domain.inclusionStatus || 'included'
-            }
-          });
-        });
-        
-        // Sort: assigned/included first, then available/excluded
-        transformedLineItems.sort((a, b) => {
-          const aIncluded = a.metadata?.inclusionStatus === 'included';
-          const bIncluded = b.metadata?.inclusionStatus === 'included';
-          if (aIncluded && !bIncluded) return -1;
-          if (!aIncluded && bIncluded) return 1;
-          return 0;
-        });
+      // Use the modern lineItems directly from the order
+      // The system has moved from siteSubmissions to orderLineItems
+      if (data.order?.lineItems && data.order.lineItems.length > 0) {
+        // Transform lineItems to the format expected by LineItemsReviewTable
+        const transformedLineItems: LineItem[] = data.order.lineItems.map((item: any) => ({
+          id: item.id,
+          orderId: data.order.id,
+          clientId: item.clientId,
+          client: item.client,
+          targetPageUrl: item.targetPageUrl || '',
+          targetPageId: item.targetPageId,
+          targetPage: item.targetPage,
+          anchorText: item.anchorText || '',
+          status: item.status || 'pending',
+          assignedDomainId: item.assignedDomainId,
+          assignedDomain: item.assignedDomain,
+          estimatedPrice: item.estimatedPrice || item.approvedPrice || 0,
+          wholesalePrice: item.wholesalePrice || 0,
+          approvedPrice: item.approvedPrice,
+          workflowId: item.workflowId,
+          workflow: item.workflow,
+          metadata: item.metadata || {},
+          createdAt: item.createdAt,
+          updatedAt: item.updatedAt
+        }));
         
         setLineItems(transformedLineItems);
+      } else {
+        // No line items available
+        setLineItems([]);
       }
       
     } catch (error: any) {
@@ -347,20 +291,28 @@ export default function ClaimOrderPage() {
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Avg. DR / Traffic</p>
                   <p className="text-2xl font-bold text-gray-900">
-                    {Math.round(lineItems.filter(li => li.assignedDomain?.domainRating)
-                      .reduce((sum, li) => sum + (li.assignedDomain?.domainRating || 0), 0) / 
-                      lineItems.filter(li => li.assignedDomain?.domainRating).length) || 0}
+                    {(() => {
+                      const itemsWithDR = lineItems.filter(li => li.metadata?.domainRating);
+                      if (itemsWithDR.length === 0) return 0;
+                      const totalDR = itemsWithDR.reduce((sum, li) => sum + (li.metadata?.domainRating || 0), 0);
+                      return Math.round(totalDR / itemsWithDR.length);
+                    })()}
                   </p>
                   <p className="text-xs text-gray-500">
-                    Avg Traffic: {lineItems.filter(li => li.assignedDomain?.traffic)
-                      .reduce((sum, li) => sum + (li.assignedDomain?.traffic || 0), 0) > 1000000 
-                      ? Math.round(lineItems.filter(li => li.assignedDomain?.traffic)
-                          .reduce((sum, li) => sum + (li.assignedDomain?.traffic || 0), 0) / 
-                          lineItems.filter(li => li.assignedDomain?.traffic).length / 1000000 * 10) / 10 + 'M'
-                      : Math.round(lineItems.filter(li => li.assignedDomain?.traffic)
-                          .reduce((sum, li) => sum + (li.assignedDomain?.traffic || 0), 0) / 
-                          lineItems.filter(li => li.assignedDomain?.traffic).length / 1000) + 'K'
-                    }
+                    Avg Traffic: {(() => {
+                      const itemsWithTraffic = lineItems.filter(li => li.metadata?.traffic);
+                      if (itemsWithTraffic.length === 0) return '0';
+                      const totalTraffic = itemsWithTraffic.reduce((sum, li) => sum + (li.metadata?.traffic || 0), 0);
+                      const avgTraffic = totalTraffic / itemsWithTraffic.length;
+                      
+                      if (avgTraffic > 1000000) {
+                        return (Math.round(avgTraffic / 100000) / 10) + 'M';
+                      } else if (avgTraffic > 1000) {
+                        return Math.round(avgTraffic / 1000) + 'K';
+                      } else {
+                        return Math.round(avgTraffic).toString();
+                      }
+                    })()}
                   </p>
                 </div>
               </div>

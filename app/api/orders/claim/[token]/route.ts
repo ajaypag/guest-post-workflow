@@ -53,7 +53,7 @@ export async function GET(
       return NextResponse.json({ error: 'This share link has expired' }, { status: 410 });
     }
 
-    // Get line items with client info (exclude cancelled items)
+    // Get line items with all necessary relationships for display
     const lineItemsData = await db.query.orderLineItems.findMany({
       where: and(
         eq(orderLineItems.orderId, order.id),
@@ -67,6 +67,37 @@ export async function GET(
             name: true,
             website: true,
             description: true
+          }
+        },
+        targetPage: {
+          columns: {
+            id: true,
+            url: true,
+            description: true
+          }
+        },
+        assignedDomain: {
+          columns: {
+            id: true,
+            domain: true,
+            qualificationStatus: true,
+            overlapStatus: true,
+            authorityDirect: true,
+            authorityRelated: true,
+            topicScope: true,
+            aiQualificationReasoning: true,
+            topicReasoning: true,
+            evidence: true,
+            notes: true,
+            // Target URL matching fields
+            suggestedTargetUrl: true,
+            targetMatchData: true,
+            targetMatchedAt: true,
+            selectedTargetPageId: true,
+            // Additional rich data
+            keywordCount: true,
+            dataForSeoResultsCount: true,
+            qualificationData: true
           }
         }
       }
@@ -195,7 +226,7 @@ export async function GET(
     // Format response - convert line items to orderGroups format for compatibility
     // Each client becomes an "orderGroup" for display purposes
     const orderGroups = Object.entries(lineItemsByClient).map(([clientId, items]) => {
-      const client = items[0]?.client; // Get client from first item
+      const client = (items[0] as any)?.client; // Get client from first item
       return {
         id: `client-${clientId}`, // Synthetic ID for display
         clientId: clientId,
@@ -231,7 +262,7 @@ export async function GET(
         contactName: order.account.contactName
       } : null,
       orderGroups: orderGroups,
-      lineItems: lineItemsData // Also include raw line items for future use
+      lineItems: lineItemsData // Include line items with all relationships
     };
 
     return NextResponse.json({ 
