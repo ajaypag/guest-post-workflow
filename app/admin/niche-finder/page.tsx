@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, RefreshCw, Plus, CheckCircle, XCircle, AlertCircle, Brain, TrendingUp, Filter } from 'lucide-react';
+import { Search, RefreshCw, Plus, CheckCircle, XCircle, AlertCircle, Brain, TrendingUp, Filter, ChevronLeft, ChevronRight, StopCircle, Edit, Trash2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface Website {
   id: string;
@@ -45,6 +46,14 @@ export default function NicheFinderPage() {
     currentBatch: []
   });
   
+  // Cancellation ref
+  const abortControllerRef = useRef<AbortController | null>(null);
+  
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(100);
+  const [totalPages, setTotalPages] = useState(1);
+  
   // Statistics
   const [stats, setStats] = useState({
     totalWebsites: 0,
@@ -64,11 +73,14 @@ export default function NicheFinderPage() {
     searchTerm: ''
   });
   
+  // Edit mode for suggested tags
+  const [editingTag, setEditingTag] = useState<{ id: string; name: string; type: string } | null>(null);
+  
   // Current niches and categories from database
   const [currentNiches, setCurrentNiches] = useState<string[]>([]);
   const [currentCategories, setCurrentCategories] = useState<string[]>([]);
 
-  // Load websites and statistics
+  // Load websites and statistics with pagination
   const loadWebsites = useCallback(async () => {
     setLoading(true);
     try {
@@ -77,6 +89,8 @@ export default function NicheFinderPage() {
       if (filters.hasNiche !== 'all') params.set('hasNiche', filters.hasNiche);
       params.set('daysAgo', filters.daysAgo.toString());
       if (filters.searchTerm) params.set('search', filters.searchTerm);
+      params.set('page', currentPage.toString());
+      params.set('limit', itemsPerPage.toString());
       
       const response = await fetch(`/api/admin/niche-finder?${params}`);
       const data = await response.json();
@@ -85,16 +99,33 @@ export default function NicheFinderPage() {
       setStats(data.stats);
       setCurrentNiches(data.currentNiches || []);
       setCurrentCategories(data.currentCategories || []);
+      
+      // Calculate total pages
+      const total = data.stats.totalWebsites || 0;
+      setTotalPages(Math.ceil(total / itemsPerPage));
     } catch (error) {
       console.error('Failed to load websites:', error);
     } finally {
       setLoading(false);
     }
-  }, [filters]);
+  }, [filters, currentPage, itemsPerPage]);
 
   useEffect(() => {
     loadWebsites();
   }, [loadWebsites]);
+
+  // Cancel batch processing
+  const cancelBatch = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+      setBatchProgress(prev => ({
+        ...prev,
+        inProgress: false,
+        currentBatch: []
+      }));
+    }
+  };
 
   // Batch process selected websites
   const processBatch = async () => {
@@ -109,6 +140,9 @@ export default function NicheFinderPage() {
       return;
     }
 
+    // Create new abort controller
+    abortControllerRef.current = new AbortController();
+
     setBatchProgress({
       total: websitesToProcess.length,
       processed: 0,
@@ -119,6 +153,11 @@ export default function NicheFinderPage() {
 
     const batchSize = 10; // Process 10 at a time
     for (let i = 0; i < websitesToProcess.length; i += batchSize) {
+      // Check if cancelled
+      if (abortControllerRef.current?.signal.aborted) {
+        break;
+      }
+
       const batch = websitesToProcess.slice(i, i + batchSize);
       
       setBatchProgress(prev => ({
@@ -134,7 +173,8 @@ export default function NicheFinderPage() {
             websiteIds: batch,
             currentNiches,
             currentCategories
-          })
+          }),
+          signal: abortControllerRef.current?.signal
         });
 
         const result = await response.json();
@@ -357,24 +397,34 @@ export default function NicheFinderPage() {
                     onChange={(e) => setFilters(prev => ({ ...prev, daysAgo: parseInt(e.target.value) || 30 }))}
                   />
                 </div>
-                <div className="flex items-end">
-                  <Button 
-                    onClick={processBatch}
-                    disabled={batchProgress.inProgress}
-                    className="w-full"
-                  >
-                    {batchProgress.inProgress ? (
-                      <>
+                <div className="flex items-end gap-2">
+                  {!batchProgress.inProgress ? (
+                    <Button 
+                      onClick={processBatch}
+                      className="flex-1"
+                    >
+                      <Brain className="mr-2 h-4 w-4" />
+                      Analyze {selectedWebsites.size > 0 ? `${selectedWebsites.size} Selected` : 'Outdated'}
+                    </Button>
+                  ) : (
+                    <>
+                      <Button 
+                        disabled
+                        className="flex-1"
+                      >
                         <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        <Brain className="mr-2 h-4 w-4" />
-                        Analyze {selectedWebsites.size > 0 ? `${selectedWebsites.size} Selected` : 'Outdated'}
-                      </>
-                    )}
-                  </Button>
+                        Processing {batchProgress.processed}/{batchProgress.total}
+                      </Button>
+                      <Button 
+                        onClick={cancelBatch}
+                        variant="destructive"
+                        size="sm"
+                      >
+                        <StopCircle className="mr-2 h-4 w-4" />
+                        Cancel
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -483,6 +533,67 @@ export default function NicheFinderPage() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+              
+              {/* Pagination Controls */}
+              <div className="mt-4 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600">
+                    Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, stats.totalWebsites)} of {stats.totalWebsites} websites
+                  </span>
+                  <Select value={itemsPerPage.toString()} onValueChange={(value) => { setItemsPerPage(Number(value)); setCurrentPage(1); }}>
+                    <SelectTrigger className="w-[100px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="50">50</SelectItem>
+                      <SelectItem value="100">100</SelectItem>
+                      <SelectItem value="200">200</SelectItem>
+                      <SelectItem value="500">500</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <span className="text-sm text-gray-600">per page</span>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(1)}
+                    disabled={currentPage === 1}
+                  >
+                    First
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Previous
+                  </Button>
+                  <span className="text-sm">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(totalPages)}
+                    disabled={currentPage === totalPages}
+                  >
+                    Last
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>

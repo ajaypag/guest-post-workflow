@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireInternalUser } from '@/lib/auth/middleware';
 import { db } from '@/lib/db/connection';
-import { sql } from 'drizzle-orm';
+import { eq, inArray, sql } from 'drizzle-orm';
 import { analyzeWebsiteEnhanced } from '@/lib/services/nicheAnalyzer';
+import { websites } from '@/lib/db/websiteSchema';
+import { niches, suggestedTags } from '@/lib/db/nichesSchema';
+import { extractO3Output, validateO3Analysis } from '@/lib/utils/o3ResponseParser';
 
 export async function POST(request: NextRequest) {
   // Check authentication - internal users only
@@ -21,18 +24,20 @@ export async function POST(request: NextRequest) {
   const processed = [];
 
   try {
-    // Get website details
-    const websitesQuery = sql.raw(`
-      SELECT id, domain
-      FROM websites
-      WHERE id = ANY(ARRAY[${websiteIds.map(id => `'${id}'`).join(',')}]::uuid[])
-    `);
-
-    const websitesResult = await db.execute(websitesQuery);
-    const websites = (websitesResult as any).rows || [];
+    // Get website details using Drizzle ORM
+    const websitesResult = await db
+      .select({
+        id: websites.id,
+        domain: websites.domain
+      })
+      .from(websites)
+      .where(inArray(websites.id, websiteIds));
+    
+    // Note: Drizzle returns array directly, no need for .rows
+    const websitesList = websitesResult;
 
     // Process each website
-    for (const website of websites) {
+    for (const website of websitesList) {
       try {
         console.log(`🔍 Analyzing: ${website.domain}`);
         
@@ -57,36 +62,18 @@ export async function POST(request: NextRequest) {
           allCategories.push(...analysis.suggestedNewCategories);
         }
 
-        // Update website with analysis results
-        const nichesArray = allNiches.length > 0 
-          ? `ARRAY[${allNiches.map(n => `'${n.replace(/'/g, "''")}'`).join(',')}]::TEXT[]`
-          : `'{}'::TEXT[]`;
-        const categoriesArray = allCategories.length > 0
-          ? `ARRAY[${allCategories.map(c => `'${c.replace(/'/g, "''")}'`).join(',')}]::TEXT[]`
-          : `'{}'::TEXT[]`;
-        const websiteTypesArray = analysis.websiteTypes.length > 0
-          ? `ARRAY[${analysis.websiteTypes.map(w => `'${w.replace(/'/g, "''")}'`).join(',')}]::TEXT[]`
-          : `'{}'::TEXT[]`;
-        const suggestedNichesArray = (analysis.suggestedNewNiches && analysis.suggestedNewNiches.length > 0)
-          ? `ARRAY[${analysis.suggestedNewNiches.map(s => `'${s.replace(/'/g, "''")}'`).join(',')}]::TEXT[]`
-          : `'{}'::TEXT[]`;
-        const suggestedCategoriesArray = (analysis.suggestedNewCategories && analysis.suggestedNewCategories.length > 0)
-          ? `ARRAY[${analysis.suggestedNewCategories.map(s => `'${s.replace(/'/g, "''")}'`).join(',')}]::TEXT[]`
-          : `'{}'::TEXT[]`;
-
-        const updateQuery = sql.raw(`
-          UPDATE websites
-          SET 
-            niche = ${nichesArray},
-            categories = ${categoriesArray},
-            website_type = ${websiteTypesArray},
-            last_niche_check = NOW(),
-            suggested_niches = ${suggestedNichesArray},
-            suggested_categories = ${suggestedCategoriesArray}
-          WHERE id = '${website.id}'
-        `);
-
-        await db.execute(updateQuery);
+        // Update website with analysis results using Drizzle ORM
+        await db
+          .update(websites)
+          .set({
+            niche: allNiches,
+            categories: allCategories,
+            websiteType: analysis.websiteTypes || [],
+            lastNicheCheck: new Date(),
+            suggestedNiches: analysis.suggestedNewNiches || [],
+            suggestedCategories: analysis.suggestedNewCategories || []
+          })
+          .where(eq(websites.id, website.id));
 
         // Track suggested new niches globally and add to niches table
         if (analysis.suggestedNewNiches && analysis.suggestedNewNiches.length > 0) {
@@ -136,22 +123,23 @@ export async function POST(request: NextRequest) {
 
 async function addNicheIfNotExists(nicheName: string) {
   try {
-    // Check if niche already exists
-    const existingQuery = sql.raw(`
-      SELECT id FROM niches WHERE LOWER(name) = LOWER('${nicheName.replace(/'/g, "''")}')
-    `);
+    // Check if niche already exists (case-insensitive)
+    const existing = await db
+      .select()
+      .from(niches)
+      .where(sql`LOWER(${niches.name}) = LOWER(${nicheName})`)
+      .limit(1);
     
-    const existingResult = await db.execute(existingQuery);
-    
-    if (existingResult.rows.length === 0) {
-      // Insert new niche
-      const insertQuery = sql.raw(`
-        INSERT INTO niches (name, source, created_at, updated_at)
-        VALUES ('${nicheName.replace(/'/g, "''")}', 'o3_suggested', NOW(), NOW())
-        ON CONFLICT (name) DO NOTHING
-      `);
+    if (existing.length === 0) {
+      // Insert new niche using Drizzle
+      await db
+        .insert(niches)
+        .values({
+          name: nicheName,
+          source: 'o3_suggested'
+        })
+        .onConflictDoNothing();
       
-      await db.execute(insertQuery);
       console.log(`✅ Added new niche to niches table: ${nicheName}`);
     }
   } catch (error) {
@@ -161,46 +149,45 @@ async function addNicheIfNotExists(nicheName: string) {
 
 async function trackSuggestedTag(tagName: string, tagType: string, exampleDomain: string) {
   try {
-    // Check if tag already exists
-    const existingQuery = sql.raw(`
-      SELECT id, website_count, example_websites
-      FROM suggested_tags
-      WHERE tag_name = '${tagName.replace(/'/g, "''")}' AND tag_type = '${tagType}'
-    `);
+    // Check if tag already exists using Drizzle
+    const existing = await db
+      .select({
+        id: suggestedTags.id,
+        websiteCount: suggestedTags.websiteCount,
+        exampleWebsites: suggestedTags.exampleWebsites
+      })
+      .from(suggestedTags)
+      .where(
+        sql`${suggestedTags.tagName} = ${tagName} AND ${suggestedTags.tagType} = ${tagType}`
+      )
+      .limit(1);
 
-    const existingResult = await db.execute(existingQuery);
-    const existing = (existingResult as any).rows[0];
-
-    if (existing) {
+    if (existing.length > 0) {
       // Update count and add example
-      const currentExamples = existing.example_websites || [];
+      const currentTag = existing[0];
+      const currentExamples = currentTag.exampleWebsites || [];
       if (!currentExamples.includes(exampleDomain) && currentExamples.length < 10) {
         currentExamples.push(exampleDomain);
       }
 
-      const updateQuery = sql.raw(`
-        UPDATE suggested_tags
-        SET 
-          website_count = website_count + 1,
-          example_websites = ARRAY[${currentExamples.map((e: string) => `'${e}'`).join(',')}]::TEXT[],
-          updated_at = NOW()
-        WHERE id = '${existing.id}'
-      `);
-
-      await db.execute(updateQuery);
+      await db
+        .update(suggestedTags)
+        .set({
+          websiteCount: sql`${suggestedTags.websiteCount} + 1`,
+          exampleWebsites: currentExamples,
+          updatedAt: new Date()
+        })
+        .where(eq(suggestedTags.id, currentTag.id));
     } else {
-      // Insert new suggested tag
-      const insertQuery = sql.raw(`
-        INSERT INTO suggested_tags (
-          tag_name, 
-          tag_type, 
-          website_count,
-          example_websites,
-          first_suggested_at
-        ) VALUES ('${tagName.replace(/'/g, "''")}', '${tagType}', 1, ARRAY['${exampleDomain}']::TEXT[], NOW())
-      `);
-
-      await db.execute(insertQuery);
+      // Insert new suggested tag using Drizzle
+      await db
+        .insert(suggestedTags)
+        .values({
+          tagName: tagName,
+          tagType: tagType,
+          websiteCount: 1,
+          exampleWebsites: [exampleDomain]
+        });
     }
   } catch (error) {
     console.error(`Failed to track suggested tag ${tagName}:`, error);

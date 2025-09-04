@@ -58,6 +58,11 @@ export const websites = pgTable('websites', {
   internalNotes: text('internal_notes'),
   accountManagerId: uuid('account_manager_id'),
   
+  // Niche Finder Fields (for O3 analysis)
+  suggestedNiches: text('suggested_niches').array(),
+  suggestedCategories: text('suggested_categories').array(),
+  lastNicheCheck: timestamp('last_niche_check'),
+  
   // Publisher CRM Relations (added in migration 0032)
   organizationId: uuid('organization_id'),
   
