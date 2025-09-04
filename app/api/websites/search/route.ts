@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
       domain: w.domain,
       domainRating: w.domain_rating,
       totalTraffic: w.total_traffic,
-      guestPostCost: w.guest_post_cost ? w.guest_post_cost : null,
+      guestPostCost: w.derived_guest_post_cost || w.guest_post_cost || null,
       categories: w.categories || [],
       type: w.type || [],
       websiteType: w.website_type || [], // SaaS, Blog, News, eCommerce, etc.
@@ -59,6 +59,7 @@ export async function POST(request: NextRequest) {
       overallQuality: w.overall_quality,
       contacts: w.contacts || [],
       qualification: w.qualification,
+      offeringsCount: w.offerings_count || 0,
       lastSyncedAt: w.last_synced_at,
       airtableCreatedAt: w.airtable_created_at,
       airtableUpdatedAt: w.airtable_updated_at

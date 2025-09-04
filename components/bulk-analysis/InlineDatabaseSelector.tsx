@@ -26,6 +26,11 @@ export default function InlineDatabaseSelector({
     new Set(selectedWebsites.map(w => w.id))
   );
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
+  const [availableNiches, setAvailableNiches] = useState<string[]>([]);
+  const [categoryCounts, setCategoryCounts] = useState<Map<string, number>>(new Map());
+  const [nicheCounts, setNicheCounts] = useState<Map<string, number>>(new Map());
+  const [categorySearch, setCategorySearch] = useState('');
+  const [nicheSearch, setNicheSearch] = useState('');
   
   // Filters
   const [filters, setFilters] = useState({
@@ -35,7 +40,8 @@ export default function InlineDatabaseSelector({
     maxTraffic: undefined as number | undefined,
     maxCost: undefined as number | undefined,
     categories: [] as string[],
-    qualificationStatus: 'unqualified' as 'all' | 'qualified' | 'unqualified'
+    niches: [] as string[],
+    hasOfferings: undefined as boolean | undefined
   });
 
   // Pagination
@@ -59,9 +65,7 @@ export default function InlineDatabaseSelector({
           limit: pageSize,
           offset: reset ? 0 : page * pageSize,
           clientId,
-          projectId,
-          onlyUnqualified: filters.qualificationStatus === 'unqualified',
-          onlyQualified: filters.qualificationStatus === 'qualified'
+          projectId
         })
       });
 
@@ -80,11 +84,13 @@ export default function InlineDatabaseSelector({
     }
   }, [searchTerm, filters, page, pageSize, clientId, projectId]);
 
-  // Load categories
-  const loadCategories = useCallback(async () => {
+  // Load categories and niches with counts
+  const loadCategoriesAndNiches = useCallback(async () => {
     try {
-      // Get unique categories from loaded websites
-      const allCategories = new Set<string>();
+      // Get unique categories and niches with counts from all websites
+      const categoryCount = new Map<string, number>();
+      const nicheCount = new Map<string, number>();
+      
       const response = await fetch('/api/websites/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -95,19 +101,46 @@ export default function InlineDatabaseSelector({
         })
       });
       const data = await response.json();
+      
       data.websites?.forEach((w: ProcessedWebsite) => {
-        w.categories?.forEach(cat => allCategories.add(cat));
+        w.categories?.forEach(cat => {
+          categoryCount.set(cat, (categoryCount.get(cat) || 0) + 1);
+        });
+        w.niche?.forEach(niche => {
+          nicheCount.set(niche, (nicheCount.get(niche) || 0) + 1);
+        });
       });
-      setAvailableCategories(Array.from(allCategories).sort());
+      
+      // Sort by count (descending) then by name
+      const categoriesWithCounts = Array.from(categoryCount.entries())
+        .sort(([aName, aCount], [bName, bCount]) => {
+          if (bCount !== aCount) return bCount - aCount;
+          return aName.localeCompare(bName);
+        })
+        .map(([name]) => name);
+        
+      const nichesWithCounts = Array.from(nicheCount.entries())
+        .sort(([aName, aCount], [bName, bCount]) => {
+          if (bCount !== aCount) return bCount - aCount;
+          return aName.localeCompare(bName);
+        })
+        .map(([name]) => name);
+      
+      setAvailableCategories(categoriesWithCounts);
+      setAvailableNiches(nichesWithCounts);
+      
+      // Store the counts for display
+      setCategoryCounts(categoryCount);
+      setNicheCounts(nicheCount);
     } catch (error) {
-      console.error('Failed to load categories:', error);
+      console.error('Failed to load categories and niches:', error);
     }
   }, []);
 
   // Initial load
   useEffect(() => {
     loadWebsites(true);
-    loadCategories();
+    loadCategoriesAndNiches();
   }, []);
 
   // Load when page changes
@@ -184,9 +217,7 @@ export default function InlineDatabaseSelector({
           limit: 10000, // Get all matching websites
           offset: 0,
           clientId,
-          projectId,
-          onlyUnqualified: filters.qualificationStatus === 'unqualified',
-          onlyQualified: filters.qualificationStatus === 'qualified'
+          projectId
         })
       });
 
@@ -232,6 +263,17 @@ export default function InlineDatabaseSelector({
     return traffic.toString();
   };
 
+  // Helper function to check if text matches search term
+  const isMatchingSearch = (text: string) => {
+    if (!searchTerm) return false;
+    return text.toLowerCase().includes(searchTerm.toLowerCase());
+  };
+
+  // Helper function to get highlight class
+  const getHighlightClass = (isMatch: boolean) => {
+    return isMatch ? 'bg-yellow-100' : '';
+  };
+
   return (
     <div className="space-y-4">
       {/* Search and Filter Bar */}
@@ -240,7 +282,7 @@ export default function InlineDatabaseSelector({
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input
             type="text"
-            placeholder="Search domains..."
+            placeholder="Search domains, categories, or niches..."
             className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
             onChange={(e) => debouncedSearch(e.target.value)}
           />
@@ -322,28 +364,28 @@ export default function InlineDatabaseSelector({
                 type="number"
                 placeholder="No limit"
                 className="w-full px-2 py-1 border rounded text-sm"
-                value={filters.maxCost || ''}
+                value={filters.maxCost ? filters.maxCost / 100 : ''}
                 onChange={(e) => setFilters(prev => ({ 
                   ...prev, 
-                  maxCost: e.target.value ? parseInt(e.target.value) : undefined 
+                  maxCost: e.target.value ? parseInt(e.target.value) * 100 : undefined // Convert dollars to cents
                 }))}
               />
             </div>
 
-            {/* Qualification Status */}
+            {/* Has Offerings Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Offerings</label>
               <select
                 className="w-full px-2 py-1 border rounded text-sm"
-                value={filters.qualificationStatus}
+                value={filters.hasOfferings === undefined ? 'all' : filters.hasOfferings ? 'with' : 'without'}
                 onChange={(e) => setFilters(prev => ({ 
                   ...prev, 
-                  qualificationStatus: e.target.value as any 
+                  hasOfferings: e.target.value === 'all' ? undefined : e.target.value === 'with' 
                 }))}
               >
                 <option value="all">All Websites</option>
-                <option value="qualified">Qualified for Client</option>
-                <option value="unqualified">Not Qualified</option>
+                <option value="with">Has Offerings</option>
+                <option value="without">No Offerings</option>
               </select>
             </div>
           </div>
@@ -352,8 +394,19 @@ export default function InlineDatabaseSelector({
           {availableCategories.length > 0 && (
             <div className="mt-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">Categories</label>
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
-                {availableCategories.map(category => (
+              <div className="mb-2">
+                <input
+                  type="text"
+                  placeholder="Filter categories..."
+                  className="w-full px-3 py-1.5 border rounded text-sm"
+                  value={categorySearch}
+                  onChange={(e) => setCategorySearch(e.target.value)}
+                />
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2 max-h-48 overflow-y-auto">
+                {availableCategories
+                  .filter(category => category.toLowerCase().includes(categorySearch.toLowerCase()))
+                  .map(category => (
                   <label key={category} className="flex items-center gap-1.5">
                     <input
                       type="checkbox"
@@ -373,7 +426,60 @@ export default function InlineDatabaseSelector({
                       }}
                       className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
                     />
-                    <span className="text-sm text-gray-700">{category}</span>
+                    <span className="text-sm text-gray-700">
+                      {category}
+                      <span className="ml-1 text-xs text-gray-500">
+                        ({categoryCounts.get(category) || 0})
+                      </span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Niches */}
+          {availableNiches.length > 0 && (
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Niches</label>
+              <div className="mb-2">
+                <input
+                  type="text"
+                  placeholder="Filter niches..."
+                  className="w-full px-3 py-1.5 border rounded text-sm"
+                  value={nicheSearch}
+                  onChange={(e) => setNicheSearch(e.target.value)}
+                />
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2 max-h-48 overflow-y-auto">
+                {availableNiches
+                  .filter(niche => niche.toLowerCase().includes(nicheSearch.toLowerCase()))
+                  .map(niche => (
+                  <label key={niche} className="flex items-center gap-1.5">
+                    <input
+                      type="checkbox"
+                      checked={filters.niches.includes(niche)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setFilters(prev => ({ 
+                            ...prev, 
+                            niches: [...prev.niches, niche] 
+                          }));
+                        } else {
+                          setFilters(prev => ({ 
+                            ...prev, 
+                            niches: prev.niches.filter(n => n !== niche) 
+                          }));
+                        }
+                      }}
+                      className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+                    />
+                    <span className="text-sm text-gray-700">
+                      {niche}
+                      <span className="ml-1 text-xs text-gray-500">
+                        ({nicheCounts.get(niche) || 0})
+                      </span>
+                    </span>
                   </label>
                 ))}
               </div>
@@ -382,15 +488,20 @@ export default function InlineDatabaseSelector({
 
           <div className="flex justify-between">
             <button
-              onClick={() => setFilters({
-                minDR: undefined,
-                maxDR: undefined,
-                minTraffic: undefined,
-                maxTraffic: undefined,
-                maxCost: undefined,
-                categories: [],
-                qualificationStatus: 'unqualified'
-              })}
+              onClick={() => {
+                setFilters({
+                  minDR: undefined,
+                  maxDR: undefined,
+                  minTraffic: undefined,
+                  maxTraffic: undefined,
+                  maxCost: undefined,
+                  categories: [],
+                  niches: [],
+                  hasOfferings: undefined
+                });
+                setCategorySearch('');
+                setNicheSearch('');
+              }}
               className="text-sm text-gray-600 hover:text-gray-800"
             >
               Clear filters
@@ -489,7 +600,10 @@ export default function InlineDatabaseSelector({
                   Categories
                 </th>
                 <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Contacts
+                  Niches
+                </th>
+                <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Offerings
                 </th>
               </tr>
             </thead>
@@ -512,7 +626,7 @@ export default function InlineDatabaseSelector({
                     />
                   </td>
                   <td className="px-3 py-4">
-                    <div className="text-sm font-medium text-gray-900">
+                    <div className={`text-sm font-medium text-gray-900 ${getHighlightClass(isMatchingSearch(website.domain))} px-1 rounded`}>
                       {website.domain}
                     </div>
                   </td>
@@ -540,11 +654,13 @@ export default function InlineDatabaseSelector({
                   <td className="px-3 py-4">
                     <div className="text-sm text-gray-900">
                       {website.categories.length > 0 ? (
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 flex-wrap">
                           {website.categories.slice(0, 2).map((cat, i) => (
                             <span 
                               key={i}
-                              className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700"
+                              className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                                isMatchingSearch(cat) ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-700'
+                              }`}
                             >
                               {cat}
                             </span>
@@ -560,7 +676,30 @@ export default function InlineDatabaseSelector({
                   </td>
                   <td className="px-3 py-4">
                     <div className="text-sm text-gray-900">
-                      {website.contacts?.length || 0}
+                      {website.niche && website.niche.length > 0 ? (
+                        <div className="flex items-center gap-1 flex-wrap">
+                          {website.niche.slice(0, 2).map((n, i) => (
+                            <span 
+                              key={i}
+                              className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                                isMatchingSearch(n) ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-700'
+                              }`}
+                            >
+                              {n}
+                            </span>
+                          ))}
+                          {website.niche.length > 2 && (
+                            <span className="text-xs text-gray-500">
+                              +{website.niche.length - 2}
+                            </span>
+                          )}
+                        </div>
+                      ) : '-'}
+                    </div>
+                  </td>
+                  <td className="px-3 py-4">
+                    <div className="text-sm text-gray-900">
+                      {website.offeringsCount || 0}
                     </div>
                   </td>
                 </tr>
