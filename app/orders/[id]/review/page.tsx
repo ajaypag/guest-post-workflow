@@ -503,7 +503,9 @@ export default function ExternalOrderReviewPage() {
               canGenerateWorkflows: false,
               canMarkSitesReady: false,
               canEditDomainAssignments: true,  // External users CAN edit all domain details
-              canSetExclusionReason: false  // Only this is restricted - internal notes
+              canSetExclusionReason: false,  // Only this is restricted - internal notes
+              canViewPublishedUrls: false,  // Hide published URLs at review stage for account users
+              canShowSetupButton: false  // Hide Setup button at review stage - it would reset the order flow
             }}
             onChangeStatus={handleStatusChange}
             onEditItem={handleEditItem}

@@ -1322,7 +1322,8 @@ export default function OrderDetailPage() {
                     canEditDomainAssignments: user?.userType === 'internal',
                     canViewPricing: true,                              // All users can see pricing
                     canEditPricing: user?.userType === 'internal',    // Only internal users can edit pricing
-                    canAssignTargetPages: user?.userType === 'internal'
+                    canAssignTargetPages: user?.userType === 'internal',
+                    canViewPublishedUrls: false                       // Hide published URLs for external users
                   }}
                   onEditItem={async (itemId, updates) => {
                     await handleEditSubmission(itemId, '', updates);

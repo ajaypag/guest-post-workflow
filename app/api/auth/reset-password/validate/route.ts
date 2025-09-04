@@ -18,32 +18,89 @@ export async function POST(request: NextRequest) {
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 
     // Check if token exists, is not used, and not expired
-    const result = await db.execute(sql`
+    // First try to get the token with metadata
+    const tokenResult = await db.execute(sql`
       SELECT 
         prt.id,
         prt.user_id,
         prt.expires_at,
         prt.used_at,
-        u.email,
-        u.name
+        prt.metadata
       FROM password_reset_tokens prt
-      JOIN users u ON prt.user_id = u.id
       WHERE prt.token = ${hashedToken}
         AND prt.used_at IS NULL
         AND prt.expires_at > CURRENT_TIMESTAMP
       LIMIT 1
     `);
 
-    if (result.rows.length === 0) {
+    if (tokenResult.rows.length === 0) {
       return NextResponse.json({
         valid: false,
         error: 'Invalid or expired reset token'
       });
     }
 
+    const tokenData = tokenResult.rows[0];
+    let email, name;
+
+    // Parse metadata to determine user type
+    if (tokenData.metadata) {
+      const metadata = typeof tokenData.metadata === 'string' 
+        ? JSON.parse(tokenData.metadata) 
+        : tokenData.metadata;
+      
+      if (metadata.user_type === 'account' && metadata.account_id) {
+        // For account users, get email from accounts table
+        const accountResult = await db.execute(sql`
+          SELECT email, contact_name as name
+          FROM accounts
+          WHERE id = ${metadata.account_id}
+          LIMIT 1
+        `);
+        
+        if (accountResult.rows.length > 0) {
+          email = accountResult.rows[0].email;
+          name = accountResult.rows[0].name;
+        }
+      } else {
+        // For internal users, get from users table
+        const userResult = await db.execute(sql`
+          SELECT email, name
+          FROM users
+          WHERE id = ${tokenData.user_id}
+          LIMIT 1
+        `);
+        
+        if (userResult.rows.length > 0) {
+          email = userResult.rows[0].email;
+          name = userResult.rows[0].name;
+        }
+      }
+    } else {
+      // Legacy tokens without metadata - assume internal user
+      const userResult = await db.execute(sql`
+        SELECT email, name
+        FROM users
+        WHERE id = ${tokenData.user_id}
+        LIMIT 1
+      `);
+      
+      if (userResult.rows.length > 0) {
+        email = userResult.rows[0].email;
+        name = userResult.rows[0].name;
+      }
+    }
+
+    if (!email) {
+      return NextResponse.json({
+        valid: false,
+        error: 'User not found for this token'
+      });
+    }
+
     return NextResponse.json({
       valid: true,
-      email: result.rows[0].email
+      email: email
     });
   } catch (error: any) {
     console.error('Token validation error:', error);

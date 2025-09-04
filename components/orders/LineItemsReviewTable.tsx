@@ -227,7 +227,7 @@ export interface LineItem {
   } | null;
 }
 
-interface TablePermissions {
+export interface TablePermissions {
   canChangeStatus?: boolean;
   canAssignTargetPages?: boolean;
   canApproveReject?: boolean;
@@ -238,6 +238,8 @@ interface TablePermissions {
   canEditPricing?: boolean;
   canEditDomainAssignments?: boolean;
   canSetExclusionReason?: boolean;
+  canShowSetupButton?: boolean;  // Control visibility of Setup button
+  canViewPublishedUrls?: boolean;  // Control visibility of Published URL column
 }
 
 interface LineItemsReviewTableProps {
@@ -1223,7 +1225,7 @@ export default function LineItemsReviewTable({
                   <thead>
                     <tr className="text-left text-sm text-gray-600 border-b border-gray-200">
                       {permissions.canChangeStatus && (
-                        <th className="pb-2 pr-2 sticky left-0 bg-white z-10">
+                        <th className="pb-2 pr-2 sticky left-0 bg-white z-20 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">
                           <input
                             type="checkbox"
                             checked={filteredItems.length > 0 && filteredItems.every(i => selectedItems.has(i.id))}
@@ -1240,12 +1242,12 @@ export default function LineItemsReviewTable({
                           />
                         </th>
                       )}
-                      <th className="pb-2 font-medium sticky left-0 bg-white z-10 pr-4 w-[280px] min-w-[280px]">Domain</th>
+                      <th className="pb-2 font-medium sticky left-0 bg-white z-20 pr-4 w-[280px] min-w-[280px] shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">Domain</th>
                       {hasAnyWorkflows && workflowStage !== 'client_review' && (
                         <th className="pb-2 font-medium w-[120px] min-w-[120px]">Workflow</th>
                       )}
-                      {/* Show Published URL column only for active orders, not claim preview */}
-                      {workflowStage !== 'client_review' && (
+                      {/* Show Published URL column only when permitted */}
+                      {workflowStage !== 'client_review' && permissions.canViewPublishedUrls !== false && (
                         <th className="pb-2 font-medium w-[150px] min-w-[150px]">Published URL</th>
                       )}
                       <th className="pb-2 font-medium w-[250px] min-w-[250px] pr-4">Target Page</th>
@@ -1266,9 +1268,9 @@ export default function LineItemsReviewTable({
                     
                     return (
                       <React.Fragment key={item.id}>
-                        <tr className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                        <tr className="border-b border-gray-100 hover:bg-gray-50 transition-colors group">
                           {permissions.canChangeStatus && (
-                            <td className="py-3 pr-2 sticky left-0 bg-white">
+                            <td className="py-3 pr-2 sticky left-0 bg-white group-hover:bg-gray-50 z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">
                               <input
                                 type="checkbox"
                                 checked={selectedItems.has(item.id)}
@@ -1277,7 +1279,7 @@ export default function LineItemsReviewTable({
                               />
                             </td>
                           )}
-                          <td className="py-3 cursor-pointer sticky left-0 bg-white pr-4 w-[280px] min-w-[280px]" onClick={() => toggleRow(item.id)}>
+                          <td className="py-3 cursor-pointer sticky left-0 bg-white group-hover:bg-gray-50 z-10 pr-4 w-[280px] min-w-[280px] shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]" onClick={() => toggleRow(item.id)}>
                             <div className="flex items-center gap-2 w-full">
                               {expandedRows.has(item.id) ? (
                                 <ChevronUp className="h-4 w-4 text-gray-400 flex-shrink-0" />
@@ -1327,8 +1329,8 @@ export default function LineItemsReviewTable({
                               <WorkflowStatusCell workflowId={item.workflowId} userType={userType} />
                             </td>
                           )}
-                          {/* Published URL Column - Hide for claim preview */}
-                          {workflowStage !== 'client_review' && (
+                          {/* Published URL Column - Hide when not permitted */}
+                          {workflowStage !== 'client_review' && permissions.canViewPublishedUrls !== false && (
                             <td className="py-3 px-3">
                               <PublishedUrlCell item={item} userType={userType} />
                             </td>
@@ -1559,14 +1561,16 @@ export default function LineItemsReviewTable({
                                   disabled={false}
                                   className="flex-1 max-w-[120px]"
                                 />
-                                <Link
-                                  href={`/orders/${orderId}/edit`}
-                                  className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-600 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors"
-                                  title="Edit order setup (targets & anchor text)"
-                                >
-                                  <Edit className="w-3 h-3" />
-                                  <span className="hidden lg:inline">Setup</span>
-                                </Link>
+                                {permissions.canShowSetupButton !== false && (
+                                  <Link
+                                    href={`/orders/${orderId}/edit`}
+                                    className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-600 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors"
+                                    title="Edit order setup (targets & anchor text)"
+                                  >
+                                    <Edit className="w-3 h-3" />
+                                    <span className="hidden lg:inline">Setup</span>
+                                  </Link>
+                                )}
                               </div>
                             </td>
                           )}
@@ -1675,14 +1679,16 @@ export default function LineItemsReviewTable({
                             disabled={false}
                             className="max-w-[120px]"
                           />
-                          <Link
-                          href={`/orders/${orderId}/edit`}
-                          className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-600 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors"
-                          title="Edit order setup"
-                        >
-                          <Edit className="w-3 h-3" />
-                          Setup
-                        </Link>
+                          {permissions.canShowSetupButton !== false && (
+                            <Link
+                              href={`/orders/${orderId}/edit`}
+                              className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-600 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors"
+                              title="Edit order setup"
+                            >
+                              <Edit className="w-3 h-3" />
+                              Setup
+                            </Link>
+                          )}
                       </div>
                       )}
                     </div>
@@ -1738,8 +1744,8 @@ export default function LineItemsReviewTable({
                       </div>
                     )}
                     
-                    {/* Workflow & Published URL - Hide for claim preview */}
-                    {workflowStage !== 'client_review' && (hasAnyWorkflows || item.publishedUrl) && (
+                    {/* Workflow & Published URL - Hide for claim preview and when not permitted */}
+                    {workflowStage !== 'client_review' && (hasAnyWorkflows || (item.publishedUrl && permissions.canViewPublishedUrls !== false)) && (
                       <div className="flex gap-4 pb-2 border-b">
                         {hasAnyWorkflows && item.workflowId && (
                           <div className="flex-1">
@@ -1747,7 +1753,7 @@ export default function LineItemsReviewTable({
                             <WorkflowStatusCell workflowId={item.workflowId} userType={userType} />
                           </div>
                         )}
-                        {['in_progress', 'delivered', 'completed', 'published'].includes(item.status) && (
+                        {['in_progress', 'delivered', 'completed', 'published'].includes(item.status) && permissions.canViewPublishedUrls !== false && (
                           <div className="flex-1">
                             <div className="text-xs text-gray-500 mb-1">Published Article</div>
                             <PublishedUrlCell item={item} userType={userType} />

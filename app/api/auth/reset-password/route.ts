@@ -7,7 +7,7 @@ import bcrypt from 'bcryptjs';
 
 export async function POST(request: NextRequest) {
   try {
-    const { token, password } = await request.json();
+    const { token, password, type } = await request.json();
 
     if (!token || !password) {
       return NextResponse.json(
@@ -31,18 +31,15 @@ export async function POST(request: NextRequest) {
     await db.execute(sql`BEGIN`);
 
     try {
-      // Find the valid token
+      // Find the valid token with metadata
       const tokenResult = await db.execute(sql`
         SELECT 
           prt.id as token_id,
           prt.user_id,
           prt.expires_at,
           prt.used_at,
-          u.id,
-          u.email,
-          u.name
+          prt.metadata
         FROM password_reset_tokens prt
-        JOIN users u ON prt.user_id = u.id
         WHERE prt.token = ${hashedToken}
           AND prt.used_at IS NULL
           AND prt.expires_at > CURRENT_TIMESTAMP
@@ -58,19 +55,44 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const { token_id, user_id, email } = tokenResult.rows[0];
+      const { token_id, user_id, metadata } = tokenResult.rows[0];
+      
+      // Parse metadata to get actual user info
+      let userType = 'internal';
+      let actualUserId = user_id;
+      
+      if (metadata) {
+        const metadataObj = typeof metadata === 'string' ? JSON.parse(metadata) : metadata;
+        userType = metadataObj.user_type || 'internal';
+        // For account users, get the actual account ID from metadata
+        if (userType === 'account' && metadataObj.account_id) {
+          actualUserId = metadataObj.account_id;
+        }
+      }
 
       // Hash the new password
       const passwordHash = await bcrypt.hash(password, 10);
 
-      // Update user's password
-      await db.execute(sql`
-        UPDATE users 
-        SET 
-          password_hash = ${passwordHash},
-          updated_at = CURRENT_TIMESTAMP
-        WHERE id = ${user_id}
-      `);
+      // Update password based on user type
+      if (userType === 'account') {
+        // Update account password using the actual account ID from metadata
+        await db.execute(sql`
+          UPDATE accounts 
+          SET 
+            password = ${passwordHash},
+            updated_at = CURRENT_TIMESTAMP
+          WHERE id = ${actualUserId}
+        `);
+      } else {
+        // Update internal user password
+        await db.execute(sql`
+          UPDATE users 
+          SET 
+            password_hash = ${passwordHash},
+            updated_at = CURRENT_TIMESTAMP
+          WHERE id = ${actualUserId}
+        `);
+      }
 
       // Mark token as used
       await db.execute(sql`
