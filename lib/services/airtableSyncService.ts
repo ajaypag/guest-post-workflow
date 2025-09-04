@@ -238,12 +238,12 @@ export class AirtableSyncService {
     }
     
     if (filters.minCost !== undefined) {
-      conditions.push(`w.guest_post_cost >= $${paramIndex++}`);
+      conditions.push(`COALESCE(w.derived_guest_post_cost, w.guest_post_cost) >= $${paramIndex++}`);
       params.push(filters.minCost);
     }
     
     if (filters.maxCost !== undefined) {
-      conditions.push(`w.guest_post_cost <= $${paramIndex++}`);
+      conditions.push(`(COALESCE(w.derived_guest_post_cost, w.guest_post_cost) <= $${paramIndex++} AND COALESCE(w.derived_guest_post_cost, w.guest_post_cost) IS NOT NULL)`);
       params.push(filters.maxCost);
     }
     
@@ -266,8 +266,20 @@ export class AirtableSyncService {
     }
     
     if (filters.searchTerm) {
-      conditions.push(`w.domain ILIKE $${paramIndex++}`);
+      // Search across domain, categories, and niches
+      conditions.push(`(
+        w.domain ILIKE $${paramIndex} OR 
+        EXISTS (
+          SELECT 1 FROM unnest(w.categories) AS cat 
+          WHERE cat ILIKE $${paramIndex}
+        ) OR 
+        EXISTS (
+          SELECT 1 FROM unnest(w.niche) AS n 
+          WHERE n ILIKE $${paramIndex}
+        )
+      )`);
       params.push(`%${filters.searchTerm}%`);
+      paramIndex++;
     }
     
     if (filters.categories && filters.categories.length > 0) {
@@ -283,6 +295,21 @@ export class AirtableSyncService {
     if (filters.niches && filters.niches.length > 0) {
       conditions.push(`w.niche && $${paramIndex++}`);
       params.push(filters.niches);
+    }
+    
+    // Publisher offerings filter  
+    if (filters.hasOfferings === true) {
+      conditions.push(`EXISTS (
+        SELECT 1 FROM publisher_offering_relationships por
+        INNER JOIN publisher_offerings po ON po.id = por.offering_id
+        WHERE por.website_id = w.id AND por.is_active = true
+      )`);
+    } else if (filters.hasOfferings === false) {
+      conditions.push(`NOT EXISTS (
+        SELECT 1 FROM publisher_offering_relationships por
+        INNER JOIN publisher_offerings po ON po.id = por.offering_id
+        WHERE por.website_id = w.id AND por.is_active = true
+      )`);
     }
     
     // Airtable metadata filters
@@ -370,7 +397,18 @@ export class AirtableSyncService {
             'notes', wq.notes
           )
           ELSE NULL
-        END as qualification
+        END as qualification,
+        COALESCE(
+          (
+            SELECT COUNT(*)
+            FROM publisher_offering_relationships por
+            INNER JOIN publisher_offerings po ON po.id = por.offering_id
+            WHERE por.website_id = w.id 
+              AND por.is_active = true 
+              AND po.is_active = true
+          ),
+          0
+        ) as offerings_count
       FROM websites w
       LEFT JOIN website_contacts wc ON w.id = wc.website_id
       LEFT JOIN website_qualifications wq ON w.id = wq.website_id 

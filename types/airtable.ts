@@ -74,6 +74,7 @@ export interface ProcessedWebsite {
   hasGuestPost: boolean;
   hasLinkInsert: boolean;
   overallQuality?: string;
+  offeringsCount?: number;
 }
 
 // Filter Types
@@ -88,6 +89,7 @@ export interface WebsiteFilters {
   source?: string; // manyreach, airtable, manual, etc.
   hasGuestPost?: boolean;
   hasLinkInsert?: boolean;
+  hasOfferings?: boolean; // Filter by publisher offerings
   categories?: string[];
   websiteTypes?: string[]; // SaaS, Blog, News, eCommerce, etc.
   niches?: string[]; // Multiple niches
