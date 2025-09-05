@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Download, CheckCircle2, XCircle, AlertCircle, Eye, RefreshCw, Clock, Activity, ChevronLeft, Mail, Key, FileText, BarChart } from 'lucide-react';
+import { Loader2, Download, CheckCircle2, CheckCircle, XCircle, AlertCircle, Eye, RefreshCw, Clock, Activity, ChevronLeft, Mail, Key, FileText, BarChart, Search } from 'lucide-react';
 import { CampaignStatusView } from '@/components/manyreach/CampaignStatusView';
 import { DraftsListInfinite } from '@/components/manyreach/DraftsListInfinite';
 import { DuplicateDetectionPreview } from '@/components/manyreach/DuplicateDetectionPreview';
@@ -75,8 +75,8 @@ export default function ManyReachImportPage() {
   // Enhanced Draft filtering
   const [showOnlyWithOffers, setShowOnlyWithOffers] = useState<boolean>(false);
   const [showOnlyWithPricing, setShowOnlyWithPricing] = useState<boolean>(false);
-  const [offerTypeFilter, setOfferTypeFilter] = useState<string>('all'); // 'all', 'guest_post', 'link_insertion', 'link_exchange'
-  const [priceRangeFilter, setPriceRangeFilter] = useState<string>('all'); // 'all', '0-100', '100-500', '500-1000', '1000+'
+  const [offerTypeFilter, setOfferTypeFilter] = useState<'all' | 'guest_post' | 'link_insertion' | 'link_exchange'>('all');
+  const [priceRangeFilter, setPriceRangeFilter] = useState<'all' | '0-100' | '100-500' | '500-1000' | '1000+'>('all');
   const [minPriceFilter, setMinPriceFilter] = useState<number>(0);
   const [maxPriceFilter, setMaxPriceFilter] = useState<number>(10000);
   
@@ -88,6 +88,12 @@ export default function ManyReachImportPage() {
   // Smart bulk campaign processing
   const [smartBulkProcessing, setSmartBulkProcessing] = useState(false);
   const [bulkProgress, setBulkProgress] = useState<{current: number; total: number; campaign?: string}>({current: 0, total: 0});
+  
+  // Bulk analysis state
+  const [bulkAnalysisData, setBulkAnalysisData] = useState<any>(null);
+  const [showBulkAnalysis, setShowBulkAnalysis] = useState(false);
+  const [analyzingCampaigns, setAnalyzingCampaigns] = useState(false);
+  const [selectedCampaignsForAnalysis, setSelectedCampaignsForAnalysis] = useState<string[]>([]);
   
   const { toast } = useToast();
 
@@ -157,6 +163,92 @@ export default function ManyReachImportPage() {
       
       return true;
     });
+  };
+
+  // Analyze all campaigns to see what's new and avoid duplicates
+  const analyzeBulkCampaigns = async () => {
+    setAnalyzingCampaigns(true);
+    setShowBulkAnalysis(false);
+    setBulkAnalysisData(null);
+    
+    try {
+      const response = await fetch(`/api/admin/manyreach/bulk-analysis?workspace=${selectedWorkspace}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to analyze campaigns');
+      }
+      
+      const data = await response.json();
+      setBulkAnalysisData(data.analysis);
+      setShowBulkAnalysis(true);
+      
+      if (data.analysis.totalNewEmails === 0) {
+        toast({
+          title: 'All caught up! 🎉',
+          description: 'No new emails to import. All replies have been processed.',
+        });
+      } else {
+        toast({
+          title: `Found ${data.analysis.totalNewEmails} new emails! 📧`,
+          description: `${data.analysis.totalDuplicates} duplicates avoided, ${data.analysis.totalIgnored} ignored`,
+        });
+      }
+    } catch (error) {
+      console.error('Analysis error:', error);
+      toast({
+        title: 'Analysis failed',
+        description: error instanceof Error ? error.message : 'Failed to analyze campaigns',
+        variant: 'destructive'
+      });
+    } finally {
+      setAnalyzingCampaigns(false);
+    }
+  };
+  
+  // Import only new emails from selected campaigns
+  const importNewEmailsFromAnalysis = async (campaignIds: string[]) => {
+    setSmartBulkProcessing(true);
+    setBulkProgress({ current: 0, total: campaignIds.length });
+    
+    try {
+      const response = await fetch('/api/admin/manyreach/bulk-analysis', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'import-new-emails',
+          workspace: selectedWorkspace,
+          campaignIds
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Import failed');
+      }
+      
+      const data = await response.json();
+      
+      toast({
+        title: 'Import complete! ✅',
+        description: `Imported ${data.totalImported} new emails from ${campaignIds.length} campaigns`,
+      });
+      
+      // Refresh the analysis
+      await analyzeBulkCampaigns();
+      
+      // Refresh drafts
+      await fetchDrafts();
+      
+    } catch (error) {
+      console.error('Import error:', error);
+      toast({
+        title: 'Import failed',
+        description: error instanceof Error ? error.message : 'Failed to import emails',
+        variant: 'destructive'
+      });
+    } finally {
+      setSmartBulkProcessing(false);
+      setBulkProgress({ current: 0, total: 0 });
+    }
   };
 
   // Smart bulk processing - systematically processes all campaigns with intelligent logic
@@ -872,6 +964,26 @@ export default function ManyReachImportPage() {
                   <CardDescription>Import replies from your email campaigns with smart bulk processing</CardDescription>
                 </div>
                 <div className="flex gap-2">
+                  {/* Check for New Emails - Primary Action */}
+                  <Button
+                    onClick={analyzeBulkCampaigns}
+                    disabled={analyzingCampaigns || campaigns.length === 0}
+                    variant="default"
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    {analyzingCampaigns ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Analyzing...
+                      </>
+                    ) : (
+                      <>
+                        <Search className="mr-2 h-4 w-4" />
+                        Check for New Emails
+                      </>
+                    )}
+                  </Button>
+                  
                   {/* Smart Bulk Processing */}
                   <Button
                     onClick={smartBulkProcessAllCampaigns}
@@ -1066,10 +1178,191 @@ export default function ManyReachImportPage() {
               )}
             </CardContent>
           </Card>
+          
+          {/* Bulk Analysis Results */}
+          {showBulkAnalysis && bulkAnalysisData && (
+            <Card className="mt-4">
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>📊 Email Analysis Results</CardTitle>
+                    <CardDescription>
+                      Found {bulkAnalysisData.totalNewEmails} new emails to import across {bulkAnalysisData.totalCampaigns} campaigns
+                    </CardDescription>
+                  </div>
+                  <div className="flex gap-2">
+                    {bulkAnalysisData.totalNewEmails > 0 && (
+                      <Button
+                        onClick={() => {
+                          const campaignIds = bulkAnalysisData.campaignBreakdown
+                            .filter((c: any) => c.newEmails > 0)
+                            .map((c: any) => c.campaignId);
+                          importNewEmailsFromAnalysis(campaignIds);
+                        }}
+                        disabled={smartBulkProcessing}
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                      >
+                        {smartBulkProcessing ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Importing...
+                          </>
+                        ) : (
+                          <>
+                            <Download className="mr-2 h-4 w-4" />
+                            Import All New Emails
+                          </>
+                        )}
+                      </Button>
+                    )}
+                    <Button
+                      onClick={() => setShowBulkAnalysis(false)}
+                      variant="ghost"
+                      size="sm"
+                    >
+                      <XCircle className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {/* Summary Stats */}
+                <div className="grid grid-cols-3 gap-4 mb-6">
+                  <div className="text-center p-4 bg-green-50 rounded-lg">
+                    <div className="text-2xl font-bold text-green-600">{bulkAnalysisData.totalNewEmails}</div>
+                    <div className="text-sm text-gray-600">New Emails</div>
+                  </div>
+                  <div className="text-center p-4 bg-yellow-50 rounded-lg">
+                    <div className="text-2xl font-bold text-yellow-600">{bulkAnalysisData.totalDuplicates}</div>
+                    <div className="text-sm text-gray-600">Duplicates Avoided</div>
+                  </div>
+                  <div className="text-center p-4 bg-red-50 rounded-lg">
+                    <div className="text-2xl font-bold text-red-600">{bulkAnalysisData.totalIgnored}</div>
+                    <div className="text-sm text-gray-600">Ignored</div>
+                  </div>
+                </div>
+                
+                {/* Campaign Breakdown */}
+                {bulkAnalysisData.campaignBreakdown.length > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-sm text-gray-700">Campaign Details:</h4>
+                    {bulkAnalysisData.campaignBreakdown.map((campaign: any) => (
+                      <div key={campaign.campaignId} className="border rounded-lg p-3">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h5 className="font-medium">{campaign.campaignName}</h5>
+                            <div className="flex gap-4 text-sm text-gray-600 mt-1">
+                              <span className="text-green-600">✅ {campaign.newEmails} new</span>
+                              <span className="text-yellow-600">⚠️ {campaign.duplicates} duplicates</span>
+                              <span className="text-red-600">🚫 {campaign.ignored} ignored</span>
+                            </div>
+                          </div>
+                          {campaign.newEmails > 0 && (
+                            <Button
+                              onClick={() => importNewEmailsFromAnalysis([campaign.campaignId])}
+                              disabled={smartBulkProcessing}
+                              size="sm"
+                              variant="outline"
+                            >
+                              Import {campaign.newEmails}
+                            </Button>
+                          )}
+                        </div>
+                        
+                        {/* Show first few emails */}
+                        {campaign.emails && campaign.emails.length > 0 && (
+                          <div className="mt-2 text-xs text-gray-500">
+                            <details>
+                              <summary className="cursor-pointer hover:text-gray-700">
+                                View emails ({campaign.emails.length})
+                              </summary>
+                              <div className="mt-2 space-y-1">
+                                {campaign.emails.slice(0, 10).map((email: any, idx: number) => (
+                                  <div key={idx} className="flex items-center gap-2">
+                                    <span className={
+                                      email.status === 'new' ? 'text-green-600' :
+                                      email.status === 'duplicate' ? 'text-yellow-600' :
+                                      'text-red-600'
+                                    }>
+                                      {email.status === 'new' ? '✅' :
+                                       email.status === 'duplicate' ? '⚠️' : '🚫'}
+                                    </span>
+                                    <span>{email.email}</span>
+                                    {email.existsInCampaign && (
+                                      <span className="text-gray-400">
+                                        (exists in campaign {email.existsInCampaign})
+                                      </span>
+                                    )}
+                                  </div>
+                                ))}
+                                {campaign.emails.length > 10 && (
+                                  <div className="text-gray-400">...and {campaign.emails.length - 10} more</div>
+                                )}
+                              </div>
+                            </details>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {bulkAnalysisData.totalNewEmails === 0 && (
+                  <div className="text-center py-8">
+                    <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-3" />
+                    <p className="text-lg font-medium">All caught up!</p>
+                    <p className="text-sm text-gray-600 mt-1">No new emails to import. All replies have been processed.</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="drafts">
-          {/* Draft Filters and Bulk Actions - moved from hidden section */}
+          {/* Draft Statistics */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-2xl font-bold">{drafts.length}</div>
+                <div className="text-sm text-gray-600">Total Drafts</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-2xl font-bold text-blue-600">
+                  {drafts.filter(d => (d.edited_data || d.parsed_data)?.hasOffer).length}
+                </div>
+                <div className="text-sm text-gray-600">With Offers</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-2xl font-bold text-green-600">
+                  {drafts.filter(d => {
+                    const data = d.edited_data || d.parsed_data;
+                    return data?.offerings?.some((o: any) => o.basePrice !== null && o.basePrice !== undefined && o.basePrice > 0);
+                  }).length}
+                </div>
+                <div className="text-sm text-gray-600">With Pricing</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-2xl font-bold text-orange-600">
+                  {drafts.filter(d => {
+                    const data = d.edited_data || d.parsed_data;
+                    return data?.hasOffer && data?.offerings?.some((o: any) => 
+                      o.basePrice === null || o.basePrice === undefined
+                    );
+                  }).length}
+                </div>
+                <div className="text-sm text-gray-600">Need Price Info</div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Draft Filters and Bulk Actions */}
           <Card className="mb-4">
             <CardHeader>
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -1077,68 +1370,196 @@ export default function ManyReachImportPage() {
                   <CardTitle>Draft Management</CardTitle>
                   <CardDescription>Filter and manage draft publishers</CardDescription>
                 </div>
-                {selectedDraftIds.length > 0 && (
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={bulkApproveDrafts}
-                      disabled={bulkProcessing}
-                      variant="default"
-                      size="sm"
-                      className="bg-green-600 hover:bg-green-700"
-                    >
-                      {bulkProcessing ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Processing...
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle2 className="mr-2 h-4 w-4" />
-                          Approve {selectedDraftIds.length}
-                        </>
-                      )}
-                    </Button>
-                    <Button
-                      onClick={bulkRejectDrafts}
-                      disabled={bulkProcessing}
-                      variant="outline"
-                      size="sm"
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      <XCircle className="mr-2 h-4 w-4" />
-                      Reject {selectedDraftIds.length}
-                    </Button>
-                    <Button
-                      onClick={() => setSelectedDraftIds([])}
-                      variant="ghost"
-                      size="sm"
-                    >
-                      Clear Selection
-                    </Button>
-                  </div>
-                )}
+                <div className="flex gap-2">
+                  <Button
+                    onClick={exportDraftsToCSV}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Export CSV
+                  </Button>
+                  {selectedDraftIds.length > 0 && (
+                    <>
+                      <Button
+                        onClick={bulkApproveDrafts}
+                        disabled={bulkProcessing}
+                        variant="default"
+                        size="sm"
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        {bulkProcessing ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Processing...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle2 className="mr-2 h-4 w-4" />
+                            Approve {selectedDraftIds.length}
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        onClick={bulkRejectDrafts}
+                        disabled={bulkProcessing}
+                        variant="outline"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <XCircle className="mr-2 h-4 w-4" />
+                        Reject {selectedDraftIds.length}
+                      </Button>
+                      <Button
+                        onClick={() => setSelectedDraftIds([])}
+                        variant="ghost"
+                        size="sm"
+                      >
+                        Clear Selection
+                      </Button>
+                    </>
+                  )}
+                </div>
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-4">
-                <label className="flex items-center">
+            <CardContent className="space-y-4">
+              {/* Basic Filters */}
+              <div>
+                <h4 className="text-sm font-medium mb-2">Basic Filters</h4>
+                <div className="flex flex-wrap gap-4">
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      className="mr-2"
+                      checked={showOnlyWithOffers}
+                      onChange={(e) => setShowOnlyWithOffers(e.target.checked)}
+                    />
+                    <span className="text-sm">Only drafts with offers</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      className="mr-2"
+                      checked={showOnlyWithPricing}
+                      onChange={(e) => setShowOnlyWithPricing(e.target.checked)}
+                    />
+                    <span className="text-sm">Only drafts with pricing</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Offer Type Filter */}
+              <div>
+                <h4 className="text-sm font-medium mb-2">Offer Type</h4>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant={offerTypeFilter === 'all' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setOfferTypeFilter('all')}
+                  >
+                    All Types
+                  </Button>
+                  <Button
+                    variant={offerTypeFilter === 'guest_post' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setOfferTypeFilter('guest_post')}
+                  >
+                    Guest Post
+                  </Button>
+                  <Button
+                    variant={offerTypeFilter === 'link_insertion' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setOfferTypeFilter('link_insertion')}
+                  >
+                    Link Insertion
+                  </Button>
+                  <Button
+                    variant={offerTypeFilter === 'link_exchange' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setOfferTypeFilter('link_exchange')}
+                  >
+                    Link Exchange
+                  </Button>
+                </div>
+              </div>
+
+              {/* Price Range Filter */}
+              <div>
+                <h4 className="text-sm font-medium mb-2">Price Range</h4>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant={priceRangeFilter === 'all' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setPriceRangeFilter('all')}
+                  >
+                    All Prices
+                  </Button>
+                  <Button
+                    variant={priceRangeFilter === '0-100' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setPriceRangeFilter('0-100')}
+                  >
+                    $0-$100
+                  </Button>
+                  <Button
+                    variant={priceRangeFilter === '100-500' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setPriceRangeFilter('100-500')}
+                  >
+                    $100-$500
+                  </Button>
+                  <Button
+                    variant={priceRangeFilter === '500-1000' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setPriceRangeFilter('500-1000')}
+                  >
+                    $500-$1000
+                  </Button>
+                  <Button
+                    variant={priceRangeFilter === '1000+' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setPriceRangeFilter('1000+')}
+                  >
+                    $1000+
+                  </Button>
+                </div>
+              </div>
+
+              {/* Custom Price Range */}
+              <div>
+                <h4 className="text-sm font-medium mb-2">Custom Price Range</h4>
+                <div className="flex gap-2 items-center">
                   <input
-                    type="checkbox"
-                    className="mr-2"
-                    checked={showOnlyWithOffers}
-                    onChange={(e) => setShowOnlyWithOffers(e.target.checked)}
+                    type="number"
+                    placeholder="Min $"
+                    className="w-32 p-2 border rounded-md"
+                    value={minPriceFilter}
+                    onChange={(e) => setMinPriceFilter(parseInt(e.target.value) || 0)}
                   />
-                  <span className="text-sm">Only drafts with offers</span>
-                </label>
-                <label className="flex items-center">
+                  <span className="text-gray-500">to</span>
                   <input
-                    type="checkbox"
-                    className="mr-2"
-                    checked={showOnlyWithPricing}
-                    onChange={(e) => setShowOnlyWithPricing(e.target.checked)}
+                    type="number"
+                    placeholder="Max $"
+                    className="w-32 p-2 border rounded-md"
+                    value={maxPriceFilter}
+                    onChange={(e) => setMaxPriceFilter(parseInt(e.target.value) || 10000)}
                   />
-                  <span className="text-sm">Only drafts with pricing</span>
-                </label>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setMinPriceFilter(0);
+                      setMaxPriceFilter(10000);
+                    }}
+                  >
+                    Reset
+                  </Button>
+                </div>
+              </div>
+
+              {/* Filter Summary */}
+              <div className="text-sm text-gray-600 pt-2 border-t">
+                Showing {filterDrafts(drafts).length} of {drafts.length} drafts
               </div>
             </CardContent>
           </Card>
@@ -1151,6 +1572,10 @@ export default function ManyReachImportPage() {
                 onDraftUpdate={fetchDrafts}
                 showOnlyWithOffers={showOnlyWithOffers}
                 showOnlyWithPricing={showOnlyWithPricing}
+                offerTypeFilter={offerTypeFilter}
+                priceRangeFilter={priceRangeFilter}
+                minPriceFilter={minPriceFilter}
+                maxPriceFilter={maxPriceFilter}
                 selectedDraftIds={selectedDraftIds}
                 onSelectionChange={setSelectedDraftIds}
               />
@@ -1179,232 +1604,6 @@ export default function ManyReachImportPage() {
               )}
             </div>
           </div>
-          
-          {/* OLD CONTENT BELOW - HIDDEN */}
-          <div style={{ display: 'none' }}>
-          {/* Draft Statistics */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-            <Card>
-              <CardContent className="p-4">
-                <div className="text-2xl font-bold">{drafts.length}</div>
-                <div className="text-sm text-gray-600">Total Drafts</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="text-2xl font-bold text-blue-600">
-                  {drafts.filter(d => (d.edited_data || d.parsed_data).hasOffer).length}
-                </div>
-                <div className="text-sm text-gray-600">With Offers</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="text-2xl font-bold text-green-600">
-                  {drafts.filter(d => {
-                    const data = d.edited_data || d.parsed_data;
-                    return data.offerings?.some((o: any) => o.basePrice !== null && o.basePrice !== undefined);
-                  }).length}
-                </div>
-                <div className="text-sm text-gray-600">With Pricing</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="text-2xl font-bold text-orange-600">
-                  {drafts.filter(d => {
-                    const data = d.edited_data || d.parsed_data;
-                    return data.hasOffer && data.offerings?.some((o: any) => 
-                      o.basePrice === null || o.basePrice === undefined
-                    );
-                  }).length}
-                </div>
-                <div className="text-sm text-gray-600">Need Price Info</div>
-              </CardContent>
-            </Card>
-          </div>
-          
-          {/* Draft Filters */}
-          <Card className="mb-4">
-            <CardHeader>
-              <CardTitle>Filter Drafts</CardTitle>
-              <CardDescription>Show only relevant drafts for review</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex gap-4">
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    className="mr-2"
-                    checked={showOnlyWithOffers}
-                    onChange={(e) => setShowOnlyWithOffers(e.target.checked)}
-                  />
-                  <span className="text-sm">Only drafts with offers</span>
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    className="mr-2"
-                    checked={showOnlyWithPricing}
-                    onChange={(e) => setShowOnlyWithPricing(e.target.checked)}
-                  />
-                  <span className="text-sm">Only drafts with pricing</span>
-                </label>
-                <div className="ml-auto text-sm text-gray-600">
-                  Showing {(() => {
-                    const filtered = drafts.filter(draft => {
-                      const data = draft.edited_data || draft.parsed_data;
-                      if (showOnlyWithOffers && !data.hasOffer) return false;
-                      if (showOnlyWithPricing) {
-                        const hasPrice = data.offerings?.some((o: any) => 
-                          o.basePrice !== null && o.basePrice !== undefined
-                        );
-                        if (!hasPrice) return false;
-                      }
-                      return true;
-                    });
-                    return filtered.length;
-                  })()} of {drafts.length} drafts
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-            {/* Draft List */}
-            <div className="col-span-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Draft Publishers</CardTitle>
-                  <CardDescription>Review and approve imported data</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {Array.isArray(drafts) && filterDrafts(drafts).map((draft) => {
-                      const data = draft.edited_data || draft.parsed_data;
-                      return (
-                        <div
-                          key={draft.id}
-                          className={`p-3 border rounded cursor-pointer hover:bg-gray-50 ${
-                            selectedDraft?.id === draft.id ? 'border-blue-500 bg-blue-50' : ''
-                          }`}
-                          onClick={() => setSelectedDraft(draft)}
-                        >
-                          <div className="font-medium">
-                            {data.publisher?.companyName || 'Unknown Publisher'}
-                            {data.extractionMetadata && (
-                              <span className="ml-2 text-xs bg-green-100 text-green-800 px-1 rounded">V3 Simplified</span>
-                            )}
-                          </div>
-                          {data.publisher?.contactName && (
-                            <div className="text-sm text-gray-700">Contact: {data.publisher.contactName}</div>
-                          )}
-                          <div className="text-sm text-gray-600">{draft.email_from}</div>
-                          
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {draft.status === 'pending' && (
-                              <Badge variant="outline" className="text-orange-600">
-                                <AlertCircle className="w-3 h-3 mr-1" />
-                                Pending
-                              </Badge>
-                            )}
-                            {draft.status === 'approved' && (
-                              <Badge variant="outline" className="text-green-600">
-                                <CheckCircle2 className="w-3 h-3 mr-1" />
-                                Approved
-                              </Badge>
-                            )}
-                            {draft.status === 'rejected' && (
-                              <Badge variant="outline" className="text-red-600">
-                                <XCircle className="w-3 h-3 mr-1" />
-                                Rejected
-                              </Badge>
-                            )}
-                            
-                            {data.hasOffer ? (
-                              <>
-                                <Badge variant="outline" className="text-blue-600 bg-blue-50">
-                                  ✅ Has Offer
-                                </Badge>
-                                {data.offerings?.some((o: any) => o.basePrice !== null && o.basePrice !== undefined) && (
-                                  <Badge variant="outline" className="text-green-600 bg-green-50">
-                                    💰 Has Pricing
-                                  </Badge>
-                                )}
-                                {data.offerings?.some((o: any) => o.basePrice === null || o.basePrice === undefined) && (
-                                  <Badge variant="outline" className="text-orange-600 bg-orange-50">
-                                    ❓ Needs Price Info
-                                  </Badge>
-                                )}
-                              </>
-                            ) : (
-                              <Badge variant="outline" className="text-yellow-600 bg-yellow-50">
-                                ⚠️ No Offer
-                              </Badge>
-                            )}
-                            
-                            {!data.hasOffer && data.extractionMetadata?.extractionNotes && (
-                              <Badge variant="outline" className="text-gray-600" title={data.extractionMetadata.extractionNotes}>
-                                📝 {data.extractionMetadata.extractionNotes.substring(0, 30)}...
-                              </Badge>
-                            )}
-                            
-                            {data.websites?.length > 0 && (
-                              <Badge variant="outline" className="text-blue-600">
-                                {data.websites.length} Website{data.websites.length > 1 ? 's' : ''}
-                              </Badge>
-                            )}
-                            
-                            {data.extractionMetadata?.confidence > 0 && (
-                              <Badge variant="outline" className="text-gray-600">
-                                {Math.round(data.extractionMetadata.confidence * 100)}% Confidence
-                              </Badge>
-                            )}
-                          </div>
-                          
-                          {data.extractionMetadata?.keyQuotes?.[0] && (
-                            <div className="text-xs text-gray-500 mt-1 italic">
-                              "{data.extractionMetadata.keyQuotes[0].substring(0, 50)}..."
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                    
-                    {(!Array.isArray(drafts) || drafts.length === 0) && (
-                      <div className="text-center py-8 text-gray-500">
-                        No drafts yet. Import some campaigns first.
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Draft Editor */}
-            <div className="col-span-8">
-              {selectedDraft ? (
-                <DraftEditor
-                  draft={selectedDraft}
-                  onUpdate={(updates) => updateDraft(selectedDraft.id, updates)}
-                  onReprocess={() => reprocessDraft(selectedDraft.id)}
-                  onDelete={() => {
-                    setSelectedDraft(null);
-                    fetchDrafts(); // Refresh the draft list
-                  }}
-                />
-              ) : (
-                <Card>
-                  <CardContent className="py-16">
-                    <div className="text-center text-gray-500">
-                      Select a draft to review
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          </div>
-          </div> {/* Close hidden div */}
         </TabsContent>
       </Tabs>
     </div>

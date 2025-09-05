@@ -15,7 +15,12 @@ import {
   Eye,
   EyeOff,
   Loader2,
-  Mail
+  Mail,
+  Search,
+  CheckSquare,
+  Square,
+  Activity,
+  History
 } from 'lucide-react';
 
 interface CampaignStatus {
@@ -28,6 +33,7 @@ interface CampaignStatus {
   totalImported: number;
   totalIgnored: number;
   newReplies?: number;
+  lastAnalyzedAt?: string;
 }
 
 interface ImportProgress {
@@ -41,15 +47,18 @@ interface ImportProgress {
 
 interface CampaignStatusViewProps {
   workspace?: string;
+  onAnalyze?: (campaignIds: string[]) => void;
 }
 
-export function CampaignStatusView({ workspace = 'main' }: CampaignStatusViewProps) {
+export function CampaignStatusView({ workspace = 'main', onAnalyze }: CampaignStatusViewProps) {
   const [campaigns, setCampaigns] = useState<CampaignStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [importing, setImporting] = useState<string | null>(null);
   const [summary, setSummary] = useState<any>(null);
   const [importProgress, setImportProgress] = useState<ImportProgress | null>(null);
   const [notifications, setNotifications] = useState<string[]>([]);
+  const [selectedCampaigns, setSelectedCampaigns] = useState<Set<string>>(new Set());
+  const [analyzing, setAnalyzing] = useState(false);
   const pollingInterval = useRef<NodeJS.Timeout | null>(null);
   const refreshInterval = useRef<NodeJS.Timeout | null>(null);
 
@@ -226,6 +235,78 @@ export function CampaignStatusView({ workspace = 'main' }: CampaignStatusViewPro
     return date.toLocaleDateString();
   };
 
+  const handleCampaignToggle = (campaignId: string) => {
+    setSelectedCampaigns(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(campaignId)) {
+        newSet.delete(campaignId);
+      } else {
+        newSet.add(campaignId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectedCampaigns.size === campaigns.length) {
+      setSelectedCampaigns(new Set());
+    } else {
+      setSelectedCampaigns(new Set(campaigns.map(c => c.campaignId)));
+    }
+  };
+
+  const handleSelectWithActivity = () => {
+    const withActivity = campaigns.filter(c => (c.newReplies || 0) > 0);
+    setSelectedCampaigns(new Set(withActivity.map(c => c.campaignId)));
+  };
+
+  const handleSelectUnchecked = () => {
+    const unchecked = campaigns.filter(c => !c.lastAnalyzedAt);
+    setSelectedCampaigns(new Set(unchecked.map(c => c.campaignId)));
+  };
+
+  const handleAnalyzeSelected = async () => {
+    if (selectedCampaigns.size === 0) {
+      setNotifications(prev => [...prev, '⚠️ Please select at least one campaign to analyze']);
+      setTimeout(() => {
+        setNotifications(prev => prev.filter(n => !n.includes('Please select')));
+      }, 3000);
+      return;
+    }
+
+    setAnalyzing(true);
+    const campaignIds = Array.from(selectedCampaigns);
+    
+    try {
+      const response = await fetch(`/api/admin/manyreach/bulk-analysis?workspace=${workspace}&campaignIds=${campaignIds.join(',')}`);
+      const data = await response.json();
+      
+      if (onAnalyze) {
+        onAnalyze(campaignIds);
+      }
+      
+      // Show success notification
+      const message = `✅ Analysis complete: ${data.analysis.totalNewEmails} new emails found across ${campaignIds.length} campaigns`;
+      setNotifications(prev => [...prev, message]);
+      setTimeout(() => {
+        setNotifications(prev => prev.filter(n => n !== message));
+      }, 5000);
+      
+      // Refresh to update last analyzed timestamps
+      await fetchCampaignStatus();
+      
+    } catch (error) {
+      console.error('Analysis error:', error);
+      const message = '❌ Failed to analyze campaigns';
+      setNotifications(prev => [...prev, message]);
+      setTimeout(() => {
+        setNotifications(prev => prev.filter(n => n !== message));
+      }, 3000);
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -353,6 +434,73 @@ export function CampaignStatusView({ workspace = 'main' }: CampaignStatusViewPro
               </Button>
             </div>
           </div>
+          
+          {/* Smart Selection Buttons */}
+          {campaigns.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSelectAll}
+              >
+                {selectedCampaigns.size === campaigns.length ? (
+                  <>
+                    <Square className="h-3 w-3 mr-2" />
+                    Deselect All
+                  </>
+                ) : (
+                  <>
+                    <CheckSquare className="h-3 w-3 mr-2" />
+                    Select All
+                  </>
+                )}
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSelectWithActivity}
+                disabled={campaigns.filter(c => (c.newReplies || 0) > 0).length === 0}
+              >
+                <Activity className="h-3 w-3 mr-2" />
+                Select with Activity ({campaigns.filter(c => (c.newReplies || 0) > 0).length})
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSelectUnchecked}
+                disabled={campaigns.filter(c => !c.lastAnalyzedAt).length === 0}
+              >
+                <History className="h-3 w-3 mr-2" />
+                Select Unchecked ({campaigns.filter(c => !c.lastAnalyzedAt).length})
+              </Button>
+              
+              {selectedCampaigns.size > 0 && (
+                <>
+                  <div className="flex-1" />
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={handleAnalyzeSelected}
+                    disabled={analyzing}
+                  >
+                    {analyzing ? (
+                      <>
+                        <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                        Analyzing {selectedCampaigns.size} campaigns...
+                      </>
+                    ) : (
+                      <>
+                        <Search className="h-3 w-3 mr-2" />
+                        Analyze Selected ({selectedCampaigns.size})
+                      </>
+                    )}
+                  </Button>
+                </>
+              )}
+            </div>
+          )}
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
@@ -364,18 +512,39 @@ export function CampaignStatusView({ workspace = 'main' }: CampaignStatusViewPro
               campaigns.map((campaign) => (
                 <div 
                   key={campaign.campaignId}
-                  className="border rounded-lg p-4 hover:bg-gray-50"
+                  className={`border rounded-lg p-4 transition-colors ${
+                    selectedCampaigns.has(campaign.campaignId) ? 'bg-blue-50 border-blue-300' : 'hover:bg-gray-50'
+                  }`}
                 >
                   <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-medium">{campaign.campaignName}</h3>
-                        {campaign.newReplies && campaign.newReplies > 0 && (
-                          <Badge variant="default" className="bg-green-600">
-                            {campaign.newReplies} new
-                          </Badge>
+                    <div className="flex items-start gap-3 flex-1">
+                      {/* Checkbox */}
+                      <button
+                        onClick={() => handleCampaignToggle(campaign.campaignId)}
+                        className="mt-1 focus:outline-none"
+                      >
+                        {selectedCampaigns.has(campaign.campaignId) ? (
+                          <CheckSquare className="h-5 w-5 text-blue-600" />
+                        ) : (
+                          <Square className="h-5 w-5 text-gray-400 hover:text-gray-600" />
                         )}
-                      </div>
+                      </button>
+                      
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-medium">{campaign.campaignName}</h3>
+                          {campaign.newReplies && campaign.newReplies > 0 && (
+                            <Badge variant="default" className="bg-green-600">
+                              {campaign.newReplies} new
+                            </Badge>
+                          )}
+                          {campaign.lastAnalyzedAt && (
+                            <Badge variant="outline" className="text-xs">
+                              <History className="h-3 w-3 mr-1" />
+                              Checked {formatDate(campaign.lastAnalyzedAt)}
+                            </Badge>
+                          )}
+                        </div>
                       
                       <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
                         <span>
@@ -397,9 +566,18 @@ export function CampaignStatusView({ workspace = 'main' }: CampaignStatusViewPro
                         )}
                       </div>
                       
-                      <div className="flex items-center gap-1 mt-1 text-xs text-gray-500">
-                        <Clock className="h-3 w-3" />
-                        Last import: {formatDate(campaign.lastImportAt)}
+                        <div className="flex items-center gap-4 mt-1 text-xs text-gray-500">
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            Last import: {formatDate(campaign.lastImportAt)}
+                          </span>
+                          {campaign.lastAnalyzedAt && (
+                            <span className="flex items-center gap-1">
+                              <Search className="h-3 w-3" />
+                              Last analyzed: {formatDate(campaign.lastAnalyzedAt)}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                     

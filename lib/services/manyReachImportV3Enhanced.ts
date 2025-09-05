@@ -45,6 +45,7 @@ interface CampaignStatus {
   totalImported: number;
   totalIgnored: number;
   newReplies?: number;
+  lastAnalyzedAt?: Date;
 }
 
 export class ManyReachImportV3Enhanced {
@@ -91,7 +92,15 @@ export class ManyReachImportV3Enhanced {
       );
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch campaigns: ${response.statusText}`);
+        const errorText = await response.text();
+        console.error('ManyReach API error:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText,
+          url: `${this.baseUrl}/campaigns`,
+          apiKeyLength: this.apiKey?.length
+        });
+        throw new Error(`Failed to fetch campaigns: ${response.statusText} - ${errorText}`);
       }
 
       const data = await response.json();
@@ -145,6 +154,22 @@ export class ManyReachImportV3Enhanced {
 
       const ignoredCount = (ignoredResult as any).rows?.[0]?.ignored_count || 0;
 
+      // Get last analysis date (optional - table might not exist yet)
+      let lastAnalyzedAt = null;
+      try {
+        const analysisResult = await db.execute(sql`
+          SELECT MAX(analyzed_at) as last_analyzed_at
+          FROM campaign_analysis_history
+          WHERE workspace = ${this.workspaceName}
+            AND ${campaignId} = ANY(campaigns_analyzed)
+          LIMIT 1
+        `);
+        lastAnalyzedAt = (analysisResult as any).rows?.[0]?.last_analyzed_at;
+      } catch (error) {
+        // Table might not exist yet, that's ok
+        console.log('Note: campaign_analysis_history table not found, skipping last analysis date');
+      }
+
       // Count new replies since last import
       let newReplies = 0;
       if (tracking?.last_import_at) {
@@ -188,7 +213,8 @@ export class ManyReachImportV3Enhanced {
         lastImportAt: tracking?.last_import_at,
         totalImported: tracking?.total_imported || 0,
         totalIgnored: ignoredCount,
-        newReplies
+        newReplies,
+        lastAnalyzedAt
       };
     } catch (error) {
       console.error('Error getting campaign status:', error);
@@ -215,6 +241,197 @@ export class ManyReachImportV3Enhanced {
     } catch (error) {
       console.error('Error getting all campaign statuses:', error);
       return [];
+    }
+  }
+
+  /**
+   * Analyze campaigns for new emails that need processing
+   * Returns a detailed breakdown of what needs to be imported
+   * @param campaignIds - Optional array of specific campaign IDs to analyze. If not provided, analyzes all campaigns.
+   */
+  async analyzeBulkCampaigns(campaignIds?: string[]): Promise<{
+    totalCampaigns: number;
+    totalNewEmails: number;
+    totalDuplicates: number;
+    totalIgnored: number;
+    campaignBreakdown: Array<{
+      campaignId: string;
+      campaignName: string;
+      newEmails: number;
+      duplicates: number;
+      ignored: number;
+      emails: Array<{
+        email: string;
+        status: 'new' | 'duplicate' | 'ignored';
+        existsInCampaign?: string;
+      }>;
+    }>;
+  }> {
+    try {
+      console.log('🔍 Starting bulk campaign analysis...');
+      
+      let campaigns = await this.getCampaigns();
+      
+      // Filter campaigns if specific IDs provided
+      if (campaignIds && campaignIds.length > 0) {
+        campaigns = campaigns.filter((c: any) => 
+          campaignIds.includes(c.campaignID?.toString())
+        );
+        console.log(`📝 Analyzing ${campaigns.length} selected campaigns (out of ${campaignIds.length} requested)`);
+      } else {
+        console.log(`📝 Analyzing all ${campaigns.length} campaigns`);
+      }
+      
+      const result = {
+        totalCampaigns: campaigns.length,
+        totalNewEmails: 0,
+        totalDuplicates: 0,
+        totalIgnored: 0,
+        campaignBreakdown: [] as any[]
+      };
+
+      // Build a global email map to detect cross-campaign duplicates
+      const globalEmailMap = new Map<string, string>(); // email -> first campaign ID
+      
+      // First pass: get all existing emails in database
+      const existingEmails = await db.execute(sql`
+        SELECT DISTINCT email_from, campaign_id 
+        FROM email_processing_logs
+        WHERE workspace_name = ${this.workspaceName}
+          AND import_status = 'imported'
+      `);
+      
+      for (const row of (existingEmails as any).rows || []) {
+        if (!globalEmailMap.has(row.email_from)) {
+          globalEmailMap.set(row.email_from, row.campaign_id);
+        }
+      }
+
+      // Get all ignored emails
+      const ignoredEmails = await db.execute(sql`
+        SELECT email, campaign_id, scope 
+        FROM manyreach_ignored_emails
+        WHERE workspace_name = ${this.workspaceName}
+           OR scope = 'global'
+      `);
+      
+      const ignoredSet = new Set((ignoredEmails as any).rows?.map((r: any) => r.email) || []);
+
+      // Analyze each campaign
+      for (const campaign of campaigns) {
+        const campaignAnalysis = {
+          campaignId: campaign.campaignID,
+          campaignName: campaign.name,
+          newEmails: 0,
+          duplicates: 0,
+          ignored: 0,
+          emails: [] as any[]
+        };
+
+        // Get prospects marked as replied
+        await this.ensureApiKey();
+        const prospectsResponse = await fetch(
+          `${this.baseUrl}/campaigns/${campaign.campaignID}/prospects?apikey=${this.apiKey}`,
+          {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+          }
+        );
+
+        if (prospectsResponse.ok) {
+          const prospectsData = await prospectsResponse.json();
+          const prospects = (prospectsData.data || []).filter((p: any) => p.replied === true);
+
+          for (const prospect of prospects) {
+            const email = prospect.email;
+            
+            if (ignoredSet.has(email)) {
+              campaignAnalysis.ignored++;
+              campaignAnalysis.emails.push({
+                email,
+                status: 'ignored'
+              });
+            } else if (globalEmailMap.has(email)) {
+              campaignAnalysis.duplicates++;
+              campaignAnalysis.emails.push({
+                email,
+                status: 'duplicate',
+                existsInCampaign: globalEmailMap.get(email)
+              });
+            } else {
+              campaignAnalysis.newEmails++;
+              campaignAnalysis.emails.push({
+                email,
+                status: 'new'
+              });
+              // Add to map for future duplicate detection
+              globalEmailMap.set(email, campaign.campaignID);
+            }
+          }
+        }
+
+        result.totalNewEmails += campaignAnalysis.newEmails;
+        result.totalDuplicates += campaignAnalysis.duplicates;
+        result.totalIgnored += campaignAnalysis.ignored;
+        
+        if (campaignAnalysis.newEmails > 0 || campaignAnalysis.duplicates > 0) {
+          result.campaignBreakdown.push(campaignAnalysis);
+        }
+      }
+
+      // Sort by new emails count
+      result.campaignBreakdown.sort((a, b) => b.newEmails - a.newEmails);
+
+      console.log(`✅ Analysis complete: ${result.totalNewEmails} new emails across ${result.totalCampaigns} campaigns`);
+      
+      // Save analysis history
+      try {
+        const analyzedCampaignIds = result.campaignBreakdown.map(c => c.campaignId);
+        await db.execute(sql`
+          INSERT INTO campaign_analysis_history (
+            workspace,
+            campaign_id,
+            campaign_name,
+            analyzed_at,
+            total_emails_checked,
+            new_emails_found,
+            duplicates_found,
+            ignored_emails,
+            campaigns_analyzed,
+            analysis_type,
+            analysis_metadata
+          ) VALUES (
+            ${this.workspaceName},
+            ${analyzedCampaignIds.join(',')},
+            ${result.campaignBreakdown.map(c => c.campaignName).join(', ')},
+            NOW(),
+            ${result.totalNewEmails + result.totalDuplicates + result.totalIgnored},
+            ${result.totalNewEmails},
+            ${result.totalDuplicates},
+            ${result.totalIgnored},
+            ${sql.raw(`ARRAY[${analyzedCampaignIds.map(id => `'${id}'`).join(',')}]::TEXT[]`)},
+            'manual',
+            ${JSON.stringify({
+              selectedCampaigns: campaignIds || 'all',
+              breakdown: result.campaignBreakdown.map(c => ({
+                campaignId: c.campaignId,
+                newEmails: c.newEmails,
+                duplicates: c.duplicates,
+                ignored: c.ignored
+              }))
+            })}::JSONB
+          )
+        `);
+        console.log('📝 Analysis history saved');
+      } catch (historyError) {
+        console.error('Failed to save analysis history:', historyError);
+        // Don't throw - history tracking is secondary
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Error analyzing bulk campaigns:', error);
+      throw error;
     }
   }
 

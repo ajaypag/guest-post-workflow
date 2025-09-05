@@ -232,10 +232,14 @@ export async function POST(request: NextRequest) {
       const targetUrl = targetConfig?.targetUrl || domain.suggestedTargetUrl || vettedTargetUrl || '';
       const anchorText = targetConfig?.anchorText || '';
 
+      // Get the target page ID if available
+      const targetPageId = targetPagesMap[domain.id]?.[0]?.id || null;
+
       // Create line item
       const lineItemData: NewOrderLineItem = {
         orderId,
         clientId: clientId as string,
+        targetPageId: targetPageId as string | undefined,
         addedBy: session.userId,
         status: 'draft' as const,
         estimatedPrice: pricing.retail,

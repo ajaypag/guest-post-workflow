@@ -18,6 +18,10 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || '';
     const withOffers = searchParams.get('withOffers') === 'true';
     const withPricing = searchParams.get('withPricing') === 'true';
+    const offerType = searchParams.get('offerType') || 'all';
+    const priceRange = searchParams.get('priceRange') || 'all';
+    const minPrice = parseInt(searchParams.get('minPrice') || '0');
+    const maxPrice = parseInt(searchParams.get('maxPrice') || '10000');
 
     // Build query
     let query = sql`
@@ -72,6 +76,52 @@ export async function GET(request: NextRequest) {
            WHERE (offering->>'basePrice')::numeric > 0
          ))
       )`);
+    }
+
+    // Filter by offer type
+    if (offerType !== 'all') {
+      const offerTypeMap: Record<string, string> = {
+        'guest_post': 'Guest Post',
+        'link_insertion': 'Link Insertion',
+        'link_exchange': 'Link Exchange'
+      };
+      const mappedType = offerTypeMap[offerType];
+      if (mappedType) {
+        conditions.push(sql`(
+          EXISTS (
+            SELECT 1 FROM jsonb_array_elements(COALESCE(d.edited_data->'offerings', d.parsed_data->'offerings')) AS offering
+            WHERE offering->>'type' = ${mappedType}
+          )
+        )`);
+      }
+    }
+
+    // Filter by price range
+    if (priceRange !== 'all' || (minPrice > 0 || maxPrice < 10000)) {
+      let priceCondition;
+      if (priceRange !== 'all') {
+        const rangeMap: Record<string, [number, number]> = {
+          '0-100': [0, 100],
+          '100-500': [100, 500],
+          '500-1000': [500, 1000],
+          '1000+': [1000, 999999]
+        };
+        const [rangeMin, rangeMax] = rangeMap[priceRange] || [minPrice, maxPrice];
+        priceCondition = sql`(
+          EXISTS (
+            SELECT 1 FROM jsonb_array_elements(COALESCE(d.edited_data->'offerings', d.parsed_data->'offerings')) AS offering
+            WHERE (offering->>'basePrice')::numeric >= ${rangeMin} AND (offering->>'basePrice')::numeric <= ${rangeMax}
+          )
+        )`;
+      } else {
+        priceCondition = sql`(
+          EXISTS (
+            SELECT 1 FROM jsonb_array_elements(COALESCE(d.edited_data->'offerings', d.parsed_data->'offerings')) AS offering
+            WHERE (offering->>'basePrice')::numeric >= ${minPrice} AND (offering->>'basePrice')::numeric <= ${maxPrice}
+          )
+        )`;
+      }
+      conditions.push(priceCondition);
     }
 
     if (conditions.length > 0) {

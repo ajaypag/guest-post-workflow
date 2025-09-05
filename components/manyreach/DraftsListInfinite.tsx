@@ -36,6 +36,10 @@ interface DraftsListInfiniteProps {
   onDraftUpdate?: () => void;
   showOnlyWithOffers?: boolean;
   showOnlyWithPricing?: boolean;
+  offerTypeFilter?: 'all' | 'guest_post' | 'link_insertion' | 'link_exchange';
+  priceRangeFilter?: 'all' | '0-100' | '100-500' | '500-1000' | '1000+';
+  minPriceFilter?: number;
+  maxPriceFilter?: number;
   selectedDraftIds?: string[];
   onSelectionChange?: (selectedIds: string[]) => void;
 }
@@ -45,6 +49,10 @@ export function DraftsListInfinite({
   onDraftUpdate,
   showOnlyWithOffers = false,
   showOnlyWithPricing = false,
+  offerTypeFilter = 'all',
+  priceRangeFilter = 'all',
+  minPriceFilter = 0,
+  maxPriceFilter = 10000,
   selectedDraftIds = [],
   onSelectionChange
 }: DraftsListInfiniteProps) {
@@ -80,7 +88,11 @@ export function DraftsListInfinite({
         ...(search && { search }),
         ...(statusFilter !== 'all' && { status: statusFilter }),
         ...(showOnlyWithOffers && { withOffers: 'true' }),
-        ...(showOnlyWithPricing && { withPricing: 'true' })
+        ...(showOnlyWithPricing && { withPricing: 'true' }),
+        ...(offerTypeFilter !== 'all' && { offerType: offerTypeFilter }),
+        ...(priceRangeFilter !== 'all' && { priceRange: priceRangeFilter }),
+        ...(minPriceFilter > 0 && { minPrice: minPriceFilter.toString() }),
+        ...(maxPriceFilter < 10000 && { maxPrice: maxPriceFilter.toString() })
       });
       
       const response = await fetch(`/api/admin/manyreach/drafts?${params}`);
@@ -105,12 +117,12 @@ export function DraftsListInfinite({
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [drafts.length, hasMore, offset, search, statusFilter, showOnlyWithOffers, showOnlyWithPricing]);
+  }, [drafts.length, hasMore, offset, search, statusFilter, showOnlyWithOffers, showOnlyWithPricing, offerTypeFilter, priceRangeFilter, minPriceFilter, maxPriceFilter]);
 
   // Initial load
   useEffect(() => {
     fetchDrafts(true);
-  }, [search, statusFilter, showOnlyWithOffers, showOnlyWithPricing]);
+  }, [search, statusFilter, showOnlyWithOffers, showOnlyWithPricing, offerTypeFilter, priceRangeFilter, minPriceFilter, maxPriceFilter]);
 
   // Search debounce
   useEffect(() => {

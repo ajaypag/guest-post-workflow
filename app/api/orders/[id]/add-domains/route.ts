@@ -308,11 +308,15 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       const vettedTargetUrl = targetPagesMap[domain.id]?.[0]?.url || null;
       const targetUrl = targetConfig?.targetUrl || domain.suggestedTargetUrl || vettedTargetUrl || '';
       const anchorText = targetConfig?.anchorText || '';
+      
+      // Get the target page ID if available
+      const targetPageId = targetPagesMap[domain.id]?.[0]?.id || null;
 
       // Create line item with publisher attribution
       const lineItemData: NewOrderLineItem = {
         orderId,
         clientId: (domain.clientId || existingLineItems[0]?.clientId || existingOrder.accountId) as string,
+        targetPageId: targetPageId as string | undefined,
         addedBy: session.userId,
         status: 'draft' as const,
         estimatedPrice: pricing.retail,
