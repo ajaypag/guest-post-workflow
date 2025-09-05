@@ -3002,7 +3002,10 @@ export default function InternalOrderManagementPage() {
                   canViewInternalTools: true,
                   canViewPricing: true,
                   canEditDomainAssignments: true,
-                  canSetExclusionReason: true
+                  canSetExclusionReason: true,
+                  canViewPublishedUrls: ['paid', 'in_progress', 'completed'].includes(order.status) ||
+                                      ['payment_received', 'workflows_generated', 'in_progress'].includes(order.state || '')
+                                      // Show published URLs only after payment/workflows triggered
                 }}
                 onRefresh={handleRefresh || loadOrder}
                 onChangeStatus={handleChangeLineItemStatus}

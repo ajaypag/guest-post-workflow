@@ -1323,7 +1323,9 @@ export default function OrderDetailPage() {
                     canViewPricing: true,                              // All users can see pricing
                     canEditPricing: user?.userType === 'internal',    // Only internal users can edit pricing
                     canAssignTargetPages: user?.userType === 'internal',
-                    canViewPublishedUrls: false                       // Hide published URLs for external users
+                    canViewPublishedUrls: ['paid', 'in_progress', 'completed'].includes(order.status) ||
+                                        ['payment_received', 'workflows_generated', 'in_progress'].includes(order.state || '')
+                                        // Show published URLs only after payment/workflows triggered
                   }}
                   onEditItem={async (itemId, updates) => {
                     await handleEditSubmission(itemId, '', updates);
