@@ -4,6 +4,7 @@ import { db } from '@/lib/db/connection';
 import { orders } from '@/lib/db/orderSchema';
 import { orderLineItems, lineItemChanges, type NewOrderLineItem } from '@/lib/db/orderLineItemSchema';
 import { bulkAnalysisDomains } from '@/lib/db/bulkAnalysisSchema';
+import { websites } from '@/lib/db/websiteSchema';
 import { accounts, clients, targetPages } from '@/lib/db/schema';
 import { eq, inArray } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
@@ -56,6 +57,19 @@ export async function POST(request: NextRequest) {
         suggestedTargetUrl: bulkAnalysisDomains.suggestedTargetUrl,
         targetMatchData: bulkAnalysisDomains.targetMatchData,
         targetPageIds: bulkAnalysisDomains.targetPageIds,
+        // Add AI qualification fields
+        qualificationStatus: bulkAnalysisDomains.qualificationStatus,
+        overlapStatus: bulkAnalysisDomains.overlapStatus,
+        authorityDirect: bulkAnalysisDomains.authorityDirect,
+        authorityRelated: bulkAnalysisDomains.authorityRelated,
+        topicScope: bulkAnalysisDomains.topicScope,
+        topicReasoning: bulkAnalysisDomains.topicReasoning,
+        aiQualificationReasoning: bulkAnalysisDomains.aiQualificationReasoning,
+        evidence: bulkAnalysisDomains.evidence,
+        targetMatchedAt: bulkAnalysisDomains.targetMatchedAt,
+        hasDataForSeoResults: bulkAnalysisDomains.hasDataForSeoResults,
+        dataForSeoResultsCount: bulkAnalysisDomains.dataForSeoResultsCount,
+        keywordCount: bulkAnalysisDomains.keywordCount,
       })
       .from(bulkAnalysisDomains)
       .where(inArray(bulkAnalysisDomains.id, domainIds));
@@ -65,6 +79,27 @@ export async function POST(request: NextRequest) {
         { error: 'No valid domains found' },
         { status: 400 }
       );
+    }
+
+    // Create a map for website metrics (will be populated if we can fetch them)
+    const metricsMap = new Map<string, { domainRating: number | null; traffic: number | null }>();
+    
+    // Try to fetch website metrics - this is optional and won't break if it fails
+    try {
+      for (const domain of selectedDomains) {
+        const websiteRecord = await db.query.websites.findFirst({
+          where: eq(websites.domain, domain.domain)
+        });
+        
+        if (websiteRecord) {
+          metricsMap.set(domain.domain, {
+            domainRating: websiteRecord.domainRating,
+            traffic: websiteRecord.totalTraffic,
+          });
+        }
+      }
+    } catch (metricsError) {
+      console.log('Could not fetch website metrics, continuing without them:', metricsError);
     }
 
     // Fetch target pages for domains that have targetPageIds (to get vetted URLs)
@@ -250,9 +285,36 @@ export async function POST(request: NextRequest) {
         targetPageUrl: targetUrl as string,
         anchorText: anchorText as string,
         metadata: {
+          // Existing fields
           bulkAnalysisProjectId: domain.projectId || undefined,
           internalNotes: `Quick order from vetted sites`,
-        },
+          
+          // Add DR/Traffic from websites table
+          domainRating: metricsMap.get(domain.domain)?.domainRating || null,
+          traffic: metricsMap.get(domain.domain)?.traffic || null,
+          
+          // Add AI qualification data
+          domainQualificationStatus: domain.qualificationStatus,
+          overlapStatus: domain.overlapStatus,
+          authorityDirect: domain.authorityDirect,
+          authorityRelated: domain.authorityRelated,
+          topicScope: domain.topicScope,
+          topicReasoning: domain.topicReasoning,
+          aiQualificationReasoning: domain.aiQualificationReasoning,
+          
+          // Add evidence
+          evidence: domain.evidence,
+          
+          // Add target matching
+          suggestedTargetUrl: domain.suggestedTargetUrl,
+          targetMatchData: domain.targetMatchData,
+          targetMatchedAt: domain.targetMatchedAt,
+          
+          // Add DataForSeo flags
+          hasDataForSeoResults: domain.hasDataForSeoResults,
+          dataForSeoResultsCount: domain.dataForSeoResultsCount,
+          keywordCount: domain.keywordCount,
+        } as any,
       };
 
       const [createdLineItem] = await db.insert(orderLineItems).values(lineItemData).returning();

@@ -533,6 +533,9 @@ export function CampaignStatusView({ workspace = 'main', onAnalyze }: CampaignSt
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <h3 className="font-medium">{campaign.campaignName}</h3>
+                          <Badge variant="secondary" className="text-xs">
+                            {(campaign as any).workspaceDisplay || (campaign as any).workspace || campaign.workspace}
+                          </Badge>
                           {campaign.newReplies && campaign.newReplies > 0 && (
                             <Badge variant="default" className="bg-green-600">
                               {campaign.newReplies} new

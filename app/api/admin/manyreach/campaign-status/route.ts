@@ -10,12 +10,63 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const workspace = searchParams.get('workspace') || 'main';
+    const workspace = searchParams.get('workspace');
     const campaignId = searchParams.get('campaignId');
 
     console.log('📊 Campaign status request:', { workspace, campaignId });
 
     try {
+      // If workspace is 'all' or not specified, fetch from all workspaces
+      if (!workspace || workspace === 'all') {
+        // Fetch all active workspaces
+        const response = await fetch(`${request.nextUrl.origin}/api/admin/manyreach-keys`, {
+          headers: request.headers
+        });
+        const data = await response.json();
+        const activeWorkspaces = (data.workspaces || []).filter((ws: any) => ws.is_active);
+        
+        // Fetch statuses from all active workspaces in parallel
+        const allStatusesPromises = activeWorkspaces.map(async (ws: any) => {
+          try {
+            const importer = new ManyReachImportV3Enhanced(ws.workspace_name);
+            const statuses = await importer.getAllCampaignStatuses();
+            // Add workspace info to each status
+            return statuses.map(status => ({
+              ...status,
+              workspace: ws.workspace_name,
+              workspaceDisplay: ws.name || ws.workspace_name
+            }));
+          } catch (error) {
+            console.error(`Error fetching status from workspace ${ws.workspace_name}:`, error);
+            return [];
+          }
+        });
+        
+        const allStatusesNested = await Promise.all(allStatusesPromises);
+        const allStatuses = allStatusesNested.flat();
+        
+        // Sort by new replies (descending) then by name
+        allStatuses.sort((a, b) => {
+          if (a.newReplies !== b.newReplies) {
+            return (b.newReplies || 0) - (a.newReplies || 0);
+          }
+          return a.campaignName.localeCompare(b.campaignName);
+        });
+
+        return NextResponse.json({ 
+          workspace: 'all',
+          campaigns: allStatuses,
+          summary: {
+            totalCampaigns: allStatuses.length,
+            campaignsWithNewReplies: allStatuses.filter(s => (s.newReplies || 0) > 0).length,
+            totalNewReplies: allStatuses.reduce((sum, s) => sum + (s.newReplies || 0), 0),
+            totalImported: allStatuses.reduce((sum, s) => sum + s.totalImported, 0),
+            totalIgnored: allStatuses.reduce((sum, s) => sum + s.totalIgnored, 0)
+          }
+        });
+      }
+
+      // Single workspace logic
       const importer = new ManyReachImportV3Enhanced(workspace);
 
       if (campaignId) {
@@ -28,7 +79,7 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({ status });
       } else {
-        // Get status for all campaigns
+        // Get status for all campaigns in the workspace
         const statuses = await importer.getAllCampaignStatuses();
         
         // Sort by new replies (descending) then by name

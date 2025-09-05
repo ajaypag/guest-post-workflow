@@ -37,6 +37,9 @@ interface Campaign {
   draftCount: number;
   pendingCount: number;
   approvedCount: number;
+  campaignId?: string;
+  workspace?: string;
+  workspaceDisplay?: string;
 }
 
 interface Draft {
@@ -63,9 +66,7 @@ export default function ManyReachImportPage() {
   const [clearing, setClearing] = useState(false);
   const [activeTab, setActiveTab] = useState('status');
   
-  // Workspace and email processing controls
-  const [workspaces, setWorkspaces] = useState<{workspace_name: string; is_active: boolean}[]>([]);
-  const [selectedWorkspace, setSelectedWorkspace] = useState<string>('main');
+  // Email processing controls
   const [emailLimit, setEmailLimit] = useState<number>(10);
   const [unlimitedEmails, setUnlimitedEmails] = useState<boolean>(false);
   const [onlyReplied, setOnlyReplied] = useState<boolean>(true);
@@ -172,7 +173,7 @@ export default function ManyReachImportPage() {
     setBulkAnalysisData(null);
     
     try {
-      const response = await fetch(`/api/admin/manyreach/bulk-analysis?workspace=${selectedWorkspace}`);
+      const response = await fetch('/api/admin/manyreach/bulk-analysis?workspace=all');
       
       if (!response.ok) {
         throw new Error('Failed to analyze campaigns');
@@ -216,7 +217,7 @@ export default function ManyReachImportPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'import-new-emails',
-          workspace: selectedWorkspace,
+          workspace: 'all',
           campaignIds
         })
       });
@@ -311,7 +312,7 @@ export default function ManyReachImportPage() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
               campaignId: campaign.id,
-              workspaceName: selectedWorkspace,
+              workspaceName: campaign.workspace || 'main',
               limit: unlimitedEmails ? null : emailLimit,
               onlyReplied,
               previewMode
@@ -356,35 +357,14 @@ export default function ManyReachImportPage() {
   };
 
   useEffect(() => {
-    fetchWorkspaces();
+    fetchCampaigns();
     fetchDrafts();
   }, []);
-
-  useEffect(() => {
-    if (selectedWorkspace) {
-      fetchCampaigns();
-    }
-  }, [selectedWorkspace]); // Re-fetch when workspace changes
   
-  const fetchWorkspaces = async () => {
-    try {
-      const response = await fetch('/api/admin/manyreach-keys');
-      const data = await response.json();
-      const activeWorkspaces = (data.workspaces || []).filter((ws: any) => ws.is_active);
-      setWorkspaces(activeWorkspaces);
-      
-      // Set default workspace if available
-      if (activeWorkspaces.length > 0 && !selectedWorkspace) {
-        setSelectedWorkspace(activeWorkspaces[0].workspace_name);
-      }
-    } catch (error) {
-      console.error('Error fetching workspaces:', error);
-    }
-  };
 
   const fetchCampaigns = async () => {
     try {
-      const response = await fetch(`/api/admin/manyreach/campaigns?workspace=${selectedWorkspace}`);
+      const response = await fetch('/api/admin/manyreach/campaigns?workspace=all');
       if (!response.ok) throw new Error('Failed to fetch campaigns');
       const data = await response.json();
       setCampaigns(data.campaigns || []);
@@ -507,7 +487,7 @@ export default function ManyReachImportPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           campaignId,
-          workspaceName: selectedWorkspace,
+          workspaceName: campaigns.find(c => c.id === campaignId || c.campaignId === campaignId)?.workspace || 'main',
           limit: unlimitedEmails ? null : emailLimit,
           onlyReplied,
           previewMode
@@ -803,49 +783,26 @@ export default function ManyReachImportPage() {
       <Card className="mb-6">
         <CardHeader>
           <CardTitle>Import Settings</CardTitle>
-          <CardDescription>Configure workspace and email processing options</CardDescription>
+          <CardDescription>Configure email processing options</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Workspace Selector */}
+            {/* Refresh Button */}
             <div>
-              <label className="block text-sm font-medium mb-2">Workspace</label>
-              <div className="flex gap-2">
-                <select
-                  className="flex-1 p-2 border rounded-md"
-                  value={selectedWorkspace}
-                  onChange={(e) => {
-                    setSelectedWorkspace(e.target.value);
-                    // Campaigns will auto-refresh due to useEffect
-                  }}
-                >
-                  {workspaces.length === 0 ? (
-                    <option value="">No workspaces configured</option>
-                  ) : (
-                    workspaces.map(ws => (
-                      <option key={ws.workspace_name} value={ws.workspace_name}>
-                        {ws.workspace_name}
-                      </option>
-                    ))
-                  )}
-                </select>
-                <Button
-                  onClick={() => {
-                    setLoading(true);
-                    fetchCampaigns();
-                  }}
-                  variant="outline"
-                  size="sm"
-                  disabled={loading}
-                >
-                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : '🔄 Refresh'}
-                </Button>
-              </div>
+              <label className="block text-sm font-medium mb-2">All Workspaces</label>
+              <Button
+                onClick={() => {
+                  setLoading(true);
+                  fetchCampaigns();
+                }}
+                variant="outline"
+                size="sm"
+                disabled={loading}
+              >
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : '🔄 Refresh Campaigns'}
+              </Button>
               <p className="text-xs text-gray-500 mt-1">
-                Select which ManyReach workspace to import from
-                {workspaces.length === 0 && (
-                  <span> • <a href="/admin/manyreach-keys" className="text-blue-600 hover:underline">Configure API keys</a></span>
-                )}
+                Showing campaigns from all active workspaces
               </p>
             </div>
 
@@ -952,7 +909,7 @@ export default function ManyReachImportPage() {
         </TabsList>
 
         <TabsContent value="status">
-          <CampaignStatusView workspace={selectedWorkspace} />
+          <CampaignStatusView workspace="all" />
         </TabsContent>
 
         <TabsContent value="campaigns">
@@ -1098,6 +1055,7 @@ export default function ManyReachImportPage() {
                           <div>
                             <h3 className="font-semibold">{campaign.name}</h3>
                             <div className="flex gap-4 text-sm text-gray-600 mt-1">
+                              <span className="font-medium text-blue-600">Workspace: {campaign.workspaceDisplay || campaign.workspace || 'Unknown'}</span>
                               <span>Sent: {campaign.sentCount}</span>
                               <span>Replied: {campaign.repliedCount}</span>
                               <span>Imported: {campaign.importedCount}</span>
