@@ -1,18 +1,29 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { EMAIL_CONFIG } from '@/lib/services/emailService';
+import { requireInternalUser } from '@/lib/auth/middleware';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   console.log('[Email Test Config] Checking email configuration...');
+  
+  // Block access in production or require auth
+  if (process.env.NODE_ENV === 'production') {
+    // In production, require internal user authentication
+    const session = await requireInternalUser(request);
+    if (session instanceof NextResponse) {
+      return session;
+    }
+  }
   
   const config = {
     hasResendKey: !!process.env.RESEND_API_KEY,
-    resendKeyLength: process.env.RESEND_API_KEY?.length || 0,
-    resendKeyPrefix: process.env.RESEND_API_KEY?.substring(0, 7) || 'not set',
+    // Don't expose key details in production
+    resendKeyLength: process.env.NODE_ENV !== 'production' ? (process.env.RESEND_API_KEY?.length || 0) : 'hidden',
+    resendKeyPrefix: process.env.NODE_ENV !== 'production' ? (process.env.RESEND_API_KEY?.substring(0, 7) || 'not set') : 'hidden',
     fromEmail: EMAIL_CONFIG.FROM_EMAIL,
-    fromEmailEnv: process.env.EMAIL_FROM || 'not set',
+    fromEmailEnv: process.env.NODE_ENV !== 'production' ? (process.env.EMAIL_FROM || 'not set') : 'hidden',
     fromName: EMAIL_CONFIG.FROM_NAME,
     replyTo: EMAIL_CONFIG.REPLY_TO,
-    nodeEnv: process.env.NODE_ENV,
+    nodeEnv: process.env.NODE_ENV !== 'production' ? process.env.NODE_ENV : 'production',
   };
   
   console.log('[Email Test Config] Configuration:', config);

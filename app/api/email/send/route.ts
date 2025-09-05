@@ -5,12 +5,19 @@ import {
   WorkflowCompletedEmail, 
   ContactOutreachEmail 
 } from '@/lib/email/templates';
+import { requireInternalUser } from '@/lib/auth/middleware';
 
 export async function POST(request: NextRequest) {
   console.log('[Email Send API] Received request');
   
   try {
-    // TODO: Add authentication check when auth system is implemented
+    // Check authentication - require internal user access
+    const session = await requireInternalUser(request);
+    if (session instanceof NextResponse) {
+      return session;
+    }
+    
+    console.log('[Email Send API] Authenticated user:', session.email);
 
     const body = await request.json();
     const { type, recipient, data } = body;

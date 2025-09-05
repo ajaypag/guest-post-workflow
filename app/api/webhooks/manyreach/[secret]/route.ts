@@ -181,11 +181,13 @@ export async function POST(
   // Await params in Next.js 15
   const { secret } = await params;
   
-  // Skip URL secret validation - ManyReach uses API key instead
-  const secretValid = true; // validateWebhookSecret(secret);
+  // Validate URL secret
+  const secretValid = validateWebhookSecret(secret);
   
-  // Log all headers for debugging
-  console.log('📋 Webhook Headers:', Object.fromEntries(request.headers.entries()));
+  // Log all headers for debugging (but not in production)
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('📋 Webhook Headers:', Object.fromEntries(request.headers.entries()));
+  }
   
   // Get request details for security logging
   const ipAddress = request.headers.get('x-forwarded-for') || 
@@ -206,7 +208,29 @@ export async function POST(
   const timestampValid = secretValid ? isTimestampValid(timestamp) : false;
   const ipAllowed = secretValid ? isIpAllowed(ipAddress) : false;
   
-  // Log security check
+  // Check if URL secret is valid first
+  if (!secretValid) {
+    console.error('🚨 Invalid webhook URL secret');
+    // Log security failure
+    try {
+      await db.insert(webhookSecurityLogs).values({
+        webhookId,
+        ipAddress,
+        userAgent,
+        signatureValid: false,
+        signatureProvided: signature || null,
+        timestampValid: false,
+        ipAllowed: false,
+        allowed: false,
+        rejectionReason: 'Invalid URL secret',
+      });
+    } catch (logError) {
+      console.error('Failed to log security check:', logError);
+    }
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  
+  // Log security check for valid attempts
   try {
     await db.insert(webhookSecurityLogs).values({
       webhookId,
@@ -216,10 +240,8 @@ export async function POST(
       signatureProvided: signature || null,
       timestampValid,
       ipAllowed,
-      allowed: secretValid && signatureValid && timestampValid && ipAllowed,
-      rejectionReason: !secretValid 
-        ? 'Invalid URL secret' 
-        : !signatureValid 
+      allowed: signatureValid && timestampValid,
+      rejectionReason: !signatureValid 
         ? 'Invalid signature' 
         : !timestampValid 
         ? 'Invalid timestamp' 
@@ -232,20 +254,37 @@ export async function POST(
     // Continue processing even if logging fails
   }
   
-  // Validate ManyReach API key
+  // Validate ManyReach API key if configured
   const expectedApiKey = process.env.MANYREACH_API_KEY;
   
-  if (apiKey) {
-    console.log('📝 ManyReach API Key received:', apiKey);
+  if (expectedApiKey && apiKey) {
+    // Only validate if both expected and received API keys exist
     if (apiKey !== expectedApiKey && apiKey !== `Bearer ${expectedApiKey}`) {
       console.error('🚨 Invalid ManyReach API key');
+      // Log security failure
+      try {
+        await db.insert(webhookSecurityLogs).values({
+          webhookId,
+          ipAddress,
+          userAgent,
+          signatureValid: false,
+          signatureProvided: signature || null,
+          timestampValid: false,
+          ipAllowed: false,
+          allowed: false,
+          rejectionReason: 'Invalid API key',
+        });
+      } catch (logError) {
+        console.error('Failed to log API key failure:', logError);
+      }
       return NextResponse.json(
         { error: 'Invalid API key' },
         { status: 401 }
       );
     }
-  } else {
-    console.warn('⚠️ No API key provided by ManyReach');
+    console.log('✅ ManyReach API Key validated successfully');
+  } else if (expectedApiKey && !apiKey) {
+    console.warn('⚠️ No API key provided by ManyReach but one is expected');
     // For now, allow requests without API key since ManyReach might not send it with webhooks
   }
   

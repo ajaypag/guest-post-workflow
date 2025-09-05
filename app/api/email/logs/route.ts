@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { EmailService } from '@/lib/services/emailService';
+import { requireInternalUser } from '@/lib/auth/middleware';
 
 export async function GET(request: NextRequest) {
   try {
-    // TODO: Add authentication check when auth system is implemented
+    // Check authentication - require internal user access
+    const session = await requireInternalUser(request);
+    if (session instanceof NextResponse) {
+      return session;
+    }
+    
+    console.log('[Email Logs API] Authenticated user:', session.email);
 
     // Parse query parameters
     const searchParams = request.nextUrl.searchParams;

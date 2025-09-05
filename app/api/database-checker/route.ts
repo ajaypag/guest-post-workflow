@@ -1,9 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { Pool } from 'pg';
 import { WorkflowService } from '@/lib/db/workflowService';
 import { ClientService } from '@/lib/db/clientService';
 import { UserService } from '@/lib/db/userService';
 import { WORKFLOW_STEPS } from '@/types/workflow';
+import { requireInternalUser } from '@/lib/auth/middleware';
 
 interface CheckResult {
   section: string;
@@ -12,7 +13,16 @@ interface CheckResult {
   details?: any;
 }
 
-export async function POST() {
+export async function POST(request: NextRequest) {
+  // Require internal user authentication (internal users have admin privileges)
+  const session = await requireInternalUser(request);
+  if (session instanceof NextResponse) {
+    return session;
+  }
+  
+  // Internal users are effectively admins for database operations
+  console.log(`[Database Checker] Admin access granted to internal user: ${session.email}`);
+  
   const results: CheckResult[] = [];
 
   try {
