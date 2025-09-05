@@ -1,0 +1,5 @@
+app/admin/publisher-database-cleanup/page.tsx:      const response = await fetch('/api/test/check-all-publishers');
+app/admin/publisher-database-cleanup/page.tsx:      const fixCorruptedResponse = await fetch('/api/test/bulk-fix-corrupted-publishers', {
+app/admin/publisher-database-cleanup/page.tsx:      const deleteOrphanedResponse = await fetch('/api/test/delete-orphaned-offerings', {
+app/admin/email-portal/page.tsx:              <Link href="/api/test/sites-ready-email" className="text-blue-600 hover:underline ml-2">
+components/orders/LineItemsTable.tsx:        const response = await fetch('/api/test/enrich-demo', {

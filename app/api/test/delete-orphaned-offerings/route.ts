@@ -3,9 +3,18 @@ import { db } from '@/lib/db/connection';
 import { publishers } from '@/lib/db/accountSchema';
 import { publisherOfferings, publisherOfferingRelationships } from '@/lib/db/publisherSchemaActual';
 import { eq, and, sql } from 'drizzle-orm';
+import { requireInternalUser } from '@/lib/auth/middleware';
 
 export async function POST(request: NextRequest) {
   try {
+    // CRITICAL: Require internal user authentication for this deletion operation
+    const session = await requireInternalUser(request);
+    if (session instanceof NextResponse) {
+      return session;
+    }
+    
+    console.log(`🔐 Delete orphaned offerings initiated by internal user: ${session.email}`);
+    
     const body = await request.json();
     const { dryRun = true } = body;
     

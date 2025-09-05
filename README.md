@@ -114,7 +114,6 @@ npm run test            # Run tests (if configured)
 ## 🔍 Troubleshooting
 
 ### Quick Diagnostics
-- **System Health**: `/database-checker`
 - **Full Diagnostics**: `/admin/diagnostics`
 - **Agent Monitoring**: `/admin/agent-diagnostics`
 - **VARCHAR Issues**: `/admin/varchar-limits`

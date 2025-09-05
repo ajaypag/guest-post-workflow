@@ -51,7 +51,6 @@ export async function middleware(request: NextRequest) {
       path === '/api/setup-db' ||
       path === '/api/fix-schema' ||
       path === '/api/fix-workflows-schema' ||
-      path === '/api/database-checker' ||
       path === '/api/test-workflow-insert' ||
       path === '/api/check-table-structure' ||
       path === '/api/debug-users' ||

@@ -18,7 +18,6 @@ Documentation for system operations, diagnostics, and maintenance.
 ## Quick Diagnostics
 
 ### Health Check Endpoints
-- `/database-checker` - System health
 - `/admin/diagnostics` - Full diagnostics
 - `/admin/agent-diagnostics` - AI monitoring
 - `/admin/varchar-limits` - Database validation
@@ -27,7 +26,6 @@ Documentation for system operations, diagnostics, and maintenance.
 
 **Check System Health**
 ```bash
-curl https://your-domain/database-checker
 ```
 
 **Run Migrations**
@@ -43,7 +41,6 @@ npm run db:studio
 ## Troubleshooting
 
 ### Database Issues
-1. Check connection: `/database-checker`
 2. Verify credentials in `.env`
 3. Check PostgreSQL is running
 

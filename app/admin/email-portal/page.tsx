@@ -609,7 +609,7 @@ export default function EmailPortal() {
             {/* Test Links */}
             <div className="text-sm text-gray-500">
               Quick test: 
-              <Link href="/api/test/sites-ready-email" className="text-blue-600 hover:underline ml-2">
+              <Link href="/api/admin/email/preview/sites-ready" className="text-blue-600 hover:underline ml-2">
                 Sites Ready
               </Link>
             </div>

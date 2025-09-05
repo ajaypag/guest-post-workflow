@@ -28,7 +28,6 @@ Disallow: /bulk-analysis/
 Disallow: /migrate
 Disallow: /fix-*
 Disallow: /test-*
-Disallow: /database-checker
 Disallow: /security-test
 
 # Search engine specific

@@ -219,7 +219,6 @@ timeout 600 npm run build      # Extended timeout for real error detection
 npm run db:studio             # Browse database
 
 # Testing endpoints
-/database-checker       # System health check
 /api/workflows/[id]/validate  # Workflow validation
 /admin/*               # Diagnostic tools
 ```

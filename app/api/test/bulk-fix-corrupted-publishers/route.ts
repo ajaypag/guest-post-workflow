@@ -5,9 +5,17 @@ import { publisherOfferings, publisherOfferingRelationships } from '@/lib/db/pub
 import { websites } from '@/lib/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import crypto from 'crypto';
+import { requireInternalUser } from '@/lib/auth/middleware';
 
 export async function POST(request: NextRequest) {
   try {
+    // CRITICAL: Require internal user authentication for this dangerous operation
+    const session = await requireInternalUser(request);
+    if (session instanceof NextResponse) {
+      return session;
+    }
+    
+    console.log(`🔐 Bulk fix initiated by internal user: ${session.email}`);
     const body = await request.json();
     const { dryRun = true, limit = 5 } = body;
     

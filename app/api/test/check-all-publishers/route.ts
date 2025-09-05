@@ -3,9 +3,17 @@ import { db } from '@/lib/db/connection';
 import { publishers } from '@/lib/db/accountSchema';
 import { publisherOfferings, publisherOfferingRelationships } from '@/lib/db/publisherSchemaActual';
 import { eq, sql } from 'drizzle-orm';
+import { requireInternalUser } from '@/lib/auth/middleware';
 
 export async function GET(request: NextRequest) {
   try {
+    // Require internal user authentication for database inspection
+    const session = await requireInternalUser(request);
+    if (session instanceof NextResponse) {
+      return session;
+    }
+    
+    console.log(`🔍 Publisher check initiated by internal user: ${session.email}`);
     console.log(`🔍 Checking all publishers for corruption...`);
     
     // Get all publishers

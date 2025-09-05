@@ -55,7 +55,6 @@ workflow_steps (id, workflow_id, step_number, title, status, inputs, outputs)
 - `/api/workflows` - GET/POST workflows
 - `/api/workflows/[id]` - GET/PUT/DELETE individual workflows
 - `/api/clients/[id]/target-pages` - GET/POST/PUT/DELETE target pages
-- `/api/database-checker` - System health diagnostics
 
 ## Deployment Instructions
 
@@ -73,7 +72,6 @@ NEXTAUTH_URL=https://your-domain.com
 4. Default admin account created automatically
 
 ## Testing Tools Available
-- `/database-checker` - Full system analysis
 - `/api/workflows/[id]/validate` - Workflow validation
 - `/api/check-table-structure` - Database schema verification
 

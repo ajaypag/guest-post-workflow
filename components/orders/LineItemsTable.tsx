@@ -334,7 +334,7 @@ export default function LineItemsTable({
     if (orderId === '19139665-daf4-45d0-b4b5-c773cb63814d') {
       setEnrichmentLoading(true);
       try {
-        const response = await fetch('/api/test/enrich-demo', {
+        const response = await fetch('/api/admin/demo/enrich', {
           credentials: 'include'
         });
         

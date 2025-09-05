@@ -189,7 +189,6 @@
 |------|--------|--------------|-------|
 | `app/api/workflows/[id]/restore-original-steps/route.ts` | 🔍 | | Need to check |
 | `app/api/workflows/[id]/polish-v2/cancel/route.ts` | 🔍 | | Need to check |
-| `app/api/database-checker/route.ts` | 🔍 | | Need to check |
 | `app/api/admin/bulk-analysis-debug/route.ts` | 🔍 | | Need to check |
 
 ---

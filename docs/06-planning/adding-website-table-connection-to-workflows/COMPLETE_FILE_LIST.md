@@ -119,7 +119,6 @@
 ### Other APIs (4):
 - `app/api/workflows/[id]/restore-original-steps/route.ts`
 - `app/api/workflows/[id]/polish-v2/cancel/route.ts`
-- `app/api/database-checker/route.ts`
 - `app/api/admin/bulk-analysis-debug/route.ts`
 
 ## 5. DATABASE & UTILITIES (7 files)

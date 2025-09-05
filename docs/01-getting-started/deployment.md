@@ -63,7 +63,6 @@ DATAFORSEO_PASSWORD=your_dataforseo_password
 
 1. Visit your domain
 2. Login: `admin@example.com` / `admin123`
-3. Check `/database-checker` for system health
 
 ## Production Configuration
 

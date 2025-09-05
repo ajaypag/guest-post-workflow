@@ -50,7 +50,6 @@ export default function SecurityTestPage() {
         { path: '/api/setup-db', method: 'POST', description: 'Database setup - CRITICAL', expectedStatus: 401 },
         { path: '/api/fix-schema', method: 'POST', description: 'Schema modification - CRITICAL', expectedStatus: 401 },
         { path: '/api/fix-workflows-schema', method: 'POST', description: 'Workflows table modification', expectedStatus: 401 },
-        { path: '/api/database-checker', method: 'POST', description: 'Database diagnostics', expectedStatus: 401 },
         { path: '/api/test-workflow-insert', method: 'POST', description: 'Database testing', expectedStatus: 401 },
         { path: '/api/check-table-structure', method: 'GET', description: 'Schema inspection', expectedStatus: 401 },
         { path: '/api/debug-users', method: 'GET', description: 'User enumeration', expectedStatus: 401 },

@@ -87,7 +87,6 @@ errorMessage: error?.message || '' // Never null
 | `/admin/varchar-limits` | Column size checker | "Failed insert" errors |
 | `/admin/database-migration` | Table management | Missing table errors |
 | `/admin/fix-[feature]` | Feature-specific tools | Feature not working |
-| `/database-checker` | Public health check | User-reported issues |
 
 ## Creating Diagnostic Pages
 
