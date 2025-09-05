@@ -132,7 +132,7 @@ async function getRelatedNiches(nicheName: string, currentSlug: string) {
       WITH related_niches AS (
         SELECT UNNEST(niche) as niche_name
         FROM websites
-        WHERE categories && ARRAY[${sql.raw(categories.map(c => `'${c}'`).join(','))}]::text[]
+        WHERE categories && ARRAY[${sql.raw(categories.map(c => `'${c.replace(/'/g, "''")}'`).join(','))}]::text[]
           AND niche IS NOT NULL
           AND array_length(niche, 1) > 0
           AND NOT (${nicheName} = ANY(niche))
