@@ -31,15 +31,19 @@ interface Campaign {
   name: string;
   status: string;
   totalProspects: number;
-  sentCount: number;
-  repliedCount: number;
-  importedCount: number;
-  draftCount: number;
-  pendingCount: number;
-  approvedCount: number;
+  repliedProspects: number;
+  sentCount?: number;
+  repliedCount?: number;
+  importedCount?: number;
+  draftCount?: number;
+  pendingCount?: number;
+  approvedCount?: number;
   campaignId?: string;
   workspace?: string;
   workspaceDisplay?: string;
+  processed?: number;
+  pending?: number;
+  lastImport?: string | null;
 }
 
 interface Draft {
@@ -64,7 +68,7 @@ export default function ManyReachImportPage() {
   const [loading, setLoading] = useState(true);
   const [importing, setImporting] = useState<string | null>(null);
   const [clearing, setClearing] = useState(false);
-  const [activeTab, setActiveTab] = useState('status');
+  const [activeTab, setActiveTab] = useState('campaigns');
   
   // Email processing controls
   const [emailLimit, setEmailLimit] = useState<number>(10);
@@ -252,12 +256,17 @@ export default function ManyReachImportPage() {
     }
   };
 
-  // Smart bulk processing - systematically processes all campaigns with intelligent logic
+  // Smart bulk processing - systematically processes selected or all campaigns with intelligent logic
   const smartBulkProcessAllCampaigns = async () => {
-    if (campaigns.length === 0) {
+    // Use selected campaigns if any, otherwise use all campaigns
+    const campaignsToProcess = selectedCampaigns.length > 0 
+      ? campaigns.filter(c => selectedCampaigns.includes(c.id))
+      : campaigns;
+
+    if (campaignsToProcess.length === 0) {
       toast({
         title: 'No campaigns available',
-        description: 'Load campaigns first before running bulk processing',
+        description: 'Load campaigns first or select campaigns to process',
         variant: 'destructive'
       });
       return;
@@ -265,7 +274,7 @@ export default function ManyReachImportPage() {
 
     const confirmed = confirm(
       `🤖 Smart Bulk Processing\n\n` +
-      `This will intelligently process ${campaigns.length} campaigns:\n` +
+      `This will intelligently process ${campaignsToProcess.length} ${selectedCampaigns.length > 0 ? 'selected' : ''} campaigns:\n` +
       `• Prioritize campaigns with replies\n` +
       `• Skip campaigns already processed recently\n` +
       `• Process in batches to avoid API rate limits\n` +
@@ -276,12 +285,12 @@ export default function ManyReachImportPage() {
     if (!confirmed) return;
 
     setSmartBulkProcessing(true);
-    setBulkProgress({current: 0, total: campaigns.length});
+    setBulkProgress({current: 0, total: campaignsToProcess.length});
 
     try {
       // Sort campaigns by priority (more replies = higher priority)
-      const sortedCampaigns = [...campaigns].sort((a, b) => {
-        return (b.repliedCount || 0) - (a.repliedCount || 0);
+      const sortedCampaigns = [...campaignsToProcess].sort((a, b) => {
+        return (b.repliedProspects || 0) - (a.repliedProspects || 0);
       });
 
       for (let i = 0; i < sortedCampaigns.length; i++) {
@@ -289,12 +298,12 @@ export default function ManyReachImportPage() {
         
         setBulkProgress({
           current: i + 1, 
-          total: campaigns.length,
+          total: campaignsToProcess.length,
           campaign: campaign.name
         });
 
         // Skip campaigns with no replies if onlyReplied is enabled
-        if (onlyReplied && (campaign.repliedCount || 0) === 0) {
+        if (onlyReplied && (campaign.repliedProspects || 0) === 0) {
           console.log(`Skipping ${campaign.name} - no replies`);
           continue;
         }
@@ -336,12 +345,15 @@ export default function ManyReachImportPage() {
 
       toast({
         title: 'Smart Bulk Processing Complete! 🎉',
-        description: `Processed ${campaigns.length} campaigns intelligently`,
+        description: `Processed ${campaignsToProcess.length} campaigns intelligently`,
       });
 
       // Refresh data
       await fetchCampaigns();
       await fetchDrafts();
+      
+      // Clear selection after successful processing
+      setSelectedCampaigns([]);
 
     } catch (error) {
       console.error('Smart bulk processing failed:', error);
@@ -895,386 +907,20 @@ export default function ManyReachImportPage() {
       </Card>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3 h-auto">
-          <TabsTrigger value="status" className="flex flex-col sm:flex-row items-center justify-center text-xs sm:text-sm py-2 px-1 sm:px-3">
+        <TabsList className="grid w-full grid-cols-2 h-auto">
+          <TabsTrigger value="campaigns" className="flex flex-col sm:flex-row items-center justify-center text-xs sm:text-sm py-2 px-1 sm:px-3">
             <Activity className="mr-0 sm:mr-2 h-4 w-4 mb-1 sm:mb-0" />
-            <span className="hidden sm:inline">Status Overview</span>
-            <span className="sm:hidden">Status</span>
+            <span className="hidden sm:inline">Campaign Management</span>
+            <span className="sm:hidden">Campaigns</span>
           </TabsTrigger>
-          <TabsTrigger value="campaigns" className="text-xs sm:text-sm py-2 px-1 sm:px-3">Campaigns</TabsTrigger>
           <TabsTrigger value="drafts" className="text-xs sm:text-sm py-2 px-1 sm:px-3">
             <span>Drafts</span>
             {Array.isArray(drafts) && drafts.length > 0 && <Badge className="ml-1 sm:ml-2 text-xs">{drafts.length}</Badge>}
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="status">
-          <CampaignStatusView workspace="all" />
-        </TabsContent>
-
         <TabsContent value="campaigns">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>ManyReach Campaigns</CardTitle>
-                  <CardDescription>Import replies from your email campaigns with smart bulk processing</CardDescription>
-                </div>
-                <div className="flex gap-2">
-                  {/* Check for New Emails - Primary Action */}
-                  <Button
-                    onClick={analyzeBulkCampaigns}
-                    disabled={analyzingCampaigns || campaigns.length === 0}
-                    variant="default"
-                    className="bg-green-600 hover:bg-green-700 text-white"
-                  >
-                    {analyzingCampaigns ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Analyzing...
-                      </>
-                    ) : (
-                      <>
-                        <Search className="mr-2 h-4 w-4" />
-                        Check for New Emails
-                      </>
-                    )}
-                  </Button>
-                  
-                  {/* Smart Bulk Processing */}
-                  <Button
-                    onClick={smartBulkProcessAllCampaigns}
-                    disabled={smartBulkProcessing || campaigns.length === 0}
-                    variant="secondary"
-                    className="bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700"
-                  >
-                    {smartBulkProcessing ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        🤖 Smart Processing... ({bulkProgress.current}/{bulkProgress.total})
-                      </>
-                    ) : (
-                      <>🤖 Smart Bulk Process All ({campaigns.length} campaigns)</>
-                    )}
-                  </Button>
-                  
-                  {selectedCampaigns.length > 0 && (
-                    <>
-                      <Button
-                        onClick={bulkImportCampaigns}
-                        disabled={bulkImporting || smartBulkProcessing}
-                        variant="default"
-                      >
-                        {bulkImporting ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Importing {selectedCampaigns.length} campaigns...
-                          </>
-                        ) : (
-                          <>Import {selectedCampaigns.length} Selected</>
-                        )}
-                      </Button>
-                      <Button
-                        onClick={() => setSelectedCampaigns([])}
-                        variant="outline"
-                        disabled={smartBulkProcessing}
-                      >
-                        Clear Selection
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </div>
-              
-              {/* Smart Processing Progress */}
-              {smartBulkProcessing && (
-                <div className="mt-4 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="font-medium text-purple-900">🤖 Smart Bulk Processing Active</div>
-                    <div className="text-sm text-purple-700">
-                      {bulkProgress.current} of {bulkProgress.total} campaigns
-                    </div>
-                  </div>
-                  {bulkProgress.campaign && (
-                    <div className="text-sm text-purple-700 mb-2">
-                      Currently processing: <span className="font-medium">{bulkProgress.campaign}</span>
-                    </div>
-                  )}
-                  <div className="w-full bg-purple-200 rounded-full h-2">
-                    <div 
-                      className="bg-gradient-to-r from-purple-600 to-blue-600 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${(bulkProgress.current / bulkProgress.total) * 100}%` }}
-                    ></div>
-                  </div>
-                  <div className="text-xs text-purple-600 mt-2">
-                    ✨ Intelligently prioritizing campaigns with replies and skipping already processed ones
-                  </div>
-                </div>
-              )}
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="flex justify-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin" />
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {/* Select All checkbox */}
-                  <div className="flex items-center gap-2 pb-2 border-b">
-                    <input
-                      type="checkbox"
-                      checked={campaigns.length > 0 && selectedCampaigns.length === campaigns.length}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedCampaigns(campaigns.map(c => c.id));
-                        } else {
-                          setSelectedCampaigns([]);
-                        }
-                      }}
-                      className="rounded"
-                    />
-                    <span className="text-sm font-medium">Select All</span>
-                  </div>
-                  
-                  {campaigns.map((campaign) => (
-                    <div key={campaign.id} className="border rounded-lg p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <input
-                            type="checkbox"
-                            checked={selectedCampaigns.includes(campaign.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedCampaigns([...selectedCampaigns, campaign.id]);
-                              } else {
-                                setSelectedCampaigns(selectedCampaigns.filter(id => id !== campaign.id));
-                              }
-                            }}
-                            className="rounded"
-                          />
-                          <div>
-                            <h3 className="font-semibold">{campaign.name}</h3>
-                            <div className="flex gap-4 text-sm text-gray-600 mt-1">
-                              <span className="font-medium text-blue-600">Workspace: {campaign.workspaceDisplay || campaign.workspace || 'Unknown'}</span>
-                              <span>Sent: {campaign.sentCount}</span>
-                              <span>Replied: {campaign.repliedCount}</span>
-                              <span>Imported: {campaign.importedCount}</span>
-                              <span>Drafts: {campaign.draftCount}</span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Badge variant={campaign.status === 'active' ? 'default' : 'secondary'}>
-                            {campaign.status}
-                          </Badge>
-                          <Button
-                            onClick={() => importCampaign(campaign.id)}
-                            disabled={importing === campaign.id || bulkImporting}
-                            size="sm"
-                          >
-                            {importing === campaign.id ? (
-                              <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Importing...
-                              </>
-                            ) : (
-                              <>
-                                <Download className="mr-2 h-4 w-4" />
-                                Import Replies
-                              </>
-                            )}
-                          </Button>
-                        </div>
-                      </div>
-                      
-                      {/* Progress Bar */}
-                      {importProgress[campaign.id] && (
-                        <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                          <div className="flex justify-between text-sm mb-2">
-                            <span className="font-medium">
-                              {importProgress[campaign.id].status === 'completed' ? '✅ ' : 
-                               importProgress[campaign.id].status === 'error' ? '❌ ' : '⏳ '}
-                              {importProgress[campaign.id].message || 'Processing...'}
-                            </span>
-                            {importProgress[campaign.id].total > 0 && (
-                              <span className="text-gray-600">
-                                {importProgress[campaign.id].processed} / {importProgress[campaign.id].total}
-                              </span>
-                            )}
-                          </div>
-                          {importProgress[campaign.id].status === 'processing' && (
-                            <div className="w-full bg-gray-200 rounded-full h-2">
-                              <div 
-                                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                                style={{ 
-                                  width: `${importProgress[campaign.id].total > 0 
-                                    ? (importProgress[campaign.id].processed / importProgress[campaign.id].total) * 100 
-                                    : 0}%` 
-                                }}
-                              />
-                            </div>
-                          )}
-                        </div>
-                      )}
-                      
-                      {campaign.pendingCount > 0 && (
-                        <div className="mt-2">
-                          <Badge variant="outline" className="text-orange-600">
-                            {campaign.pendingCount} pending review
-                          </Badge>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                  
-                  {campaigns.length === 0 && (
-                    <div className="text-center py-8 text-gray-500">
-                      No campaigns found. Check your ManyReach API key configuration.
-                    </div>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-          
-          {/* Bulk Analysis Results */}
-          {showBulkAnalysis && bulkAnalysisData && (
-            <Card className="mt-4">
-              <CardHeader>
-                <div className="flex justify-between items-center">
-                  <div>
-                    <CardTitle>📊 Email Analysis Results</CardTitle>
-                    <CardDescription>
-                      Found {bulkAnalysisData.totalNewEmails} new emails to import across {bulkAnalysisData.totalCampaigns} campaigns
-                    </CardDescription>
-                  </div>
-                  <div className="flex gap-2">
-                    {bulkAnalysisData.totalNewEmails > 0 && (
-                      <Button
-                        onClick={() => {
-                          const campaignIds = bulkAnalysisData.campaignBreakdown
-                            .filter((c: any) => c.newEmails > 0)
-                            .map((c: any) => c.campaignId);
-                          importNewEmailsFromAnalysis(campaignIds);
-                        }}
-                        disabled={smartBulkProcessing}
-                        className="bg-blue-600 hover:bg-blue-700 text-white"
-                      >
-                        {smartBulkProcessing ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Importing...
-                          </>
-                        ) : (
-                          <>
-                            <Download className="mr-2 h-4 w-4" />
-                            Import All New Emails
-                          </>
-                        )}
-                      </Button>
-                    )}
-                    <Button
-                      onClick={() => setShowBulkAnalysis(false)}
-                      variant="ghost"
-                      size="sm"
-                    >
-                      <XCircle className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {/* Summary Stats */}
-                <div className="grid grid-cols-3 gap-4 mb-6">
-                  <div className="text-center p-4 bg-green-50 rounded-lg">
-                    <div className="text-2xl font-bold text-green-600">{bulkAnalysisData.totalNewEmails}</div>
-                    <div className="text-sm text-gray-600">New Emails</div>
-                  </div>
-                  <div className="text-center p-4 bg-yellow-50 rounded-lg">
-                    <div className="text-2xl font-bold text-yellow-600">{bulkAnalysisData.totalDuplicates}</div>
-                    <div className="text-sm text-gray-600">Duplicates Avoided</div>
-                  </div>
-                  <div className="text-center p-4 bg-red-50 rounded-lg">
-                    <div className="text-2xl font-bold text-red-600">{bulkAnalysisData.totalIgnored}</div>
-                    <div className="text-sm text-gray-600">Ignored</div>
-                  </div>
-                </div>
-                
-                {/* Campaign Breakdown */}
-                {bulkAnalysisData.campaignBreakdown.length > 0 && (
-                  <div className="space-y-3">
-                    <h4 className="font-medium text-sm text-gray-700">Campaign Details:</h4>
-                    {bulkAnalysisData.campaignBreakdown.map((campaign: any) => (
-                      <div key={campaign.campaignId} className="border rounded-lg p-3">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h5 className="font-medium">{campaign.campaignName}</h5>
-                            <div className="flex gap-4 text-sm text-gray-600 mt-1">
-                              <span className="text-green-600">✅ {campaign.newEmails} new</span>
-                              <span className="text-yellow-600">⚠️ {campaign.duplicates} duplicates</span>
-                              <span className="text-red-600">🚫 {campaign.ignored} ignored</span>
-                            </div>
-                          </div>
-                          {campaign.newEmails > 0 && (
-                            <Button
-                              onClick={() => importNewEmailsFromAnalysis([campaign.campaignId])}
-                              disabled={smartBulkProcessing}
-                              size="sm"
-                              variant="outline"
-                            >
-                              Import {campaign.newEmails}
-                            </Button>
-                          )}
-                        </div>
-                        
-                        {/* Show first few emails */}
-                        {campaign.emails && campaign.emails.length > 0 && (
-                          <div className="mt-2 text-xs text-gray-500">
-                            <details>
-                              <summary className="cursor-pointer hover:text-gray-700">
-                                View emails ({campaign.emails.length})
-                              </summary>
-                              <div className="mt-2 space-y-1">
-                                {campaign.emails.slice(0, 10).map((email: any, idx: number) => (
-                                  <div key={idx} className="flex items-center gap-2">
-                                    <span className={
-                                      email.status === 'new' ? 'text-green-600' :
-                                      email.status === 'duplicate' ? 'text-yellow-600' :
-                                      'text-red-600'
-                                    }>
-                                      {email.status === 'new' ? '✅' :
-                                       email.status === 'duplicate' ? '⚠️' : '🚫'}
-                                    </span>
-                                    <span>{email.email}</span>
-                                    {email.existsInCampaign && (
-                                      <span className="text-gray-400">
-                                        (exists in campaign {email.existsInCampaign})
-                                      </span>
-                                    )}
-                                  </div>
-                                ))}
-                                {campaign.emails.length > 10 && (
-                                  <div className="text-gray-400">...and {campaign.emails.length - 10} more</div>
-                                )}
-                              </div>
-                            </details>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-                
-                {bulkAnalysisData.totalNewEmails === 0 && (
-                  <div className="text-center py-8">
-                    <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-3" />
-                    <p className="text-lg font-medium">All caught up!</p>
-                    <p className="text-sm text-gray-600 mt-1">No new emails to import. All replies have been processed.</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
+          <CampaignStatusView workspace="all" />
         </TabsContent>
 
         <TabsContent value="drafts">

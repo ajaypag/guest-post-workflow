@@ -272,12 +272,34 @@ export class ManyReachImportV3Enhanced {
       
       let campaigns = await this.getCampaigns();
       
+      // Debug: Log all campaign IDs to understand structure
+      console.log('📋 Available campaigns:');
+      campaigns.forEach((c: any) => {
+        console.log(`   - ID: ${c.campaignID} (type: ${typeof c.campaignID}), Name: ${c.name}`);
+      });
+      
       // Filter campaigns if specific IDs provided
       if (campaignIds && campaignIds.length > 0) {
-        campaigns = campaigns.filter((c: any) => 
-          campaignIds.includes(c.campaignID?.toString())
-        );
+        console.log(`🔎 Requested campaign IDs: ${campaignIds.join(', ')}`);
+        
+        // Try both string and number comparison
+        campaigns = campaigns.filter((c: any) => {
+          const campaignIdStr = c.campaignID?.toString();
+          const matches = campaignIds.includes(campaignIdStr) || 
+                         campaignIds.includes(String(c.campaignID)) ||
+                         campaignIds.some(id => id === campaignIdStr);
+          
+          if (!matches && campaignIds.includes(campaignIdStr)) {
+            console.log(`   ❌ Campaign ${c.campaignID} (${c.name}) NOT matched despite ID match - investigating...`);
+          }
+          
+          return matches;
+        });
         console.log(`📝 Analyzing ${campaigns.length} selected campaigns (out of ${campaignIds.length} requested)`);
+        
+        if (campaigns.length === 0) {
+          console.log('   ⚠️ No campaigns matched the provided IDs!');
+        }
       } else {
         console.log(`📝 Analyzing all ${campaigns.length} campaigns`);
       }
@@ -294,11 +316,11 @@ export class ManyReachImportV3Enhanced {
       const globalEmailMap = new Map<string, string>(); // email -> first campaign ID
       
       // First pass: get all existing emails in database
+      // Note: email_processing_logs doesn't have workspace_name column
       const existingEmails = await db.execute(sql`
         SELECT DISTINCT email_from, campaign_id 
         FROM email_processing_logs
-        WHERE workspace_name = ${this.workspaceName}
-          AND import_status = 'imported'
+        WHERE import_status = 'imported'
       `);
       
       for (const row of (existingEmails as any).rows || []) {
@@ -327,6 +349,9 @@ export class ManyReachImportV3Enhanced {
           ignored: 0,
           emails: [] as any[]
         };
+        
+        console.log(`\n📧 Analyzing campaign: ${campaign.name} (${campaign.campaignID})`);
+        console.log(`   Replies reported: ${campaign.replies}`);
 
         // Get prospects marked as replied
         await this.ensureApiKey();
@@ -340,7 +365,20 @@ export class ManyReachImportV3Enhanced {
 
         if (prospectsResponse.ok) {
           const prospectsData = await prospectsResponse.json();
-          const prospects = (prospectsData.data || []).filter((p: any) => p.replied === true);
+          const allProspects = prospectsData.data || [];
+          console.log(`   Total prospects in campaign: ${allProspects.length}`);
+          
+          const prospects = allProspects.filter((p: any) => p.replied === true);
+          console.log(`   Prospects with replied=true: ${prospects.length}`);
+          
+          // If no replied prospects but campaign shows replies, log first few prospects to debug
+          if (prospects.length === 0 && campaign.replies > 0) {
+            console.log(`   ⚠️ Campaign shows ${campaign.replies} replies but no prospects have replied=true`);
+            console.log(`   Sample prospects (first 3):`);
+            allProspects.slice(0, 3).forEach((p: any) => {
+              console.log(`     - ${p.email}: replied=${p.replied}, status=${p.status}`);
+            });
+          }
 
           for (const prospect of prospects) {
             const email = prospect.email;
@@ -545,7 +583,16 @@ export class ManyReachImportV3Enhanced {
 
     try {
       // Get campaign info
+      console.log(`🔍 Fetching campaigns list to find campaign ${campaignId}...`);
       const campaigns = await this.getCampaigns();
+      console.log(`📋 Found ${campaigns.length} campaigns in workspace ${this.workspaceName}`);
+      
+      // Log sample campaign IDs for debugging
+      if (campaigns.length > 0) {
+        const sampleCampaigns = campaigns.slice(0, 5).map((c: any) => `${c.campaignID} (${c.name})`).join(', ');
+        console.log(`   Sample campaigns: ${sampleCampaigns}`);
+      }
+      
       const campaign = campaigns.find((c: any) => 
         c.campaignID?.toString() === campaignId.toString()
       );
@@ -554,22 +601,46 @@ export class ManyReachImportV3Enhanced {
       if (campaign) {
         result.campaignName = campaign.name;
         campaignSenderEmail = campaign.from;
-        console.log(`📧 Campaign: ${campaign.name}`);
+        console.log(`✅ Found campaign: ${campaign.name} (ID: ${campaign.campaignID})`);
         console.log(`📧 Sender: ${campaignSenderEmail || 'unknown'}`);
+      } else {
+        console.warn(`⚠️ Campaign ${campaignId} not found in campaigns list!`);
+        console.warn(`   This might cause issues if the campaign belongs to a different workspace`);
+        // Set a default name
+        result.campaignName = `Campaign ${campaignId}`;
       }
 
       // Get all prospects in campaign
       await this.ensureApiKey();
+      const apiKeyPreview = this.apiKey ? `${this.apiKey.substring(0, 8)}...` : 'NO_KEY';
+      const prospectsUrl = `${this.baseUrl}/campaigns/${campaignId}/prospects?apikey=${this.apiKey}`;
+      console.log(`🌐 Fetching prospects from ManyReach...`);
+      console.log(`   URL: ${this.baseUrl}/campaigns/${campaignId}/prospects`);
+      console.log(`   API Key: ${apiKeyPreview}`);
+      console.log(`   Campaign ID: ${campaignId} (type: ${typeof campaignId})`);
+      console.log(`   Workspace: ${this.workspaceName}`);
+      
       const prospectsResponse = await fetch(
-        `${this.baseUrl}/campaigns/${campaignId}/prospects?apikey=${this.apiKey}`,
+        prospectsUrl,
         {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' }
         }
       );
 
+      console.log(`📨 Response status: ${prospectsResponse.status} ${prospectsResponse.statusText}`);
+      
       if (!prospectsResponse.ok) {
-        throw new Error(`Failed to fetch prospects: ${prospectsResponse.statusText}`);
+        // Try to get error details from response body
+        let errorDetails = '';
+        try {
+          const errorBody = await prospectsResponse.text();
+          errorDetails = ` - Body: ${errorBody.substring(0, 500)}`;
+          console.error(`❌ Error response body: ${errorBody}`);
+        } catch (e) {
+          errorDetails = ' - Could not read error body';
+        }
+        throw new Error(`Failed to fetch prospects: ${prospectsResponse.status} ${prospectsResponse.statusText}${errorDetails}`);
       }
 
       const prospectsData = await prospectsResponse.json();

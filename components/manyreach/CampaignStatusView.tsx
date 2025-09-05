@@ -11,6 +11,7 @@ import {
   AlertCircle, 
   Clock, 
   CheckCircle,
+  CheckCircle2,
   XCircle,
   Eye,
   EyeOff,
@@ -59,6 +60,7 @@ export function CampaignStatusView({ workspace = 'main', onAnalyze }: CampaignSt
   const [notifications, setNotifications] = useState<string[]>([]);
   const [selectedCampaigns, setSelectedCampaigns] = useState<Set<string>>(new Set());
   const [analyzing, setAnalyzing] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<{totalNew: number; message: string} | null>(null);
   const pollingInterval = useRef<NodeJS.Timeout | null>(null);
   const refreshInterval = useRef<NodeJS.Timeout | null>(null);
 
@@ -265,8 +267,83 @@ export function CampaignStatusView({ workspace = 'main', onAnalyze }: CampaignSt
     setSelectedCampaigns(new Set(unchecked.map(c => c.campaignId)));
   };
 
+  const handleSmartBulkProcess = async () => {
+    console.log('🤖 Smart Bulk Process initiated for campaigns:', Array.from(selectedCampaigns));
+    
+    if (selectedCampaigns.size === 0) return;
+    
+    const campaignIds = Array.from(selectedCampaigns);
+    setImporting('bulk'); // Using 'bulk' as a special indicator
+    
+    // Show starting notification
+    const startMessage = `🤖 Smart processing ${campaignIds.length} campaigns...`;
+    setNotifications(prev => [...prev, startMessage]);
+    
+    try {
+      // Process each selected campaign
+      for (const campaignId of campaignIds) {
+        const campaign = campaigns.find(c => c.campaignId === campaignId);
+        if (!campaign) continue;
+        
+        console.log(`Processing campaign: ${campaign.campaignName}`);
+        
+        // Import replies from this campaign
+        const response = await fetch('/api/admin/manyreach/campaign-status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'import-new',
+            workspace,
+            campaignId,
+          })
+        });
+        
+        if (!response.ok) {
+          console.error(`Failed to process campaign ${campaignId}`);
+          continue;
+        }
+        
+        const result = await response.json();
+        console.log(`Campaign ${campaignId} processed:`, result);
+        
+        // Small delay between campaigns to avoid overwhelming the API
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+      
+      // Success notification
+      const successMessage = `✅ Successfully processed ${campaignIds.length} campaigns!`;
+      setNotifications(prev => [...prev, successMessage]);
+      setTimeout(() => {
+        setNotifications(prev => prev.filter(n => n !== successMessage));
+      }, 5000);
+      
+      // Refresh the campaign list
+      await fetchCampaignStatus();
+      
+      // Clear selection
+      setSelectedCampaigns(new Set());
+      
+    } catch (error) {
+      console.error('Smart bulk processing error:', error);
+      const errorMessage = `❌ Smart processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      setNotifications(prev => [...prev, errorMessage]);
+      setTimeout(() => {
+        setNotifications(prev => prev.filter(n => n !== errorMessage));
+      }, 5000);
+    } finally {
+      setImporting(null);
+      // Clear the start message
+      setTimeout(() => {
+        setNotifications(prev => prev.filter(n => n !== startMessage));
+      }, 1000);
+    }
+  };
+
   const handleAnalyzeSelected = async () => {
+    console.log('🔵 handleAnalyzeSelected called, selectedCampaigns:', selectedCampaigns);
+    
     if (selectedCampaigns.size === 0) {
+      console.log('⚠️ No campaigns selected');
       setNotifications(prev => [...prev, '⚠️ Please select at least one campaign to analyze']);
       setTimeout(() => {
         setNotifications(prev => prev.filter(n => !n.includes('Please select')));
@@ -276,32 +353,83 @@ export function CampaignStatusView({ workspace = 'main', onAnalyze }: CampaignSt
 
     setAnalyzing(true);
     const campaignIds = Array.from(selectedCampaigns);
+    console.log('📊 Analyzing campaigns:', campaignIds);
+    
+    // Show starting notification
+    const startMessage = `🔍 Analyzing ${campaignIds.length} campaigns for new emails...`;
+    setNotifications(prev => [...prev, startMessage]);
     
     try {
-      const response = await fetch(`/api/admin/manyreach/bulk-analysis?workspace=${workspace}&campaignIds=${campaignIds.join(',')}`);
+      const url = `/api/admin/manyreach/bulk-analysis?workspace=${workspace}&campaignIds=${campaignIds.join(',')}`;
+      console.log('🌐 Fetching:', url);
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        console.error('❌ Response not OK:', response.status);
+        throw new Error(`Analysis failed: ${response.status}`);
+      }
+      
       const data = await response.json();
+      console.log('✅ Analysis response:', data);
+      console.log('📊 Analysis details:', {
+        totalNewEmails: data.analysis?.totalNewEmails,
+        totalDuplicates: data.analysis?.totalDuplicates,
+        totalIgnored: data.analysis?.totalIgnored,
+        campaignBreakdownLength: data.analysis?.campaignBreakdown?.length,
+        firstCampaign: data.analysis?.campaignBreakdown?.[0]
+      });
+      
+      // Remove start message
+      setNotifications(prev => prev.filter(n => n !== startMessage));
       
       if (onAnalyze) {
         onAnalyze(campaignIds);
       }
       
-      // Show success notification
-      const message = `✅ Analysis complete: ${data.analysis.totalNewEmails} new emails found across ${campaignIds.length} campaigns`;
-      setNotifications(prev => [...prev, message]);
-      setTimeout(() => {
-        setNotifications(prev => prev.filter(n => n !== message));
-      }, 5000);
+      // Show detailed results
+      const totalNew = data.analysis?.totalNewEmails || 0;
+      const campaignBreakdown = data.analysis?.campaignBreakdown || [];
       
-      // Refresh to update last analyzed timestamps
+      console.log('📊 Processing results - totalNew:', totalNew, 'type:', typeof totalNew);
+      
+      // Store the result for persistent display
+      if (totalNew > 0) {
+        const campaignsWithNew = campaignBreakdown.filter((c: any) => c.newEmails > 0);
+        const message = `✅ Found ${totalNew} new emails across ${campaignsWithNew.length} campaigns`;
+        setAnalysisResult({ totalNew, message });
+        
+        // Show individual campaign results
+        campaignsWithNew.forEach((campaign: any) => {
+          const campaignMessage = `📧 ${campaign.campaignName}: ${campaign.newEmails} new emails`;
+          console.log('📧 Campaign result:', campaignMessage);
+        });
+      } else {
+        const message = `ℹ️ No new emails found in ${campaignIds.length} campaigns. All emails have already been imported.`;
+        setAnalysisResult({ totalNew: 0, message });
+        console.log('ℹ️ Analysis complete:', message);
+      }
+      
+      // Clear result after 10 seconds
+      setTimeout(() => {
+        setAnalysisResult(null);
+      }, 10000);
+      
+      // Clear selection after successful analysis
+      setSelectedCampaigns(new Set());
+      
+      // Refresh to update last analyzed timestamps and new reply counts
       await fetchCampaignStatus();
       
     } catch (error) {
       console.error('Analysis error:', error);
-      const message = '❌ Failed to analyze campaigns';
+      // Remove start message
+      setNotifications(prev => prev.filter(n => n !== startMessage));
+      
+      const message = `❌ Failed to analyze campaigns: ${error instanceof Error ? error.message : 'Unknown error'}`;
       setNotifications(prev => [...prev, message]);
       setTimeout(() => {
         setNotifications(prev => prev.filter(n => n !== message));
-      }, 3000);
+      }, 5000);
     } finally {
       setAnalyzing(false);
     }
@@ -417,6 +545,30 @@ export function CampaignStatusView({ workspace = 'main', onAnalyze }: CampaignSt
         </Card>
       )}
 
+      {/* Analysis Result */}
+      {analysisResult && (
+        <Card className="border-2 border-blue-200 bg-blue-50">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              {analysisResult.totalNew > 0 ? (
+                <>
+                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                  Analysis Complete
+                </>
+              ) : (
+                <>
+                  <AlertCircle className="h-5 w-5 text-blue-600" />
+                  Analysis Complete
+                </>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-base">{analysisResult.message}</p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Campaign List */}
       <Card>
         <CardHeader>
@@ -476,28 +628,46 @@ export function CampaignStatusView({ workspace = 'main', onAnalyze }: CampaignSt
                 Select Unchecked ({campaigns.filter(c => !c.lastAnalyzedAt).length})
               </Button>
               
+              <div className="flex-1" />
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleAnalyzeSelected}
+                disabled={analyzing || selectedCampaigns.size === 0}
+              >
+                {analyzing ? (
+                  <>
+                    <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                    Analyzing {selectedCampaigns.size} campaigns...
+                  </>
+                ) : (
+                  <>
+                    <Search className="h-3 w-3 mr-2" />
+                    Check for new emails{selectedCampaigns.size > 0 ? ` (${selectedCampaigns.size})` : ''}
+                  </>
+                )}
+              </Button>
+              
+              {/* Smart Bulk Process Button */}
               {selectedCampaigns.size > 0 && (
-                <>
-                  <div className="flex-1" />
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={handleAnalyzeSelected}
-                    disabled={analyzing}
-                  >
-                    {analyzing ? (
-                      <>
-                        <Loader2 className="h-3 w-3 mr-2 animate-spin" />
-                        Analyzing {selectedCampaigns.size} campaigns...
-                      </>
-                    ) : (
-                      <>
-                        <Search className="h-3 w-3 mr-2" />
-                        Analyze Selected ({selectedCampaigns.size})
-                      </>
-                    )}
-                  </Button>
-                </>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleSmartBulkProcess}
+                  disabled={analyzing || Boolean(importing)}
+                  className="bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700"
+                >
+                  {importing ? (
+                    <>
+                      <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                      Processing {selectedCampaigns.size} campaigns...
+                    </>
+                  ) : (
+                    <>
+                      🤖 Smart Bulk Process ({selectedCampaigns.size})
+                    </>
+                  )}
+                </Button>
               )}
             </div>
           )}
